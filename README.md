@@ -9,7 +9,7 @@ Read [implementation contract](docs/implementation-contract.md), [methodology an
 This checkout already has an isolated `.venv` and a downloaded, revision-pinned model in `.runtime/` (both Git-ignored). Use a normal shell on liono; no sudo or driver changes.
 
 ```bash
-cd ~/git_workspace/iam-sra-demo
+cd ~/IAM_CC/iam-sra-demo
 scripts/preflight.sh
 scripts/start-vllm.sh
 # Initial loading takes approximately one minute; check until healthy.
@@ -39,7 +39,7 @@ scripts/stop-vllm.sh
 Use Python 3.10–3.12. On this liono installation, the following existing Python interpreter can create a separate environment without changing its packages:
 
 ```bash
-cd ~/git_workspace/iam-sra-demo
+cd ~/IAM_CC/iam-sra-demo
 /home/elvouvali/miniforge3/envs/mailohls-llm-v2/bin/python -m venv .venv
 mkdir -p .runtime/tmp .runtime/pip
 export TMPDIR="$PWD/.runtime/tmp"
