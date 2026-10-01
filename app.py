@@ -63,7 +63,7 @@ def submit_answer():
 def submit_correction():
     perform(s.correct, st.session_state.complete_original, st.session_state.correction_reason, assess)
 def continue_session():
-    perform(s.validate, st.session_state.interpretation_confirmed)
+    perform(s.validate, st.session_state.interpretation_confirmed, st.session_state.include_reference_questions)
 def submit_validation(qid):
     choice=st.session_state["choice_"+qid]
     if choice is None:
@@ -88,9 +88,12 @@ elif s.state==State.INITIAL:
             st.text_input("What was misinterpreted?",key="correction_reason")
             st.form_submit_button("Record corrected version",on_click=submit_correction)
     st.checkbox("This interpretation reflects what I meant",key="interpretation_confirmed")
+    st.checkbox("Consider all three hypothetical changes from the PDF", key="include_reference_questions", help="Otherwise, only questions linked to assessed concerns are shown. Asking an extra question does not mean that concern was assessed.")
     st.button("Continue to hypothetical questions",on_click=continue_session)
 elif s.state==State.VALIDATION:
     q=s.questions[len(s.responses)]
+    if len(s.responses)==0:
+        st.write("To check the interpretation of your answer, consider the following hypothetical adjustments. Your original assessment will be preserved.")
     st.subheader(f"Hypothetical question {len(s.responses)+1} of {len(s.questions)}")
     st.write(q["text"])
     st.caption("Consider only the stated hypothetical; you may retain multiple concerns.")
@@ -106,7 +109,19 @@ else:
     for r in s.responses:
         st.write(r["outcome"])
         if r["clarification"]: st.text(r["clarification"])
-    st.write(conclusions(s.responses)["full_route_acceptance"])
+    summary=conclusions(s.responses,s.current)
+    st.subheader("Validation of the initial interpretation")
+    for match in summary["matched_rules"]: st.write(match["interpretation"])
+    for concern in summary["remaining_concerns"]: st.write("Remaining concern: "+concern)
+    if summary["unresolved_questions"]: st.write("Unresolved questions: "+", ".join(summary["unresolved_questions"]))
+    if summary["untested_original_concerns"]: st.write("Original concerns not tested by these modifications: "+", ".join(CONCERNS[i]["label"] for i in summary["untested_original_concerns"]))
+    if summary["overlapping_source_outcomes"]: st.caption(summary["note"])
+    st.write(summary["full_route_acceptance"])
+    with st.expander("FN source mapping · illustrative score proposals"):
+        for match in summary["matched_rules"]:
+            ref=match["source_reference"]
+            st.write(f"PDF p.{ref['source_page']}: {ref['source_impact']}")
+        st.caption("These are the PDF's illustrative proposals, not computed or calibrated scores. FN supplies no numerical validation-update formula.")
     st.caption("No numerical validation update is justified. These outcomes do not replace original scores.")
     st.download_button("Export session JSON",json.dumps(s.export(),indent=2,ensure_ascii=False),file_name="iam-session.json",mime="application/json")
 with st.expander("Developer metadata"):

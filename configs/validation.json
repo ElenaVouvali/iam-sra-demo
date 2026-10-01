@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "questions": [
     {
       "id": "q1",
@@ -71,5 +71,41 @@
       ],
       "hypothetical": true
     }
-  ]
+  ],
+  "source_rules": [
+    {
+      "id": "physical_adjustments_accepted",
+      "source_page": 9,
+      "trigger": "Q1 acceptance AND Q2 acceptance",
+      "source_impact": "Remove bottleneck cap; illustrative SRL 6–7",
+      "illustrative_range": [
+        6,
+        7
+      ],
+      "implemented": "Conditional acceptance of stated modifications; not an update of original assessment."
+    },
+    {
+      "id": "remaining_objection",
+      "source_page": 9,
+      "trigger": "Rejects Q1 OR Q2",
+      "source_impact": "Score drops or stays at SRL 2–3",
+      "illustrative_range": [
+        2,
+        3
+      ],
+      "implemented": "Record specific remaining objections; no psychological or technical-mistrust diagnosis."
+    },
+    {
+      "id": "local_rights_priority",
+      "source_page": 9,
+      "trigger": "Prioritizes privacy/tranquility in Q3",
+      "source_impact": "Validates illustrative cap at SRL 4",
+      "illustrative_range": [
+        4,
+        4
+      ],
+      "implemented": "Record local-rights policy priority; does not independently establish a numerical cap."
+    }
+  ],
+  "numerical_update_policy": "Not specified by FN; qualitative conclusions only. Source ranges retained as reference metadata."
 }

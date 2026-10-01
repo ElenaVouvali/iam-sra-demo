@@ -12,13 +12,16 @@ app.button[1].click().run(timeout=120)
 if app.exception or app.error: raise RuntimeError('Live initial assessment failed')
 original=app.session_state.session.original.model_dump()
 app.checkbox[0].check().run()
+app.checkbox(key="include_reference_questions").check().run()
 next(b for b in app.button if b.label=='Continue to hypothetical questions').click().run()
 for index in [0,1,1]:
     app.radio[0].set_value(app.radio[0].options[index])
     next(b for b in app.button if b.label=='Record and continue').click().run()
     if app.exception or app.error:raise RuntimeError('Live UI transition failed')
 s=app.session_state.session
-report={'mode':'LIVE','completed':s.state.value=='final_report','question_ids':[r['question_id'] for r in s.responses],'original_preserved':s.original.model_dump()==original,'export_schema_available':bool(s.export()),'download_button_rendered':len(app.get('download_button'))==1,'conditional_outcomes':[r['outcome'] for r in s.responses],'versions':s.export()['versions']}
+report={'mode':'LIVE','completed':s.state.value=='final_report','question_ids':[r['question_id'] for r in s.responses],'original_preserved':s.original.model_dump()==original,'export_schema_available':bool(s.export()),'download_button_rendered':len(app.get('download_button'))==1,'conditional_outcomes':[r['outcome'] for r in s.responses],'matched_rules':[m['rule_id'] for m in s.export()['conclusions']['matched_rules']],'numerical_update':s.export()['conclusions']['numerical_update'],'versions':s.export()['versions']}
 (ROOT/'.runtime/smoke-ui-live.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))
 assert report['completed'] and report['original_preserved'] and report['question_ids']==['q1','q2','q3'] and report['download_button_rendered']
+
+assert report["matched_rules"]==["remaining_objection","local_rights_priority"] and report["numerical_update"] is None

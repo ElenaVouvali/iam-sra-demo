@@ -40,4 +40,13 @@ No remaining GPU or inference blocker for the demonstrated FN session. Laptop SS
 
 Earlier engineering runs exposed UUID incompatibility, slow Outlines schema compilation, extra topic mappings and instruction-influenced scores. Final configuration uses UUID-verified numeric GPU selection, XGrammar-compatible transport schema plus strict local bounds/coherence, conservative evidence eligibility and bounded corrective retry. Earlier successful runs are not counted as final results.
 
-Project services are stopped after verification to release the V100; use README startup commands. Source PDF SHA256: `c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a`, located outside the repository. Questions requiring FN feedback are recorded in methodology.md.
+Services were stopped after the original verification; they have since been started for the user’s session. Source PDF SHA256: `c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a`, located outside the repository. Questions requiring FN feedback are recorded in methodology.md.
+
+
+## Revision 2.0.0 · 2026-10-01
+
+Re-read the source validation table on physical p.9 and implemented all three combination gates, preserving overlapping outcomes. Offline suite: **152 passed**, including all 48 choice combinations, evidence passage retrieval, unknown-reference rejection, preservation of originals and optional complete-question selection. Compilation and Git whitespace checks passed.
+
+Real Qwen3-8B/V100 inference through the live Streamlit renderer completed Q1, Q2 and Q3, preserved the original assessment and rendered JSON export. The selected choices were Q1 acceptance, Q2 visual-clutter objection and Q3 privacy priority; expected combined outcomes are remaining objection plus local-rights priority, with numerical update null. The complete-reference-question option was used. This checks application behavior, not scientific validity.
+
+Three earlier live passage-selection checks accepted the original FN text twice and a line-wrapped variant once. Retrieved evidence matched the citizen text in every accepted result; one variant required the bounded retry. Outputs identified only privacy or only noise, so inference remains incomplete. An initial UI smoke assuming three automatically selected questions failed when fewer concerns were identified; the revised explicit all-three option completes that session without inventing concern scores. Earlier aggregate evaluation results above belong to prompt 1.3 and are historical, not current-prompt performance estimates. No new repeatability benchmark was performed for prompt 2.0.

@@ -24,7 +24,10 @@ def gpu():
     print(output)
     return selected[0]
 def port_free(port):
-    with socket.socket() as s: s.bind(("127.0.0.1",port))
+    with socket.socket() as s:
+        # Ignore closed connections in TIME_WAIT, while rejecting active listeners.
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(("127.0.0.1",port))
 def preflight(check_ui_port=True):
     print("Python",sys.version,"OS",Path('/etc/os-release').read_text())
     row=gpu()

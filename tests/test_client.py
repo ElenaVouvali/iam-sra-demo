@@ -19,7 +19,7 @@ def fake_client(monkeypatch,choices,count=100):
     return calls
 
 def test_guided_api_and_no_thinking(monkeypatch):
-    valid={'finish_reason':'stop','message':{'content':json.dumps(payload({'noise':3},'noise'))}}
+    valid={'finish_reason':'stop','message':{'content':json.dumps(payload({'noise':3},'p001'))}}
     calls=fake_client(monkeypatch,[valid])
     assert LLMClient()('noise').concerns[0].score==3
     body=calls[1][1]
@@ -48,7 +48,7 @@ def test_transport_constraints_and_local_bounds():
 
 def test_retry_feedback_is_bounded_and_recounted(monkeypatch):
     bad={'finish_reason':'stop','message':{'content':'{'}}
-    good={'finish_reason':'stop','message':{'content':json.dumps(payload({'noise':3},'noise'))}}
+    good={'finish_reason':'stop','message':{'content':json.dumps(payload({'noise':3},'p001'))}}
     calls=fake_client(monkeypatch,[bad,good])
     assert LLMClient()('noise').concerns[0].score==3
     assert len(calls)==4 and calls[2][0].endswith('/tokenize')
