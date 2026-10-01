@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "id": "urban_medical_corridor",
+  "title": "The Urban Medical Transit Corridor",
+  "source_page": 5,
+  "text": "Your city’s central hospital intends to establish a high-frequency medical drone route to transport urgent laboratory specimens, blood components, and transplant organs directly to a regional clinic. To achieve the necessary delivery speeds, the municipal transit plan proposes routing these autonomous aircraft directly above your residential neighborhood at an altitude of 60 meters (approximately the height of a 15-story building). The flights will occur up to 15 times a day, including early morning and late evening hours. The drones operate with a steady, low-frequency electric hum during transit and feature multi-angle safety navigation cameras that continuously scan downward to detect unexpected ground obstacles during flight. How do you feel about the implementation of this flight corridor over your home? What specific conditions or changes would make this acceptable to you?",
+  "hypothetical": true,
+  "target_concerns": [
+    "noise",
+    "visual_pollution",
+    "perceived_safety_privacy",
+    "welfare_equity"
+  ]
+}

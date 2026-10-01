@@ -1,0 +1,17 @@
+{
+  "source_pages": [
+    5,
+    6,
+    7
+  ],
+  "scores": {
+    "welfare_equity": 8,
+    "noise": 3,
+    "visual_pollution": 4,
+    "perceived_safety_privacy": 2
+  },
+  "mean": 4.25,
+  "illustrative_final": 4,
+  "citizen_text": "Look, I get that this is for hospital use and saving lives, which is obviously a vital public service we need to support. But 60 meters is incredibly low. If these drones are buzzing past 15 times a day, that constant electric hum is going to drive me crazy, especially when I'm trying to relax on my balcony in the evening. Plus, knowing there are navigation cameras constantly pointed downward right over my yard and windows makes me deeply uncomfortable—how do I know they aren't recording my family? If they can route them over the industrial park or high enough that I can't hear them or see cameras looking into my property, fine. Otherwise, I completely oppose this route.",
+  "mapping_warning": "Medical benefit support does not establish welfare/equity knowledge. Visual pollution evidence also overlaps altitude/privacy. Reference integers are historical, not forced live targets."
+}

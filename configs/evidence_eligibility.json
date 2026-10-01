@@ -1,0 +1,154 @@
+{
+  "version": "1.0.0-experimental",
+  "description": "Conservative English topic-presence rejection gate; not semantic proof or scoring. False negatives are possible. Uses only assessed concern excerpts.",
+  "patterns": {
+    "public_awareness_trust": [
+      "aware",
+      "trust",
+      "confidence in",
+      "informed",
+      "public understanding"
+    ],
+    "competence_building": [
+      "training",
+      "skills",
+      "competence",
+      "education",
+      "learn how",
+      "qualified"
+    ],
+    "perceived_safety_privacy": [
+      "privacy",
+      "camera",
+      "surveillance",
+      "window",
+      "yard",
+      "safe",
+      "crash",
+      "risk",
+      "fear"
+    ],
+    "technical_safety_security_privacy": [
+      "cyber",
+      "telemetry",
+      "data access",
+      "access to",
+      "access the data",
+      "recording",
+      "record my",
+      "record our",
+      "encryption",
+      "technical safety",
+      "system safety",
+      "failure rate",
+      "security",
+      "data retention"
+    ],
+    "noise": [
+      "noise",
+      "sound",
+      "hum",
+      "buzz",
+      "quiet",
+      "hear",
+      "acoustic",
+      "loud"
+    ],
+    "visual_pollution": [
+      "visual",
+      "clutter",
+      "seeing drones",
+      "visible presence",
+      "appearance",
+      "aesthetic",
+      "skyline",
+      "sight of drones"
+    ],
+    "wind_downwash": [
+      "wind",
+      "downwash",
+      "outwash",
+      "air blast"
+    ],
+    "airspace_capacity": [
+      "airspace",
+      "air traffic",
+      "capacity",
+      "crowded skies"
+    ],
+    "sump_integration": [
+      "sump",
+      "mobility plan",
+      "transport plan",
+      "transit plan"
+    ],
+    "infrastructure_land_use": [
+      "land use",
+      "infrastructure",
+      "landing pad",
+      "vertiport",
+      "industrial park",
+      "residential zone"
+    ],
+    "energy_emissions": [
+      "energy",
+      "emission",
+      "carbon",
+      "electricity",
+      "pollution",
+      "climate"
+    ],
+    "cost_roi_business": [
+      "cost",
+      "roi",
+      "business",
+      "funding",
+      "profit",
+      "tax",
+      "price",
+      "budget"
+    ],
+    "accessibility": [
+      "remote",
+      "vulnerable",
+      "accessibility",
+      "disabled",
+      "rural",
+      "underserved"
+    ],
+    "multimodality_congestion": [
+      "congestion",
+      "multimodal",
+      "traffic jam",
+      "road traffic",
+      "bus",
+      "rail"
+    ],
+    "welfare_equity": [
+      "equity",
+      "fair",
+      "equal",
+      "inequality",
+      "distribution",
+      "welfare",
+      "justice"
+    ]
+  },
+  "support_cues": [
+    "accept",
+    "support",
+    "approve",
+    "agree",
+    "fine with",
+    "okay",
+    "ok with",
+    "welcome",
+    "like",
+    "tolerate",
+    "comfortable",
+    "not bother",
+    "does not bother",
+    "doesn\u2019t bother",
+    "doesn't bother"
+  ]
+}

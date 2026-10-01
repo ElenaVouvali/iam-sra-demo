@@ -1,0 +1,25 @@
+{
+  "version": "1.1.0-experimental",
+  "minimum_assessed": 3,
+  "phase_minimum_assessed": 1,
+  "rounding": "half_up",
+  "bottleneck_enabled": true,
+  "bottleneck_phases": [
+    1
+  ],
+  "bottleneck_threshold": 3,
+  "bottleneck_offset": 2,
+  "phase_aggregation": "mean_assessed",
+  "aggregate_label": "Experimental scenario summary; not calibrated SRL",
+  "anchors": {
+    "1": "Explicit categorical opposition to this concern in the current scenario",
+    "2": "Strong opposition with a stated boundary",
+    "3": "Opposition with possible conditions",
+    "4": "Leans against; conditions not yet met",
+    "5": "Explicit mixed acceptance and opposition about this concern; uncertainty without a position remains unassessed",
+    "6": "Tentative acceptance with substantial reservations",
+    "7": "Conditional acceptance with specific manageable reservations",
+    "8": "Clear acceptance of this concern with minor reservations",
+    "9": "Explicit unqualified acceptance of this concern"
+  }
+}

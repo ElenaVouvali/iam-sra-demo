@@ -1,0 +1,31 @@
+{
+  "mode": "LIVE",
+  "completed": true,
+  "question_ids": [
+    "q1",
+    "q2",
+    "q3"
+  ],
+  "original_preserved": true,
+  "export_schema_available": true,
+  "download_button_rendered": true,
+  "conditional_outcomes": [
+    "Stated privacy concern resolved only under hypothetical shielding; full-route acceptance is not established.",
+    "Visual clutter remains a concern under the bundled modification.",
+    "Policy preference: prioritize neighborhood privacy and tranquility under the stated hypothetical trade-off."
+  ],
+  "versions": {
+    "registry": "1.0.0",
+    "scenario": "1.0.0",
+    "rubric": "1.1.0-experimental",
+    "scoring": "1.1.0-experimental",
+    "validation": "1.0.0",
+    "prompt": "1.3.0",
+    "evidence_eligibility": "1.0.0-experimental",
+    "model": {
+      "version": "1.0.0",
+      "model": "Qwen/Qwen3-8B",
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218"
+    }
+  }
+}

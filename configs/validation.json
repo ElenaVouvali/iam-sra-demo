@@ -1,0 +1,75 @@
+{
+  "version": "1.0.0",
+  "questions": [
+    {
+      "id": "q1",
+      "text": "If the transit authority officially mandates that all medical drones use a Lens-Shielding Hardware Shroud—which physically caps the cameras so they can only view the direct forward vector of the flight path and can never physically look down into private residential yards or windows—does this completely resolve your opposition to the flight path?",
+      "reference_choices": [
+        "Yes, my privacy concern would be entirely solved.",
+        "No, because I still distrust who has access to the telemetry or cyber-security data.",
+        "No, the physical presence of a camera in the air is a boundary violation regardless of shields."
+      ],
+      "choices": [
+        "Yes, my privacy concern would be entirely solved.",
+        "No, because I still distrust who has access to the telemetry or cyber-security data.",
+        "No, the physical presence of a camera in the air is a boundary violation regardless of shields.",
+        "Unsure / none of these"
+      ],
+      "relevant_concerns": [
+        "perceived_safety_privacy",
+        "technical_safety_security_privacy"
+      ],
+      "source_pages": [
+        8
+      ],
+      "hypothetical": true
+    },
+    {
+      "id": "q2",
+      "text": "Imagine the city alters the flight path: instead of flying at 60 meters, the drones are routed at 120 meters (doubling the altitude), and the hospital implements a strict curfew banning all flights between 19:00 and 07:00. At this height, the drone's sound profile drops below ambient city street noise.",
+      "reference_choices": [
+        "If the noise is imperceptible during my evening hours, I would accept this route.",
+        "Even if it is quieter, the constant visual clutter of 15 drones a day overhead is still unacceptable to me.",
+        "I still oppose it; altitude does not change the fact that it is over a residential zone."
+      ],
+      "choices": [
+        "If the noise is imperceptible during my evening hours, I would accept this route.",
+        "Even if it is quieter, the constant visual clutter of 15 drones a day overhead is still unacceptable to me.",
+        "I still oppose it; altitude does not change the fact that it is over a residential zone.",
+        "Unsure / none of these"
+      ],
+      "relevant_concerns": [
+        "noise",
+        "visual_pollution"
+      ],
+      "source_pages": [
+        8,
+        9
+      ],
+      "hypothetical": true
+    },
+    {
+      "id": "q3",
+      "text": "If rerouting the drones away from your neighborhood over the industrial park adds an extra 12 minutes to transport times—meaning that urgent, life-saving blood plasma deliveries to the regional clinic are delayed during critical medical emergencies—which priority do you believe the city should favor?",
+      "reference_choices": [
+        "The city must prioritize hospital transit speed and save lives, even if it means my neighborhood must tolerate the noise/privacy compromises.",
+        "The city must prioritize neighborhood tranquility and privacy rights, even if it means medical logistics take longer or cost more."
+      ],
+      "choices": [
+        "The city must prioritize hospital transit speed and save lives, even if it means my neighborhood must tolerate the noise/privacy compromises.",
+        "The city must prioritize neighborhood tranquility and privacy rights, even if it means medical logistics take longer or cost more.",
+        "Unsure / none of these"
+      ],
+      "relevant_concerns": [
+        "welfare_equity",
+        "noise",
+        "visual_pollution",
+        "perceived_safety_privacy"
+      ],
+      "source_pages": [
+        9
+      ],
+      "hypothetical": true
+    }
+  ]
+}
