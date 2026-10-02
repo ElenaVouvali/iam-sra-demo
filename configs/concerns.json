@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "source_pages": [
     1,
     2
@@ -8,77 +8,193 @@
     {
       "id": "public_awareness_trust",
       "label": "Public awareness and trust",
-      "phase": 1
+      "phase": 1,
+      "scope": "Informed public understanding or institutional trust.",
+      "facets": [
+        "awareness",
+        "institutional_trust"
+      ],
+      "inclusion": "Explicit informedness, public communication or trust in institutions.",
+      "exclusion": "Route approval, medical support or specific camera discomfort alone.",
+      "illustrative_anchors": "Refusal of institutional involvement=1; openness pending transparency=4; informed institutional support=8."
     },
     {
       "id": "competence_building",
       "label": "Competence building",
-      "phase": 1
+      "phase": 1,
+      "scope": "Skills, training and ability to participate in IAM.",
+      "facets": [
+        "training",
+        "participation_skills"
+      ],
+      "inclusion": "Explicit training, skills or learning requirements.",
+      "exclusion": "Verbosity, knowledge of the scenario or generic safety.",
+      "illustrative_anchors": "Rejects training altogether=1; willing with accessible training=5; supports skills programmes=8."
     },
     {
       "id": "perceived_safety_privacy",
       "label": "Perceived safety and privacy",
-      "phase": 1
+      "phase": 1,
+      "scope": "Experienced safety concern and personal privacy/surveillance boundaries.",
+      "facets": [
+        "personal_privacy",
+        "perceived_safety"
+      ],
+      "inclusion": "Personal surveillance, camera intrusion, fear of injury or perceived risk.",
+      "exclusion": "Camera intrusion is not automatically a technical security defect or aesthetic objection.",
+      "illustrative_anchors": "Strong surveillance boundary with conditional openness=2; cautious safety acceptance=6; clear personal comfort=8."
     },
     {
       "id": "technical_safety_security_privacy",
       "label": "Technical safety, security and privacy",
-      "phase": 1
+      "phase": 1,
+      "scope": "System reliability, safety engineering, data governance and cybersecurity.",
+      "facets": [
+        "system_reliability",
+        "data_security"
+      ],
+      "inclusion": "Explicit failure mechanisms, data retention/access, hacking or technical safeguards.",
+      "exclusion": "Personal discomfort with being viewed, without technical/data claims.",
+      "illustrative_anchors": "Rejects systems even with safeguards=1; requires verified controls=3\u20135; endorses stated controls=7\u20138."
     },
     {
       "id": "noise",
       "label": "Noise",
-      "phase": 2
+      "phase": 2,
+      "scope": "Acoustic disruption, operating hours and sound tolerance.",
+      "facets": [
+        "acoustic_impact"
+      ],
+      "inclusion": "Explicit sound, hum, rest disruption or audibility conditions.",
+      "exclusion": "Flight visibility or routing alone.",
+      "illustrative_anchors": "Strong acoustic objection, willing if inaudible or rerouted=3; moderate reservation=4\u20135; qualified acoustic acceptance=7."
     },
     {
       "id": "visual_pollution",
       "label": "Visual pollution",
-      "phase": 2
+      "phase": 2,
+      "scope": "Aesthetic sky clutter and visible physical intrusion.",
+      "facets": [
+        "aesthetic_clutter",
+        "visible_physical_intrusion"
+      ],
+      "inclusion": "Explicit aesthetic/clutter objection or separate objection to visible low aircraft.",
+      "exclusion": "Seeing cameras watch property alone is privacy. Altitude alone does not prove aesthetic objection.",
+      "illustrative_anchors": "Conditional low tolerance for explicit visible intrusion=4; no visual acceptance position=null; clear aesthetic acceptance=8."
     },
     {
       "id": "wind_downwash",
       "label": "Wind and downwash/outwash",
-      "phase": 2
+      "phase": 2,
+      "scope": "Rotor wind/downwash effects and placement safety.",
+      "facets": [
+        "rotor_wind"
+      ],
+      "inclusion": "Explicit gusts, rotor wash, outwash or wind-related placement.",
+      "exclusion": "Noise or ordinary wind weather without rotor effects.",
+      "illustrative_anchors": "Strong impact boundary with mitigation openness=3; accepts protective placement=7."
     },
     {
       "id": "airspace_capacity",
       "label": "Airspace capacity",
-      "phase": 2
+      "phase": 2,
+      "scope": "Traffic density, airspace allocation and capacity.",
+      "facets": [
+        "airspace_traffic"
+      ],
+      "inclusion": "Explicit airspace crowding, traffic separation or capacity allocation.",
+      "exclusion": "Flight frequency as a noise/visual cause alone.",
+      "illustrative_anchors": "Conditional airspace objection pending separation=3\u20135; supports allocation plan=8."
     },
     {
       "id": "sump_integration",
       "label": "IAM integration into SUMPs",
-      "phase": 3
+      "phase": 3,
+      "scope": "Integration into a sustainable urban mobility plan.",
+      "facets": [
+        "urban_mobility_plan"
+      ],
+      "inclusion": "Explicit city mobility strategy, governance integration or SUMP.",
+      "exclusion": "Mention of city or routing alone.",
+      "illustrative_anchors": "Conditional planning acceptance pending consultation=5; supports mobility-plan integration=8."
     },
     {
       "id": "infrastructure_land_use",
       "label": "Infrastructure and land use",
-      "phase": 3
+      "phase": 3,
+      "scope": "Physical facilities, siting and allocation of land.",
+      "facets": [
+        "facility_siting",
+        "land_allocation"
+      ],
+      "inclusion": "Explicit pads, vertiports, construction, zoning or allocation of land.",
+      "exclusion": "Request to move a flight path off homes without land/facility planning.",
+      "illustrative_anchors": "Siting objection open to alternate site=4; supports suitable planned facilities=8."
     },
     {
       "id": "energy_emissions",
       "label": "Energy demand and emissions",
-      "phase": 3
+      "phase": 3,
+      "scope": "Energy demand, lifecycle emissions and environmental trade-offs.",
+      "facets": [
+        "energy_demand",
+        "emissions"
+      ],
+      "inclusion": "Explicit electricity, energy use, carbon or emissions.",
+      "exclusion": "Electric hum alone or vague responsible language.",
+      "illustrative_anchors": "Conditional acceptance pending net environmental benefit=5; supports specified benefit=8."
     },
     {
       "id": "cost_roi_business",
       "label": "Cost, ROI and business models",
-      "phase": 3
+      "phase": 3,
+      "scope": "Costs, financing, return and business viability.",
+      "facets": [
+        "cost_financing",
+        "business_viability"
+      ],
+      "inclusion": "Explicit taxes, funding, operating cost, affordability of business or returns.",
+      "exclusion": "A flight delay alone; public service support alone.",
+      "illustrative_anchors": "Conditional support pending affordable funding=5; endorses a viable funding model=8."
     },
     {
       "id": "accessibility",
       "label": "Accessibility for remote areas and vulnerable groups",
-      "phase": 3
+      "phase": 3,
+      "scope": "Access for remote areas, disability and vulnerable groups.",
+      "facets": [
+        "remote_access",
+        "vulnerable_access"
+      ],
+      "inclusion": "Explicit geographic or vulnerability access barriers/benefits.",
+      "exclusion": "Saving lives alone does not establish accessibility or fair distribution.",
+      "illustrative_anchors": "Concern about exclusion with conditional support=3\u20135; supports targeted access=8."
     },
     {
       "id": "multimodality_congestion",
       "label": "Multimodality and congestion",
-      "phase": 3
+      "phase": 3,
+      "scope": "Connections with other transport and congestion.",
+      "facets": [
+        "transport_connections",
+        "congestion"
+      ],
+      "inclusion": "Explicit links to buses, roads, ambulances or relieving congestion.",
+      "exclusion": "Generic route relocation or medical speed alone.",
+      "illustrative_anchors": "Conditional acceptance pending integration=5; supports transport connections=8."
     },
     {
       "id": "welfare_equity",
       "label": "Welfare and equity",
-      "phase": 3
+      "phase": 3,
+      "scope": "Public welfare benefits and separately distributive equity.",
+      "facets": [
+        "medical_public_benefit",
+        "distributive_equity"
+      ],
+      "inclusion": "Explicit lifesaving medical public-service endorsement (FN facet) OR distribution/fairness claims.",
+      "exclusion": "Benefit support does not imply equity knowledge or fair access; count this concern once.",
+      "illustrative_anchors": "Clear lifesaving public-service support=8 even with local opposition; explicit equity reservation can lower combined concern readiness; categorical rejection of welfare goals=1."
     }
   ],
   "phases": {
@@ -103,5 +219,6 @@
         9
       ]
     }
-  }
+  },
+  "ga_verification": "Separate GA Living Lab table not yet supplied; IDs/phases preserved from FN PDF pp.1\u20132."
 }

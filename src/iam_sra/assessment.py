@@ -16,7 +16,7 @@ def parse_assessment(raw, text):
             raise AssessmentError("Model output failed JSON/schema checks; no assessment was saved.", code="schema") from exc
         groups = list(result.concerns) + [result.awareness_understanding, result.medical_public_benefit_support, result.current_route_stance]
         for g in groups:
-            for excerpt in g.excerpts:
+            for excerpt in g.excerpts + (g.conditions if isinstance(g, Concern) else []):
                 if not excerpt.strip() or excerpt not in text:
                     raise AssessmentError("Model output contains an unsupported evidence excerpt; no assessment was saved.", code="evidence")
         for condition in result.acceptance_conditions:
@@ -32,14 +32,10 @@ def parse_assessment(raw, text):
 
 
 def check_eligibility(result):
-    from .settings import config
-    eligibility=config("evidence_eligibility")
-    patterns=eligibility["patterns"]
-    for concern in result.concerns:
-        if concern.status != "assessed": continue
-        evidence=" ".join(concern.excerpts).casefold()
-        if not any(term in evidence for term in patterns[concern.concern_id]):
-            raise AssessmentError("Insufficient explicit topic evidence for "+concern.concern_id+"; no assessment saved.",code="eligibility")
-        if concern.position == "supported" and not any(cue in evidence for cue in eligibility["support_cues"]):
-            raise AssessmentError("Supported position lacks an explicit acceptance cue for "+concern.concern_id+"; no assessment saved.",code="eligibility")
+    """Semantic eligibility is interpreted by Qwen under the versioned registry.
+
+    Schema validates facet membership and evidence invariants. No lexical or stance
+    veto is applied here: a substring cannot prove either a topic or acceptance.
+    This identity step never substitutes, floors or offsets a model score.
+    """
     return result

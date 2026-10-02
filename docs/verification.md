@@ -1,4 +1,6 @@
 # Verification results
+For the latest schema3.5/prompt3.3 implementation, see the [2026-10-02 recalibration report](calibration-report.md). The sections below are preserved historical observations, not current performance estimates.
+
 Observed on liono, 2026-10-01. These are engineering checks on synthetic/source-example text, **not scientific validation**.
 
 ## Executed checks
@@ -50,3 +52,10 @@ Re-read the source validation table on physical p.9 and implemented all three co
 Real Qwen3-8B/V100 inference through the live Streamlit renderer completed Q1, Q2 and Q3, preserved the original assessment and rendered JSON export. The selected choices were Q1 acceptance, Q2 visual-clutter objection and Q3 privacy priority; expected combined outcomes are remaining objection plus local-rights priority, with numerical update null. The complete-reference-question option was used. This checks application behavior, not scientific validity.
 
 Three earlier live passage-selection checks accepted the original FN text twice and a line-wrapped variant once. Retrieved evidence matched the citizen text in every accepted result; one variant required the bounded retry. Outputs identified only privacy or only noise, so inference remains incomplete. An initial UI smoke assuming three automatically selected questions failed when fewer concerns were identified; the revised explicit all-three option completes that session without inventing concern scores. Earlier aggregate evaluation results above belong to prompt 1.3 and are historical, not current-prompt performance estimates. No new repeatability benchmark was performed for prompt 2.0.
+
+
+## Recalibration · 2026-10-02 · schema3.5 / prompt3.3
+
+212 offline tests passed. The exact four-label FN arithmetic fixture remains mean4.25/cap4/adjusted4/final4. Final live benchmarks attempted38 assessments:34 accepted,4 controlled schema errors;18 passed every declared per-case check. Results include all attempted cases and retrospective grading notes. A real Streamlit renderer session completed the three reference questions and JSON export with original scores preserved. Normal and /think raw requests passed non-thinking checks; two separate CLI session attempts failed safely. Services are healthy after restarting only the project UI.
+
+The repeated FN benchmark accepted two of three attempts, each welfare8/noise3/privacy2, mean4.3333/final4, with visual pollution unassessed. Welfare condition annotations remain incorrect, so full-profile agreement is not claimed. Broad held-out agreement is2/8; all15-topic agreement6/15. These are material model limitations, not scientific validation. See [calibration report](calibration-report.md) and [machine summary](../eval/results/recalibration-summary.json) for raw-score comparisons, settings, latency, sampled memory, extra failed smoke attempts and pending GA/export source review. Historical results above were not overwritten.

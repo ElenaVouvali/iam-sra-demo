@@ -4,12 +4,13 @@ import streamlit as st
 from iam_sra.session import Session, State
 from iam_sra.settings import SCENARIO, CONCERNS, POLICY, MODEL, BASE_URL, REGISTRY, config
 from iam_sra.scoring import aggregate
-from iam_sra.llm_client import LLMClient
+from iam_sra.llm_client import LLMClient, STAGE_LIMITS
+from iam_sra.schemas import SCHEMA_VERSION
 from iam_sra.assessment import AssessmentError
 from iam_sra.validation import conclusions
 st.set_page_config(page_title="IAM · Research demo", page_icon="◈", layout="centered")
 st.title("IAM · A citizen perspective")
-st.caption("Experimental scenario assessment · English · No scientifically calibrated scores")
+st.caption("Experimental FN-aligned scenario assessment · English · Scores are provisional")
 mock=os.getenv("IAM_MOCK","0")=="1"
 if mock:
     st.warning("MOCK MODE — fixed uncertain fixture for UI/CI; no Qwen inference.")
@@ -38,6 +39,12 @@ def show(a,title):
             st.write(f"**{CONCERNS[c.concern_id]['label']} · {c.score}/9 (provisional)**")
             for e in c.excerpts: st.text(e)
             st.write(c.rationale)
+            st.caption("Original concern stance: "+c.position+" · Conditional willingness: "+c.conditional_willingness.replace("_"," "))
+            st.caption("Assessed facets: "+", ".join(f.replace("_"," ") for f in c.facets))
+            if c.concern_id=="welfare_equity" and "medical_public_benefit" in c.facets and "distributive_equity" not in c.facets:
+                st.caption("This reflects medical public-service support; equitable distribution and equity knowledge were not assessed.")
+            for condition in c.conditions: st.text("Unresolved original condition: "+condition)
+            if c.mapping_note: st.caption("Mapping: "+c.mapping_note.replace("_"," "))
     with st.expander("Unassessed concerns and ambiguity"):
         for c in a.concerns:
             if c.status=="unassessed" and c.excerpts:
@@ -50,7 +57,7 @@ def show(a,title):
     totals=aggregate(a)
     st.write(f"Coverage: {totals['coverage']} concerns assessed")
     st.caption("Unassessed: "+", ".join(CONCERNS[i]['label'] for i in totals['missing']))
-    st.write("Experimental scenario summary: "+(str(totals['rounded'])+"/9" if totals['rounded'] is not None else "Unavailable — insufficient concern evidence"))
+    st.write("Provisional FN-aligned scenario readiness: "+(str(totals['rounded'])+"/9" if totals['rounded'] is not None else "Unavailable — insufficient concern evidence"))
     with st.expander("Arithmetic and phase coverage"): st.json(totals)
 def perform(action, *args):
     st.session_state.pop("action_error", None)
@@ -77,7 +84,7 @@ if s.state==State.SCENARIO:
 elif s.state==State.ANSWER:
     with st.form("answer"):
         st.text_area("Your response",key="citizen_answer",help="Maximum 4000 UTF-8 bytes; full prompt must also fit the context budget.")
-        st.form_submit_button("Assess response",on_click=submit_answer)
+        st.form_submit_button("Assess response",on_click=submit_answer,help="Assessment can take up to three minutes. Your answer is never silently truncated.")
 elif s.state==State.INITIAL:
     show(s.original,"Original interpretation")
     if s.corrections: show(s.current,"Corrected interpretation")
@@ -97,6 +104,8 @@ elif s.state==State.VALIDATION:
     st.subheader(f"Hypothetical question {len(s.responses)+1} of {len(s.questions)}")
     st.write(q["text"])
     st.caption("Consider only the stated hypothetical; you may retain multiple concerns.")
+    if s.include_reference_questions:
+        st.caption("These are the original FN reference questions. Their opposition wording does not establish that you oppose the current route.")
     with st.form("validation_"+q["id"]):
         st.radio("Your view",q["choices"],index=None,key="choice_"+q["id"])
         st.text_area("Optional clarification",key="clarification_"+q["id"])
@@ -112,6 +121,9 @@ else:
     summary=conclusions(s.responses,s.current)
     st.subheader("Validation of the initial interpretation")
     for match in summary["matched_rules"]: st.write(match["interpretation"])
+    for review in summary["concern_validation"]:
+        st.write(CONCERNS[review["concern_id"]]["label"]+": "+review["status"].replace("_"," "))
+        for test in review["tests"]: st.caption(test["question_id"]+": "+test["reason"])
     for concern in summary["remaining_concerns"]: st.write("Remaining concern: "+concern)
     if summary["unresolved_questions"]: st.write("Unresolved questions: "+", ".join(summary["unresolved_questions"]))
     if summary["untested_original_concerns"]: st.write("Original concerns not tested by these modifications: "+", ".join(CONCERNS[i]["label"] for i in summary["untested_original_concerns"]))
@@ -125,5 +137,5 @@ else:
     st.caption("No numerical validation update is justified. These outcomes do not replace original scores.")
     st.download_button("Export session JSON",json.dumps(s.export(),indent=2,ensure_ascii=False),file_name="iam-session.json",mime="application/json")
 with st.expander("Developer metadata"):
-    st.json({"mode":"mock" if mock else "live","model":config("model"),"endpoint":BASE_URL,"registry":REGISTRY['version'],"scenario":SCENARIO['version'],"scoring":POLICY['version'],"validation":config('validation')['version'],"prompt":config("prompts")["version"],"evidence_eligibility":config("evidence_eligibility")["version"],"context":4096,"max_output":1600})
+    st.json({"mode":"mock" if mock else "live","model":config("model"),"endpoint":BASE_URL,"registry":REGISTRY['version'],"scenario":SCENARIO['version'],"scoring":POLICY['version'],"validation":config('validation')['version'],"prompt":config("prompts")["version"],"evidence_eligibility":config("evidence_eligibility")["version"],"schema":SCHEMA_VERSION,"context":4096,"stage_output_limits":STAGE_LIMITS,"maximum_calls":32,"assessment_deadline_seconds":180})
     st.caption("In-memory session; raw citizen text is not written to routine logs. Explicit exports include citizen text.")

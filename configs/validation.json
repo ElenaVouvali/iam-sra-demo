@@ -1,9 +1,9 @@
 {
-  "version": "2.0.0",
+  "version": "3.1.0",
   "questions": [
     {
       "id": "q1",
-      "text": "If the transit authority officially mandates that all medical drones use a Lens-Shielding Hardware Shroud—which physically caps the cameras so they can only view the direct forward vector of the flight path and can never physically look down into private residential yards or windows—does this completely resolve your opposition to the flight path?",
+      "text": "If the transit authority officially mandates that all medical drones use a Lens-Shielding Hardware Shroud\u2014which physically caps the cameras so they can only view the direct forward vector of the flight path and can never physically look down into private residential yards or windows\u2014does this completely resolve your opposition to the flight path?",
       "reference_choices": [
         "Yes, my privacy concern would be entirely solved.",
         "No, because I still distrust who has access to the telemetry or cyber-security data.",
@@ -50,7 +50,7 @@
     },
     {
       "id": "q3",
-      "text": "If rerouting the drones away from your neighborhood over the industrial park adds an extra 12 minutes to transport times—meaning that urgent, life-saving blood plasma deliveries to the regional clinic are delayed during critical medical emergencies—which priority do you believe the city should favor?",
+      "text": "If rerouting the drones away from your neighborhood over the industrial park adds an extra 12 minutes to transport times\u2014meaning that urgent, life-saving blood plasma deliveries to the regional clinic are delayed during critical medical emergencies\u2014which priority do you believe the city should favor?",
       "reference_choices": [
         "The city must prioritize hospital transit speed and save lives, even if it means my neighborhood must tolerate the noise/privacy compromises.",
         "The city must prioritize neighborhood tranquility and privacy rights, even if it means medical logistics take longer or cost more."
@@ -77,7 +77,7 @@
       "id": "physical_adjustments_accepted",
       "source_page": 9,
       "trigger": "Q1 acceptance AND Q2 acceptance",
-      "source_impact": "Remove bottleneck cap; illustrative SRL 6–7",
+      "source_impact": "Remove bottleneck cap; illustrative SRL 6\u20137",
       "illustrative_range": [
         6,
         7
@@ -88,7 +88,7 @@
       "id": "remaining_objection",
       "source_page": 9,
       "trigger": "Rejects Q1 OR Q2",
-      "source_impact": "Score drops or stays at SRL 2–3",
+      "source_impact": "Score drops or stays at SRL 2\u20133",
       "illustrative_range": [
         2,
         3
@@ -107,5 +107,6 @@
       "implemented": "Record local-rights policy priority; does not independently establish a numerical cap."
     }
   ],
-  "numerical_update_policy": "Not specified by FN; qualitative conclusions only. Source ranges retained as reference metadata."
+  "numerical_update_policy": "Not specified by FN; qualitative conclusions only. Source ranges retained as reference metadata.",
+  "selection_policy": "Q1 default requires evidenced route opposition/mixed stance and an assessed privacy/data-security objection. Explicit all-reference mode preserves the original questions and labels their premise as hypothetical."
 }

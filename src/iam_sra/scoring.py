@@ -10,7 +10,8 @@ def aggregate(assessment, policy=None):
         phases[str(phase)] = {"assessed": len(vals), "total": sum(c["phase"] == phase for c in CONCERNS.values()), "mean": sum(vals)/len(vals) if len(vals) >= p["phase_minimum_assessed"] else None}
     missing = [i for i in CONCERNS if i not in {c.concern_id for c in assessed}]
     mean = sum(scores)/len(scores) if len(scores) >= p["minimum_assessed"] else None
-    eligible = [c.score for c in assessed if CONCERNS[c.concern_id]["phase"] in p["bottleneck_phases"] and c.score <= p["bottleneck_threshold"]]
+    blockers = [{"concern_id":c.concern_id,"score":c.score,"phase":CONCERNS[c.concern_id]["phase"]} for c in assessed if CONCERNS[c.concern_id]["phase"] in p["bottleneck_phases"] and c.score <= p["bottleneck_threshold"]]
+    eligible = [b["score"] for b in blockers]
     cap = min(eligible)+p["bottleneck_offset"] if p["bottleneck_enabled"] and eligible else None
     adjusted = min(mean, cap) if mean is not None and cap is not None else mean
-    return {"mean":mean, "cap":cap, "adjusted":adjusted, "rounded":int(Decimal(str(adjusted)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)) if adjusted is not None else None, "coverage":f"{len(scores)}/15", "missing":missing, "phases":phases, "policy_version":p["version"]}
+    return {"mean":mean, "cap":cap, "adjusted":adjusted, "rounded":int(Decimal(str(adjusted)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)) if adjusted is not None else None, "coverage":f"{len(scores)}/15", "missing":missing, "phases":phases, "policy_version":p["version"], "trace":{"mean_inputs":[{"concern_id":c.concern_id,"score":c.score} for c in assessed],"denominator":len(scores),"minimum_required":p["minimum_assessed"],"eligible_blockers":blockers,"selected_minimum":min(eligible) if eligible else None,"offset":p["bottleneck_offset"],"bottleneck_enabled":p["bottleneck_enabled"],"threshold":p["bottleneck_threshold"],"cap":cap,"cap_applied":mean is not None and cap is not None and cap < mean,"rounding":p["rounding"],"index_interpretation":p.get("index_interpretation","Experimental ordinal index")}}

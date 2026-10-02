@@ -29,3 +29,19 @@ def test_conditions_are_retrieved_from_actual_passages():
     raw=payload({'noise':3},'p001');raw['acceptance_conditions']=['p002']
     result=parse_assessment(resolve(json.dumps(raw),passages(text)),text)
     assert result.acceptance_conditions==['Only if flights are quiet would I accept.']
+
+
+def test_live_wire_requires_condition_and_facet_fields():
+    schema=reference_schema(Assessment.model_json_schema(),{'p001':'Noise matters.'})
+    definition=schema['$defs']['Concern']
+    assert {'conditional_willingness','conditions','facets','mapping_note'}<=set(definition['required'])
+    assert definition['properties']['conditions']['items']['enum']==['p001']
+
+
+def test_dimension_transport_prevents_empty_evidence_for_assessed_interpretation():
+    schema=reference_schema(Assessment.model_json_schema(),{'p001':'One sentence.'})
+    for name in ['Dimension','Awareness']:
+        absent,present=schema['$defs'][name]['oneOf']
+        assert absent['properties']['excerpts']['const']==[]
+        assert present['properties']['excerpts']['enum']==[['p001']]
+        assert 'unassessed' not in present['properties']['interpretation']['enum']

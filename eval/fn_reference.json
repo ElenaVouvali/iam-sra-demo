@@ -12,6 +12,17 @@
   },
   "mean": 4.25,
   "illustrative_final": 4,
-  "citizen_text": "Look, I get that this is for hospital use and saving lives, which is obviously a vital public service we need to support. But 60 meters is incredibly low. If these drones are buzzing past 15 times a day, that constant electric hum is going to drive me crazy, especially when I'm trying to relax on my balcony in the evening. Plus, knowing there are navigation cameras constantly pointed downward right over my yard and windows makes me deeply uncomfortable—how do I know they aren't recording my family? If they can route them over the industrial park or high enough that I can't hear them or see cameras looking into my property, fine. Otherwise, I completely oppose this route.",
-  "mapping_warning": "Medical benefit support does not establish welfare/equity knowledge. Visual pollution evidence also overlaps altitude/privacy. Reference integers are historical, not forced live targets."
+  "citizen_text": "Look, I get that this is for hospital use and saving lives, which is obviously a vital public service we need to support. But 60 meters is incredibly low. If these drones are buzzing past 15 times a day, that constant electric hum is going to drive me crazy, especially when I'm trying to relax on my balcony in the evening. Plus, knowing there are navigation cameras constantly pointed downward right over my yard and windows makes me deeply uncomfortable\u2014how do I know they aren't recording my family? If they can route them over the industrial park or high enough that I can't hear them or see cameras looking into my property, fine. Otherwise, I completely oppose this route.",
+  "mapping_warning": "FN labels are illustrative, not ground truth. Medical support maps to the medical_public_benefit welfare facet, not equity knowledge. Strict mapping may omit visual_pollution: low altitude and cameras alone do not prove aesthetics. Residential rerouting is a condition, not infrastructure planning.",
+  "defensible_mapping": {
+    "required": [
+      "welfare_equity",
+      "noise",
+      "perceived_safety_privacy"
+    ],
+    "optional": [
+      "visual_pollution"
+    ],
+    "visual_rule": "Only with a separately evidenced visible-physical-intrusion meaning and explicit mapping note; privacy camera visibility alone is insufficient."
+  }
 }

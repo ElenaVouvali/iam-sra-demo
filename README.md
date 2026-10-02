@@ -1,7 +1,7 @@
 # iam-sra-demo
-A guided English chatbot for one experimental IAM assessment: **The Urban Medical Transit Corridor**, from Future Needs’ *SRA_LLM concept feasibility.pdf*. Python owns the state machine, question selection, arithmetic and validation. Qwen/Qwen3-8B interprets citizen text through a separate localhost vLLM server. Sessions stay in memory; JSON export is explicit.
+A guided English chatbot for one experimental IAM assessment: **The Urban Medical Transit Corridor**, from Future Needs’ *SRA_LLM concept feasibility.pdf*. Python owns the state machine, question selection, arithmetic and validation. Qwen/Qwen3-8B maps citizen evidence and independently reviews each supported concern through a separate localhost vLLM server. Readiness combines concern-specific boundaries and conditional willingness; original-route stance stays separate. Sessions stay in memory; JSON export is explicit.
 
-**Experimental demo:** scores are provisional acceptance interpretations for this scenario. This is not a psychometrically validated instrument, an official EU citizen-readiness measure, or a calibrated SRL scale. All 15 concerns are registered; this scenario cannot assess them all. Missing evidence stays unassessed/null. Medical-benefit support, awareness, original-route acceptance and hypothetical conditional acceptance are kept separate.
+**Experimental demo:** scores are provisional conditional-readiness interpretations for this scenario. This is not a psychometrically validated instrument, an official EU citizen-readiness measure, or a calibrated SRL scale. All 15 concerns are registered; this scenario cannot assess them all. Missing evidence stays unassessed/null. Medical-benefit support, awareness, original-route acceptance and hypothetical conditional acceptance are kept separate.
 
 Read [implementation contract](docs/implementation-contract.md), [methodology and FN questions](docs/methodology.md), [deployment](docs/deployment.md) and [verification results](docs/verification.md).
 
@@ -59,7 +59,9 @@ PYTHONPATH=src .venv/bin/python -m pytest -q
 PYTHONPATH=src .venv/bin/python eval/run.py --mock --repeats 1
 # Requires running Qwen server; no implicit mock fallback.
 PYTHONPATH=src .venv/bin/python eval/run.py --repeats 2 --output .runtime/evaluation-live.json
+PYTHONPATH=src .venv/bin/python eval/run.py --held-out --repeats 2 --output .runtime/heldout-live.json
 PYTHONPATH=src .venv/bin/python scripts/smoke.py
+PYTHONPATH=src .venv/bin/python scripts/smoke-ui.py
 ```
 
 Explicit GPU-free UI mode:
@@ -73,7 +75,7 @@ Mock mode is visibly labeled and produces a fixed uncertain, unassessed fixture.
 ## Session flow and limits
 Scenario → citizen answer → initial assessment → relevant hypothetical validation → final report. The initial result can be corrected using a complete restatement plus reason; both snapshots and aggregates remain available. Confirmation checks interpretation, not validity. Q1 addresses shielding only, Q2 a bundled modification, Q3 policy preference. Select “Consider all three hypothetical changes from the PDF” to run every reference question; otherwise questions follow assessed concerns. The final report evaluates the combined p.9 rules and preserves overlapping outcomes and multiple remaining concerns. Unsure stays unresolved. FN’s illustrative score proposals remain reference metadata; there are no numerical validation updates.
 
-Maximum input is 4000 UTF-8 bytes, plus an actual full-chat token budget: prompt + 1600 output tokens ≤4096. Excessive input is rejected, never truncated. The model selects numbered citizen passages; Python retrieves their original wording, while Qwen interprets their meaning in rationales. Schema, evidence, topic eligibility or score-position consistency failures allow at most one retry; transport failures are controlled errors with no invented result. Requests are serialized in the app and server concurrency is one. Timeout is 120 seconds per HTTP request; retries are recounted against the full context limit. Topic eligibility uses conservative English lexical cues and can reject valid alternative wording; it does not guarantee semantic correctness. Logs rotate at 2 MiB with two backups per service; routine logs omit raw citizen text. Exports include citizen text and should be saved deliberately.
+Maximum input is 4000 UTF-8 bytes, plus actual per-call full-chat token budgets of4096. Excessive input is rejected, never truncated. The model selects numbered citizen passages; Python retrieves their original wording, while Qwen interprets their meaning in rationales. One semantic mapping call is followed by one review/scoring call per evidenced topic candidate (up to15), with at most one retry for each call; an overall180-second deadline bounds the assessment. Empty mappings skip scoring. Mapping reserves1400 output tokens, each review300; every full-chat prompt plus reserved output must fit4096. Schema/evidence failures are controlled; transport failures are controlled errors with no invented result. Requests are serialized in the app and server concurrency is one. Timeout is 120 seconds per HTTP request; retries are recounted against the full context limit. Eligibility is interpreted semantically under the15 versioned scopes; Python validates facet membership, IDs, null/range and exact passages. There are no lexical vetoes or stance-to-score bands. Semantic correctness is still provisional. Logs rotate at 2 MiB with two backups per service; routine logs omit raw citizen text. Exports include citizen text and should be saved deliberately.
 
 ## Repository
 - `src/iam_sra/`: UI-independent schemas, assessment, session, scoring, validation and HTTP client.
@@ -81,4 +83,4 @@ Maximum input is 4000 UTF-8 bytes, plus an actual full-chat token budget: prompt
 - `eval/fn_reference.json`: historical fixture (8,3,4,2; mean 4.25; illustrative final 4), never substituted into inference.
 - `tests/`, `eval/`, `scripts/`, `docs/`: checks, synthetic cases, operations and traceability.
 
-No database, RAG, agents, fine-tuning or dashboard. PDF, credentials, weights, environments, logs and exports are excluded from Git. Local Git only; nothing is published or pushed.
+No database, RAG, agents, fine-tuning or dashboard. PDF, credentials, weights, environments, logs and exports are excluded from Git. The main baseline is published; this recalibration branch has not been pushed. See [calibration report](docs/calibration-report.md) and [methodology](docs/methodology.md) for before/after results and source limitations.

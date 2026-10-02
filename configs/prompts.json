@@ -1,5 +1,9 @@
 {
-  "version": "2.0.0",
+  "version": "3.3.0",
   "assessment": "prompts/assessment.txt",
-  "evidence_selection": "numbered_passages_v1"
+  "evidence_selection": "numbered_passages_v1",
+  "construct": "concern_specific_conditional_scenario_readiness",
+  "calls": "One semantic mapping call followed by one independent evidence review/scoring call per assessed candidate (maximum15). One retry per call, maximum32 calls total. Unassessed candidates do not invoke scoring. No application score substitution.",
+  "mapping": "prompts/assessment.txt",
+  "scoring": "prompts/scoring.txt"
 }

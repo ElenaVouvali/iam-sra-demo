@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0-experimental",
+  "version": "2.0.0-experimental",
   "minimum_assessed": 3,
   "phase_minimum_assessed": 1,
   "rounding": "half_up",
@@ -10,16 +10,19 @@
   "bottleneck_threshold": 3,
   "bottleneck_offset": 2,
   "phase_aggregation": "mean_assessed",
-  "aggregate_label": "Experimental scenario summary; not calibrated SRL",
+  "aggregate_label": "Provisional FN-aligned scenario readiness",
   "anchors": {
-    "1": "Explicit categorical opposition to this concern in the current scenario",
-    "2": "Strong opposition with a stated boundary",
-    "3": "Opposition with possible conditions",
-    "4": "Leans against; conditions not yet met",
-    "5": "Explicit mixed acceptance and opposition about this concern; uncertainty without a position remains unassessed",
-    "6": "Tentative acceptance with substantial reservations",
-    "7": "Conditional acceptance with specific manageable reservations",
-    "8": "Clear acceptance of this concern with minor reservations",
-    "9": "Explicit unqualified acceptance of this concern"
-  }
+    "1": "Explicit categorical refusal for this concern even under any stated modification; never infer from current-route rejection alone.",
+    "2": "Strong personal boundary with very limited tolerance; may accept only if the intrusive effect is removed or avoided. Conditional openness does not erase the boundary.",
+    "3": "Strong concrete disruption objection; accepts only after substantial mitigation, removal or avoidance of that effect.",
+    "4": "Localized intrusion/reservation with conditional openness requiring a meaningful change.",
+    "5": "Balanced concern-specific willingness and reservations; uncertainty without a position stays null.",
+    "6": "Cautious acceptance with limited reservations and willingness to tolerate some impact; NOT merely accepting after an intolerable effect is eliminated.",
+    "7": "Qualified acceptance with manageable reservations or conditions, tolerating some impact rather than requiring elimination of a strong boundary.",
+    "8": "Clear concern-specific support, including medical-public-service welfare support; other concern opposition is separate.",
+    "9": "Explicit unqualified endorsement of the assessed concern facet; no inferred global readiness."
+  },
+  "rubric_version": "2.0.0-experimental",
+  "index_interpretation": "Illustrative arithmetic index over ordinal concern scores; not a calibrated measurement.",
+  "bottleneck_rationale": "Experimental generalization of FN p.7 minimum privacy score 2 plus 2: eligible assessed phase-1 scores <=3, minimum plus 2. No claim FN establishes a universal threshold or offset."
 }

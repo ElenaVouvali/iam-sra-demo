@@ -7,12 +7,14 @@ from test_core import payload
 def test_ui_full_validation_and_export(monkeypatch):
     from iam_sra.assessment import parse_assessment
     def interpret(self,text):
-        return parse_assessment(json.dumps(payload({'noise':3,'visual_pollution':4,'perceived_safety_privacy':2},text)),text)
+        data=payload({'noise':3,'visual_pollution':4,'perceived_safety_privacy':2},text)
+        data['current_route_stance']={**data['current_route_stance'],'interpretation':'opposed'}
+        return parse_assessment(json.dumps(data),text)
     monkeypatch.setenv('IAM_MOCK','0')
     monkeypatch.setattr('iam_sra.llm_client.LLMClient.__call__',interpret)
     app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
     app.button[1].click().run()
-    app.text_area[0].set_value('Noise, visible drones and cameras worry me.')
+    app.text_area[0].set_value('I oppose this route. Noise, visible drones and cameras worry me.')
     app.button[1].click().run()
     assert not app.exception
     original=app.session_state.session.original.model_dump()

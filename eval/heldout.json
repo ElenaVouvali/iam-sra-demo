@@ -1,0 +1,108 @@
+[
+  {
+    "id": "held_health_local",
+    "text": "I value rapid delivery of donor tissue between hospitals; that public health service has my support. The proposed corridor is unacceptable: whining motors would spoil evening rest and cameras could watch us through our windows. I would agree if the aircraft were inaudible and unable to view private interiors.",
+    "required_concerns": [
+      "welfare_equity",
+      "noise",
+      "perceived_safety_privacy"
+    ],
+    "optional_concerns": [],
+    "expected_stance": "opposed",
+    "expected_medical_support": "supported",
+    "expected_conditions": true,
+    "expected_willingness": {
+      "noise": "willing",
+      "perceived_safety_privacy": "willing",
+      "welfare_equity": "not_stated"
+    },
+    "score_ranges": {
+      "welfare_equity": [
+        7,
+        9
+      ],
+      "noise": [
+        2,
+        4
+      ],
+      "perceived_safety_privacy": [
+        2,
+        4
+      ]
+    },
+    "label_origin": "Developer expectation frozen after prompt3.3/schema3.5; not used for subsequent model/prompt tuning. Synthetic, not calibrated truth."
+  },
+  {
+    "id": "held_route_accept",
+    "text": "Yes, use the proposed corridor. I can live with the audible motors; a reduction would be a bonus, not a requirement. I support its lifesaving hospital purpose.",
+    "required_concerns": [
+      "noise",
+      "welfare_equity"
+    ],
+    "optional_concerns": [],
+    "expected_stance": "supported",
+    "expected_medical_support": "supported",
+    "expected_conditions": false,
+    "expected_willingness": {
+      "welfare_equity": "not_stated"
+    },
+    "score_ranges": {
+      "noise": [
+        6,
+        8
+      ],
+      "welfare_equity": [
+        7,
+        9
+      ]
+    },
+    "label_origin": "Developer expectation frozen after prompt3.3/schema3.5; not used for subsequent model/prompt tuning. Synthetic, not calibrated truth."
+  },
+  {
+    "id": "held_camera_not_visual",
+    "text": "Visually, the aircraft do not bother me. I oppose their cameras peering into our living room. I would agree to the corridor if no view of the interior were possible.",
+    "required_concerns": [
+      "visual_pollution",
+      "perceived_safety_privacy"
+    ],
+    "optional_concerns": [],
+    "expected_stance": "opposed",
+    "expected_medical_support": "unassessed",
+    "expected_conditions": true,
+    "expected_willingness": {
+      "perceived_safety_privacy": "willing"
+    },
+    "score_ranges": {
+      "visual_pollution": [
+        7,
+        9
+      ],
+      "perceived_safety_privacy": [
+        2,
+        4
+      ]
+    },
+    "label_origin": "Developer expectation frozen after prompt3.3/schema3.5; not used for subsequent model/prompt tuning. Synthetic, not calibrated truth."
+  },
+  {
+    "id": "held_refuse_quiet",
+    "text": "The drone buzz makes me reject these flights. Even eliminating the buzz, removing evening operations and moving the route away would not change my refusal.",
+    "required_concerns": [
+      "noise"
+    ],
+    "optional_concerns": [],
+    "expected_stance": "opposed",
+    "expected_medical_support": "unassessed",
+    "expected_conditions": false,
+    "expected_willingness": {
+      "noise": "not_willing"
+    },
+    "score_ranges": {
+      "noise": [
+        1,
+        2
+      ]
+    },
+    "label_origin": "Developer expectation frozen after prompt3.3/schema3.5; not used for subsequent model/prompt tuning. Synthetic, not calibrated truth."
+  }
+]
