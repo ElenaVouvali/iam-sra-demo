@@ -36,6 +36,15 @@ def test_guided_api_and_no_thinking(monkeypatch):
     body=calls[1][1]
     assert body['chat_template_kwargs']=={'enable_thinking':False}
     assert 'guided_json' in body and 'structured_outputs' not in body
+    retained,excluded=calls[3][1]['guided_json']['$defs']['ScoreDecision']['oneOf']
+    review=retained['properties']['excerpts']
+    assert review=={'type':'array','enum':[['p001']]}
+    assert retained['properties']['scope_supported']['const'] is True
+    assert retained['properties']['score']['enum']==list(range(1,10))
+    assert excluded['properties']['score']['const'] is None
+    facets=retained['properties']['facets']['enum']
+    assert all(len(fs)==len(set(fs)) and len(fs)<=2 for fs in facets)
+    assert [CONCERNS['noise']['facets'][0]] in facets
 @pytest.mark.parametrize('invalid',[{'finish_reason':'length','message':{'content':'{}'}},{'finish_reason':'stop','message':{'content':'<think>secret</think>{}'}},{'finish_reason':'stop','message':{'content':'{}','reasoning_content':'secret'}},{'finish_reason':'stop','message':{'content':'{'} }])
 def test_bounded_failure(monkeypatch,invalid):
     calls=fake_client(monkeypatch,[invalid,invalid])

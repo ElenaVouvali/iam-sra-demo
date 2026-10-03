@@ -96,3 +96,39 @@ PYTHONPATH=src .venv/bin/python scripts/smoke-ui.py
 ```
 
 `--capture-raw` is explicit synthetic-evaluation capture, not routine logging. Every HTTP call budgets the full chat against4096 tokens; mapping reserves1400 output tokens and each review300. Up to15 reviews and one retry per call are bounded by180 seconds overall. Extra calls add latency. No silent input truncation, canned FN output, individual-score offset or live mock fallback is used.
+
+## Evidence transport repair (2026-10-03)
+
+Interactive FN assessments failed on too many excerpts and subsequently a
+root-level consistency error. Live reproduction identified the latter as
+`Duplicate facet`, not an arithmetic or citizen-input failure. The pinned
+backend cannot enforce the removed `maxItems` bound; prompt-only limits and
+generic retry feedback were insufficient.
+
+The scoring transport now uses literal array enums for one strongest evidence
+passage (or empty for exclusions) and zero to two distinct canonical facets.
+The full original citizen text remains the interpretation input and conditions
+are retrieved separately. This limits displayed supporting-excerpt selection,
+not the evidence available to the model. Local evidence/null/type/score checks
+remain intact. Consistency failures now include the violated rule in bounded
+retry feedback and the user error, without echoing citizen text.
+
+After repair, three consecutive real Qwen/V100 FN-reference assessments
+completed: two returned welfare8/noise3/privacy2 (31.59s, 30.96s); the third also
+scored infrastructure/land-use2 (39.24s). That extra mapping remains an empirical
+scope discrepancy: rerouting alone should not establish infrastructure planning.
+These runs verify successful execution, not calibrated scores or stable semantic
+mapping. Diagnostic traces of these explicitly synthetic checks are ignored
+under `.runtime/evidence-fix-repeats.json`. All214 offline tests passed.
+
+The pasted version with original line breaks and joined `orsee` then exposed
+an assessed record with missing facets/evidence. The scoring schema now has
+separate retained/excluded branches: retained requires nonempty canonical
+facets and evidence, supported scope, assessed status and an integer1–9;
+excluded/needs-clarification requires unassessed status and a null score.
+These enforce existing invariants, rather than supplying missing model evidence.
+The exact pasted version then completed live in30.03 seconds with
+welfare8/noise3/privacy2 and no additional assessed concern. The final repaired
+schema passed all214 offline tests. This single successful exact-input run does
+not guarantee future semantic agreement; traces are in ignored
+`.runtime/fn-pasted-repaired-trace.json`.

@@ -1,5 +1,6 @@
 """Bounded semantic mapping followed by independent per-concern review."""
 import hashlib
+import copy
 import json
 import threading
 import time
@@ -25,6 +26,10 @@ def guided_schema(value):
 def schema_error(exc):
     if isinstance(exc,ValidationError):
         fields=", ".join(".".join(map(str,e['loc']))+":"+e['type'] for e in exc.errors()[:3])
+        bounds=[".".join(map(str,e['loc']))+" must contain at most "+str(e['ctx']['max_length'])+" items; select the most relevant evidence IDs" for e in exc.errors()[:3] if e['type']=='too_long' and 'max_length' in e.get('ctx',{})]
+        if bounds:fields+='; '+ '; '.join(bounds)
+        rules=[str(e.get('ctx',{}).get('error','')) for e in exc.errors()[:3] if e['type']=='value_error']
+        if rules:fields+='; '+ '; '.join(r for r in rules if r)
         return AssessmentError("Model schema failure at "+fields+"; no assessment saved.",code="schema")
     return AssessmentError("Model JSON/schema checks failed; no assessment saved.",code="schema")
 
@@ -118,8 +123,25 @@ class LLMClient:
                         score_def['required']=list(score_def['properties'])
                         score_def['properties']['concern_id']={"type":"string","const":cid}
                         score_def['properties']['conditions']['items']={"type":"string","enum":list(sources)}
-                        score_def['properties']['excerpts']['items']={"type":"string","enum":list(sources)}
-                        score_def['properties']['facets']['items']={"type":"string","enum":definition['facets']}
+                        # This pinned backend drops maxItems. Literal array enums
+                        # enforce a bounded evidence selection during generation.
+                        # Every passage remains eligible; conditions are separate.
+                        score_def['properties']['excerpts']={"type":"array","enum":[[]]+[[ref] for ref in sources]}
+                        allowed=definition['facets']
+                        score_def['properties']['facets']={"type":"array","enum":[[]]+[[f] for f in allowed]+[[a,b] for i,a in enumerate(allowed) for b in allowed[i+1:]]}
+                        retained=copy.deepcopy(score_def)
+                        excluded=copy.deepcopy(score_def)
+                        rp=retained['properties'];ep=excluded['properties']
+                        rp['status']={'type':'string','const':'assessed'}
+                        rp['decision']={'type':'string','const':'retained'}
+                        rp['scope_supported']={'type':'boolean','const':True}
+                        rp['score']={'type':'integer','enum':list(range(1,10))}
+                        for field in ['excerpts','facets']:
+                            rp[field]['enum']=[items for items in rp[field]['enum'] if items]
+                        ep['status']={'type':'string','const':'unassessed'}
+                        ep['decision']={'type':'string','enum':['excluded','needs_clarification']}
+                        ep['score']={'type':'null','const':None}
+                        score_schema['$defs']['ScoreDecision']={'oneOf':[retained,excluded]}
                         def validate_score(raw):
                             batch=ScoreBatch.model_validate_json(raw)
                             if len(batch.concern_scores)!=1 or batch.concern_scores[0].concern_id!=cid:

@@ -1,0 +1,3 @@
+[server]
+# Shared hosts may exhaust inotify watches. Restart the UI after code changes.
+fileWatcherType = "none"
