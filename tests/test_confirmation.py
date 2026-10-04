@@ -50,7 +50,7 @@ def started(client=None):
     c=client or Fake();s=Session();s.begin();s.submit('Noise bothers me.',c);return s,c
 
 def initially_scored(client=None):
-    s,c=started(client);s.confirm(True);s.score_initial(c);return s,c
+    s,c=started(client);s.finish_discovery();s.confirm(True);s.score_initial(c);return s,c
 
 def test_submit_has_no_numbers_or_hidden_scoring():
     s,c=started()
@@ -62,12 +62,12 @@ def test_submit_has_no_numbers_or_hidden_scoring():
 
 
 def test_edit_invalidates_confirmation_and_reaches_numeric_review():
-    s,c=started();s.confirm(True)
+    s,c=started();s.finish_discovery();s.confirm(True)
     c.next=meaning('C1.testimony',position='supported')
     s.correct('noise','I accept the hum.','The first interpretation was incorrect.',c)
     assert s.state==State.INTERPRETATION and s.confirmed is None and s.initial is None
     with pytest.raises(ValueError):s.score_initial(c)
-    s.confirm(True);s.score_initial(c)
+    s.finish_discovery();s.confirm(True);s.score_initial(c)
     assert c.calls[-1][2]['meaning']['concerns'][0]['position']=='supported'
     assert 'C1.testimony' in c.calls[-1][2]['evidence']
     assert next(x for x in s.initial['assessment']['concerns'] if x['concern_id']=='noise')['score']==8
@@ -75,7 +75,7 @@ def test_edit_invalidates_confirmation_and_reaches_numeric_review():
 
 
 def test_frozen_record_mutation_is_detected():
-    s,c=started();s.confirm(True);s.confirmed['meaning']['concerns'][0]['position']='supported'
+    s,c=started();s.finish_discovery();s.confirm(True);s.confirmed['meaning']['concerns'][0]['position']='supported'
     with pytest.raises(AssessmentError,match='changed'):s.score_initial(c)
     assert not any(call[0]=='score' for call in c.calls)
 
@@ -191,7 +191,7 @@ def test_q1_needs_privacy_facet_not_personal_safety_only():
 
 
 def test_session_isolation():
-    a,c=started();b=Session();a.confirm(True)
+    a,c=started();b=Session();a.finish_discovery();a.confirm(True)
     assert b.evidence=={} and b.confirmations==[] and b.state==State.SCENARIO
 
 
@@ -218,7 +218,7 @@ def test_caps_recomputed_per_profile_without_question_bonuses():
 
 
 def test_scoring_insufficiency_returns_to_clarification_and_saves_no_result():
-    s,c=started();s.confirm(True)
+    s,c=started();s.finish_discovery();s.confirm(True)
     def reject(*args,**kwargs):raise AssessmentError('Clarify noise: insufficient evidence',code='clarification')
     c.score=reject
     with pytest.raises(AssessmentError):s.score_initial(c)

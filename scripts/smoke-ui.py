@@ -17,6 +17,7 @@ try:
  app.text_area(key='citizen_answer').set_value(json.loads((ROOT/'eval/fn_reference.json').read_text())['citizen_text'])
  report['stage']='interpretation';click(app,'Interpret response')
  assert app.session_state.session.initial is None and not app.metric
+ if any(b.label=='Finish discovery' for b in app.button):click(app,'Finish discovery')
  next(c for c in app.checkbox if c.label=='This interpretation reflects what I meant').check().run()
  click(app,'Confirm meaning');report['stage']='initial scoring';click(app,'Calculate initial provisional scores')
  original=app.session_state.session.initial

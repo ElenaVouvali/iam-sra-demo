@@ -30,6 +30,18 @@ class Session:
     evidence: dict = field(default_factory=dict)
     draft: MappingAssessment | None = None
     version: int = 0
+    discovery_finished: bool = False
+    discovery_stop_reason: str | None = None
+    discovery_questions: list = field(default_factory=list)
+    discovery_responses: list = field(default_factory=list)
+    discovery_topics: list = field(default_factory=list)
+    discovery_events: list = field(default_factory=list)
+    blockers: dict = field(default_factory=dict)
+    acceptable_changes: dict = field(default_factory=dict)
+    unmapped_issues: list = field(default_factory=list)
+    no_reservations: bool = False
+    reasons_explicit: bool | None = None
+    discovery_candidate_exclusions: list = field(default_factory=list)
     corrections: list = field(default_factory=list)
     interpretations: list = field(default_factory=list)
     confirmations: list = field(default_factory=list)
@@ -57,6 +69,7 @@ class Session:
 
     def _record(self,client,stage):
         self.inference.append({'stage':stage,'version':self.version,'diagnostics':deepcopy(getattr(client,'last_diagnostics',[])),
+            'raw_model_trace':deepcopy(getattr(client,'last_trace',[])),
             'settings':deepcopy(getattr(client,'last_settings',{})), 'raw_model_scores':deepcopy(getattr(client,'last_raw_scores',{})),
             'candidate_projections':deepcopy(getattr(client,'last_candidate_projections',[]))})
 
@@ -68,12 +81,154 @@ class Session:
         self._require(State.ANSWER);check_input(text)
         items={f'O.{k}':EvidenceItem(id=f'O.{k}',text=v,context='original',source='citizen_original') for k,v in passages(text).items()}
         result=client.interpret(items)
+        self._record(client,'interpretation attempt')
+        facts=client.discovery_facts(items) if hasattr(client,'discovery_facts') else None
         self.text=text;self.evidence=items;self.draft=result.model_copy(deep=True)
-        self.version=1;self._remember('initial proposal');self._record(client,'interpretation')
+        self.version=1;self._remember('initial proposal')
         self.state=State.INTERPRETATION
+        if facts is not None:
+            self._apply_discovery_facts(facts,items)
+            self._record(client,'discovery metadata')
+
+    def _apply_discovery_facts(self,facts,items):
+        self.reasons_explicit=facts.reasons_explicit
+        if not facts.reasons_explicit:
+            for candidate in self.draft.concerns:
+                self.discovery_candidate_exclusions.append(candidate.concern_id)
+                candidate.status='needs_clarification';candidate.mapping_note='ambiguous_needs_clarification'
+                candidate.position='unassessed';candidate.conditional_willingness='not_stated'
+                candidate.facets=[];candidate.excerpts=[];candidate.conditions=[]
+                candidate.rationale='No specific topic meaning was established by the score-free evidence review; please clarify.'
+            self.draft.acceptance_conditions=[]
+            self._remember('discovery sufficiency check')
+        if facts.no_reservations and self.draft.current_route_stance.interpretation=='supported' and not any(c.status=='mapped' and (c.position in {'opposed','mixed'} or c.conditions) for c in self.draft.concerns):
+            self.no_reservations=True
+        for boundary in facts.blockers:
+            self.blockers[boundary.concern_id]={'status':boundary.status,'evidence_ids':boundary.excerpts,'provenance':'model_proposed_explicit_boundary','confirmed':False}
+        for wording in facts.unmapped_issues:
+            self._add_unmapped(wording,[k for k,v in items.items() if wording in v.text])
+
+    def _add_unmapped(self,wording,refs):
+        if any(i['wording']==wording for i in self.unmapped_issues):return
+        self.unmapped_issues.append({'id':'U'+str(len(self.unmapped_issues)+1),'wording':wording,'status':'unmapped','evidence_ids':refs,'context':'original'})
+
+    @property
+    def discovery_question(self):
+        from .discovery import next_question
+        self._require(State.INTERPRETATION)
+        question=next_question(self)
+        if question and not any(q['id']==question['id'] for q in self.discovery_questions):
+            self.discovery_questions.append(deepcopy(question))
+            key=question['id']+'.question'
+            self.evidence[key]=EvidenceItem(id=key,text=question['text'],context='original',source='question',question_id=question['id'])
+        elif question:
+            # Reuse the already presented question, so a retry cannot change its context.
+            question=next(q for q in self.discovery_questions if q['id']==question['id'])
+        return deepcopy(question)
+
+    def finish_discovery(self,reason='user_finish'):
+        self._require(State.INTERPRETATION)
+        self.discovery_finished=True;self.discovery_stop_reason=reason
+        key='DE'+str(len(self.discovery_events)+1)+'.finish'
+        self.evidence[key]=EvidenceItem(id=key,text='Discovery ended: '+reason+'. Unanswered topics remain unknown.',context='original',source='citizen_control' if reason=='user_finish' else 'application_control')
+        self.discovery_events.append({'id':key,'evidence_id':key,'action':'finish','reason':reason,'context':'original','policy_version':config('discovery')['version'],'after_answers':len(self.discovery_responses),'citizen_control':reason=='user_finish'})
+
+    def respond_discovery(self,selections,text,client,facets=None,skip=False):
+        self._require(State.INTERPRETATION)
+        q=self.discovery_question
+        if q is None:raise ValueError('No discovery question is pending.')
+        selections=list(selections);facets=list(facets or [])
+        if len(selections)!=len(set(selections)) or any(x not in q['choices'] for x in selections):raise ValueError('Select an offered answer.')
+        if not q['multiple'] and len(selections)>1:raise ValueError('Select one answer for this question.')
+        if any(f not in q['facets'] for f in facets):raise ValueError('Select a facet for this topic.')
+        if skip:selections=[];text='';facets=[]
+        if text:check_input(text)
+        if not skip and not selections and not text.strip() and not facets:raise ValueError('Choose an answer, add your own words, or Skip.')
+        if 'no_reservations' in selections and (len(selections)>1 or text.strip()):raise ValueError('Confirm no reservations on its own, or describe your reservations instead.')
+        items={};labels=config('discovery')['choice_labels'];cid=q['concern_id']
+        if skip:
+            key=q['id']+'.skip';items[key]=EvidenceItem(id=key,text='I skip this question; no position is inferred.',context='original',source='citizen_control',question_id=q['id'])
+        for index,choice in enumerate(selections):
+            key=q['id']+f'.selection{index+1}'
+            if choice in CONCERNS or choice in {'other','cannot_specify'}:
+                wording='Topic to explore (no position or severity stated): '+(CONCERNS[choice]['label'] if choice in CONCERNS else labels[choice])
+            else:
+                wording=labels[choice]
+                if cid:wording='My position on the '+CONCERNS[cid]['label']+' aspect of the unchanged original proposal: '+{'supported':'I accept this aspect','opposed':'I reject this aspect','mixed':'I accept some parts of this aspect; others need changes','uncertain':'I am unsure about this aspect'}.get(choice,wording)
+                if q['kind']=='blocker':wording=q['text']+' My answer: '+labels[choice]+'.'
+                if q['kind']=='changes':wording='Could a change make '+CONCERNS[cid]['label']+' acceptable in the original proposal? My answer: '+labels[choice]+'.'
+            items[key]=EvidenceItem(id=key,text=wording,context='original',source='citizen_choice',question_id=q['id'])
+        if facets:
+            key=q['id']+'.facets';items[key]=EvidenceItem(id=key,text='Aspects to explore (no severity stated): '+', '.join(facets),context='original',source='citizen_choice',question_id=q['id'])
+        if text.strip():
+            key=q['id']+'.text';items[key]=EvidenceItem(id=key,text=text,context='original',source='citizen_discovery',question_id=q['id'])
+        # Selection-only topic nominations and boundaries cannot cause mapping/scoring.
+        patch=None
+        semantic_items={k:v for k,v in items.items() if k.endswith('.text') or (q['kind'] in {'stance','topic'} and '.selection' in k and not any(token in v.text for token in ['Topic to explore','Cannot specify'])) or (q['kind']=='reasons' and 'no_reservations' in selections)}
+        if semantic_items and facets:semantic_items[q['id']+'.facets']=items[q['id']+'.facets']
+        if semantic_items:
+            patch=client.interpret(semantic_items,context='original',proposal=SCENARIO['text']+'\nClarification question (background only): '+q['text'],target=cid if cid else None)
+        # Commit only after successful inference. Retries reuse IDs/drafts without losing evidence.
+        self.evidence.update(items)
+        if patch:
+            for new in patch.concerns:
+                if cid and new.concern_id!=cid:continue
+                old=next((c for c in self.draft.concerns if c.concern_id==new.concern_id),None)
+                if old and new.concern_id in self.discovery_candidate_exclusions:
+                    # No topic evidence existed in the original bare stance. Replace that
+                    # unconfirmed candidate; retain its history, never inherit its inferred stance.
+                    old=None;self.discovery_candidate_exclusions.remove(new.concern_id)
+                if old and old.position in {'supported','opposed'} and new.position in {'supported','opposed'} and old.position!=new.position:
+                    self.conflicts['original:'+new.concern_id]={'target':new.concern_id,'before':old.model_dump(),'proposed':new.model_dump(),
+                        'question':'Your statements differ about '+CONCERNS[new.concern_id]['label']+'. Correct this meaning in your own words before confirmation.'}
+                    continue
+                if old:
+                    combined=new.model_dump()
+                    combined['facets']=list(dict.fromkeys(old.facets+new.facets))
+                    combined['excerpts']=list(dict.fromkeys(old.excerpts+new.excerpts))
+                    combined['conditions']=list(dict.fromkeys(old.conditions+new.conditions))
+                    if new.conditional_willingness=='not_stated':combined['conditional_willingness']=old.conditional_willingness
+                    if new.position=='unassessed':combined['position']=old.position
+                    from .schemas import MappingConcern
+                    try:new=MappingConcern.model_validate(combined)
+                    except ValueError:
+                        self.conflicts['original:'+new.concern_id]={'target':new.concern_id,'question':'Several meanings need consolidation. Correct this topic in your own words before confirming.'}
+                        continue
+                self.draft.concerns=[c for c in self.draft.concerns if c.concern_id!=new.concern_id]+[new.model_copy(deep=True)]
+            for name in ['current_route_stance','medical_public_benefit_support','awareness_understanding']:
+                if cid:continue
+                new=getattr(patch,name);old=getattr(self.draft,name)
+                if new.interpretation=='unassessed':continue
+                if old.interpretation in {'supported','opposed'} and new.interpretation in {'supported','opposed'} and old.interpretation!=new.interpretation:
+                    self.conflicts['original:'+name]={'target':name,'question':'Your statements differ about '+name.replace('_',' ')+'. Correct this meaning before confirmation.'}
+                else:setattr(self.draft,name,new.model_copy(deep=True))
+            condition_refs=list(dict.fromkeys(r for c in self.draft.concerns for r in c.conditions))
+            # All conditions remain per concern/evidence; a root summary is bounded by its existing schema.
+            self.draft.acceptance_conditions=condition_refs if len(condition_refs)<=5 else []
+            self._record(client,'discovery interpretation')
+        for choice in selections:
+            if choice in CONCERNS and choice not in self.discovery_topics:self.discovery_topics.append(choice)
+        if 'no_reservations' in selections:self.no_reservations=True
+        if 'other' in selections and not (patch and patch.concerns):
+            self._add_unmapped(text.strip() or 'Other',[k for k in items if k.endswith('.text') or '.selection' in k])
+        if q['kind']=='blocker' and selections:
+            self.blockers[cid]={'status':selections[0],'evidence_ids':list(items),'provenance':'citizen_choice','confirmed':False}
+        if q['kind']=='changes':
+            self.acceptable_changes[cid]={'status':selections[0] if selections else 'unsure','text':text,'evidence_ids':list(items)}
+        if q['kind']=='unmapped':
+            issue=next(i for i in self.unmapped_issues if i['id']==q['issue_id'])
+            issue['clarification']=text;issue['clarification_evidence_ids']=list(items)
+        self.discovery_responses.append({'question_id':q['id'],'selection_key':q['selection_key'],'selections':selections,'free_text':text,'selected_facets':facets,
+            'skipped':skip,'context':'original','concern_id':cid,'issue_id':q['issue_id'],'evidence_ids':list(items),'selection_reason':q['selection_reason'],'policy_version':q['policy_version']})
+        self._invalidate();self._remember('discovery')
+        from .discovery import next_question
+        if len(self.discovery_responses)>=config('discovery')['maximum_questions']:self.finish_discovery('question_limit')
+        elif next_question(self) is None:self.finish_discovery('sufficient_or_unknown_after_skips')
 
     def _invalidate(self):
         self.confirmed=None;self.updated_confirmed=None;self.conditional_confirmed=None
+        for boundary in self.blockers.values():boundary['confirmed']=False
+        if any(c.status=='mapped' and (c.position in {'opposed','mixed'} or c.conditions) for c in self.draft.concerns) or self.draft.current_route_stance.interpretation!='supported':self.no_reservations=False
         self._final=None;self._conditional=None
         self.version+=1
         self.state=State.UPDATED if self._initial else State.INTERPRETATION
@@ -106,14 +261,41 @@ class Session:
             'before':before,'after':self.draft.model_dump()})
         self._invalidate();self._remember('correction');self._record(client,'correction interpretation')
 
+    def correct_blocker(self,cid,status,text=''):
+        self._require(State.INTERPRETATION,State.CONFIRMED,State.UPDATED,State.UPDATE_CONFIRMED)
+        if cid not in self.blockers or status not in {'yes','no','unsure'}:raise ValueError('Select an existing boundary and Yes, No or Unsure.')
+        if text:check_input(text)
+        prefix='B'+str(len(self.corrections)+1)
+        before=deepcopy(self.blockers[cid])
+        key=prefix+'.choice'
+        self.evidence[key]=EvidenceItem(id=key,text='Would '+CONCERNS[cid]['label']+' alone make the ORIGINAL proposal unacceptable even if other concerns were addressed? My answer: '+status,context='original',source='citizen_choice')
+        refs=[key]
+        if text:
+            ref=prefix+'.text';self.evidence[ref]=EvidenceItem(id=ref,text=text,context='original',source='citizen_correction');refs.append(ref)
+        self.blockers[cid]={'status':status,'evidence_ids':refs,'provenance':'citizen_corrected_boundary','confirmed':False}
+        self.corrections.append({'id':prefix,'target':'blocker:'+cid,'citizen_text':text,'before':before,'after':deepcopy(self.blockers[cid]),'evidence_ids':refs,'context':'original'})
+        self._invalidate();self._remember('boundary correction')
+
     def confirm(self,agreed):
         self._require(State.INTERPRETATION)
         if agreed is not True:raise ValueError('Explicit confirmation is required before scoring.')
         if self.conflicts:raise ValueError('Resolve the targeted clarification questions before confirmation.')
-        self.confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history())
+        from .discovery import next_question
+        if not self.discovery_finished and next_question(self) is not None:raise ValueError('Answer the next discovery question, Skip it, or Finish discovery before confirming.')
+        if not self.discovery_finished:self.finish_discovery('sufficient')
+        for boundary in self.blockers.values():boundary['confirmed']=True
+        self.confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history(),acceptance_boundaries=self._discovery_boundaries())
         self.confirmations.append(deepcopy(self.confirmed));self.state=State.CONFIRMED
 
+    def _discovery_boundaries(self):
+        return {'policy_version':config('discovery')['version'],'blockers':deepcopy(self.blockers),
+            'acceptable_changes':deepcopy(self.acceptable_changes),'no_reservations':self.no_reservations,
+            'unmapped_issues':deepcopy(self.unmapped_issues),
+            'conditions_from_confirmed_meaning':{c.concern_id:{'conditional_willingness':c.conditional_willingness,'evidence_ids':c.conditions} for c in self.draft.concerns if c.conditions or c.conditional_willingness!='not_stated'}}
+
     def _supporting_history(self):
+        # A bare overall stance is not concern-specific historical support.
+        if self.reasons_explicit is False:return {}
         history={}
         for version in self.interpretations:
             for c in version['model_proposed_meaning']['concerns']:
@@ -311,7 +493,8 @@ class Session:
         if agreed is not True:raise ValueError('Explicit updated-meaning confirmation is required.')
         if self.conflicts:raise ValueError('Resolve conflicting answers before confirming.')
         if self.joint_required and self.joint is None:raise ValueError('Respond to the exact combined proposal first, including unsure.')
-        self.updated_confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history())
+        for boundary in self.blockers.values():boundary['confirmed']=True
+        self.updated_confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history(),acceptance_boundaries=self._discovery_boundaries())
         if self.joint and self.joint['choice']!='unsure':
             self.conditional_confirmed=freeze(self.conditional_draft,self.evidence,self.version,'modified',self.joint['proposal'])
         self.confirmations.extend(deepcopy([c for c in [self.updated_confirmed,self.conditional_confirmed] if c]))
@@ -372,9 +555,10 @@ class Session:
 
     def export(self):
         self._require(State.FINAL)
-        return deepcopy({'experimental':True,'schema_version':'4.0.0','versions':{'assessment_schema':SCHEMA_VERSION,'registry':REGISTRY['version'],
+        from .discovery import report
+        return deepcopy({'experimental':True,'schema_version':'4.1.0','discovery':report(self),'versions':{'assessment_schema':SCHEMA_VERSION,'registry':REGISTRY['version'],
             'scenario':SCENARIO['version'],'rubric':POLICY['rubric_version'],'scoring':POLICY['version'],
-            'reassessment':config('reassessment'),'model':config('model'),'prompts':config('prompts')},
+            'discovery':config('discovery'),'reassessment':config('reassessment'),'model':config('model'),'prompts':config('prompts')},
             'citizen_text':self.text,'evidence':{k:v.model_dump() for k,v in self.evidence.items()},
             'interpretations':self.interpretations,'confirmations':self.confirmations,'corrections':self.corrections,
             'initial':self._initial,'final_original':self._final,'conditional':self._conditional,

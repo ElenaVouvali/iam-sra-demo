@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from .schemas import MappingAssessment
 from .assessment import AssessmentError
 
-INTERPRETATION_VERSION = '1.1.0'
+INTERPRETATION_VERSION = '1.2.0'
 
 class EvidenceItem(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True, frozen=True)
@@ -30,11 +30,11 @@ def check_meaning(meaning, evidence, context):
             raise AssessmentError('Interpretation cites missing, non-citizen or wrong-context evidence; clarify before scoring.',code='evidence')
     return meaning
 
-def freeze(meaning, evidence, version, context, proposal, actor='user', supporting_history=None):
+def freeze(meaning, evidence, version, context, proposal, actor='user', supporting_history=None, acceptance_boundaries=None):
     check_meaning(meaning,evidence,context)
     payload={'schema':INTERPRETATION_VERSION,'version':version,'context':context,'proposal':proposal,
         'meaning':meaning.model_dump(),'evidence':{k:v.model_dump() for k,v in evidence.items() if v.context==context},
-        'confirmation':{'actor':actor,'meaning_only':True},'supporting_history_by_concern':deepcopy(supporting_history or {})}
+        'confirmation':{'actor':actor,'meaning_only':True},'acceptance_boundaries':deepcopy(acceptance_boundaries or {}),'supporting_history_by_concern':deepcopy(supporting_history or {})}
     return {**deepcopy(payload),'sha256':digest(payload)}
 
 def verify(record):

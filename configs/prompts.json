@@ -1,11 +1,13 @@
 {
-  "version": "4.0.0",
+  "version": "4.1.0",
   "assessment": "prompts/assessment.txt",
   "evidence_selection": "numbered_passages_v1",
   "construct": "concern_specific_conditional_scenario_readiness",
-  "calls": "Submission: one mapping stage plus numeric-free scope review per candidate (maximum15), all within180s; at most one retry per stage, maximum32 calls. Explicit confirmation precedes up to15 independent numeric-only reviews (maximum30 calls,180s). Follow-up/context meanings are separate bounded interpretation actions. Final original and conditional numeric profiles are independently bounded; no hidden scoring before either confirmation.",
+  "calls": "Submission: one mapping stage plus numeric-free scope review per candidate (maximum15), plus at most one factual-awareness evidence review, all within180s; at most one retry per stage, maximum34 calls. Explicit confirmation precedes up to15 independent numeric-only reviews (maximum30 calls,180s). Follow-up/context meanings are separate bounded interpretation actions. Final original and conditional numeric profiles are independently bounded; no hidden scoring before either confirmation. Initial submission also performs one score-free metadata stage (500 reserved output tokens, two attempts,180s). Supplementary answers use bounded score-free targeted mapping/scope review; maximum six questions, no scoring until confirmation.",
   "mapping": "prompts/assessment.txt",
   "scoring": "prompts/scoring.txt",
   "confirmed_scoring": "prompts/confirmed-scoring.txt",
-  "scope_review": "prompts/scope-review.txt"
+  "scope_review": "prompts/scope-review.txt",
+  "discovery_facts": "prompts/discovery-facts.txt",
+  "discovery_policy": "configs/discovery.json"
 }

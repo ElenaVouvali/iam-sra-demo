@@ -27,8 +27,8 @@ for cid,text in CASES:
  try:
   s.begin();s.submit(text,c);mark(stage)
   attempt['initial_interpretation']=s.draft.model_dump()
-  assert s.initial is None and all(x['stage'] in {'mapping','scope_review'} for x in c.last_diagnostics)
-  s.confirm(True);stage='initial scoring';s.score_initial(c);mark(stage)
+  assert s.initial is None and all(x['stage'] in {'mapping','scope_review','discovery'} for x in c.last_diagnostics)
+  s.finish_discovery();s.confirm(True);stage='initial scoring';s.score_initial(c);mark(stage)
   initial=s.initial
   stage='followups';s.begin_followups()
   while s.state==State.FOLLOWUPS:

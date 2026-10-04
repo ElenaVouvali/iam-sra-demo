@@ -3,7 +3,15 @@ A guided English chatbot for one experimental IAM assessment: **The Urban Medica
 
 **Experimental demo:** scores are provisional conditional-readiness interpretations for this scenario. This is not a psychometrically validated instrument, an official EU citizen-readiness measure, or a calibrated SRL scale. All 15 concerns are registered; this scenario cannot assess them all. Missing evidence stays unassessed/null. Medical-benefit support, awareness, original-route acceptance and hypothetical conditional acceptance are kept separate.
 
-Read [current verification and limits](docs/confirmation-report.md), [implementation contract](docs/implementation-contract.md), [methodology and FN questions](docs/methodology.md), [deployment](docs/deployment.md) and [verification results](docs/verification.md).
+Read [evidence-discovery verification and limits](docs/discovery-report.md), [confirmation/reassessment verification](docs/confirmation-report.md), [implementation contract](docs/implementation-contract.md), [methodology and FN questions](docs/methodology.md), [deployment](docs/deployment.md) and [verification results](docs/verification.md).
+
+## Guided evidence discovery
+
+After **Interpret response**, a few neutral questions can clarify an unspecified stance, reasons, topic/facet, acceptance changes or an independently decisive objection. All questions concern the **unchanged original proposal**. Python selects one at a time from `configs/discovery.json`, at most six, and recomputes after each answer. Registry topics can be positive, negative or uncertain; choosing a topic does not establish its severity. Other issues retain their wording with an unmapped status and no invented topic ID. **Skip this question** and **Finish discovery** preserve unknowns. Explicit acceptance with no reservations ends unnecessary questioning without assessing silent topics.
+
+Review the consolidated meaning and any acceptance boundaries, correct individual meanings, then tick **This interpretation reflects what I meant** and click **Confirm meaning**. Only then can **Calculate initial provisional scores** run. Boundary answers are stored separately from numbers; they do not directly alter caps or scores. The existing anchors, assessed-only mean, minimum coverage, bottleneck rules and rounding are unchanged and experimental. Discovery can improve coverage but does not guarantee an aggregate.
+
+FN Q1–Q3 remain hypothetical follow-ups with their original provenance and optional all-reference mode. Their selector includes discovered confirmed topics; some facets have no relevant FN hypothetical test. Updated confirmation, separate original/conditional reassessment, immutable initial scores, all15 comparison and JSON/JSONL remain available. Exports include discovery questions, selections, free text, skips/finish, stable evidence IDs, selection reasons, blockers, unknowns, policy version and unmapped issues. Model interpretations can be wrong; completion is not semantic accuracy or scientific validation.
 
 ## Run on liono
 This checkout already has an isolated `.venv` and a downloaded, revision-pinned model in `.runtime/` (both Git-ignored). Use a normal shell on liono; no sudo or driver changes.
@@ -60,6 +68,8 @@ PYTHONPATH=src .venv/bin/python eval/run.py --mock --repeats 1
 # Requires running Qwen server; no implicit mock fallback.
 PYTHONPATH=src .venv/bin/python eval/run.py --repeats 2 --output .runtime/evaluation-live.json
 PYTHONPATH=src .venv/bin/python eval/run.py --held-out --repeats 2 --output .runtime/heldout-live.json
+PYTHONPATH=src .venv/bin/python scripts/smoke-discovery.py --output .runtime/discovery-repeat.json
+PYTHONPATH=src .venv/bin/python scripts/smoke-discovery-ui.py
 PYTHONPATH=src .venv/bin/python scripts/smoke-confirmed.py
 PYTHONPATH=src .venv/bin/python scripts/smoke-ui.py
 ```
@@ -103,4 +113,4 @@ scripts/health-check.sh
 
 The existing vLLM server does not need a restart. If laptop8501 is occupied, use `ssh -N -L 8502:127.0.0.1:8501 elvouvali@liono.microlab.ntua.gr` and open `http://localhost:8502`.
 
-No database, RAG, agents, fine-tuning or dashboard. PDF, credentials, weights, environments, logs and exports are excluded from Git. The updated confirmation and reassessment application is published on the single `main` branch; the fully merged implementation branches have been removed. See [calibration report](docs/calibration-report.md) and [methodology](docs/methodology.md) for before/after results and source limitations.
+No database, RAG, agents, fine-tuning or dashboard. PDF, credentials, weights, environments, logs and exports are excluded from Git. The confirmation/reassessment baseline is published on `main`. This evidence-discovery extension is on the isolated local `feature/evidence-discovery` branch; it has not been merged, pushed or deployed. See [calibration report](docs/calibration-report.md) and [methodology](docs/methodology.md) for before/after results and source limitations.

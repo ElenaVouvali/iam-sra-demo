@@ -65,3 +65,38 @@ def test_original_history_is_concern_specific_and_preserves_superseded_evidence(
     request=json.loads(calls[-1][1]['messages'][1]['content'])
     assert [item['id'] for item in request['original_testimony_history']]==['O.p001']
     assert request['citizen_evidence'][0]['id']=='C1.testimony'
+
+
+def test_score_free_discovery_metadata_schema_and_exact_unmapped_wording(monkeypatch):
+    raw={'no_reservations':False,'no_reservations_evidence':[],'blockers':[], 'unmapped_issues':['my pet collection']}
+    choice={'finish_reason':'stop','message':{'content':json.dumps(raw)}}
+    calls=fake_client(monkeypatch,[choice])
+    evidence={'O.p001':EvidenceItem(id='O.p001',text='What happens to my pet collection?',context='original',source='citizen_original')}
+    client=ConversationClient();facts=client.discovery_facts(evidence)
+    assert facts.unmapped_issues==['my pet collection']
+    assert set(calls[-1][1]['guided_json']['properties'])=={'reasons_explicit','reasons_evidence','no_reservations','no_reservations_evidence','blockers','unmapped_issues'}
+    assert client.last_raw_scores=={} and client.last_diagnostics[0]['stage']=='discovery'
+
+
+def test_discovery_metadata_rejects_invented_issues_and_unknown_references(monkeypatch):
+    raw={'no_reservations':True,'no_reservations_evidence':['unknown'],'blockers':[], 'unmapped_issues':['invented neighborhood']}
+    choice={'finish_reason':'stop','message':{'content':json.dumps(raw)}}
+    fake_client(monkeypatch,[choice,choice])
+    evidence={'O.p001':EvidenceItem(id='O.p001',text='I accept.',context='original',source='citizen_original')}
+    with pytest.raises(AssessmentError):ConversationClient().discovery_facts(evidence)
+
+
+def test_generic_approval_cannot_establish_factual_awareness_after_review(monkeypatch):
+    choice=mapping_choice({})
+    d=json.loads(choice['message']['content'])
+    for name in ['awareness_understanding','medical_public_benefit_support','current_route_stance']:d[name]['excerpts']=['O.p001']
+    d['awareness_understanding']['interpretation']='demonstrated'
+    choice['message']['content']=json.dumps(d)
+    rejected={'finish_reason':'stop','message':{'content':json.dumps({'supported':False,'rationale':'No concrete fact was stated.'})}}
+    # Benefit nomination creates a welfare candidate in this historical fixture.
+    accepted={'finish_reason':'stop','message':{'content':json.dumps({'supported':True,'rationale':'Explicit candidate.'})}}
+    calls=fake_client(monkeypatch,[choice,rejected,accepted])
+    evidence={'O.p001':EvidenceItem(id='O.p001',text='I accept.',context='original',source='citizen_original')}
+    result=ConversationClient().interpret(evidence)
+    assert result.awareness_understanding.interpretation=='unassessed' and not result.awareness_understanding.excerpts
+    assert all('score' not in call[1]['guided_json']['properties'] for call in calls if call[0].endswith('completions'))

@@ -1,7 +1,7 @@
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from .settings import CONCERNS
-SCHEMA_VERSION = "3.5.0"
+SCHEMA_VERSION = "3.6.0"
 ConcernID = Literal["public_awareness_trust", "competence_building", "perceived_safety_privacy", "technical_safety_security_privacy", "noise", "visual_pollution", "wind_downwash", "airspace_capacity", "sump_integration", "infrastructure_land_use", "energy_emissions", "cost_roi_business", "accessibility", "multimodality_congestion", "welfare_equity"]
 class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
@@ -68,6 +68,10 @@ class MappingConcern(ConcernMapping):
     def mapped_evidence(self):
         if self.status=="mapped" and (not self.facets or not self.excerpts):
             raise ValueError("Mapped concern requires a facet and evidence")
+        if self.status=="mapped" and self.conditions and self.conditional_willingness=='not_stated':
+            raise ValueError("Mapped conditions require explicit willingness interpretation")
+        if self.status=="mapped" and self.position=='unassessed' and self.conditional_willingness=='not_stated':
+            raise ValueError("Mapped concern requires an explicit position or conditional willingness; otherwise needs_clarification")
         return self
 
 class MappingAssessment(Strict):

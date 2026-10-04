@@ -1,3 +1,5 @@
+Current discovery extension: [evidence-discovery report](discovery-report.md). Prior results below retain their historical context.
+
 # Verification results
 
 Current confirmation/reassessment flow: [2026-10-04 report](confirmation-report.md),239 offline tests, all23 live attempts disclosed. Prior sections below are historical contracts, not current numerical-update behavior.

@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0-experimental",
+  "maximum_questions": 6,
+  "context": "original",
+  "priority": [
+    "stance",
+    "reasons",
+    "topic",
+    "changes",
+    "blocker",
+    "unmapped"
+  ],
+  "questions": {
+    "stance": "What is your position on the ORIGINAL proposal as described?",
+    "reasons_opposed": "Which aspects make this proposal unacceptable to you?",
+    "reasons_supported": "Do you have any reservations or conditions, or do you accept the proposal as described?",
+    "reasons_uncertain": "Which aspects are you unsure about, or what information would you need?",
+    "reasons_mixed": "Which aspects do you accept, and which would require changes?",
+    "topic": "For {topic}, what specifically matters to you, what is your position on the ORIGINAL proposal, and does acceptance depend on a change?",
+    "changes": "For {topic}, could any change make that aspect acceptable to you? If so, what would need to change?",
+    "blocker": "For {topic}: would this issue alone make the ORIGINAL proposal unacceptable, even if your other concerns were addressed?",
+    "unmapped": "You mentioned \u2018{topic}\u2019. What specifically matters to you about this issue, and would it affect acceptance of the ORIGINAL proposal?"
+  },
+  "choice_labels": {
+    "supported": "I accept the original proposal",
+    "opposed": "I reject the original proposal",
+    "mixed": "I accept some aspects; others need changes",
+    "uncertain": "I am unsure",
+    "other": "Other",
+    "cannot_specify": "Cannot specify",
+    "no_reservations": "I accept the proposal as described, with no reservations or conditions",
+    "yes": "Yes",
+    "no": "No",
+    "unsure": "Unsure"
+  },
+  "note": "Extension of FN evidence collection. Topic selection is not stance, severity or a score. Blockers are citizen boundaries, not numerical bottleneck rules. Silence remains unknown.",
+  "topic_choice_labels": {
+    "supported": "I accept this aspect",
+    "opposed": "I reject this aspect",
+    "mixed": "I accept some parts; others need changes",
+    "uncertain": "I am unsure about this aspect",
+    "cannot_specify": "Cannot specify"
+  }
+}

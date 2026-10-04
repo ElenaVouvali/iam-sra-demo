@@ -7,6 +7,7 @@ from iam_sra.assessment import AssessmentError
 from iam_sra.interpretation import comparison
 from iam_sra.validation import conclusions
 from iam_sra.schemas import Assessment
+from iam_sra.discovery import report as discovery_report
 
 st.set_page_config(page_title='IAM · Research demo',page_icon='◈',layout='centered')
 st.title('IAM · A citizen perspective')
@@ -31,7 +32,9 @@ if s.text:
 def perform(action,*args):
     st.session_state.pop('action_error',None)
     try:action(*args)
-    except (AssessmentError,ValueError) as exc:st.session_state.action_error=str(exc)
+    except (AssessmentError,ValueError) as exc:
+        st.session_state.action_error='We could not complete this step. Your drafted answer is still here. Please review your selection and wording, then try again; you can also skip or finish discovery.'
+        st.session_state.developer_error=str(exc)
 
 def show_meaning(meaning,title):
     st.subheader(title)
@@ -67,6 +70,45 @@ def correction_form(modified=False):
                 perform(action,st.session_state['target_'+tag],st.session_state['correction_'+tag],st.session_state['reason_'+tag],client)
             st.form_submit_button('Record correction',on_click=save)
 
+def show_discovery_meanings():
+    if s.no_reservations:st.write('**Expressed position:** acceptance with no reservations; unexamined topics remain unknown.')
+    for problem in s.conflicts.values():st.warning(problem['question'])
+    for cid,boundary in s.blockers.items():
+        st.write('**'+CONCERNS[cid]['label']+' alone makes the original proposal unacceptable:** '+boundary['status'].capitalize())
+        with st.expander('Correct this acceptance boundary · '+CONCERNS[cid]['label']):
+            with st.form('boundary_'+cid):
+                st.radio('Your corrected boundary',['yes','no','unsure'],index=None,key='boundary_choice_'+cid)
+                st.text_area('Optional explanation',key='boundary_text_'+cid)
+                def save_boundary(c=cid):perform(s.correct_blocker,c,st.session_state['boundary_choice_'+c],st.session_state['boundary_text_'+c])
+                st.form_submit_button('Record boundary correction',on_click=save_boundary)
+    for issue in s.unmapped_issues:
+        st.write('**Recorded issue outside the topic mapping:** '+issue['wording'])
+        st.caption('Unmapped; no score. '+issue.get('clarification',''))
+
+def discovery_form():
+    q=s.discovery_question
+    if q is None:
+        if not s.discovery_finished:s.finish_discovery('sufficient')
+        return
+    st.info('A few questions will help us understand your position; there are no preferred answers.')
+    st.caption('Question '+str(len(s.discovery_responses)+1)+' of at most '+str(config('discovery')['maximum_questions'])+' · unchanged original proposal')
+    st.write(q['text'])
+    labels=config('discovery')['choice_labels']
+    label=lambda value:CONCERNS[value]['label'] if value in CONCERNS else config('discovery')['topic_choice_labels'][value] if q['kind']=='topic' else labels[value]
+    with st.form('discovery_'+q['id'],clear_on_submit=False):
+        if q['multiple']:st.multiselect('Topics or response',q['choices'],format_func=label,key=q['id']+'_selection')
+        else:st.radio('Your response',q['choices'],format_func=label,index=None,key=q['id']+'_selection')
+        if q['facets']:st.multiselect('Which aspect matters? (optional)',q['facets'],format_func=lambda value:value.replace('_',' ').capitalize(),key=q['id']+'_facets')
+        st.text_area('Your own words (optional)',key=q['id']+'_text')
+        def answer():
+            selected=st.session_state[q['id']+'_selection']
+            selected=selected if isinstance(selected,list) else [selected] if selected else []
+            perform(s.respond_discovery,selected,st.session_state[q['id']+'_text'],client,st.session_state.get(q['id']+'_facets',[]))
+        st.form_submit_button('Record discovery answer',on_click=answer)
+    st.button('Skip this question',on_click=perform,args=(s.respond_discovery,[],'',client,None,True))
+    st.button('Finish discovery',on_click=perform,args=(s.finish_discovery,))
+    st.caption('Skipping or finishing preserves unknowns. More evidence does not guarantee an aggregate score.')
+
 def show_score(snapshot,title):
     if not snapshot:return
     totals=snapshot['aggregate'];st.subheader(title)
@@ -95,12 +137,14 @@ elif s.state==State.ANSWER:
 elif s.state in {State.INTERPRETATION,State.CONFIRMED}:
     show_meaning(s.draft,'Check the interpretation — no scores yet')
     correction_form()
-    if s.state==State.INTERPRETATION:
+    show_discovery_meanings()
+    if s.state==State.INTERPRETATION and not s.discovery_finished:discovery_form()
+    if s.state==State.INTERPRETATION and s.discovery_finished:
         key='confirm_'+str(s.version)
         st.checkbox('This interpretation reflects what I meant',key=key)
         def confirm():perform(s.confirm,st.session_state[key])
         st.button('Confirm meaning',on_click=confirm)
-    else:
+    elif s.state==State.CONFIRMED:
         st.success('Meaning confirmed. Numeric review has not run yet.')
         st.button('Calculate initial provisional scores',on_click=perform,args=(s.score_initial,client))
 elif s.state==State.INITIAL:
@@ -127,6 +171,7 @@ elif s.state in {State.UPDATED,State.UPDATE_CONFIRMED}:
             def resolve(k=key):perform(s.resolve_conflict,k,st.session_state['resolve_text_'+k],client)
             st.form_submit_button('Resolve this interpretation',on_click=resolve)
     show_meaning(s.draft,'Refined interpretation of the ORIGINAL proposal')
+    show_discovery_meanings()
     correction_form()
     for r in s.responses:
         with st.expander('Recorded '+r['question_id'].upper()+' · '+r['clarification_context']):
@@ -158,6 +203,15 @@ else:
         stance=s.conditional_confirmed['meaning']['current_route_stance']['interpretation'] if s.conditional_confirmed else 'unresolved'
         st.write('**Combined-proposal choice:** '+s.joint['choice']+' · Confirmed interpretation: '+stance);st.write(s.joint['proposal'])
         st.write('**Remaining concerns:** '+(', '.join(CONCERNS[c]['label'] for c in s.joint['remaining_concern_ids']) or 'None selected; see evidence and untested facets.'))
+    with st.expander('Confirmed acceptance boundaries and unresolved discovery issues',expanded=True):
+        details=discovery_report(s)
+        for cid,boundary in details['blockers'].items():st.write(CONCERNS[cid]['label']+' alone makes the original unacceptable: '+boundary['status'].capitalize()+'.')
+        if not details['blockers']:st.write('No independent acceptance boundary was confirmed.')
+        for issue in details['unmapped_issues']:st.write('Unmapped issue: '+issue['wording']+' — no score.')
+        if details['unresolved_topics']:st.write('Still unclear: '+', '.join(CONCERNS[cid]['label'] for cid in details['unresolved_topics']))
+        for topic in details['topic_followup_coverage']:
+            if not topic['hypothetical_question_ids']:st.caption(CONCERNS[topic['concern_id']]['label']+': recorded or clarified, but not tested by a relevant hypothetical modification.')
+        st.caption('Discovery improves evidence coverage; it does not guarantee an aggregate score. Acceptance boundaries do not directly change arithmetic.')
     tracking=conclusions(s.responses,Assessment.model_validate(s.initial['assessment']))
     with st.expander('Remaining conditions, validation assumptions and untested facets'):st.json(tracking)
     with st.expander('Confirmed interpretations, evidence IDs and correction history'):
@@ -166,5 +220,5 @@ else:
     st.download_button('Export session JSONL',s.jsonl(),file_name='iam-session.jsonl',mime='application/x-ndjson')
 with st.expander('Developer metadata'):
     st.json({'mode':'mock' if mock else 'live','endpoint':BASE_URL,'model':config('model'),'reassessment':config('reassessment')['version'],
-        'state':s.state.value,'interpretation_version':s.version,'inference':s.inference})
+        'discovery_records':discovery_report(s) if s.draft else None,'last_controlled_error':st.session_state.get('developer_error'),'discovery_policy':config('discovery')['version'],'state':s.state.value,'interpretation_version':s.version,'inference':s.inference})
     st.caption('In-memory session. Raw citizen text is omitted from routine logs; explicit exports contain testimony.')
