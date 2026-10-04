@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0-experimental",
+  "original_rubric": "2.0.0-experimental",
+  "conditional_rubric": "1.0.0-experimental",
+  "original_policy": "Only confirmed original-context evidence changes trigger independent concern review; unaffected scores are carried with a reason. Unknown/contradictory meanings stay null or require clarification.",
+  "conditional_policy": "Require an explicit combined proposal and joint response. Score only confirmed modified-context meanings, preserving untested facets as unavailable. No reuse of original boundary anchors as post-mitigation acceptance. No automatic bonus or cap removal.",
+  "conditional_anchors": {
+    "1": "Explicit categorical rejection of this facet even in the stated modified proposal.",
+    "2": "Strong remaining boundary, minimal tolerance under this proposal.",
+    "3": "Strong remaining disruption or objection requiring further substantial change.",
+    "4": "Substantial remaining reservation; further conditions still required.",
+    "5": "Expressed balanced acceptance and reservations; unsure without a position is null.",
+    "6": "Cautious acceptance of this modified proposal with remaining reservations.",
+    "7": "Qualified acceptance with manageable remaining conditions.",
+    "8": "Clear acceptance of this facet in this modified proposal.",
+    "9": "Explicit unqualified endorsement of this facet in this modified proposal."
+  },
+  "aggregation": "Each profile independently uses scoring.json, assessed-only mean, minimum coverage, phase-1 threshold/cap, half-up rounding. Coverage differences are not personal improvement or decline.",
+  "combined_changes": {
+    "q1": "Navigation cameras use the hypothetical Lens-Shielding Hardware Shroud: only direct forward viewing, with no downward viewing into private yards/windows. Telemetry and cybersecurity arrangements remain unspecified.",
+    "q2": "The residential route operates at120 meters instead of60 meters, with no flights between19:00 and07:00. Assume the sound profile is below ambient city street noise. Frequency remains up to15 flights/day. Altitude, sound and curfew are a bundle, not independently tested changes."
+  }
+}

@@ -4,7 +4,7 @@ from copy import deepcopy
 from .assessment import check_input
 
 def select_questions(assessment):
-    ids={c.concern_id for c in assessment.concerns if c.status=="assessed"}
+    ids={c.concern_id for c in assessment.concerns if c.status in {"assessed","mapped"}}
     selected=[]
     for q in QUESTIONS:
         if not ids.intersection(q['relevant_concerns']):continue
@@ -12,7 +12,7 @@ def select_questions(assessment):
         # present that premise automatically to a supportive/unknown citizen.
         if q['id']=='q1':
             opposition=assessment.current_route_stance.interpretation in {'opposed','mixed'}
-            privacy_objection=any(c.status=='assessed' and c.concern_id in q['relevant_concerns'] and c.position in {'opposed','mixed'} for c in assessment.concerns)
+            privacy_objection=any(c.status in {'assessed','mapped'} and c.concern_id in q['relevant_concerns'] and c.position in {'opposed','mixed'} and set(c.facets).intersection({'personal_privacy','data_security'}) for c in assessment.concerns)
             if not (opposition and privacy_objection):continue
         selected.append(q)
     return selected

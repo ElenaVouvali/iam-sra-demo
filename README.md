@@ -1,9 +1,9 @@
 # iam-sra-demo
-A guided English chatbot for one experimental IAM assessment: **The Urban Medical Transit Corridor**, from Future Needs’ *SRA_LLM concept feasibility.pdf*. Python owns the state machine, question selection, arithmetic and validation. Qwen/Qwen3-8B maps citizen evidence and independently reviews each supported concern through a separate localhost vLLM server. Readiness combines concern-specific boundaries and conditional willingness; original-route stance stays separate. Sessions stay in memory; JSON export is explicit.
+A guided English chatbot for one experimental IAM assessment: **The Urban Medical Transit Corridor**, from Future Needs’ *SRA_LLM concept feasibility.pdf*. Python owns the state machine, question selection, arithmetic and validation. Qwen/Qwen3-8B maps citizen evidence and independently reviews each supported concern through a separate localhost vLLM server. Readiness combines concern-specific boundaries and conditional willingness; original-route stance stays separate. Sessions stay in memory; JSON and JSONL export are explicit. Meaning is confirmed before any numeric review.
 
 **Experimental demo:** scores are provisional conditional-readiness interpretations for this scenario. This is not a psychometrically validated instrument, an official EU citizen-readiness measure, or a calibrated SRL scale. All 15 concerns are registered; this scenario cannot assess them all. Missing evidence stays unassessed/null. Medical-benefit support, awareness, original-route acceptance and hypothetical conditional acceptance are kept separate.
 
-Read [implementation contract](docs/implementation-contract.md), [methodology and FN questions](docs/methodology.md), [deployment](docs/deployment.md) and [verification results](docs/verification.md).
+Read [current verification and limits](docs/confirmation-report.md), [implementation contract](docs/implementation-contract.md), [methodology and FN questions](docs/methodology.md), [deployment](docs/deployment.md) and [verification results](docs/verification.md).
 
 ## Run on liono
 This checkout already has an isolated `.venv` and a downloaded, revision-pinned model in `.runtime/` (both Git-ignored). Use a normal shell on liono; no sudo or driver changes.
@@ -60,7 +60,7 @@ PYTHONPATH=src .venv/bin/python eval/run.py --mock --repeats 1
 # Requires running Qwen server; no implicit mock fallback.
 PYTHONPATH=src .venv/bin/python eval/run.py --repeats 2 --output .runtime/evaluation-live.json
 PYTHONPATH=src .venv/bin/python eval/run.py --held-out --repeats 2 --output .runtime/heldout-live.json
-PYTHONPATH=src .venv/bin/python scripts/smoke.py
+PYTHONPATH=src .venv/bin/python scripts/smoke-confirmed.py
 PYTHONPATH=src .venv/bin/python scripts/smoke-ui.py
 ```
 
@@ -73,9 +73,17 @@ IAM_MOCK=1 scripts/start-ui.sh
 Mock mode is visibly labeled and produces a fixed uncertain, unassessed fixture. It checks UI plumbing, not interpretation. Restart the UI with `IAM_MOCK=0` for live mode. Synthetic evaluation checks schema/evidence compliance, qualitative agreement, repeated score variation and latency; it does not establish scientific validity.
 
 ## Session flow and limits
-Scenario → citizen answer → initial assessment → relevant hypothetical validation → final report. The initial result can be corrected using a complete restatement plus reason; both snapshots and aggregates remain available. Confirmation checks interpretation, not validity. Q1 addresses shielding only, Q2 a bundled modification, Q3 policy preference. Select “Consider all three hypothetical changes from the PDF” to run every reference question; otherwise questions follow assessed concerns. The final report evaluates the combined p.9 rules and preserves overlapping outcomes and multiple remaining concerns. Unsure stays unresolved. FN’s illustrative score proposals remain reference metadata; there are no numerical validation updates.
+Answer → score-free interpretation → explicit confirmation → initial scoring → follow-ups → updated interpretation and explicit confirmation → final scoring → comparison/export.
 
-Maximum input is 4000 UTF-8 bytes, plus actual per-call full-chat token budgets of4096. Excessive input is rejected, never truncated. The model selects numbered citizen passages; Python retrieves their original wording, while Qwen interprets their meaning in rationales. One semantic mapping call is followed by one review/scoring call per evidenced topic candidate (up to15), with at most one retry for each call; an overall180-second deadline bounds the assessment. Empty mappings skip scoring. Mapping reserves1400 output tokens, each review300; every full-chat prompt plus reserved output must fit4096. Schema/evidence failures are controlled; transport failures are controlled errors with no invented result. Requests are serialized in the app and server concurrency is one. Timeout is 120 seconds per HTTP request; retries are recounted against the full context limit. Eligibility is interpreted semantically under the15 versioned scopes; Python validates facet membership, IDs, null/range and exact passages. There are no lexical vetoes or stance-to-score bands. Semantic correctness is still provisional. Logs rotate at 2 MiB with two backups per service; routine logs omit raw citizen text. Exports include citizen text and should be saved deliberately.
+Correct individual meanings or add omitted concerns in your own words; a complete restatement is not required. The UI shows model wording separately from citizen evidence. Edits invalidate confirmation and dependent final scores. Initial scores are saved once as an immutable snapshot. Confirmation establishes agreement about meaning, not scientific validity. Ambiguous meanings stay unassessed and conflicting answers require a targeted clarification.
+
+Follow-up choices and optional text have stable evidence IDs and an explicit original/hypothetical context. Q1 addresses viewing privacy, Q2 bundles altitude/sound/curfew, and Q3 records policy preference. Relevant questions follow the confirmed facets, with an explicit all-reference option. Before conditional scoring, respond to the exact combined proposal; accepting separate Q1/Q2 changes is insufficient. Include any remaining concerns and confirm the resulting modified-context meaning.
+
+Final original-proposal scoring uses the initial rubric and reviews only concerns with relevant confirmed original-context evidence changes; other scores carry forward with a reason. Conditional scoring uses a separate experimental acceptance-after-mitigation rubric. Untested original facets remain unavailable unless explicitly addressed. Each profile recomputes its own mean/cap/coverage/phase summaries in Python. No fixed bonus, inferred cap removal or automatic FN6–7/2–3 outcome is used. No new relevant original evidence means unchanged original scores. See [the reassessment policy](configs/reassessment.json) and [methodology](docs/methodology.md).
+
+The final table includes all15 concerns and initial/final-original/conditional scores, reasons and evidence. Exports contain versioned interpretations, confirmations, corrections, immutable snapshots, questions/answers, contextual evidence IDs, model/rubric settings and arithmetic traces. JSONL is one complete session per line. Coverage differences do not imply personal improvement or decline.
+
+Maximum input is 4000 UTF-8 bytes, plus actual per-call full-chat token budgets of4096. Excessive input is rejected, never truncated. The model selects numbered citizen passages; Python retrieves their original wording, while Qwen interprets their meaning in rationales. Each explicit action has an overall180-second deadline. Submission performs semantic mapping and numeric-free scope review of up to15 candidates, with at most one retry per call; no numeric stage runs before confirmation. After confirmation, independent numeric-only review runs per evidenced concern (up to15), with at most one retry per call. Final original and conditional reviews are separate bounded stages. Empty mappings skip scoring. Mapping reserves1400 output tokens, each semantic or numeric review300; every full-chat prompt plus reserved output must fit4096. Schema/evidence failures are controlled; transport failures are controlled errors with no invented result. Requests are serialized in the app and server concurrency is one. Timeout is 120 seconds per HTTP request; retries are recounted against the full context limit. Eligibility is interpreted semantically under the15 versioned scopes; Python validates facet membership, IDs, null/range and exact passages. There are no lexical vetoes or stance-to-score bands. Semantic correctness is still provisional. Logs rotate at 2 MiB with two backups per service; routine logs omit raw citizen text. Exports include citizen text and should be saved deliberately.
 
 ## Repository
 - `src/iam_sra/`: UI-independent schemas, assessment, session, scoring, validation and HTTP client.
@@ -83,4 +91,16 @@ Maximum input is 4000 UTF-8 bytes, plus actual per-call full-chat token budgets 
 - `eval/fn_reference.json`: historical fixture (8,3,4,2; mean 4.25; illustrative final 4), never substituted into inference.
 - `tests/`, `eval/`, `scripts/`, `docs/`: checks, synthetic cases, operations and traceability.
 
-No database, RAG, agents, fine-tuning or dashboard. PDF, credentials, weights, environments, logs and exports are excluded from Git. The main baseline is published; this recalibration branch has not been pushed. See [calibration report](docs/calibration-report.md) and [methodology](docs/methodology.md) for before/after results and source limitations.
+For a project-only UI restart after deploying this branch (not performed during implementation):
+
+```bash
+cd /home/elvouvali/IAM_CC/iam-sra-demo
+scripts/stop-ui.sh
+scripts/start-ui.sh
+sleep 5
+scripts/health-check.sh
+```
+
+The existing vLLM server does not need a restart. If laptop8501 is occupied, use `ssh -N -L 8502:127.0.0.1:8501 elvouvali@liono.microlab.ntua.gr` and open `http://localhost:8502`.
+
+No database, RAG, agents, fine-tuning or dashboard. PDF, credentials, weights, environments, logs and exports are excluded from Git. The recalibration baseline is published; new work is isolated on `feature/confirmed-reassessment` and is not pushed. See [calibration report](docs/calibration-report.md) and [methodology](docs/methodology.md) for before/after results and source limitations.

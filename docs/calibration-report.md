@@ -1,5 +1,7 @@
 # Recalibration report · 2026-10-02
 
+Historical recalibration record. Current confirmation-gated numerical reassessment is documented in [the 2026-10-03 report](confirmation-report.md); the original qualitative-only contract below is preserved as history.
+
 This is a synthetic engineering assessment of an experimental FN-aligned scenario profile, not scientific validation. The implementation is on `recalibrate/fn-scenario-readiness`, based on `edbcb22fbc3cd014bfbe6b2293587ad30b166e66`. Main and the working tree matched that baseline before editing. No unrelated local edits existed; nothing has been pushed.
 
 ## Source review and diagnosis

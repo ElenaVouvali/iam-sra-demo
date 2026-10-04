@@ -1,4 +1,6 @@
 # Verification results
+
+Current confirmation/reassessment flow: [2026-10-04 report](confirmation-report.md),239 offline tests, all23 live attempts disclosed. Prior sections below are historical contracts, not current numerical-update behavior.
 For the latest schema3.5/prompt3.3 implementation, see the [2026-10-02 recalibration report](calibration-report.md). The sections below are preserved historical observations, not current performance estimates.
 
 Observed on liono, 2026-10-01. These are engineering checks on synthetic/source-example text, **not scientific validation**.

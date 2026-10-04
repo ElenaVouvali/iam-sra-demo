@@ -7,7 +7,7 @@ from iam_sra.settings import CONCERNS, QUESTIONS, POLICY
 from iam_sra.scoring import aggregate
 from iam_sra.validation import outcome, conclusions
 from iam_sra.validation import select_questions
-from iam_sra.session import Session
+from iam_sra.legacy_session import Session
 from iam_sra.schemas import SCHEMA_VERSION
 
 @pytest.mark.parametrize('score',[2,3,4,6,7,8])

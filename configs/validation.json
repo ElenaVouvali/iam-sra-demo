@@ -1,5 +1,5 @@
 {
-  "version": "3.1.0",
+  "version": "4.0.0-experimental",
   "questions": [
     {
       "id": "q1",
@@ -107,6 +107,6 @@
       "implemented": "Record local-rights policy priority; does not independently establish a numerical cap."
     }
   ],
-  "numerical_update_policy": "Not specified by FN; qualitative conclusions only. Source ranges retained as reference metadata.",
-  "selection_policy": "Q1 default requires evidenced route opposition/mixed stance and an assessed privacy/data-security objection. Explicit all-reference mode preserves the original questions and labels their premise as hypothetical."
+  "numerical_update_policy": "configs/reassessment.json: explicit confirmation-bound original/conditional reassessment, no fixed bonuses or automatic cap removal.",
+  "selection_policy": "Use confirmed evidenced meanings; Q1 requires an opposed/mixed route and personal_privacy or data_security objection facet. Combined-proposal response required separately."
 }

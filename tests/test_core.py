@@ -4,7 +4,7 @@ import pytest
 from iam_sra.assessment import parse_assessment, AssessmentError
 from iam_sra.settings import ROOT, CONCERNS, QUESTIONS, POLICY
 from iam_sra.scoring import aggregate
-from iam_sra.session import Session, State
+from iam_sra.legacy_session import Session, State
 from iam_sra.validation import outcome, select_questions, conclusions
 
 def payload(scores=None,text="noise privacy visual welfare"):

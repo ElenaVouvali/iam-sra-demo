@@ -1,141 +1,170 @@
-import json
 import os
 import streamlit as st
 from iam_sra.session import Session, State
-from iam_sra.settings import SCENARIO, CONCERNS, POLICY, MODEL, BASE_URL, REGISTRY, config
-from iam_sra.scoring import aggregate
-from iam_sra.llm_client import LLMClient, STAGE_LIMITS
-from iam_sra.schemas import SCHEMA_VERSION
+from iam_sra.conversation_client import ConversationClient
+from iam_sra.settings import SCENARIO, CONCERNS, POLICY, BASE_URL, config
 from iam_sra.assessment import AssessmentError
+from iam_sra.interpretation import comparison
 from iam_sra.validation import conclusions
-st.set_page_config(page_title="IAM · Research demo", page_icon="◈", layout="centered")
-st.title("IAM · A citizen perspective")
-st.caption("Experimental FN-aligned scenario assessment · English · Scores are provisional")
-mock=os.getenv("IAM_MOCK","0")=="1"
+from iam_sra.schemas import Assessment
+
+st.set_page_config(page_title='IAM · Research demo',page_icon='◈',layout='centered')
+st.title('IAM · A citizen perspective')
+st.caption('Experimental scenario assessment · confirmation checks meaning, not scientific validity.')
+mock=os.getenv('IAM_MOCK','0')=='1'
 if mock:
-    st.warning("MOCK MODE — fixed uncertain fixture for UI/CI; no Qwen inference.")
-    from iam_sra.mock import assess
-else:
-    assess=LLMClient()
-if "session" not in st.session_state: st.session_state.session=Session()
+    st.warning('MOCK MODE — fixed uncertain interpretation for GPU-free UI/CI; no Qwen inference.')
+    from iam_sra.mock import MockConversationClient
+    client=MockConversationClient()
+else:client=ConversationClient()
+if 'session' not in st.session_state:st.session_state.session=Session()
 s=st.session_state.session
-st.button("Reset session",on_click=st.session_state.clear)
+st.button('Reset session',on_click=st.session_state.clear)
 steps=list(State)
-st.progress((steps.index(s.state)+1)/len(steps),text=s.state.value.replace("_"," ").title())
-with st.chat_message("assistant"):
-    st.subheader(SCENARIO["title"])
-    st.write(SCENARIO["text"])
-    st.caption("All route details and subsequent modifications are hypothetical assumptions.")
+st.progress((steps.index(s.state)+1)/len(steps),text=s.state.value.replace('_',' ').title())
+with st.expander(SCENARIO['title'],expanded=s.state in {State.SCENARIO,State.ANSWER}):
+    st.write(SCENARIO['text'])
+    st.caption('All route details and later modifications are hypothetical assumptions.')
 if s.text:
-    with st.chat_message("user"):
-        st.text(s.text)
-def show(a,title):
+    with st.expander('Your original testimony'):st.text(s.text)
+
+def perform(action,*args):
+    st.session_state.pop('action_error',None)
+    try:action(*args)
+    except (AssessmentError,ValueError) as exc:st.session_state.action_error=str(exc)
+
+def show_meaning(meaning,title):
     st.subheader(title)
-    for name,label in [("awareness_understanding","Awareness and understanding"),("medical_public_benefit_support","Medical/public benefit support"),("current_route_stance","Original-route stance")]:
-        d=getattr(a,name); st.write(f"**{label}:** {d.interpretation}"); st.write(d.rationale)
-        for e in d.excerpts: st.text(e)
-    for c in a.concerns:
-        if c.status=="assessed":
-            st.write(f"**{CONCERNS[c.concern_id]['label']} · {c.score}/9 (provisional)**")
-            for e in c.excerpts: st.text(e)
-            st.write(c.rationale)
-            st.caption("Original concern stance: "+c.position+" · Conditional willingness: "+c.conditional_willingness.replace("_"," "))
-            st.caption("Assessed facets: "+", ".join(f.replace("_"," ") for f in c.facets))
-            if c.concern_id=="welfare_equity" and "medical_public_benefit" in c.facets and "distributive_equity" not in c.facets:
-                st.caption("This reflects medical public-service support; equitable distribution and equity knowledge were not assessed.")
-            for condition in c.conditions: st.text("Unresolved original condition: "+condition)
-            if c.mapping_note: st.caption("Mapping: "+c.mapping_note.replace("_"," "))
-    with st.expander("Unassessed concerns and ambiguity"):
-        for c in a.concerns:
-            if c.status=="unassessed" and c.excerpts:
-                st.write(CONCERNS[c.concern_id]['label']+": unassessed · no score")
-                for e in c.excerpts: st.text(e)
-                st.write(c.rationale)
-    if a.acceptance_conditions:
-        st.write("**Conditions from the original answer**")
-        for e in a.acceptance_conditions: st.text(e)
-    totals=aggregate(a)
-    st.write(f"Coverage: {totals['coverage']} concerns assessed")
-    st.caption("Unassessed: "+", ".join(CONCERNS[i]['label'] for i in totals['missing']))
-    st.write("Provisional FN-aligned scenario readiness: "+(str(totals['rounded'])+"/9" if totals['rounded'] is not None else "Unavailable — insufficient concern evidence"))
-    with st.expander("Arithmetic and phase coverage"): st.json(totals)
-def perform(action, *args):
-    st.session_state.pop("action_error", None)
-    try:
-        action(*args)
-    except (AssessmentError, ValueError) as exc:
-        st.session_state.action_error=str(exc)
-def submit_answer():
-    perform(s.submit, st.session_state.citizen_answer, assess)
-def submit_correction():
-    perform(s.correct, st.session_state.complete_original, st.session_state.correction_reason, assess)
-def continue_session():
-    perform(s.validate, st.session_state.interpretation_confirmed, st.session_state.include_reference_questions)
-def submit_validation(qid):
-    choice=st.session_state["choice_"+qid]
-    if choice is None:
-        st.session_state.action_error="Select a choice, including unsure if appropriate."
-    else:
-        perform(s.respond,choice,st.session_state["clarification_"+qid])
-if st.session_state.get("action_error"):
-    st.error(st.session_state.action_error)
-if s.state==State.SCENARIO:
-    st.button("Begin",on_click=perform,args=(s.begin,))
+    st.caption('Model-proposed wording below. Evidence passages are citizen testimony; confirming wording does not create new testimony.')
+    def cite(refs):
+        for ref in refs:
+            item=s.evidence[ref]
+            st.caption(ref+' · '+item.source+' · '+item.context)
+            st.text(item.text)
+    for name,label in [('current_route_stance','Position on this proposal'),('medical_public_benefit_support','Medical/public-benefit support'),('awareness_understanding','Awareness and understanding')]:
+        dim=getattr(meaning,name);st.write('**'+label+':** '+dim.interpretation);st.write(dim.rationale);cite(dim.excerpts)
+    for c in meaning.concerns:
+        st.write('**'+CONCERNS[c.concern_id]['label']+'**')
+        st.write(c.rationale)
+        st.caption('Stance: '+c.position+' · Conditional willingness: '+c.conditional_willingness.replace('_',' ')+' · Facets: '+', '.join(c.facets))
+        cite(c.excerpts)
+        if c.conditions:st.write('**Acceptance conditions**');cite(c.conditions)
+        if c.status=='needs_clarification':st.info('Ambiguous mapping — clarify or leave not assessed.')
+    mentioned={c.concern_id for c in meaning.concerns}
+    with st.expander('Topics without evidence'):
+        st.write(', '.join(CONCERNS[i]['label'] for i in CONCERNS if i not in mentioned) or 'All topics mentioned; mention does not establish score eligibility.')
+
+def correction_form(modified=False):
+    with st.expander('Correct a meaning or add an omitted concern'+(' under the modified proposal' if modified else ' in the original proposal')):
+        targets=['current_route_stance','medical_public_benefit_support','awareness_understanding']+list(CONCERNS)
+        tag='modified' if modified else 'original'
+        with st.form('correction_'+tag):
+            target=st.selectbox('Interpretation to correct',targets,format_func=lambda t:CONCERNS[t]['label'] if t in CONCERNS else t.replace('_',' ').title(),key='target_'+tag)
+            text=st.text_area('Your own words about this meaning',key='correction_'+tag)
+            reason=st.text_input('Reason for the correction',key='reason_'+tag)
+            def save():
+                action=s.correct_modified if modified else s.correct
+                perform(action,st.session_state['target_'+tag],st.session_state['correction_'+tag],st.session_state['reason_'+tag],client)
+            st.form_submit_button('Record correction',on_click=save)
+
+def show_score(snapshot,title):
+    if not snapshot:return
+    totals=snapshot['aggregate'];st.subheader(title)
+    st.metric('Provisional scenario-readiness score',str(totals['rounded'])+'/9' if totals['rounded'] is not None else 'Insufficient evidence')
+    st.caption('Coverage: '+totals['coverage']+' · ordinal-score index; coverage differences do not imply personal improvement or decline.')
+    with st.expander(title+' · phase summaries and arithmetic'):st.json(totals)
+
+def joint_form():
+    st.subheader('The exact combined hypothetical proposal')
+    st.write(s.combined_proposal)
+    st.caption('Separate acceptance of earlier questions does not establish acceptance of their combination. Q3 remains a policy preference, not an engineering change.')
+    with st.form('joint'):
+        st.radio('Do you accept this exact combined proposal?',['accept','reject','unsure'],index=None,key='joint_choice')
+        st.multiselect('Which concerns remain?',list(CONCERNS),format_func=lambda t:CONCERNS[t]['label'],key='joint_remaining')
+        st.text_area('Clarify remaining concerns or conditions in your own words',key='joint_text')
+        def save_joint():perform(s.record_joint,st.session_state.joint_choice,st.session_state.joint_remaining,st.session_state.joint_text,client)
+        st.form_submit_button('Interpret combined-proposal response',on_click=save_joint)
+
+if st.session_state.get('action_error'):st.error(st.session_state.action_error)
+if s.state==State.SCENARIO:st.button('Begin',on_click=perform,args=(s.begin,))
 elif s.state==State.ANSWER:
-    with st.form("answer"):
-        st.text_area("Your response",key="citizen_answer",help="Maximum 4000 UTF-8 bytes; full prompt must also fit the context budget.")
-        st.form_submit_button("Assess response",on_click=submit_answer,help="Assessment can take up to three minutes. Your answer is never silently truncated.")
+    with st.form('answer'):
+        st.text_area('Your response',key='citizen_answer',help='Maximum 4000 UTF-8 bytes; the complete request must fit4096 tokens. No silent truncation.')
+        def submit():perform(s.submit,st.session_state.citizen_answer,client)
+        st.form_submit_button('Interpret response',on_click=submit)
+elif s.state in {State.INTERPRETATION,State.CONFIRMED}:
+    show_meaning(s.draft,'Check the interpretation — no scores yet')
+    correction_form()
+    if s.state==State.INTERPRETATION:
+        key='confirm_'+str(s.version)
+        st.checkbox('This interpretation reflects what I meant',key=key)
+        def confirm():perform(s.confirm,st.session_state[key])
+        st.button('Confirm meaning',on_click=confirm)
+    else:
+        st.success('Meaning confirmed. Numeric review has not run yet.')
+        st.button('Calculate initial provisional scores',on_click=perform,args=(s.score_initial,client))
 elif s.state==State.INITIAL:
-    show(s.original,"Original interpretation")
-    if s.corrections: show(s.current,"Corrected interpretation")
-    st.caption("Confirmation checks this interpretation, not measurement validity.")
-    with st.expander("Correct the interpretation"):
-        with st.form("correction"):
-            st.text_area("Restate your complete original position",key="complete_original")
-            st.text_input("What was misinterpreted?",key="correction_reason")
-            st.form_submit_button("Record corrected version",on_click=submit_correction)
-    st.checkbox("This interpretation reflects what I meant",key="interpretation_confirmed")
-    st.checkbox("Consider all three hypothetical changes from the PDF", key="include_reference_questions", help="Otherwise, only questions linked to assessed concerns are shown. Asking an extra question does not mean that concern was assessed.")
-    st.button("Continue to hypothetical questions",on_click=continue_session)
-elif s.state==State.VALIDATION:
+    show_score(s.initial,'Initial assessment — immutable snapshot')
+    st.dataframe([{'Concern':CONCERNS[c['concern_id']]['label'],'Initial score':str(c['score']) if c['score'] is not None else 'Not assessed','Reason':c['rationale']} for c in s.initial['assessment']['concerns']],hide_index=True)
+    st.checkbox('Consider all three FN reference questions',key='all_questions')
+    def followups():perform(s.begin_followups,st.session_state.all_questions)
+    st.button('Continue to follow-ups',on_click=followups)
+elif s.state==State.FOLLOWUPS:
     q=s.questions[len(s.responses)]
-    if len(s.responses)==0:
-        st.write("To check the interpretation of your answer, consider the following hypothetical adjustments. Your original assessment will be preserved.")
-    st.subheader(f"Hypothetical question {len(s.responses)+1} of {len(s.questions)}")
-    st.write(q["text"])
-    st.caption("Consider only the stated hypothetical; you may retain multiple concerns.")
-    if s.include_reference_questions:
-        st.caption("These are the original FN reference questions. Their opposition wording does not establish that you oppose the current route.")
-    with st.form("validation_"+q["id"]):
-        st.radio("Your view",q["choices"],index=None,key="choice_"+q["id"])
-        st.text_area("Optional clarification",key="clarification_"+q["id"])
-        st.form_submit_button("Record and continue",on_click=submit_validation,args=(q["id"],))
-else:
-    show(s.original,"Original assessment — preserved")
-    for c in s.corrections:
-        st.write("Correction reason: "+c["reason"]); show(c["assessment"],"Corrected assessment")
-    st.subheader("Conditional acceptance and remaining concerns")
+    st.subheader('Follow-up '+q['id'].upper());st.write(q['text'])
+    st.caption('FN reference, PDF pp.'+', '.join(map(str,q['source_pages']))+' · hypothetical assumptions. Original scores remain preserved.')
+    with st.form('followup_'+q['id']):
+        st.radio('Your view',q['choices'],index=None,key='choice_'+q['id'])
+        st.text_area('Optional clarification',key='text_'+q['id'])
+        st.radio('This clarification describes',['hypothetical','original'],format_func=lambda x:'This hypothetical modification' if x=='hypothetical' else 'My position on the unchanged original proposal',key='context_'+q['id'])
+        def respond():perform(s.respond,st.session_state['choice_'+q['id']],st.session_state['text_'+q['id']],client,st.session_state['context_'+q['id']])
+        st.form_submit_button('Interpret and record follow-up',on_click=respond)
+elif s.state in {State.UPDATED,State.UPDATE_CONFIRMED}:
+    for key,problem in s.conflicts.items():
+        st.warning(problem['question'])
+        with st.form('resolve_'+key):
+            st.text_area('Your targeted clarification',key='resolve_text_'+key)
+            def resolve(k=key):perform(s.resolve_conflict,k,st.session_state['resolve_text_'+k],client)
+            st.form_submit_button('Resolve this interpretation',on_click=resolve)
+    show_meaning(s.draft,'Refined interpretation of the ORIGINAL proposal')
+    correction_form()
     for r in s.responses:
-        st.write(r["outcome"])
-        if r["clarification"]: st.text(r["clarification"])
-    summary=conclusions(s.responses,s.current)
-    st.subheader("Validation of the initial interpretation")
-    for match in summary["matched_rules"]: st.write(match["interpretation"])
-    for review in summary["concern_validation"]:
-        st.write(CONCERNS[review["concern_id"]]["label"]+": "+review["status"].replace("_"," "))
-        for test in review["tests"]: st.caption(test["question_id"]+": "+test["reason"])
-    for concern in summary["remaining_concerns"]: st.write("Remaining concern: "+concern)
-    if summary["unresolved_questions"]: st.write("Unresolved questions: "+", ".join(summary["unresolved_questions"]))
-    if summary["untested_original_concerns"]: st.write("Original concerns not tested by these modifications: "+", ".join(CONCERNS[i]["label"] for i in summary["untested_original_concerns"]))
-    if summary["overlapping_source_outcomes"]: st.caption(summary["note"])
-    st.write(summary["full_route_acceptance"])
-    with st.expander("FN source mapping · illustrative score proposals"):
-        for match in summary["matched_rules"]:
-            ref=match["source_reference"]
-            st.write(f"PDF p.{ref['source_page']}: {ref['source_impact']}")
-        st.caption("These are the PDF's illustrative proposals, not computed or calibrated scores. FN supplies no numerical validation-update formula.")
-    st.caption("No numerical validation update is justified. These outcomes do not replace original scores.")
-    st.download_button("Export session JSON",json.dumps(s.export(),indent=2,ensure_ascii=False),file_name="iam-session.json",mime="application/json")
-with st.expander("Developer metadata"):
-    st.json({"mode":"mock" if mock else "live","model":config("model"),"endpoint":BASE_URL,"registry":REGISTRY['version'],"scenario":SCENARIO['version'],"scoring":POLICY['version'],"validation":config('validation')['version'],"prompt":config("prompts")["version"],"evidence_eligibility":config("evidence_eligibility")["version"],"schema":SCHEMA_VERSION,"context":4096,"stage_output_limits":STAGE_LIMITS,"maximum_calls":32,"assessment_deadline_seconds":180})
-    st.caption("In-memory session; raw citizen text is not written to routine logs. Explicit exports include citizen text.")
+        with st.expander('Recorded '+r['question_id'].upper()+' · '+r['clarification_context']):
+            st.write(r['choice']);st.text(r['clarification']);st.write(r['outcome'])
+    if s.joint_required:joint_form()
+    if s.conditional_draft:
+        show_meaning(s.conditional_draft,'Interpretation under the MODIFIED proposal')
+        correction_form(modified=True)
+    if s.state==State.UPDATED:
+        key='updated_confirm_'+str(s.version)
+        st.checkbox('The updated original and hypothetical interpretations reflect what I meant',key=key)
+        def confirm_updated():perform(s.confirm_updated,st.session_state[key])
+        st.button('Confirm updated meaning',on_click=confirm_updated)
+    else:
+        st.success('Updated meaning confirmed. Final numerical review has not run yet.')
+        st.button('Calculate final provisional scores',on_click=perform,args=(s.score_final,client))
+else:
+    show_score(s.initial,'Initial original proposal')
+    show_score(s.final,'Final refined ORIGINAL proposal')
+    show_score(s.conditional,'Separate CONDITIONAL proposal')
+    if not s.conditional:st.info('Conditional assessment unavailable: no sufficiently confirmed modified-proposal position.')
+    rows=comparison(s.initial,s.final,s.conditional,s.final['update_reasons'])
+    st.subheader('All 15 concerns · provisional comparison')
+    st.dataframe([{'Concern':r['concern'],'Initial':str(r['initial_score']) if r['initial_score'] is not None else 'Not assessed',
+        'Final original':str(r['final_original_score']) if r['final_original_score'] is not None else 'Not assessed',
+        'Conditional':str(r['conditional_score']) if r['conditional_score'] is not None else 'Not assessed',
+        'Explanation of change':r['reason']+' Conditional: '+r['conditional_reason'],'Evidence':'\n'.join(dict.fromkeys(sum(r['evidence'].values(),[])))} for r in rows],hide_index=True)
+    if s.joint:
+        stance=s.conditional_confirmed['meaning']['current_route_stance']['interpretation'] if s.conditional_confirmed else 'unresolved'
+        st.write('**Combined-proposal choice:** '+s.joint['choice']+' · Confirmed interpretation: '+stance);st.write(s.joint['proposal'])
+        st.write('**Remaining concerns:** '+(', '.join(CONCERNS[c]['label'] for c in s.joint['remaining_concern_ids']) or 'None selected; see evidence and untested facets.'))
+    tracking=conclusions(s.responses,Assessment.model_validate(s.initial['assessment']))
+    with st.expander('Remaining conditions, validation assumptions and untested facets'):st.json(tracking)
+    with st.expander('Confirmed interpretations, evidence IDs and correction history'):
+        st.json({'confirmations':s.confirmations,'corrections':s.corrections})
+    st.download_button('Export session JSON',s.json(),file_name='iam-session.json',mime='application/json')
+    st.download_button('Export session JSONL',s.jsonl(),file_name='iam-session.jsonl',mime='application/x-ndjson')
+with st.expander('Developer metadata'):
+    st.json({'mode':'mock' if mock else 'live','endpoint':BASE_URL,'model':config('model'),'reassessment':config('reassessment')['version'],
+        'state':s.state.value,'interpretation_version':s.version,'inference':s.inference})
+    st.caption('In-memory session. Raw citizen text is omitted from routine logs; explicit exports contain testimony.')

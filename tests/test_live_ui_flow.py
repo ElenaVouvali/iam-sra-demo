@@ -1,32 +1,36 @@
-"""Offline full validation flow through the actual Streamlit UI."""
-import json
+"""Full UI path with explicitly injected test doubles, never live validation."""
 from pathlib import Path
 from streamlit.testing.v1 import AppTest
-from test_core import payload
+from test_confirmation import Fake, meaning
+from test_ui import click
 
 def test_ui_full_validation_and_export(monkeypatch):
-    from iam_sra.assessment import parse_assessment
-    def interpret(self,text):
-        data=payload({'noise':3,'visual_pollution':4,'perceived_safety_privacy':2},text)
-        data['current_route_stance']={**data['current_route_stance'],'interpretation':'opposed'}
-        return parse_assessment(json.dumps(data),text)
+    client=Fake(meaning(scores=('noise','perceived_safety_privacy'),facets={'perceived_safety_privacy':['personal_privacy']}))
     monkeypatch.setenv('IAM_MOCK','0')
-    monkeypatch.setattr('iam_sra.llm_client.LLMClient.__call__',interpret)
-    app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py')).run()
-    app.button[1].click().run()
-    app.text_area[0].set_value('I oppose this route. Noise, visible drones and cameras worry me.')
-    app.button[1].click().run()
-    assert not app.exception
-    original=app.session_state.session.original.model_dump()
-    next(b for b in app.button if b.label=='Continue to hypothetical questions').click().run()
-    app.run()
-    for index in [0,1,1]:
-        app.radio[0].set_value(app.radio[0].options[index])
-        next(b for b in app.button if b.label=='Record and continue').click().run()
-        assert not app.exception
-        app.run()
-    session=app.session_state.session
-    assert session.state.value=='final_report'
-    assert len(session.responses)==3 and session.original.model_dump()==original
-    assert 'Visual clutter remains' in session.responses[1]['outcome']
-    assert all(r['numerical_update'] is None for r in session.responses)
+    monkeypatch.setattr('iam_sra.conversation_client.ConversationClient',lambda:client)
+    app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
+    click(app,'Begin')
+    app.text_area(key='citizen_answer').set_value('I oppose the hum and cameras.')
+    click(app,'Interpret response')
+    assert app.session_state.session.initial is None and not app.metric
+    next(c for c in app.checkbox if c.label=='This interpretation reflects what I meant').check().run()
+    click(app,'Confirm meaning');click(app,'Calculate initial provisional scores')
+    original=app.session_state.session.initial
+    app.checkbox(key='all_questions').check().run()
+    click(app,'Continue to follow-ups')
+    for q in app.session_state.session.questions:
+        app.radio(key='choice_'+q['id']).set_value(q['choices'][0])
+        click(app,'Interpret and record follow-up')
+    app.radio(key='joint_choice').set_value('accept')
+    app.text_area(key='joint_text').set_value('Under the combined modifications I accept noise and shielded cameras.')
+    click(app,'Interpret combined-proposal response')
+    next(c for c in app.checkbox if c.label=='The updated original and hypothetical interpretations reflect what I meant').check().run()
+    click(app,'Confirm updated meaning');click(app,'Calculate final provisional scores')
+    assert not app.error
+    assert app.session_state.session.initial==original
+    assert len(app.dataframe[0].value)==15
+    assert len(app.get('download_button'))==2
+    export=app.session_state.session.export()
+    assert export['conditional']['context']=='modified'
+    assert export['initial']['aggregate']==export['final_original']['aggregate']
+    assert len(export['responses'])==3

@@ -39,7 +39,7 @@ def test_previous_session_records_are_compatible():
     assert conclusions(old)['remaining_concerns']==['Visual clutter']
 
 def test_all_reference_questions_do_not_assess_missing_concerns():
-    from iam_sra.session import Session
+    from iam_sra.legacy_session import Session
     a=assessment({'perceived_safety_privacy':2})
     s=Session();s.begin();s.submit('noise privacy visual welfare',lambda text:a)
     original=s.original.model_dump()

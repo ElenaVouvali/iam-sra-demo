@@ -1,36 +1,38 @@
-"""Live Streamlit renderer plus Qwen inference; intentionally no test double."""
+"""Live Streamlit renderer; all outcome reporting includes failures, no test double."""
 import json
+import argparse
 import os
-from pathlib import Path
+import time
 from streamlit.testing.v1 import AppTest
 from iam_sra.settings import ROOT
+parser=argparse.ArgumentParser();parser.add_argument('--output',default='.runtime/smoke-ui-confirmed.json');args=parser.parse_args()
 os.environ['IAM_MOCK']='0'
-app=AppTest.from_file(str(ROOT/'app.py'),default_timeout=200).run()
-app.button[1].click().run()
-app.text_area[0].set_value(json.loads((ROOT/'eval/fn_reference.json').read_text())['citizen_text'])
-app.button[1].click().run(timeout=200)
-if app.exception or app.error: raise RuntimeError('Live initial assessment failed')
-original=app.session_state.session.original.model_dump()
-app.checkbox[0].check().run()
-app.checkbox(key="include_reference_questions").check().run()
-next(b for b in app.button if b.label=='Continue to hypothetical questions').click().run()
-for index in [0,2,2]:
-    app.radio[0].set_value(app.radio[0].options[index])
-    next(b for b in app.button if b.label=='Record and continue').click().run()
-    if app.exception or app.error:raise RuntimeError('Live UI transition failed')
-s=app.session_state.session
-report={'mode':'LIVE','completed':s.state.value=='final_report','question_ids':[r['question_id'] for r in s.responses],'original_preserved':s.original.model_dump()==original,'export_schema_available':bool(s.export()),'download_button_rendered':len(app.get('download_button'))==1,'conditional_outcomes':[r['outcome'] for r in s.responses],'matched_rules':[m['rule_id'] for m in s.export()['conclusions']['matched_rules']],'numerical_update':s.export()['conclusions']['numerical_update'],'concern_validation':s.export()['conclusions']['concern_validation'],'residential_routing':s.export()['conclusions']['residential_routing'],'versions':s.export()['versions'],'original_scores':{c.concern_id:c.score for c in s.original.concerns if c.status=='assessed'},'aggregate':s.export()['original_aggregate'],'settings':s.export()['original_inference']['settings']}
-(ROOT/'.runtime/smoke-ui-recalibrated.json').write_text(json.dumps(report,indent=2)+'\n')
+start=time.monotonic();report={'mode':'LIVE','synthetic':True,'success':False,'stage':'startup'}
+def click(app,label):
+ next(b for b in app.button if b.label==label).click().run(timeout=400)
+ if app.exception or app.error:raise RuntimeError('UI failed: '+str([e.value for e in app.error]))
+try:
+ app=AppTest.from_file(str(ROOT/'app.py'),default_timeout=400).run()
+ click(app,'Begin')
+ app.text_area(key='citizen_answer').set_value(json.loads((ROOT/'eval/fn_reference.json').read_text())['citizen_text'])
+ report['stage']='interpretation';click(app,'Interpret response')
+ assert app.session_state.session.initial is None and not app.metric
+ next(c for c in app.checkbox if c.label=='This interpretation reflects what I meant').check().run()
+ click(app,'Confirm meaning');report['stage']='initial scoring';click(app,'Calculate initial provisional scores')
+ original=app.session_state.session.initial
+ app.checkbox(key='all_questions').check().run();click(app,'Continue to follow-ups')
+ report['stage']='followups'
+ for q,index in zip(app.session_state.session.questions,[0,2,2]):
+  app.radio(key='choice_'+q['id']).set_value(q['choices'][index]);click(app,'Interpret and record follow-up')
+ report['stage']='joint interpretation';app.radio(key='joint_choice').set_value('unsure');click(app,'Interpret combined-proposal response')
+ next(c for c in app.checkbox if c.label=='The updated original and hypothetical interpretations reflect what I meant').check().run()
+ click(app,'Confirm updated meaning');report['stage']='final scoring';click(app,'Calculate final provisional scores')
+ s=app.session_state.session
+ assert s.initial==original and len(app.get('download_button'))==2 and len(app.dataframe[0].value)==15
+ report.update(success=True,initial_preserved=True,score_free_submission=True,download_count=2,comparison_count=15,
+  initial=s.initial['aggregate'],final_original=s.final['aggregate'],conditional=s.conditional,question_ids=[r['question_id'] for r in s.responses])
+except Exception as exc:report.update(error_type=type(exc).__name__,error=str(exc))
+report['latency_seconds']=round(time.monotonic()-start,3)
+(ROOT/args.output).write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))
-assert report['completed'] and report['original_preserved'] and report['question_ids']==['q1','q2','q3'] and report['download_button_rendered']
-
-assert report["matched_rules"]==["remaining_objection"] and report["numerical_update"] is None
-
-statuses={r['concern_id']:r['status'] for r in report['concern_validation']}
-privacy=next((r for r in report['concern_validation'] if r['concern_id']=='perceived_safety_privacy'),None)
-if privacy:
-    assert next(t for t in privacy['tests'] if t['question_id']=='q1')['status']=='resolved_under_assumptions'
-    assert privacy['status']==('partially_tested' if privacy['untested_facets'] else 'resolved_under_assumptions')
-if 'noise' in statuses: assert statuses['noise']=='partially_tested'
-if 'welfare_equity' in statuses: assert statuses['welfare_equity']=='unresolved'
-assert report['residential_routing']['status']=='remaining'
+if not report['success']:raise SystemExit(1)

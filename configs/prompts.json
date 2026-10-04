@@ -1,9 +1,11 @@
 {
-  "version": "3.3.0",
+  "version": "4.0.0",
   "assessment": "prompts/assessment.txt",
   "evidence_selection": "numbered_passages_v1",
   "construct": "concern_specific_conditional_scenario_readiness",
-  "calls": "One semantic mapping call followed by one independent evidence review/scoring call per assessed candidate (maximum15). One retry per call, maximum32 calls total. Unassessed candidates do not invoke scoring. No application score substitution.",
+  "calls": "Submission: one mapping stage plus numeric-free scope review per candidate (maximum15), all within180s; at most one retry per stage, maximum32 calls. Explicit confirmation precedes up to15 independent numeric-only reviews (maximum30 calls,180s). Follow-up/context meanings are separate bounded interpretation actions. Final original and conditional numeric profiles are independently bounded; no hidden scoring before either confirmation.",
   "mapping": "prompts/assessment.txt",
-  "scoring": "prompts/scoring.txt"
+  "scoring": "prompts/scoring.txt",
+  "confirmed_scoring": "prompts/confirmed-scoring.txt",
+  "scope_review": "prompts/scope-review.txt"
 }
