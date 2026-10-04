@@ -51,13 +51,15 @@ V100 after-action samples were26898–26900MiB (~26.27GiB), not peak measurement
 
 Limits: semantic metadata/scope review are fallible; repeated runs differ; facets under one numeric parent can remain ambiguous; six questions may leave issues unresolved; questions can affect later testimony; confirmed blockers are acceptance boundaries, not calibrated bottlenecks. Source questions are bundled/leading; FN lacks complete score anchors and a numerical update formula, and source mean4.25 versus6.0 remains inconsistent. GA provenance remains pending. No scientific validity, official EU readiness or established engineering/clinical effects are claimed.
 
+The implementation was subsequently published on `main` at the user’s request; the fully merged feature branch was removed. The development-stage no-push/no-merge statements above describe the original implementation work.
+
 ## Commands
 
-On liono, when ready to load this local branch (not executed by the agent):
+On liono, when ready to load the updated main branch (service restart not executed by the agent):
 
 ```bash
 cd /home/elvouvali/IAM_CC/iam-sra-demo
-git switch feature/evidence-discovery
+git switch main
 PYTHONPATH=src .venv/bin/python -m pytest -q
 scripts/stop-ui.sh
 scripts/start-ui.sh
