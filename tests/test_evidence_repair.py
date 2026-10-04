@@ -41,7 +41,7 @@ def test_joint_acceptance_keeps_tested_choices_and_explicit_unchanged_benefit():
     s.continue_final(True,c)
     assert s.conditional['aggregate']['trace']['denominator']==3 and s.initial==original
     assert not citizen_summary(s)['remaining_objections']
-    assert s.export()['schema_version']=='5.2.0'
+    assert s.export()['schema_version']=='5.3.0'
 
 
 def test_no_implicit_inheritance_of_untested_medical_meaning():

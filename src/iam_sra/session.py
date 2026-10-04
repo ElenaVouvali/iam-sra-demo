@@ -114,13 +114,17 @@ class Session:
     def begin(self):
         self._require(State.SCENARIO);self.state=State.ANSWER
 
+    def _client(self,client):
+        if hasattr(client,'bind_session'):client.bind_session(self.session_id,(len(self.corrections),len(self.revision_history)))
+        return client
+
     def _record(self,client,stage):
         if stage=='discovery metadata':
             self.boundary_nominations.extend(deepcopy(p) for p in getattr(client,'last_candidate_projections',[]) if p.get('kind')=='boundary_review' and (not p.get('supported_facets') or not p.get('decisiveness_supported')))
         self.inference.append({'stage':stage,'version':self.version,'diagnostics':deepcopy(getattr(client,'last_diagnostics',[])),
             'raw_model_trace':deepcopy(getattr(client,'last_trace',[])),
             'settings':deepcopy(getattr(client,'last_settings',{})), 'raw_model_scores':deepcopy(getattr(client,'last_raw_scores',{})),
-            'candidate_projections':deepcopy(getattr(client,'last_candidate_projections',[]))})
+            'candidate_projections':deepcopy(getattr(client,'last_candidate_projections',[])), 'metrics':deepcopy(getattr(client,'last_metrics',{}))})
 
     def _remember(self,kind):
         self.interpretations.append({'version':self.version,'kind':kind,'model_proposed_meaning':self.draft.model_dump(),
@@ -132,9 +136,9 @@ class Session:
         self._checkpoint('initial_answer')
         prefix='O' if 'O.p001' not in self.evidence else 'O'+str(len(self.revision_history)+1)
         items={f'{prefix}.{k}':EvidenceItem(id=f'{prefix}.{k}',text=v,context='original',source='citizen_original') for k,v in passages(text).items()}
-        result=client.interpret(items)
+        result=self._client(client).interpret(items)
         self._record(client,'interpretation attempt')
-        facts=client.discovery_facts(items) if hasattr(client,'discovery_facts') else None
+        facts=self._client(client).discovery_facts(items) if hasattr(client,'discovery_facts') else None
         self.text=text;self.evidence.update(items);self.draft,self.original_facets=reconcile_original(None,result,{})
         self.version=1;self._remember('initial proposal')
         self.state=State.INTERPRETATION
@@ -222,7 +226,7 @@ class Session:
         self._checkpoint(q['id'])
         previous=self.draft.model_copy(deep=True)
         if semantic_items:
-            patch=client.interpret(semantic_items,context='original',proposal=SCENARIO['text']+'\nClarification question (background only): '+q['text'],target=cid if cid else None)
+            patch=self._client(client).interpret(semantic_items,context='original',proposal=SCENARIO['text']+'\nClarification question (background only): '+q['text'],target=cid if cid else None)
         # Commit only after successful inference. Retries reuse IDs/drafts without losing evidence.
         self.evidence.update(items)
         if patch:
@@ -303,7 +307,7 @@ class Session:
         check_input(text);check_input(reason)
         number=len(self.corrections)+1;key=f'C{number}.testimony'
         item=EvidenceItem(id=key,text=text,context='original',source='citizen_correction')
-        patch=client.interpret({key:item},target=target)
+        patch=self._client(client).interpret({key:item},target=target)
         before=self.draft.model_dump()
         previous=self.draft.model_copy(deep=True)
         if target in CONCERNS:
@@ -379,7 +383,7 @@ class Session:
         check_input(text);check_input(reason)
         key=f'M{len(self.corrections)+1}.testimony'
         item=EvidenceItem(id=key,text=text,context='modified',source='citizen_correction')
-        patch=client.interpret({key:item},'modified',self.combined_proposal,target)
+        patch=self._client(client).interpret({key:item},'modified',self.combined_proposal,target)
         before=self.conditional_draft.model_dump();draft=self.conditional_draft.model_copy(deep=True)
         facts=deepcopy(self.facet_meanings)
         if target in CONCERNS:
@@ -389,7 +393,7 @@ class Session:
             from .updates import FacetMeaning, modified_facets
             required=sorted(set(pair for pair in modified_facets(self) if pair[0]==target)|{(target,f) for f in match.facets})
             reviewed=[(target,f) for f in match.facets]
-            if hasattr(client,'interpret_facets'):updated=client.interpret_facets({key:item},self.joint['proposal'],reviewed)
+            if hasattr(client,'interpret_facets'):updated=self._client(client).interpret_facets({key:item},self.joint['proposal'],reviewed)
             else:updated=[FacetMeaning(concern_id=target,facet=f,position=match.position if f in match.facets else 'unassessed',evidence_ids=[key] if f in match.facets else [],condition_ids=match.conditions if f in match.facets else [],applicability_explicit=f in match.facets,rationale=match.rationale) for cid,f in required]
             changed={(f.concern_id,f.facet) for f in updated}
             facts=[f for f in facts if (f.concern_id,f.facet) not in changed]+updated
@@ -416,19 +420,40 @@ class Session:
 
     def _snapshot(self,assessment,record,kind,client,reasons=None):
         inference=inference_record(assessment,client)
-        inference['score_policy']='Numeric-only review of confirmed meanings; carry-forward and exclusions are recorded separately. Python aggregates per profile.'
-        return {'kind':kind,'interpretation_sha256':record['sha256'],'interpretation_version':record['version'],
+        inference['raw_model_descriptions']=deepcopy(getattr(client,'last_anchor_facts',{}))
+        inference['application_derived_concern_scores']={c.concern_id:c.score for c in assessment.concerns}
+        inference['score_policy']='Model descriptive facts; Python ordinal predicates and per-profile aggregation. Explicit equivalent-meaning reuse is audited.'
+        snapshot={'kind':kind,'interpretation_sha256':record['sha256'],'interpretation_version':record['version'],
             'context':record['context'],'proposal':record['proposal'],'assessment':assessment.model_dump(),
             'aggregate':aggregate(assessment),'update_reasons':deepcopy(reasons or {}),
             'rubric':config('reassessment')['conditional_rubric'] if kind=='conditional' else POLICY['rubric_version'],
             'rubric_anchors':deepcopy(config('reassessment')['conditional_anchors'] if kind=='conditional' else POLICY['anchors']),
-            'policy':config('reassessment')['version'],'inference':inference}
+            'policy':config('reassessment')['version'],'ordinal_policy':config('ordinal')['version'],'score_decisions':deepcopy(getattr(client,'last_score_decisions',[])),'inference':inference}
+        self._score_records(snapshot,record)
+        return snapshot
+
+    def _score_records(self,snapshot,record):
+        """An explicit origin/reason for every domain, including unavailable values."""
+        by={c['concern_id']:c for c in record['meaning']['concerns']}
+        records={}
+        for c in snapshot['assessment']['concerns']:
+            cid=c['concern_id'];meaning=by.get(cid,{})
+            decisions=[d for d in snapshot.get('score_decisions',[]) if d['concern_id']==cid]
+            records[cid]={'score':c['score'],'context':record['context'],
+                'evidence_ids':list(dict.fromkeys(r for d in decisions for r in d.get('evidence_ids',[]))) or meaning.get('excerpts',[]),
+                'condition_ids':list(dict.fromkeys(r for d in decisions for r in d.get('condition_ids',[]))) or meaning.get('conditions',[]),
+                'anchor_rule_ids':[d.get('anchor_rule_id') for d in decisions],
+                'scoring_policy_version':config('ordinal')['version'],
+                'origin':'unavailable' if c['score'] is None else 'carried_original' if cid in snapshot.get('carried_scores',{}) else 'equivalent_meaning_reuse' if decisions and all(d.get('origin')=='equivalent_meaning_reuse' for d in decisions) else 'python_anchor_predicate' if decisions else 'test_or_legacy_client',
+                'reason':snapshot.get('update_reasons',{}).get(cid,c['rationale']),
+                'facet_decisions':deepcopy(decisions)}
+        snapshot['score_records']=records
 
     def score_initial(self,client):
         self._require(State.CONFIRMED);verify(self.confirmed)
         if self._initial is not None:
             self.state=State.INITIAL;return
-        try:result=client.score(deepcopy(self.confirmed))
+        try:result=self._client(client).score(deepcopy(self.confirmed))
         except AssessmentError as exc:
             self._record(client,'initial scoring failure')
             raise
@@ -535,7 +560,7 @@ class Session:
             key=f'{prefix}.clarification'
             if spec.context=='original':
                 items[key]=items[key].model_copy(update={'context':'original'})
-            patch=client.interpret({key:items[key]},items[key].context,SCENARIO['text'] if items[key].context=='original' else q['text'])
+            patch=self._client(client).interpret({key:items[key]},items[key].context,SCENARIO['text'] if items[key].context=='original' else q['text'])
             traces.append({'stage':'clarification interpretation','diagnostics':deepcopy(getattr(client,'last_diagnostics',[]))})
         # A broad unsure choice records an unknown response, not a replacement of prior aspects.
         allowed={t.concern_id for t in spec.targets}
@@ -592,7 +617,7 @@ class Session:
         eid=f'R{len(self.corrections)+1}.testimony'
         item=EvidenceItem(id=eid,text=text,context=ctx,source='citizen_correction',question_id=qid)
         q=next(q for q in self._questions if q['id']==qid)
-        patch=client.interpret({eid:item},ctx,q['text'],problem['target'])
+        patch=self._client(client).interpret({eid:item},ctx,q['text'],problem['target'])
         supported=any(c.concern_id==problem['target'] for c in patch.concerns) if problem['target'] in CONCERNS else getattr(patch,problem['target']).interpretation!='unassessed'
         if not supported:raise ValueError('Clarify the requested meaning explicitly, including unsure if appropriate.')
         self.evidence[eid]=item
@@ -661,7 +686,7 @@ class Session:
             items[eid]=EvidenceItem(id=eid,text=testimony,context='modified',source=source)
             applicability.append({'id':eid,'aspect_key':key,'displayed_statement':statement,'original_evidence_ids':fact.evidence_ids,'original_condition_ids':fact.condition_ids,'response':response,'clarification':clarification,'context':'modified','proposal_id':'combined_modified','policy_version':'applicability-1.0.0'})
         proposal=self.combined_proposal
-        meaning=client.interpret(items,'modified',proposal+'\nSeparate-gate answers are contextual history, not proof of joint acceptance. Interpret the explicit joint answer and remaining concerns; preserve untested facets.')
+        meaning=self._client(client).interpret(items,'modified',proposal+'\nSeparate-gate answers are contextual history, not proof of joint acceptance. Interpret the explicit joint answer and remaining concerns; preserve untested facets.')
         from .updates import FacetMeaning
         established={(c.concern_id,f) for c in self.draft.concerns if c.status=='mapped' for f in c.facets}|{(f.concern_id,f.facet) for f in self.original_facets.values()}
         declared={(c['concern_id'],f) for response in self.responses for c in (response.get('choice_meaning') or {}).get('concerns',[]) for f in c['facets']}
@@ -674,7 +699,7 @@ class Session:
         facts=[]
         if choice!='unsure' and required:
             if hasattr(client,'interpret_facets'):
-                facts=client.interpret_facets(items,proposal,required)
+                facts=self._client(client).interpret_facets(items,proposal,required)
             else:
                 # Explicit test doubles/legacy adapters: single-facet meaning only;
                 # multiple facets are conservative unknowns without a facet interpreter.
@@ -700,6 +725,9 @@ class Session:
             key=cid+':'+aspect
             if key in unchanged_confirmed:
                 old=available[key];eid=prefix+'.applies.'+key
+                if current and current.applicability_explicit and current.position!=old.position and any(items[r].source=='citizen_correction' for r in current.evidence_ids):
+                    self.conflicts['joint:'+cid]={'target':cid,'question':'Your earlier-view confirmation and added words disagree. Please clarify this view with the changes together.'}
+                    continue
                 by[(cid,aspect)]=FacetMeaning(concern_id=cid,facet=aspect,position=old.position,evidence_ids=[eid],condition_ids=[eid] if old.condition_ids else [],applicability_explicit=True,rationale=old.rationale)
         for answer in applicability:
             if answer['response'] in {'unsure','skip'}:
@@ -773,7 +801,7 @@ class Session:
             result=Assessment.model_validate(self._initial['assessment'])
             # Refresh nonnumeric dimensions from confirmed data without a model call.
             if changed:
-                revised=client.score(deepcopy(self.updated_confirmed),only=changed)
+                revised=self._client(client).score(deepcopy(self.updated_confirmed),only=changed)
                 replacements={c.concern_id:c for c in revised.concerns if c.concern_id in changed}
                 result.concerns=[replacements.get(c.concern_id,c) for c in result.concerns]
                 for cid in changed:self._reasons.setdefault(cid,'Reassessed from relevant confirmed original-proposal evidence.')
@@ -784,9 +812,11 @@ class Session:
             result.acceptance_conditions=[evidence[r]['text'] for r in original.acceptance_conditions]
             reasons={cid:self._reasons.get(cid,'No relevant new original-proposal evidence; score carried forward unchanged.') for cid in CONCERNS}
             final=self._snapshot(result,self.updated_confirmed,'final_original',client,reasons)
+            final['score_decisions']=[{**deepcopy(d),'origin':'carried_original','reuse_decision':'unchanged_original_meaning','reason':'No relevant new original evidence; retained anchor decision.'} for d in self._initial.get('score_decisions',[]) if d['concern_id'] not in changed]+[d for d in final.get('score_decisions',[]) if d['concern_id'] in changed]
             final['carried_scores']={c.concern_id:{'score':c.score,'from_snapshot':'initial','reason':reasons[c.concern_id]} for c in result.concerns if c.concern_id not in changed}
             if not changed:
-                final['inference'].update(raw_model_scores={},attempts=[],raw_model_trace=[],settings={'model_call':False,'reason':'All concern scores carried from immutable initial snapshot.'})
+                final['inference'].update(raw_model_scores={},raw_model_descriptions={},attempts=[],raw_model_trace=[],settings={'model_call':False,'reason':'All concern scores carried from immutable initial snapshot.'})
+        self._score_records(final,self.updated_confirmed)
         self._pending_final_original=deepcopy(final)
         conditional=None
         if self.conditional_confirmed:
@@ -801,13 +831,31 @@ class Session:
         try:return self._conditional_reviews(client)
         finally:del client.external_deadline
 
+    def _equivalent_decision(self,f):
+        """Reuse requires an explicit unchanged affirmation, not overall approval."""
+        key=f.concern_id+':'+f.facet
+        answer=next((a for a in self.joint.get('applicability_confirmations',[]) if a['aspect_key']==key and a['response']=='yes'),None)
+        if not answer or f.concern_id in self.joint['remaining_concern_ids']:return None
+        if f.evidence_ids!=[answer['id']]:return None
+        original=next((a for a in self.updated_confirmed.get('facet_meanings',[]) if a['concern_id']==f.concern_id and a['facet']==f.facet),None)
+        if not original or original['position']!=f.position or original['condition_ids']!=answer['original_condition_ids'] or original['evidence_ids']!=answer['original_evidence_ids']:return None
+        source=self._pending_final_original
+        source_meaning=self.updated_confirmed if source and source['interpretation_sha256']==self.updated_confirmed['sha256'] else None
+        if not source_meaning:return None
+        decision=next((d for d in source.get('score_decisions',[]) if d['concern_id']==f.concern_id and d['facet']==f.facet and d.get('scoring_policy_version')==config('ordinal')['version'] and d.get('score') is not None),None)
+        if not decision or decision.get('construct')!=config('ordinal')['construct'] or config('ordinal')['rules'].get(decision.get('anchor_rule_id'))!=decision['score']:return None
+        return {**deepcopy(decision),'context':'modified','evidence_ids':f.evidence_ids,'condition_ids':f.condition_ids,
+            'source_evidence_ids':original['evidence_ids'],'source_decision':deepcopy(decision),'source_snapshot':'final_original',
+            'origin':'equivalent_meaning_reuse','reuse_decision':'explicit_applicability_same_construct_meaning_conditions_policy',
+            'reason':'Explicit unchanged applicability, equivalent facet meaning/conditions and shared policy; source ordinal decision retained.'}
+
     def _conditional_reviews(self,client):
         from .updates import modified_facets, facet_availability
         from .schemas import Assessment, Concern, MappingConcern
         from .interpretation import digest
         profile,evidence=verify(self.conditional_confirmed)
         required=modified_facets(self);by={c.concern_id:c for c in profile.concerns}
-        exclusions={};scores={};reasons={};items=[];traces=[]
+        exclusions={};scores={};reasons={};items=[];traces=[];decisions=[]
         for cid in CONCERNS:
             facets=[f for c,f in required if c==cid]
             facts=[next((x for x in self.facet_meanings if x.concern_id==cid and x.facet==f),None) for f in facets]
@@ -823,16 +871,28 @@ class Session:
                     record['meaning']['concerns']=[facet.model_dump()]
                     record['facet_slice']={'concern_id':cid,'facet':f.facet,'confirmed_parent_sha256':self.conditional_confirmed['sha256']}
                     record.pop('sha256');record['sha256']=digest(record)
-                    assessed=client.score(record,only={cid})
-                    value=next(x.score for x in assessed.concerns if x.concern_id==cid)
+                    reused=self._equivalent_decision(f)
+                    if reused:
+                        value=reused['score'];decisions.append(reused)
+                        traces.append({'facet':f.model_dump(),'reuse':reused,'inference':{'settings':{'model_call':False,'request_metrics':[]}}})
+                    else:
+                        try:assessed=self._client(client).score(record,only={cid})
+                        except AssessmentError:
+                            self._record(client,'conditional aspect scoring failure: '+cid+':'+f.facet)
+                            raise
+                        self._record(client,'conditional aspect scoring: '+cid+':'+f.facet)
+                        value=next(x.score for x in assessed.concerns if x.concern_id==cid)
+                        reviewed=deepcopy(getattr(client,'last_score_decisions',[]))
+                        for d in reviewed:d['reuse_decision']='reassessed_changed_or_unproven_equivalence'
+                        decisions.extend(reviewed)
+                        traces.append({'facet':f.model_dump(),'inference':inference_record(assessed,client)})
                     values.append(value);scores[cid+':'+f.facet]=value
-                    traces.append({'facet':f.model_dump(),'inference':inference_record(assessed,client)})
                 eligible=all(v is not None for v in values)
             score=min(values) if eligible else None
             refs=list(dict.fromkeys(r for f in facts if f for r in f.evidence_ids))
             conditions=list(dict.fromkeys(r for f in facts if f for r in f.condition_ids))
             missing=[f for f in facets if not any(x and x.facet==f and facet_availability(self,x) for x in facts)]
-            rationale='Minimum of independently reviewed applicable aspects in this modified proposal.' if eligible else 'Clarify these aspects in the combined proposal: '+', '.join(missing) if missing else 'An independent numerical review returned unavailable; see facet review reasons.'
+            rationale='Minimum of independently reviewed applicable aspects in this modified proposal.' if eligible else 'Clarify these aspects in the combined proposal: '+', '.join(missing) if missing else '; '.join(d['reason'] for d in decisions if d['concern_id']==cid and d.get('score') is None) or 'Your position or remaining requirements for this aspect need clarification.'
             if not eligible:exclusions[cid]=rationale
             # Parent evidence remains bounded; all exact aspect refs are in confirmed facets/export.
             items.append(Concern(concern_id=cid,status='assessed' if score is not None else 'unassessed',score=score,position='mixed' if len({f.position for f in facts if f})>1 else facts[0].position if facts and facts[0] else 'unassessed',
@@ -841,8 +901,11 @@ class Session:
         dims={name:{**getattr(profile,name).model_dump(),'excerpts':[evidence[r].text for r in getattr(profile,name).excerpts]} for name in ['awareness_understanding','medical_public_benefit_support','current_route_stance']}
         result=Assessment(scenario_id=profile.scenario_id,concerns=items,acceptance_conditions=[evidence[r].text for r in profile.acceptance_conditions],**dims)
         snapshot=self._snapshot(result,self.conditional_confirmed,'conditional',client,reasons)
+        snapshot['score_decisions']=decisions
+        self._score_records(snapshot,self.conditional_confirmed)
         snapshot.update(scoring_exclusions=exclusions,facet_reviews=traces,facet_scores=scores,facet_combination=config('updates')['facet_combination'])
-        snapshot['inference']['raw_model_scores']=deepcopy(scores)
+        snapshot['inference']['raw_model_scores']={}
+        snapshot['inference']['application_derived_facet_scores']=deepcopy(scores)
         self.facet_scores=scores;self._record(client,'conditional aspect scoring')
         return snapshot
 

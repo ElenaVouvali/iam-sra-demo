@@ -1,0 +1,39 @@
+{
+  "version": "3.0.0-experimental",
+  "construct": "expressed_concern_specific_position",
+  "scope": "One confirmed facet in one explicitly defined proposal. Both contexts use the same ordinal predicates; hypothetical assumptions change the meaning, not the numeric table.",
+  "acceptance": {
+    "rejects": "Rejects this aspect as specified in THIS proposal.",
+    "conditional": "Would accept only after a further change not included in THIS proposal.",
+    "balanced": "Willingness and material reservations without clear acceptance.",
+    "cautious": "Accepts with caution or limited reservations.",
+    "qualified": "Accepts with manageable remaining requirements.",
+    "clear": "Clearly accepts/supports this aspect; a brief answer or choice can establish this.",
+    "endorsement": "Citizen explicitly endorses this aspect without reservations, not merely Yes/agreement or model wording.",
+    "unknown": "No evaluable position or inconsistent evidence."
+  },
+  "objection": {
+    "categorical": "Explicitly refuses despite specified changes/no stated acceptable modification.",
+    "strong_personal_boundary": "Strong personal intrusion/risk requiring avoidance/removal.",
+    "strong_disruption": "Strong concrete disruption requiring substantial mitigation.",
+    "meaningful_reservation": "Material objection/additional requirement.",
+    "limited_reservation": "Manageable or limited reservation.",
+    "none": "No remaining objection to this aspect is expressed.",
+    "unknown": "Intensity or relevant meaning cannot be established."
+  },
+  "rules": {
+    "categorical_refusal": 1,
+    "strong_personal_boundary": 2,
+    "strong_disruption": 3,
+    "further_change_required": 4,
+    "balanced_position": 5,
+    "cautious_acceptance": 6,
+    "qualified_acceptance": 7,
+    "clear_acceptance": 8,
+    "explicit_unqualified_endorsement": 9
+  },
+  "highest_criterion": "Endorsement, no objection or additional requirement, user-authored testimony and separate semantic criterion check. A generated rationale, approved choice, bare agreement or applicability confirmation cannot alone establish endorsement. Brevity itself is irrelevant.",
+  "uncertainty": "No neutral substitute. Inconsistent/missing descriptions return null with clarification.",
+  "reuse": "Explicit unchanged applicability and equivalent construct, facet position, conditions and policy. Preserve the source decision and testimony; reuse is not a new endorsement.",
+  "facet_combination": "Minimum independently anchored clear relevant facets, once per concern. Unknown required modified facets make that concern unavailable."
+}

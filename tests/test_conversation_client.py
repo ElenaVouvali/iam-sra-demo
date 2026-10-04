@@ -24,14 +24,14 @@ def test_live_client_interpret_only_does_mapping(monkeypatch):
 
 
 def test_numeric_api_has_no_remapping_fields_and_uses_confirmed_evidence(monkeypatch):
-    choice={'finish_reason':'stop','message':{'content':json.dumps({'score':3,'rationale':'Strong noise objection.'})}}
+    choice={'finish_reason':'stop','message':{'content':json.dumps({'acceptance':'conditional','objection':'strong_disruption','further_requirement':True,'evidence_ids':['O.p001'],'endorsement_evidence_ids':[],'rationale':'Strong noise objection.'})}}
     calls=fake_client(monkeypatch,[choice])
     evidence={'O.p001':EvidenceItem(id='O.p001',text='The noise bothers me.',context='original',source='citizen_original')}
     record=freeze(meaning(),evidence,1,'original','Original proposal')
     result=ConversationClient().score(record)
     assert result.concerns[0].score==3
     payload=calls[-1][1]
-    assert set(payload['guided_json']['properties'])=={'score','rationale'}
+    assert set(payload['guided_json']['properties'])=={'acceptance','objection','further_requirement','evidence_ids','endorsement_evidence_ids','rationale'}
     request=json.loads(payload['messages'][1]['content'])
     assert request['confirmed_meaning']==record['meaning']['concerns'][0]
     assert request['citizen_evidence'][0]['text']=='The noise bothers me.'
@@ -54,7 +54,7 @@ def test_ambiguous_confirmed_meaning_never_scored(monkeypatch):
 
 
 def test_original_history_is_concern_specific_and_preserves_superseded_evidence(monkeypatch):
-    choice={'finish_reason':'stop','message':{'content':json.dumps({'score':8,'rationale':'Confirmed acoustic acceptance.'})}}
+    choice={'finish_reason':'stop','message':{'content':json.dumps({'acceptance':'clear','objection':'none','further_requirement':False,'evidence_ids':['C1.testimony'],'endorsement_evidence_ids':[],'rationale':'Confirmed acoustic acceptance.'})}}
     calls=fake_client(monkeypatch,[choice])
     evidence={key:EvidenceItem(id=key,text=text,context='original',source=source) for key,text,source in [
         ('O.p001','The original hum bothered me.','citizen_original'),

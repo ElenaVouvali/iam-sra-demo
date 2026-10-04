@@ -17,12 +17,13 @@
     "3": "Strong concrete disruption objection; accepts only after substantial mitigation, removal or avoidance of that effect.",
     "4": "Localized intrusion/reservation with conditional openness requiring a meaningful change.",
     "5": "Balanced concern-specific willingness and reservations; uncertainty without a position stays null.",
-    "6": "Cautious acceptance with limited reservations and willingness to tolerate some impact; NOT merely accepting after an intolerable effect is eliminated.",
-    "7": "Qualified acceptance with manageable reservations or conditions, tolerating some impact rather than requiring elimination of a strong boundary.",
+    "6": "Accepts this specified aspect with caution or limited reservations; conditions already stipulated in this proposal are not additional requirements.",
+    "7": "Accepts this specified aspect with manageable remaining requirements or reservations; preserve those requirements.",
     "8": "Clear concern-specific support, including medical-public-service welfare support; other concern opposition is separate.",
-    "9": "Explicit unqualified endorsement of the assessed concern facet; no inferred global readiness."
+    "9": "Explicit citizen-authored unqualified endorsement, no remaining requirements; independently checked. Bare Yes/choices/confirmation do not suffice."
   },
-  "rubric_version": "2.0.0-experimental",
+  "rubric_version": "3.0.0-experimental",
   "index_interpretation": "Illustrative arithmetic index over ordinal concern scores; not a calibrated measurement.",
-  "bottleneck_rationale": "Experimental generalization of FN p.7 minimum privacy score 2 plus 2: eligible assessed phase-1 scores <=3, minimum plus 2. No claim FN establishes a universal threshold or offset."
+  "bottleneck_rationale": "Experimental generalization of FN p.7 minimum privacy score 2 plus 2: eligible assessed phase-1 scores <=3, minimum plus 2. No claim FN establishes a universal threshold or offset.",
+  "ordinal_policy": "configs/ordinal.json"
 }

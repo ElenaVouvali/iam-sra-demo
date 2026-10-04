@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "note": "Synthetic contrast contracts, not empirical calibration. No required exact live integers.",
+  "cases": [
+    {"id":"bare_acceptance","text":"Yes, I accept this route.","require":[],"exclude_scores":["noise","welfare_equity","perceived_safety_privacy"]},
+    {"id":"bare_rejection","text":"No, I oppose this route.","require":[],"exclude_scores":["noise","welfare_equity","perceived_safety_privacy"]},
+    {"id":"uncertainty","text":"I am unsure about this proposal.","require":[],"exclude_scores":["noise","welfare_equity","perceived_safety_privacy"]},
+    {"id":"medical_short","text":"I support hospital deliveries because they save lives.","require":["welfare_equity"],"exclude":["infrastructure_land_use","airspace_capacity"],"no_highest":true},
+    {"id":"medical_changed","text":"I no longer support this medical delivery service, even with quieter flights and shielding. I would reject its medical purpose despite these changes.","require":["welfare_equity"],"exclude":["noise","perceived_safety_privacy"],"no_highest":true},
+    {"id":"qualified_noise","text":"I accept the proposed sound of these flights with some reservations about relaxing outside.","require":["noise"],"no_highest":true},
+    {"id":"medical_privacy_mixed","text":"I support the lifesaving hospital purpose, but reject cameras viewing my family unless that view is blocked.","require":["welfare_equity","perceived_safety_privacy"],"exclude":["airspace_capacity","infrastructure_land_use"],"no_highest":true},
+    {"id":"privacy_not_safety","text":"Navigation cameras looking into my windows make me uncomfortable. Shield that view and I would accept that aspect.","require":["perceived_safety_privacy"],"exclude":["technical_safety_security_privacy"],"no_highest":true},
+    {"id":"safety_not_privacy","text":"A drone could crash onto people. I object to that physical danger; cameras do not concern me.","require":["perceived_safety_privacy"],"no_highest":true},
+    {"id":"altitude_not_capacity","text":"Sixty metres is very low. I do not know if that height is acceptable.","exclude":["airspace_capacity","infrastructure_land_use"]},
+    {"id":"noise_not_capacity","text":"Fifteen flights a day create a constant hum that would disrupt my rest. Quiet them and I could accept the sound.","require":["noise"],"exclude":["airspace_capacity"],"no_highest":true},
+    {"id":"legitimate_capacity","text":"There is not enough space for competing helicopters and drones unless their movements are coordinated.","require":["airspace_capacity"],"no_highest":true},
+    {"id":"routing_not_facility","text":"Keep the flight path away from our homes so cameras cannot view private spaces.","require":["perceived_safety_privacy"],"exclude":["infrastructure_land_use","airspace_capacity"],"no_highest":true},
+    {"id":"legitimate_facility","text":"I object to allocating our community garden to a landing pad. An existing hospital roof would be acceptable.","require":["infrastructure_land_use"],"no_highest":true},
+    {"id":"short_endorsement","text":"I wholeheartedly endorse the medical purpose without any reservations.","require":["welfare_equity"]}
+  ]
+}

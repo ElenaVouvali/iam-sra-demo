@@ -1,9 +1,9 @@
 {
-  "version": "5.2.0",
+  "version": "5.3.0",
   "assessment": "prompts/assessment.txt",
   "evidence_selection": "numbered_passages_v1",
   "construct": "concern_specific_conditional_scenario_readiness",
-  "calls": "Submission: one score-free mapping call, up to30 facet scope reviews, at most eight independent contrastive routing/visual/airspace/privacy/physical-risk/system-reliability attribution calls and one factual-awareness call. Maximum80 attempts within a shared180-second deadline; at most one retry per request. A separate score-free discovery metadata stage reserves500 output tokens; at most4 boundary nominations receive up to2 facet scope checks,2 attribution checks and1 independent-decisiveness check each, within one180-second stage deadline. Excess nominations stay audit-only; no numeric calls occur. Approved follow-up choices use declared Python meanings; optional text uses bounded semantic mapping. Initial numeric review follows explicit confirmation, maximum15 concerns/two attempts each/180s. Modified facet interpretation uses batches of six,1200 reserved output tokens and180s; final original/conditional reviews have independent180s budgets. Conditional numeric review is per confirmed applicable facet. Every request checks full-chat prompt plus output against4096, with no silent truncation. Failed calculation retains confirmations/drafts for retry.",
+  "calls": "Submission: one score-free mapping call, up to30 facet scope reviews, at most eight independent contrastive routing/visual/airspace/privacy/physical-risk/system-reliability attribution calls and one factual-awareness call. Maximum80 attempts within a shared180-second deadline; at most one retry per request. A separate score-free discovery metadata stage reserves500 output tokens; at most4 boundary nominations receive up to2 facet scope checks,2 attribution checks and1 independent-decisiveness check each, within one180-second stage deadline. Excess nominations stay audit-only; no numeric calls occur. Approved follow-up choices use declared Python meanings; optional text uses bounded semantic mapping. Initial scoring follows explicit confirmation, up to30 confirmed facets, descriptive review500 output tokens/two attempts each/180s. Modified facet interpretation uses batches of six,1200 reserved output tokens and180s; final original/conditional reviews have independent180s budgets. Conditional numeric review is per confirmed applicable facet. Every request checks full-chat prompt plus output against4096, with no silent truncation. Failed calculation retains confirmations/drafts for retry. Scoring describes confirmed facets; Python applies ordinal3.0 predicates. Highest endorsement needs a conditional independent evidence check. Equivalent affirmed facets can reuse prior decisions. Session-local bounded caches use exact request/context/model/policy keys and clear on edits.",
   "mapping": "prompts/assessment.txt",
   "scoring": "prompts/scoring.txt",
   "confirmed_scoring": "prompts/confirmed-scoring.txt",
@@ -11,5 +11,6 @@
   "discovery_facts": "prompts/discovery-facts.txt",
   "discovery_policy": "configs/discovery.json",
   "facet_evidence": "prompts/facet-evidence.txt",
-  "update_policy": "configs/updates.json"
+  "update_policy": "configs/updates.json",
+  "legacy_scoring_note": "prompts/scoring.txt is used only by the historical one-shot client/evaluator, not by the guided application; confirmed-scoring.txt and ordinal.json define the current path."
 }

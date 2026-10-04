@@ -42,7 +42,9 @@ class LLMClient:
         for attempt in range(2):
             remaining=self._deadline-time.monotonic()
             if remaining<=0:raise AssessmentError("Assessment time limit reached; no result saved.",code="timeout")
+            attempt_start=time.monotonic()
             timeout=min(120,remaining)
+            if hasattr(self,'last_metrics'):self.last_metrics['tokenize_calls']+=1
             tokenized=client.post(self.base_url+'/tokenize',json={"model":MODEL,"messages":messages,"add_generation_prompt":True,"chat_template_kwargs":{"enable_thinking":False}},timeout=timeout)
             tokenized.raise_for_status();count=tokenized.json()['count']
             if type(count) is not int or count<0:raise AssessmentError("Invalid token count; no assessment saved.",code="transport")
@@ -50,6 +52,7 @@ class LLMClient:
             payload={"model":MODEL,"messages":messages,"max_tokens":limit,"temperature":0.2,"top_p":0.8,"chat_template_kwargs":{"enable_thinking":False},"guided_json":guided_schema(schema),"guided_decoding_backend":BACKEND}
             remaining=self._deadline-time.monotonic()
             if remaining<=0:raise AssessmentError('Assessment time limit reached; no result saved.',code='timeout')
+            if hasattr(self,'last_metrics'):self.last_metrics['generation_calls']+=1
             response=client.post(self.base_url+'/v1/chat/completions',json=payload,timeout=min(120,remaining))
             response.raise_for_status();body=response.json();choice=body['choices'][0];message=choice['message'];content=message.get('content') or ''
             thinking=bool(message.get('reasoning_content')) or '<think>' in content or '</think>' in content
@@ -60,11 +63,11 @@ class LLMClient:
             else:
                 try:
                     result=validator(content)
-                    self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"usage":body.get('usage'),"schema_pass":True,"evidence_pass":True,"eligibility_pass":True,"thinking_detected":False})
+                    self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"usage":body.get('usage'),"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":True,"evidence_pass":True,"eligibility_pass":True,"thinking_detected":False})
                     return result
                 except ValidationError as exc:error=schema_error(exc)
                 except AssessmentError as exc:error=exc
-            self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"failure":error.code,"schema_pass":error.code in {'evidence','eligibility'},"evidence_pass":False if error.code=='evidence' else None,"eligibility_pass":False if error.code=='eligibility' else None,"thinking_detected":thinking})
+            self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"failure":error.code,"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":error.code in {'evidence','eligibility'},"evidence_pass":False if error.code=='evidence' else None,"eligibility_pass":False if error.code=='eligibility' else None,"thinking_detected":thinking})
             if attempt==1:raise error
             # No previous citizen/model output is copied into feedback. Recount
             # the whole message before every retry; do not truncate evidence.

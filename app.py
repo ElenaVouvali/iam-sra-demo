@@ -15,9 +15,12 @@ mock=os.getenv('IAM_MOCK','0')=='1'
 developer=os.getenv('IAM_DEVELOPER','0')=='1'
 if mock:
     from iam_sra.mock import MockConversationClient
-    client=MockConversationClient()
+    if "_conversation_client" not in st.session_state:st.session_state._conversation_client=MockConversationClient()
+    client=st.session_state._conversation_client
     st.warning('MOCK MODE — fixed test fixture; this does not evaluate your views.')
-else:client=ConversationClient()
+else:
+    if "_conversation_client" not in st.session_state:st.session_state._conversation_client=ConversationClient()
+    client=st.session_state._conversation_client
 if 'session' not in st.session_state:st.session_state.session=Session()
 s=st.session_state.session
 st.button('Start over',on_click=st.session_state.clear)
@@ -36,6 +39,8 @@ def plain(text):
 
 def perform(action,*args):
     st.session_state.pop('action_error',None)
+    progress=st.empty()
+    client.progress=lambda stage:progress.caption({'mapping':'Understanding your answer…','scope_review':'Checking the supporting passages…','facets':'Checking your views with these changes…','scoring':'Preparing your assessment…','discovery':'Understanding what matters to you…'}.get(stage,'Working on your answer…'))
     try:
         with st.spinner('Working on your answer…'):action(*args)
     except (AssessmentError,ValueError) as exc:
@@ -45,6 +50,9 @@ def perform(action,*args):
         elif code in {'transport','timeout','schema','truncated','thinking'}:message='We could not complete this safely. Your answers and any saved confirmation are retained. Retry Continue, or use Edit to clarify your view.'
         else:message='Please choose an answer or clarify the indicated view before continuing. Your draft is retained; you can also Skip where offered.'
         st.session_state.action_error=message
+    finally:
+        client.progress=None
+        progress.empty()
 
 
 def summary():

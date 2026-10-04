@@ -1,24 +1,25 @@
 {
-  "version": "1.1.0-experimental",
-  "original_rubric": "2.0.0-experimental",
-  "conditional_rubric": "1.0.0-experimental",
+  "version": "2.0.0-experimental",
+  "original_rubric": "3.0.0-experimental",
+  "conditional_rubric": "3.0.0-experimental",
   "original_policy": "Only confirmed original-context evidence changes trigger independent concern review; unaffected scores are carried with a reason. Unknown/contradictory meanings stay null or require clarification.",
-  "conditional_policy": "Require an explicit combined proposal and joint response. Score only confirmed modified-context meanings, preserving untested facets as unavailable. No reuse of original boundary anchors as post-mitigation acceptance. No automatic bonus or cap removal.",
+  "conditional_policy": "Shared ordinal predicates in the modified context. Explicit equivalent unchanged applicability can reuse a facet decision under the same policy; mitigated objections must be reassessed. Unknown required facets remain unavailable. No bonus or automatic cap removal.",
   "conditional_anchors": {
-    "1": "Explicit categorical rejection of this facet even in the stated modified proposal.",
-    "2": "Strong remaining boundary, minimal tolerance under this proposal.",
-    "3": "Strong remaining disruption or objection requiring further substantial change.",
-    "4": "Substantial remaining reservation; further conditions still required.",
-    "5": "Expressed balanced acceptance and reservations; unsure without a position is null.",
-    "6": "Cautious acceptance of this modified proposal with remaining reservations.",
-    "7": "Qualified acceptance with manageable remaining conditions.",
-    "8": "Clear acceptance of this facet in this modified proposal.",
-    "9": "Explicit unqualified endorsement of this facet in this modified proposal."
+    "1": "Explicit categorical refusal for this concern even under any stated modification; never infer from current-route rejection alone.",
+    "2": "Strong personal boundary with very limited tolerance; may accept only if the intrusive effect is removed or avoided. Conditional openness does not erase the boundary.",
+    "3": "Strong concrete disruption objection; accepts only after substantial mitigation, removal or avoidance of that effect.",
+    "4": "Localized intrusion/reservation with conditional openness requiring a meaningful change.",
+    "5": "Balanced concern-specific willingness and reservations; uncertainty without a position stays null.",
+    "6": "Accepts this specified aspect with caution or limited reservations; conditions already stipulated in this proposal are not additional requirements.",
+    "7": "Accepts this specified aspect with manageable remaining requirements or reservations; preserve those requirements.",
+    "8": "Clear concern-specific support, including medical-public-service welfare support; other concern opposition is separate.",
+    "9": "Explicit citizen-authored unqualified endorsement, no remaining requirements; independently checked. Bare Yes/choices/confirmation do not suffice."
   },
   "aggregation": "Each profile independently uses scoring.json, assessed-only mean, minimum coverage, phase-1 threshold/cap, half-up rounding. Coverage differences are not personal improvement or decline.",
   "combined_changes": {
     "q1": "Navigation cameras use the hypothetical Lens-Shielding Hardware Shroud: only direct forward viewing, with no downward viewing into private yards/windows. Telemetry and cybersecurity arrangements remain unspecified.",
     "q2": "The residential route operates at120 meters instead of60 meters, with no flights between19:00 and07:00. Assume the sound profile is below ambient city street noise. Frequency remains up to15 flights/day. Altitude, sound and curfew are a bundle, not independently tested changes."
   },
-  "evidence_projection": "Original assessment preserves distinct aspect meanings: uncertainty stays recorded separately from clear established aspects. Conditional assessment requires every genuinely evidenced current aspect; superseded testimony and question-only nominations cannot create requirements. Joint acceptance links declared tested aspects; explicit applicability confirmation links an unchanged established meaning, with independent numeric re-review rather than numeric inheritance."
+  "evidence_projection": "Original assessment preserves distinct aspect meanings: uncertainty stays recorded separately from clear established aspects. Conditional assessment requires every genuinely evidenced current aspect; superseded testimony and question-only nominations cannot create requirements. Joint acceptance links declared tested aspects; explicit applicability confirmation links an unchanged established meaning, with documented equivalent-meaning reuse under the shared policy or independent descriptive re-review.",
+  "ordinal_policy": "configs/ordinal.json"
 }

@@ -152,7 +152,7 @@ def test_readable_export_sections_and_headline_context_are_explicit():
     s,c=initially_scored(c);s.begin_followups();answer_all(s,c)
     s.record_joint('accept',[],'The modified noise and private viewing are acceptable; I still support the medical public benefit in this exact modified proposal.',c)
     s.continue_final(True,c);data=s.export()
-    assert data['schema_version']=='5.2.0' and len(data['domain_assessments'])==15
+    assert data['schema_version']=='5.3.0' and len(data['domain_assessments'])==15
     assert data['final_summary']['selected_profile']=='conditional_modified'
     assert data['final_summary']['headline_score']==s.conditional['aggregate']['rounded']
     assert data['aggregation']['conditional_modified']['trace']['denominator']==3

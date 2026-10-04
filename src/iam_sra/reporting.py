@@ -3,7 +3,7 @@ from copy import deepcopy
 from .settings import SCENARIO, CONCERNS, REGISTRY, POLICY, config
 from .updates import blocker_report, initial_meaning
 
-EXPORT_VERSION='5.2.0'
+EXPORT_VERSION='5.3.0'
 PROFILES={'initial_original':'initial','final_original':'final','conditional_modified':'conditional'}
 
 def final_summary(session):
@@ -50,7 +50,12 @@ def export_session(session):
             rows[name]={'score':item['score'] if item else None,'status':item['status'] if item else 'unavailable',
                 'reason':item['rationale'] if item else 'No confirmed assessable proposal-context evidence.',
                 'citizen_passages':[{'answer_id':r,'quotation':session.evidence[r].text,'context':session.evidence[r].context,'source':session.evidence[r].source} for r in refs],
-                'model_explanation':item['rationale'] if item else None}
+                'model_explanation':item['rationale'] if item else None,  # legacy field; current explanation may be application-derived
+                'assessment_explanation':item['rationale'] if item else None,
+                'score_record':snapshot.get('score_records',{}).get(cid) if snapshot else None,
+                'score_decisions':[d for d in snapshot.get('score_decisions',[]) if d['concern_id']==cid] if snapshot else [],
+                'conditions':meaning.conditions if meaning else [],'scoring_policy_version':snapshot.get('ordinal_policy') if snapshot else None,
+                'origin':snapshot.get('score_records',{}).get(cid,{}).get('origin','unavailable' if not item or item['score'] is None else 'test_or_legacy_client') if snapshot else 'unavailable'}
         domains.append({'concern_id':cid,'label':definition['label'],'phase':definition['phase'],'facets':definition['facets'],'profiles':rows,
             'facet_updates':[t for t in session.transitions if t['concern_id']==cid],
             'original_aspect_meanings':[f.model_dump() for f in session.original_facets.values() if f.concern_id==cid],
@@ -59,7 +64,7 @@ def export_session(session):
     return deepcopy({'schema_version':EXPORT_VERSION,
         'metadata':{'session_id':session.session_id,'experimental':True,'source':{'document':'SRA_LLM concept feasibility.pdf','scenario_pages':[5],'validation_pages':[8,9],'calibration_pages':[6,7],'GA':'Not available in reviewed sources'},
             'model':config('model'),'registry_version':REGISTRY['version'],'scenario_version':SCENARIO['version'],
-            'policies':{'scoring':POLICY,'reassessment':config('reassessment'),'updates':config('updates'),'prompts':config('prompts')}},
+            'policies':{'ordinal':config('ordinal'),'scoring':POLICY,'reassessment':config('reassessment'),'updates':config('updates'),'prompts':config('prompts')}},
         'final_summary':final_summary(session),
         'proposals':{'original':{'id':'original','text':SCENARIO['text']},'combined_modified':{'id':'combined_modified','text':session.combined_proposal,'hypothetical':True,
             'changes':[{'question_id':q['id'],'modification':q['contract']['modification'],'assumptions':q['contract']['assumptions']} for q in session.presented_followups if q.get('apply_to_joint')]} if session.joint_required else None},

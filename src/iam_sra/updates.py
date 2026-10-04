@@ -65,6 +65,11 @@ class AssessmentTransition(FacetTarget):
     value_action: Literal['carried','re_reviewed','unavailable']
     confirmed: bool
     policy_version: str
+    scoring_policy_version: str | None = None
+    anchor_rule_ids: list[str] = Field(default_factory=list)
+    condition_ids: list[str] = Field(default_factory=list)
+    score_origin: str = 'unavailable'
+    reuse_decision: str | None = None
 
 
 def contract(question):return QuestionContract.model_validate(question['contract'])
@@ -196,7 +201,18 @@ def build_transitions(session):
         value=score(session.conditional,cid)
         records.append(AssessmentTransition(id='T'+str(len(records)+1),question_id=qid,context='modified',proposal_id='combined_modified',concern_id=cid,facet=f,transition=state,evidence_ids=refs,old_score=score(session.initial,cid),new_score=value,
             facet_review_score=session.facet_scores.get(cid+':'+f),reason='All required facets must have applicable confirmed modified evidence; parent uses their minimum.' if value is not None else 'Modified parent unavailable: missing, uncertain or untested facet evidence.',rubric_version=config('reassessment')['conditional_rubric'],value_action='re_reviewed' if value is not None else 'unavailable',confirmed=session.updated_confirmed is not None,policy_version=p['version']))
-    return [r.model_dump() for r in records]
+    output=[]
+    for r in records:
+        row=r.model_dump()
+        snapshot=session.final if r.context=='original' else session.conditional if r.proposal_id=='combined_modified' else None
+        decisions=[d for d in (snapshot.get('score_decisions',[]) if snapshot else []) if d['concern_id']==r.concern_id and d['facet']==r.facet]
+        row.update(scoring_policy_version=config('ordinal')['version'],anchor_rule_ids=[d.get('anchor_rule_id') for d in decisions],
+            condition_ids=list(dict.fromkeys(e for d in decisions for e in d.get('condition_ids',[]))),
+            score_origin='unavailable' if r.new_score is None else decisions[0].get('origin','unavailable') if decisions else 'test_or_legacy_client',
+            reuse_decision=decisions[0].get('reuse_decision') if decisions else None)
+        if decisions and all(d.get('origin')=='equivalent_meaning_reuse' for d in decisions) and r.new_score is not None:row['value_action']='carried'
+        output.append(row)
+    return output
 
 
 def blocker_report(session):

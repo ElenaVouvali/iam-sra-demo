@@ -1,5 +1,5 @@
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "source_pages": [
     1,
     2
@@ -16,7 +16,7 @@
       ],
       "inclusion": "Explicit informedness, public communication or trust in institutions.",
       "exclusion": "Route approval, medical support or specific camera discomfort alone.",
-      "illustrative_anchors": "Refusal of institutional involvement=1; openness pending transparency=4; informed institutional support=8."
+      "illustrative_anchors": "Refusal of institutional involvement; openness pending transparency; informed institutional support."
     },
     {
       "id": "competence_building",
@@ -29,7 +29,7 @@
       ],
       "inclusion": "Explicit training, skills or learning requirements.",
       "exclusion": "Verbosity, knowledge of the scenario or generic safety.",
-      "illustrative_anchors": "Rejects training altogether=1; willing with accessible training=5; supports skills programmes=8."
+      "illustrative_anchors": "Rejects training altogether; willing with accessible training; supports skills programmes."
     },
     {
       "id": "perceived_safety_privacy",
@@ -42,7 +42,7 @@
       ],
       "inclusion": "Personal surveillance, camera intrusion, fear of injury or perceived risk.",
       "exclusion": "Camera intrusion is not automatically a technical security defect or aesthetic objection. Low-altitude discomfort alone does not establish fear of physical harm; do not infer a risk meaning without citizen support.",
-      "illustrative_anchors": "Strong surveillance boundary with conditional openness=2; cautious safety acceptance=6; clear personal comfort=8.",
+      "illustrative_anchors": "Strong surveillance boundary with conditional openness; cautious safety acceptance; clear personal comfort.",
       "semantic_attribution_by_facet": {
         "perceived_safety": {
           "kinds": [
@@ -80,7 +80,7 @@
       ],
       "inclusion": "Explicit failure mechanisms, data retention/access, hacking or technical safeguards.",
       "exclusion": "Personal discomfort with being viewed, without technical/data claims. Traffic crowding/separation/coordination alone is airspace capacity, not a system reliability or cybersecurity claim.",
-      "illustrative_anchors": "Rejects systems even with safeguards=1; requires verified controls=3\u20135; endorses stated controls=7\u20138.",
+      "illustrative_anchors": "Rejects systems even with safeguards; requires verified controls; endorses stated controls.",
       "semantic_attribution_by_facet": {
         "system_reliability": {
           "kinds": [
@@ -105,7 +105,7 @@
       ],
       "inclusion": "Explicit sound, hum, rest disruption or audibility conditions.",
       "exclusion": "Flight visibility or routing alone.",
-      "illustrative_anchors": "Strong acoustic objection, willing if inaudible or rerouted=3; moderate reservation=4\u20135; qualified acoustic acceptance=7."
+      "illustrative_anchors": "Strong acoustic objection, willing if inaudible or rerouted; moderate reservation; qualified acoustic acceptance."
     },
     {
       "id": "visual_pollution",
@@ -118,7 +118,7 @@
       ],
       "inclusion": "Explicit aesthetic/clutter objection or separate objection to visible low aircraft.",
       "exclusion": "Seeing cameras watch property alone is privacy. Altitude alone does not prove aesthetic objection.",
-      "illustrative_anchors": "Conditional low tolerance for explicit visible intrusion=4; no visual acceptance position=null; clear aesthetic acceptance=8.",
+      "illustrative_anchors": "Conditional low tolerance for explicit visible intrusion; no visual acceptance position; clear aesthetic acceptance.",
       "semantic_attribution": {
         "kinds": [
           "aesthetic_or_visible_aircraft",
@@ -141,7 +141,7 @@
       ],
       "inclusion": "Explicit gusts, rotor wash, outwash or wind-related placement.",
       "exclusion": "Noise or ordinary wind weather without rotor effects.",
-      "illustrative_anchors": "Strong impact boundary with mitigation openness=3; accepts protective placement=7."
+      "illustrative_anchors": "Strong impact boundary with mitigation openness; accepts protective placement."
     },
     {
       "id": "airspace_capacity",
@@ -153,7 +153,7 @@
       ],
       "inclusion": "Explicit crowding, coordination of competing flights, separation of drones/helicopters or allocation of limited flying space, including ordinary-language paraphrases.",
       "exclusion": "Low altitude alone; frequency solely as an acoustic/visual cause; private-space viewing; fear of injury without a traffic coordination claim.",
-      "illustrative_anchors": "Conditional airspace objection pending separation=3\u20135; supports allocation plan=8.",
+      "illustrative_anchors": "Conditional airspace objection pending separation; supports allocation plan.",
       "semantic_attribution": {
         "kinds": [
           "traffic_capacity_separation_coordination",
@@ -177,7 +177,7 @@
       ],
       "inclusion": "Explicit city mobility strategy, governance integration or SUMP.",
       "exclusion": "Mention of city or routing alone.",
-      "illustrative_anchors": "Conditional planning acceptance pending consultation=5; supports mobility-plan integration=8."
+      "illustrative_anchors": "Conditional planning acceptance pending consultation; supports mobility-plan integration."
     },
     {
       "id": "infrastructure_land_use",
@@ -190,7 +190,7 @@
       ],
       "inclusion": "Explicit pads, vertiports, construction, zoning or allocation of land.",
       "exclusion": "Request to move a flight path off homes without land/facility planning.",
-      "illustrative_anchors": "Siting objection open to alternate site=4; supports suitable planned facilities=8.",
+      "illustrative_anchors": "Siting objection open to alternate site; supports suitable planned facilities.",
       "semantic_attribution": {
         "kinds": [
           "facility_or_land_planning",
@@ -213,7 +213,7 @@
       ],
       "inclusion": "Explicit electricity, energy use, carbon or emissions.",
       "exclusion": "Electric hum alone or vague responsible language.",
-      "illustrative_anchors": "Conditional acceptance pending net environmental benefit=5; supports specified benefit=8."
+      "illustrative_anchors": "Conditional acceptance pending net environmental benefit; supports specified benefit."
     },
     {
       "id": "cost_roi_business",
@@ -226,7 +226,7 @@
       ],
       "inclusion": "Explicit taxes, funding, operating cost, affordability of business or returns.",
       "exclusion": "A flight delay alone; public service support alone.",
-      "illustrative_anchors": "Conditional support pending affordable funding=5; endorses a viable funding model=8."
+      "illustrative_anchors": "Conditional support pending affordable funding; endorses a viable funding model."
     },
     {
       "id": "accessibility",
@@ -239,7 +239,7 @@
       ],
       "inclusion": "Explicit geographic or vulnerability access barriers/benefits.",
       "exclusion": "Saving lives alone does not establish accessibility or fair distribution.",
-      "illustrative_anchors": "Concern about exclusion with conditional support=3\u20135; supports targeted access=8."
+      "illustrative_anchors": "Concern about exclusion with conditional support; supports targeted access."
     },
     {
       "id": "multimodality_congestion",
@@ -252,7 +252,7 @@
       ],
       "inclusion": "Explicit links to buses, roads, ambulances or relieving congestion.",
       "exclusion": "Generic route relocation or medical speed alone.",
-      "illustrative_anchors": "Conditional acceptance pending integration=5; supports transport connections=8."
+      "illustrative_anchors": "Conditional acceptance pending integration; supports transport connections."
     },
     {
       "id": "welfare_equity",
@@ -265,7 +265,7 @@
       ],
       "inclusion": "Explicit lifesaving medical public-service endorsement (FN facet) OR distribution/fairness claims.",
       "exclusion": "Benefit support does not imply equity knowledge or fair access; count this concern once.",
-      "illustrative_anchors": "Clear lifesaving public-service support=8 even with local opposition; explicit equity reservation can lower combined concern readiness; categorical rejection of welfare goals=1."
+      "illustrative_anchors": "Clear lifesaving public-service support even with local opposition; explicit equity reservation can lower combined concern readiness; categorical rejection of welfare goals."
     }
   ],
   "phases": {
@@ -291,5 +291,6 @@
       ]
     }
   },
-  "ga_verification": "Separate GA Living Lab table not yet supplied; IDs/phases preserved from FN PDF pp.1\u20132."
+  "ga_verification": "Separate GA Living Lab table not yet supplied; IDs/phases preserved from FN PDF pp.1\u20132.",
+  "scoring_guidance": "Concern examples describe semantic scope, not a second numerical table. Shared ordinal3.0 predicates are authoritative for original and modified proposals; the source-proposed integer example remains in eval/fn_reference.json. Equivalent meanings use equivalent anchors. Medical vocabulary, verbosity, choices and agreement cannot establish9."
 }
