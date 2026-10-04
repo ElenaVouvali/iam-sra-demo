@@ -2,7 +2,7 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 def click(app,label='Continue'):
-    next(b for b in app.button if b.label==label).click().run()
+    next(b for b in app.button if b.label==label or label=='Continue' and b.label=='Confirm and finish').click().run()
     assert not app.exception
 
 def fresh(monkeypatch,client=None):

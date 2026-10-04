@@ -152,7 +152,7 @@ def test_readable_export_sections_and_headline_context_are_explicit():
     s,c=initially_scored(c);s.begin_followups();answer_all(s,c)
     s.record_joint('accept',[],'The modified noise and private viewing are acceptable; I still support the medical public benefit in this exact modified proposal.',c)
     s.continue_final(True,c);data=s.export()
-    assert data['schema_version']=='5.0.0' and len(data['domain_assessments'])==15
+    assert data['schema_version']=='5.1.0' and len(data['domain_assessments'])==15
     assert data['final_summary']['selected_profile']=='conditional_modified'
     assert data['final_summary']['headline_score']==s.conditional['aggregate']['rounded']
     assert data['aggregation']['conditional_modified']['trace']['denominator']==3
@@ -175,8 +175,8 @@ def test_unknown_original_followup_invalidates_only_target_numeric_value():
     s,c=initially_scored(Fake(meaning(scores=('cost_roi_business',),facets={'cost_roi_business':['cost_financing']})))
     initial=s.initial;s.begin_followups();q=s.current_question;s.respond(q['choices'][-1],'',c,'original');s.continue_final(True,c)
     assert s.initial==initial
-    assert next(c['score'] for c in s.final['assessment']['concerns'] if c['concern_id']=='cost_roi_business') is None
-    assert s.final['aggregate']['trace']['denominator']==0
+    assert s.final['assessment']==initial['assessment']
+    assert s.final['aggregate']['trace']['denominator']==1
 
 
 def test_unrelated_original_clarification_does_not_trigger_score_change():
@@ -204,9 +204,10 @@ def test_original_partial_correction_preserves_other_facets_as_unavailable():
     c.next=meaning('C1.testimony',scores=('perceived_safety_privacy',),position='supported',facets={'perceived_safety_privacy':['personal_privacy']})
     s.correct('perceived_safety_privacy','I accept viewing cameras.','Correct viewing only.',c)
     assert set(s.draft.concerns[0].facets)=={'personal_privacy','perceived_safety'}
-    assert s.draft.concerns[0].status=='needs_clarification'
+    assert s.original_facets['perceived_safety_privacy:perceived_safety'].position=='opposed'
+    assert s.original_facets['perceived_safety_privacy:personal_privacy'].position=='supported'
     s.continue_final(True,c)
-    assert next(x['score'] for x in s.final['assessment']['concerns'] if x['concern_id']=='perceived_safety_privacy') is None
+    assert next(x['score'] for x in s.final['assessment']['concerns'] if x['concern_id']=='perceived_safety_privacy')==2
 
 
 def test_new_original_conditions_can_add_a_nonrepeating_bounded_hypothetical():
@@ -214,7 +215,7 @@ def test_new_original_conditions_can_add_a_nonrepeating_bounded_hypothetical():
     s,c=initially_scored(Fake(profile));s.begin_followups();q=s.current_question
     patch=meaning(q['id']+'.clarification',scores=('cost_roi_business',),facets={'cost_roi_business':['cost_financing']})
     patch.concerns[0].conditions=[q['id']+'.clarification'];patch.concerns[0].conditional_willingness='willing'
-    c.next=patch;s.respond(q['choices'][1],'I would accept only without fees.','' if False else c,'original')
+    c.next=patch;s.respond(q['choices'][1],'I would accept only without fees.',c,'original')
     # A contradiction is retained; queued questions still use citizen text, not invented costs.
     assert len({q['id'] for q in s.questions})==len(s.questions)
     assert len(s.questions)<=config('updates')['maximum_questions']

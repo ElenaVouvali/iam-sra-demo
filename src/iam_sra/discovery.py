@@ -44,7 +44,7 @@ def next_question(session):
     if session.no_reservations:return None
     by={c.concern_id:c for c in session.draft.concerns}
     clear_topics=[c for c in by.values() if c.status=='mapped' and (c.position!='unassessed' or c.conditional_willingness!='not_stated')]
-    if (session.reasons_explicit is False or not clear_topics) and not session.discovery_topics:
+    if (not clear_topics) and not session.discovery_topics:
         q=make('reasons',reason='No assessment topic/reason is evidenced; acceptance and rejection are treated symmetrically.')
         if q:return q
     # Canonical ordering keeps priority stable across model array ordering.

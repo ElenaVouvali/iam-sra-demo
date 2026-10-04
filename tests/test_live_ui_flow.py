@@ -10,7 +10,6 @@ def test_ui_full_validation_and_export(monkeypatch):
     app.text_area(key='citizen_answer').set_value('I oppose the hum and cameras.');click(app)
     assert_simple(app);assert app.session_state.session.initial is None
     click(app,'Finish these questions')
-    app.checkbox(key='reference_mode').check().run()
     app.checkbox(key='confirm_1').check().run();click(app)
     s=app.session_state.session;original=s.initial
     while s.state==State.FOLLOWUPS:
@@ -27,4 +26,4 @@ def test_ui_full_validation_and_export(monkeypatch):
     assert data['final_summary']['selected_profile']=='final_original'
     assert data['final_summary']['modified_assessment_attempted']
     assert len(data['domain_assessments'])==15
-    assert any('modified proposal' in item.value for item in app.info)
+    assert any('changed proposal' in item.value for item in app.info)

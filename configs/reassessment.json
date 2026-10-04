@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-experimental",
+  "version": "1.1.0-experimental",
   "original_rubric": "2.0.0-experimental",
   "conditional_rubric": "1.0.0-experimental",
   "original_policy": "Only confirmed original-context evidence changes trigger independent concern review; unaffected scores are carried with a reason. Unknown/contradictory meanings stay null or require clarification.",
@@ -19,5 +19,6 @@
   "combined_changes": {
     "q1": "Navigation cameras use the hypothetical Lens-Shielding Hardware Shroud: only direct forward viewing, with no downward viewing into private yards/windows. Telemetry and cybersecurity arrangements remain unspecified.",
     "q2": "The residential route operates at120 meters instead of60 meters, with no flights between19:00 and07:00. Assume the sound profile is below ambient city street noise. Frequency remains up to15 flights/day. Altitude, sound and curfew are a bundle, not independently tested changes."
-  }
+  },
+  "evidence_projection": "Original assessment preserves distinct aspect meanings: uncertainty stays recorded separately from clear established aspects. Conditional assessment requires every genuinely evidenced current aspect; superseded testimony and question-only nominations cannot create requirements. Joint acceptance links declared tested aspects; explicit applicability confirmation links an unchanged established meaning, with independent numeric re-review rather than numeric inheritance."
 }

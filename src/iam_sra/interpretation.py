@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from .schemas import MappingAssessment
 from .assessment import AssessmentError
 
-INTERPRETATION_VERSION = '1.3.0'
+INTERPRETATION_VERSION = '1.4.0'
 
 class EvidenceItem(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True, frozen=True)
@@ -72,3 +72,55 @@ def comparison(initial, final, conditional, reasons):
         'conditional_reason':conditional.get('scoring_exclusions',{}).get(cid,conditional.get('update_reasons',{}).get(cid,'Not assessed in this modified context.')) if conditional else 'No sufficiently evidenced conditional profile.',
         'evidence':{'initial':a.get(cid,{}).get('excerpts',[]),'final_original':b.get(cid,{}).get('excerpts',[]),'conditional':c.get(cid,{}).get('excerpts',[])}}
         for cid,definition in CONCERNS.items()]
+
+
+def reconcile_original(previous, patch, facets, explicit=False):
+    """Preserve independently evidenced aspects; unknowns do not erase other meanings.
+
+    Unknown aspects stay in the facet ledger, outside the original numeric projection.
+    The modified projection still requires clarification of genuinely evidenced unknowns.
+    """
+    from .updates import FacetMeaning
+    from .schemas import MappingConcern
+    result=previous.model_copy(deep=True) if previous else patch.model_copy(deep=True)
+    ledger=deepcopy(facets)
+    by={c.concern_id:c for c in result.concerns}
+    for c in patch.concerns:
+        if c.status=='needs_clarification' and not c.facets:continue
+        for aspect in c.facets:
+            key=c.concern_id+':'+aspect;old=ledger.get(key)
+            # Broad uncertainty is not a correction of each previously clear aspect.
+            if old and c.position in {'uncertain','unassessed'} and len(c.facets)>1:continue
+            ledger[key]=FacetMeaning(concern_id=c.concern_id,facet=aspect,position=c.position,evidence_ids=c.excerpts,
+                condition_ids=c.conditions,applicability_explicit=c.status=='mapped',rationale=c.rationale)
+        if c.concern_id not in by:by[c.concern_id]=c.model_copy(deep=True)
+        elif c.conditional_willingness!='not_stated' or explicit and set(by[c.concern_id].facets)<=set(c.facets):by[c.concern_id].conditional_willingness=c.conditional_willingness
+    benefit=patch.medical_public_benefit_support
+    medical_named=not patch.concerns or any(c.concern_id=='welfare_equity' and 'medical_public_benefit' in c.facets for c in patch.concerns)
+    broad_uncertainty=any(c.concern_id=='welfare_equity' and len(c.facets)>1 and c.position in {'uncertain','unassessed'} for c in patch.concerns)
+    if medical_named and not (broad_uncertainty and benefit.interpretation=='uncertain' and 'welfare_equity:medical_public_benefit' in ledger) and benefit.interpretation!='unassessed' and benefit.excerpts:
+        ledger['welfare_equity:medical_public_benefit']=FacetMeaning(concern_id='welfare_equity',facet='medical_public_benefit',
+            position=benefit.interpretation,evidence_ids=benefit.excerpts,applicability_explicit=True,rationale=benefit.rationale)
+    for cid in {f.concern_id for f in ledger.values()}:
+        all_facts=[f for f in ledger.values() if f.concern_id==cid]
+        clear=[f for f in all_facts if f.applicability_explicit and f.position in {'supported','opposed','mixed'}]
+        chosen=clear or all_facts
+        old=by.get(cid);template=old.model_dump() if old else {'concern_id':cid,'mapping_note':'direct','conditional_willingness':'not_stated'}
+        positions={f.position for f in clear}
+        position='mixed' if len(positions)>1 or 'mixed' in positions else next(iter(positions)) if positions else 'uncertain'
+        template.update(status='mapped' if clear else 'needs_clarification',position=position,facets=[f.facet for f in chosen],
+            excerpts=list(dict.fromkeys(r for f in chosen for r in f.evidence_ids)),conditions=list(dict.fromkeys(r for f in chosen for r in f.condition_ids)),
+            rationale='; '.join(f.rationale for f in chosen)[:400])
+        try:by[cid]=MappingConcern.model_validate(template)
+        except ValueError as exc:raise AssessmentError('Please clarify these aspects together; your earlier testimony is retained.',code='clarification') from exc
+    result.concerns=list(by.values())
+    previous_condition_ids={r for c in previous.concerns for r in c.conditions} if previous else set()
+    extra=[r for r in result.acceptance_conditions if r not in previous_condition_ids]
+    conditions=list(dict.fromkeys([r for c in result.concerns for r in c.conditions]+extra))
+    if len(conditions)>5:raise AssessmentError('Please clarify the acceptance conditions together.',code='clarification')
+    result.acceptance_conditions=conditions
+    medical=ledger.get('welfare_equity:medical_public_benefit')
+    if medical and medical.position!='unassessed' and medical.evidence_ids:
+        from .schemas import Dimension
+        result.medical_public_benefit_support=Dimension(interpretation=medical.position,excerpts=medical.evidence_ids,rationale=medical.rationale)
+    return result,ledger

@@ -95,7 +95,6 @@ def test_no_new_original_evidence_carries_all_scores_and_snapshot_is_isolated():
 
 def test_followup_clarification_has_stable_original_evidence_and_changes_only_affected():
     s,c=initially_scored(Fake(meaning(scores=('noise','welfare_equity'))));s.begin_followups(True)
-    c.next=meaning('q1.choice',scores=('noise',))
     s.respond(s.questions[0]['choices'][0],'',c)
     # q2 choice keeps noise opposition; original text provides extra evidence.
     c.initial=meaning(scores=('noise',))
@@ -135,7 +134,7 @@ def test_choice_and_hypothetical_text_conflict_not_silently_overwritten():
     def interpret(*args,**kwargs):
         nonlocal count
         count+=1
-        return meaning('q2.choice' if count==1 else 'q2.clarification',position='supported' if count==1 else 'opposed')
+        return meaning('q2.clarification',position='opposed')
     c.interpret=interpret
     s.respond(s.questions[0]['choices'][0],'Actually I still reject that sound.',c)
     assert 'q2:noise' in s.conflicts
@@ -260,7 +259,8 @@ def test_joint_choice_text_conflict_requires_explicit_resolution():
     c.next=meaning('M1.testimony',position='opposed')
     s.resolve_conflict('joint:current_route_stance','To clarify, I reject this exact combined route.',c)
     assert not s.conflicts and s.conditional_draft.current_route_stance.interpretation=='opposed'
-    assert s.joint['choice']=='accept'  # historical choice is never overwritten
+    assert s.joint['choice']=='reject'  # authoritative current meaning matches the resolved answer
+    assert s.joint_history[0]['choice']=='accept'  # historical choice remains in the audit
 
 
 def test_joint_revisions_preserve_unique_ids_testimony_and_history():
@@ -278,7 +278,7 @@ def test_joint_revisions_preserve_unique_ids_testimony_and_history():
 
 def test_hypothetical_route_conflict_and_resolution_text_reach_joint_interpretation():
     s,c=initially_scored();s.begin_followups()
-    replies=[meaning('q2.choice',position='supported'),meaning('q2.clarification',position='opposed')]
+    replies=[meaning('q2.clarification',position='opposed')]
     saved=c.interpret
     c.interpret=lambda *args,**kwargs:replies.pop(0)
     s.respond(s.questions[0]['choices'][0],'I still reject this hypothetical route.',c)

@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "source_pages": [
     1,
     2
@@ -80,7 +80,18 @@
       ],
       "inclusion": "Explicit aesthetic/clutter objection or separate objection to visible low aircraft.",
       "exclusion": "Seeing cameras watch property alone is privacy. Altitude alone does not prove aesthetic objection.",
-      "illustrative_anchors": "Conditional low tolerance for explicit visible intrusion=4; no visual acceptance position=null; clear aesthetic acceptance=8."
+      "illustrative_anchors": "Conditional low tolerance for explicit visible intrusion=4; no visual acceptance position=null; clear aesthetic acceptance=8.",
+      "semantic_attribution": {
+        "kinds": [
+          "aesthetic_or_visible_aircraft",
+          "private_space_viewing_only",
+          "altitude_only",
+          "not_mentioned",
+          "unclear"
+        ],
+        "supported_kind": "aesthetic_or_visible_aircraft",
+        "instruction": "Classify the actual citizen reaction, without a proposed label. Watching private yards/windows or seeing surveillance cameras is private_space_viewing_only unless there is a separate explicit aesthetic/clutter/visible-aircraft reaction. Low altitude alone is altitude_only. Do not infer aesthetic opposition from a privacy or acoustic objection."
+      }
     },
     {
       "id": "wind_downwash",
@@ -129,7 +140,17 @@
       ],
       "inclusion": "Explicit pads, vertiports, construction, zoning or allocation of land.",
       "exclusion": "Request to move a flight path off homes without land/facility planning.",
-      "illustrative_anchors": "Siting objection open to alternate site=4; supports suitable planned facilities=8."
+      "illustrative_anchors": "Siting objection open to alternate site=4; supports suitable planned facilities=8.",
+      "semantic_attribution": {
+        "kinds": [
+          "facility_or_land_planning",
+          "flight_routing_only",
+          "not_mentioned",
+          "unclear"
+        ],
+        "supported_kind": "facility_or_land_planning",
+        "instruction": "Classify the citizen statement without using a proposed model label. A flight path, low altitude, residential overflight, or request to reroute over an industrial park is flight_routing_only. Do not infer vertiports, facilities or land use from any of these. facility_or_land_planning requires the citizen to separately discuss physical facilities, construction, siting, zoning or allocating land. A named place to fly over is not a facility."
+      }
     },
     {
       "id": "energy_emissions",

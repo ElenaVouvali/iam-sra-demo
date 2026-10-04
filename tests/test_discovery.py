@@ -231,7 +231,7 @@ def test_blocker_correction_keeps_numeric_mapping_and_is_confirmation_bound():
 
 
 def test_sparse_reason_review_does_not_inherit_phantom_stance_or_waste_questions():
-    c=DiscoveryFake(meaning(scores=('public_awareness_trust','perceived_safety_privacy')))
+    c=DiscoveryFake(meaning(scores=()))
     c.facts=DiscoveryFacts(reasons_explicit=False)
     s=Session();s.begin();s.submit('I reject.',c)
     assert s.discovery_question['kind']=='reasons'
@@ -242,11 +242,11 @@ def test_sparse_reason_review_does_not_inherit_phantom_stance_or_waste_questions
     current=next(x for x in s.draft.concerns if x.concern_id=='perceived_safety_privacy')
     assert current.excerpts==['D2.text'] and current.conditional_willingness=='willing'
     assert s.discovery_question['kind']=='blocker'
-    assert 'public_awareness_trust' in report(s)['excluded_initial_candidates']
+    assert 'public_awareness_trust' not in {c.concern_id for c in s.draft.concerns}
 
 
 def test_bare_original_stance_is_not_numeric_concern_history():
-    c=DiscoveryFake(meaning(scores=('noise',)))
+    c=DiscoveryFake(meaning(scores=()))
     c.facts=DiscoveryFacts(reasons_explicit=False)
     s=Session();s.begin();s.submit('I reject the proposal.',c)
     s.respond_discovery(['noise'],'',c);q=s.discovery_question

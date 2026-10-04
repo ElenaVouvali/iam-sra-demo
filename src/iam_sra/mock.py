@@ -16,8 +16,8 @@ class MockConversationClient:
         if target:
             from .settings import CONCERNS
             if target in CONCERNS:concerns=[MappingConcern(concern_id=target,status='needs_clarification',position='uncertain',facets=[CONCERNS[target]['facets'][0]],excerpts=refs[:1],rationale=d['rationale'])]
-        return MappingAssessment(scenario_id='urban_medical_corridor',concerns=concerns,awareness_understanding=d,
-            medical_public_benefit_support=d,current_route_stance=d,acceptance_conditions=[])
+        return MappingAssessment(scenario_id='urban_medical_corridor',concerns=concerns,awareness_understanding={'interpretation':'unassessed','excerpts':[],'rationale':'MOCK: unknown understanding.'},
+            medical_public_benefit_support={'interpretation':'unassessed','excerpts':[],'rationale':'MOCK: unknown medical position.'},current_route_stance=d,acceptance_conditions=[])
     def score(self,confirmed,only=None,unavailable=None):
         from .interpretation import verify
         from .schemas import Assessment, Concern

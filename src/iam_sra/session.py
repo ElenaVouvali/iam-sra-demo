@@ -7,7 +7,7 @@ from uuid import uuid4
 from .assessment import AssessmentError, check_input
 from .schemas import MappingAssessment, SCHEMA_VERSION
 from .evidence import passages
-from .interpretation import EvidenceItem, freeze, verify, semantic_key, comparison
+from .interpretation import EvidenceItem, freeze, verify, semantic_key, comparison, reconcile_original
 from .validation import select_questions, outcome, conclusions
 from .scoring import aggregate
 from .settings import CONCERNS, SCENARIO, QUESTIONS, POLICY, REGISTRY, config
@@ -29,6 +29,7 @@ class Session:
     session_id: str = field(default_factory=lambda:str(uuid4()))
     state: State = State.SCENARIO
     text: str = ''
+    initial_text: str = ''
     evidence: dict = field(default_factory=dict)
     draft: MappingAssessment | None = None
     version: int = 0
@@ -69,9 +70,45 @@ class Session:
     update_observations: list = field(default_factory=list)
     _pending_final_original: dict | None = None
     _reasons: dict = field(default_factory=dict)
+    original_facets: dict = field(default_factory=dict)
+    revision_history: list = field(default_factory=list)
+    _checkpoints: dict = field(default_factory=dict)
 
     def _require(self,*states):
         if self.state not in states:raise ValueError('Invalid session transition')
+
+    def _checkpoint(self,key):
+        if key not in self._checkpoints:
+            omitted={'_checkpoints','revision_history','inference','evidence','confirmations','interpretations','_initial','initial_text'}
+            self._checkpoints[key]=deepcopy({k:v for k,v in vars(self).items() if k not in omitted})
+
+    def _answer_prefix(self,key):
+        if not any(k.startswith(key+'.') and k!=key+'.question' for k in self.evidence):return key
+        n=2
+        while any(k.startswith(key+f'.v{n}.') for k in self.evidence):n+=1
+        return key+f'.v{n}'
+
+    def rewind(self,question_id):
+        """Restore before an answer; preserve initial snapshot and all superseded evidence."""
+        if question_id not in self._checkpoints:raise ValueError('This answer is not editable.')
+        history={'edited_question_id':question_id,'revision':len(self.revision_history)+1,'answers':deepcopy(self.responses),
+            'discovery_answers':deepcopy(self.discovery_responses),'joint':deepcopy(self.joint),'original_text':self.text,
+            'meaning':self.draft.model_dump() if self.draft else None,'snapshots':{'final_original':self.final,'conditional_modified':self.conditional},
+            'presented_questions':deepcopy(self.presented_followups),'presented_discovery_questions':deepcopy(self.discovery_questions),
+            'original_facet_meanings':[f.model_dump() for f in self.original_facets.values()],'updates':deepcopy(self.transitions)}
+        self.revision_history.append(history)
+        checkpoint=deepcopy(self._checkpoints[question_id]);keys=list(self._checkpoints);index=keys.index(question_id)
+        self._checkpoints={k:v for k,v in self._checkpoints.items() if k in keys[:index+1]}
+        for key,value in checkpoint.items():setattr(self,key,value)
+        self.confirmed=None;self.updated_confirmed=None;self.conditional_confirmed=None
+        self._final=None;self._conditional=None;self._pending_final_original=None;self.transitions=[];self.facet_scores={}
+        self.version=max(self.version,max((r['version'] for r in self.interpretations),default=0))+1
+        if question_id=='initial_answer':self.state=State.ANSWER
+        elif any(q['id']==question_id for q in self.discovery_questions):self.state=State.INTERPRETATION;self.discovery_finished=False
+        elif question_id=='combined_proposal':self.state=State.UPDATED
+        else:self.state=State.FOLLOWUPS
+        self.presented_followups=[q for q in self.presented_followups if any(r['question_id']==q['id'] for r in self.responses)]
+        self.joint=None;self.conditional_draft=None;self.facet_meanings=[]
 
     def begin(self):
         self._require(State.SCENARIO);self.state=State.ANSWER
@@ -84,15 +121,18 @@ class Session:
 
     def _remember(self,kind):
         self.interpretations.append({'version':self.version,'kind':kind,'model_proposed_meaning':self.draft.model_dump(),
-            'conditional_meaning':self.conditional_draft.model_dump() if self.conditional_draft else None})
+            'conditional_meaning':self.conditional_draft.model_dump() if self.conditional_draft else None,
+            'original_facet_meanings':[f.model_dump() for f in self.original_facets.values()]})
 
     def submit(self,text,client):
         self._require(State.ANSWER);check_input(text)
-        items={f'O.{k}':EvidenceItem(id=f'O.{k}',text=v,context='original',source='citizen_original') for k,v in passages(text).items()}
+        self._checkpoint('initial_answer')
+        prefix='O' if 'O.p001' not in self.evidence else 'O'+str(len(self.revision_history)+1)
+        items={f'{prefix}.{k}':EvidenceItem(id=f'{prefix}.{k}',text=v,context='original',source='citizen_original') for k,v in passages(text).items()}
         result=client.interpret(items)
         self._record(client,'interpretation attempt')
         facts=client.discovery_facts(items) if hasattr(client,'discovery_facts') else None
-        self.text=text;self.evidence=items;self.draft=result.model_copy(deep=True)
+        self.text=text;self.evidence.update(items);self.draft,self.original_facets=reconcile_original(None,result,{})
         self.version=1;self._remember('initial proposal')
         self.state=State.INTERPRETATION
         if facts is not None:
@@ -101,15 +141,7 @@ class Session:
 
     def _apply_discovery_facts(self,facts,items):
         self.reasons_explicit=facts.reasons_explicit
-        if not facts.reasons_explicit:
-            for candidate in self.draft.concerns:
-                self.discovery_candidate_exclusions.append(candidate.concern_id)
-                candidate.status='needs_clarification';candidate.mapping_note='ambiguous_needs_clarification'
-                candidate.position='unassessed';candidate.conditional_willingness='not_stated'
-                candidate.facets=[];candidate.excerpts=[];candidate.conditions=[]
-                candidate.rationale='No specific topic meaning was established by the score-free evidence review; please clarify.'
-            self.draft.acceptance_conditions=[]
-            self._remember('discovery sufficiency check')
+        # Global sufficiency metadata must never veto independently scoped evidence.
         if facts.no_reservations and self.draft.current_route_stance.interpretation=='supported' and not any(c.status=='mapped' and (c.position in {'opposed','mixed'} or c.conditions) for c in self.draft.concerns):
             self.no_reservations=True
         for boundary in facts.blockers:
@@ -154,11 +186,12 @@ class Session:
         if text:check_input(text)
         if not skip and not selections and not text.strip() and not facets:raise ValueError('Choose an answer, add your own words, or Skip.')
         if 'no_reservations' in selections and (len(selections)>1 or text.strip()):raise ValueError('Confirm no reservations on its own, or describe your reservations instead.')
+        prefix=self._answer_prefix(q['id'])
         items={};labels=config('discovery')['choice_labels'];cid=q['concern_id']
         if skip:
-            key=q['id']+'.skip';items[key]=EvidenceItem(id=key,text='I skip this question; no position is inferred.',context='original',source='citizen_control',question_id=q['id'])
+            key=prefix+'.skip';items[key]=EvidenceItem(id=key,text='I skip this question; no position is inferred.',context='original',source='citizen_control',question_id=q['id'])
         for index,choice in enumerate(selections):
-            key=q['id']+f'.selection{index+1}'
+            key=prefix+f'.selection{index+1}'
             if choice in CONCERNS or choice in {'other','cannot_specify'}:
                 wording='Topic to explore (no position or severity stated): '+(CONCERNS[choice]['label'] if choice in CONCERNS else labels[choice])
             else:
@@ -168,13 +201,15 @@ class Session:
                 if q['kind']=='changes':wording='Could a change make '+CONCERNS[cid]['label']+' acceptable in the original proposal? My answer: '+labels[choice]+'.'
             items[key]=EvidenceItem(id=key,text=wording,context='original',source='citizen_choice',question_id=q['id'])
         if facets:
-            key=q['id']+'.facets';items[key]=EvidenceItem(id=key,text='Aspects to explore (no severity stated): '+', '.join(facets),context='original',source='citizen_choice',question_id=q['id'])
+            key=prefix+'.facets';items[key]=EvidenceItem(id=key,text='Aspects to explore (no severity stated): '+', '.join(facets),context='original',source='citizen_choice',question_id=q['id'])
         if text.strip():
-            key=q['id']+'.text';items[key]=EvidenceItem(id=key,text=text,context='original',source='citizen_discovery',question_id=q['id'])
+            key=prefix+'.text';items[key]=EvidenceItem(id=key,text=text,context='original',source='citizen_discovery',question_id=q['id'])
         # Selection-only topic nominations and boundaries cannot cause mapping/scoring.
         patch=None
         semantic_items={k:v for k,v in items.items() if k.endswith('.text') or (q['kind'] in {'stance','topic'} and '.selection' in k and not any(token in v.text for token in ['Topic to explore','Cannot specify'])) or (q['kind']=='reasons' and 'no_reservations' in selections)}
-        if semantic_items and facets:semantic_items[q['id']+'.facets']=items[q['id']+'.facets']
+        if semantic_items and facets:semantic_items[prefix+'.facets']=items[prefix+'.facets']
+        self._checkpoint(q['id'])
+        previous=self.draft.model_copy(deep=True)
         if semantic_items:
             patch=client.interpret(semantic_items,context='original',proposal=SCENARIO['text']+'\nClarification question (background only): '+q['text'],target=cid if cid else None)
         # Commit only after successful inference. Retries reuse IDs/drafts without losing evidence.
@@ -187,7 +222,7 @@ class Session:
                     # No topic evidence existed in the original bare stance. Replace that
                     # unconfirmed candidate; retain its history, never inherit its inferred stance.
                     old=None;self.discovery_candidate_exclusions.remove(new.concern_id)
-                if old and old.position in {'supported','opposed'} and new.position in {'supported','opposed'} and old.position!=new.position:
+                if old and set(old.facets)&set(new.facets) and old.position in {'supported','opposed'} and new.position in {'supported','opposed'} and old.position!=new.position:
                     self.conflicts['original:'+new.concern_id]={'target':new.concern_id,'before':old.model_dump(),'proposed':new.model_dump(),
                         'question':'Your statements differ about '+CONCERNS[new.concern_id]['label']+'. Correct this meaning in your own words before confirmation.'}
                     continue
@@ -214,6 +249,9 @@ class Session:
             condition_refs=list(dict.fromkeys(r for c in self.draft.concerns for r in c.conditions))
             # All conditions remain per concern/evidence; a root summary is bounded by its existing schema.
             self.draft.acceptance_conditions=condition_refs if len(condition_refs)<=5 else []
+            dimensions={name:getattr(self.draft,name).model_copy(deep=True) for name in ['current_route_stance','medical_public_benefit_support','awareness_understanding']}
+            self.draft,self.original_facets=reconcile_original(previous,patch,self.original_facets)
+            for name,value in dimensions.items():setattr(self.draft,name,value)
             self._record(client,'discovery interpretation')
         for choice in selections:
             if choice in CONCERNS and choice not in self.discovery_topics:self.discovery_topics.append(choice)
@@ -244,7 +282,7 @@ class Session:
         self.state=State.UPDATED if self._initial else State.INTERPRETATION
 
     def correct(self,target,text,reason,client):
-        self._require(State.INTERPRETATION,State.CONFIRMED,State.UPDATED,State.UPDATE_CONFIRMED)
+        self._require(State.INTERPRETATION,State.CONFIRMED,State.UPDATED,State.UPDATE_CONFIRMED,State.FINAL)
         if target not in CONCERNS and target not in ['current_route_stance','medical_public_benefit_support','awareness_understanding']:
             raise ValueError('Unknown interpretation target')
         check_input(text);check_input(reason)
@@ -252,35 +290,33 @@ class Session:
         item=EvidenceItem(id=key,text=text,context='original',source='citizen_correction')
         patch=client.interpret({key:item},target=target)
         before=self.draft.model_dump()
+        previous=self.draft.model_copy(deep=True)
         if target in CONCERNS:
             old=next((c for c in self.draft.concerns if c.concern_id==target),None)
             match=next((c for c in patch.concerns if c.concern_id==target),None)
             if match is None:raise AssessmentError('Correction has no clear mapping for this concern. State your position or uncertainty explicitly.',code='clarification')
-            if old and set(old.facets)-set(match.facets):
-                # A one-aspect clarification cannot erase another earlier aspect.
-                match=match.model_copy(deep=True)
-                match.facets=list(dict.fromkeys(old.facets+match.facets))
-                match.status='needs_clarification'
-                match.rationale='One aspect was clarified; other previously mentioned aspects still need clarification before this topic can be scored.'
-                match.excerpts=list(dict.fromkeys(old.excerpts+match.excerpts))
-                if len(match.excerpts)>3:raise AssessmentError('Clarify all the aspects of this topic together.',code='clarification')
             self.draft.concerns=[c for c in self.draft.concerns if c.concern_id!=target]+[match.model_copy(deep=True)]
             still_used={r for c in self.draft.concerns for r in c.conditions}
             self.draft.acceptance_conditions=list(dict.fromkeys([r for r in self.draft.acceptance_conditions if not old or r not in old.conditions or r in still_used]+match.conditions))
             self._reasons[target]='Reassessed from confirmed user-authored original-proposal clarification.'
             self.conflicts.pop('original:'+target,None)
+            if match.position in {'uncertain','unassessed'} and len(match.facets)>1:
+                self.conflicts['original:'+target]={'target':target,'question':'Which specific aspect are you unsure about? Please explain each aspect separately; your earlier clear views have been retained.'}
         else:
             setattr(self.draft,target,getattr(patch,target).model_copy(deep=True))
             if target=='current_route_stance':self.draft.acceptance_conditions=list(patch.acceptance_conditions)
             self.conflicts.pop('original:'+target,None)
         self.evidence[key]=item
+        self.draft,self.original_facets=reconcile_original(previous,patch,self.original_facets,explicit=True)
+        if target not in CONCERNS:setattr(self.draft,target,getattr(patch,target).model_copy(deep=True))
+        if target=='current_route_stance':self.draft.acceptance_conditions=list(patch.acceptance_conditions)
         self.corrections.append({'id':f'C{number}','target':target,'evidence_id':key,'citizen_text':text,'reason':reason,
             'provenance':'user_authored_testimony; model proposes interpretation; confirmation required',
             'before':before,'after':self.draft.model_dump()})
         self._invalidate();self._remember('correction');self._record(client,'correction interpretation')
 
     def correct_blocker(self,cid,status,text=''):
-        self._require(State.INTERPRETATION,State.CONFIRMED,State.UPDATED,State.UPDATE_CONFIRMED)
+        self._require(State.INTERPRETATION,State.CONFIRMED,State.UPDATED,State.UPDATE_CONFIRMED,State.FINAL)
         if cid not in self.blockers or status not in {'yes','no','unsure'}:raise ValueError('Select an existing boundary and Yes, No or Unsure.')
         if text:check_input(text)
         prefix='B'+str(len(self.corrections)+1)
@@ -302,7 +338,7 @@ class Session:
         if not self.discovery_finished and next_question(self) is not None:raise ValueError('Answer the next discovery question, Skip it, or Finish discovery before confirming.')
         if not self.discovery_finished:self.finish_discovery('sufficient')
         for boundary in self.blockers.values():boundary['confirmed']=True
-        self.confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history(),acceptance_boundaries=self._discovery_boundaries())
+        self.confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history(),acceptance_boundaries=self._discovery_boundaries(),facet_meanings=[f.model_dump() for f in self.original_facets.values()])
         self.confirmations.append(deepcopy(self.confirmed));self.state=State.CONFIRMED
 
     def _discovery_boundaries(self):
@@ -313,16 +349,15 @@ class Session:
 
     def _supporting_history(self):
         # A bare overall stance is not concern-specific historical support.
-        if self.reasons_explicit is False:return {}
         history={}
         for version in self.interpretations:
             for c in version['model_proposed_meaning']['concerns']:
                 refs=[r for r in c['excerpts']+c.get('conditions',[]) if r in self.evidence and self.evidence[r].source=='citizen_original']
                 history[c['concern_id']]=list(dict.fromkeys(history.get(c['concern_id'],[])+refs))
-        return history
+        return {cid:refs for cid,refs in history.items() if refs}
 
     def correct_modified(self,target,text,reason,client):
-        self._require(State.UPDATED,State.UPDATE_CONFIRMED)
+        self._require(State.UPDATED,State.UPDATE_CONFIRMED,State.FINAL)
         if self.conditional_draft is None or target not in list(CONCERNS)+['current_route_stance','medical_public_benefit_support','awareness_understanding']:raise ValueError('Select a meaning for the modified proposal.')
         check_input(text);check_input(reason)
         key=f'M{len(self.corrections)+1}.testimony'
@@ -336,9 +371,11 @@ class Session:
             draft.concerns=[c for c in draft.concerns if c.concern_id!=target]+[match.model_copy(deep=True)]
             from .updates import FacetMeaning, modified_facets
             required=sorted(set(pair for pair in modified_facets(self) if pair[0]==target)|{(target,f) for f in match.facets})
-            if hasattr(client,'interpret_facets'):updated=client.interpret_facets({key:item},self.joint['proposal'],required)
+            reviewed=[(target,f) for f in match.facets]
+            if hasattr(client,'interpret_facets'):updated=client.interpret_facets({key:item},self.joint['proposal'],reviewed)
             else:updated=[FacetMeaning(concern_id=target,facet=f,position=match.position if f in match.facets else 'unassessed',evidence_ids=[key] if f in match.facets else [],condition_ids=match.conditions if f in match.facets else [],applicability_explicit=f in match.facets,rationale=match.rationale) for cid,f in required]
-            facts=[f for f in facts if f.concern_id!=target]+updated
+            changed={(f.concern_id,f.facet) for f in updated}
+            facts=[f for f in facts if (f.concern_id,f.facet) not in changed]+updated
         else:
             setattr(draft,target,getattr(patch,target).model_copy(deep=True))
             if target=='medical_public_benefit_support':
@@ -351,6 +388,11 @@ class Session:
         # Commit only once both mapping and aspect review have succeeded.
         self.conditional_draft=draft;self.facet_meanings=facts;self.evidence[key]=item
         self.conflicts.pop('joint:'+target,None)
+        if target=='current_route_stance' and self.joint:
+            decision={'supported':'accept','opposed':'reject','uncertain':'unsure'}.get(draft.current_route_stance.interpretation)
+            if decision:
+                self.joint['choice']=decision
+                self.joint_history.append({**deepcopy(self.joint),'revision_evidence_id':key,'version':self.version+1})
         self.corrections.append({'id':key,'target':target,'context':'modified','citizen_text':text,'reason':reason,
             'before':before,'after':draft.model_dump(),'provenance':'user_authored_testimony'})
         self._invalidate();self._remember('modified correction');self._record(client,'modified correction interpretation')
@@ -367,10 +409,13 @@ class Session:
 
     def score_initial(self,client):
         self._require(State.CONFIRMED);verify(self.confirmed)
+        if self._initial is not None:
+            self.state=State.INITIAL;return
         try:result=client.score(deepcopy(self.confirmed))
         except AssessmentError as exc:
             self._record(client,'initial scoring failure')
             raise
+        self.initial_text=self.text
         self._initial=self._snapshot(result,self.confirmed,'initial',client)
         self._record(client,'initial scoring');self.state=State.INITIAL
 
@@ -401,8 +446,8 @@ class Session:
 
     def skip_followup(self):
         self._require(State.FOLLOWUPS)
-        q=self.current_question;ctx='original' if q['contract']['context']=='original' else 'hypothetical:'+q['id']
-        key=q['id']+'.skip';self.evidence[key]=EvidenceItem(id=key,text='I skip this question; my position remains unknown.',context=ctx,source='citizen_control',question_id=q['id'])
+        q=self.current_question;self._checkpoint(q['id']);prefix=self._answer_prefix(q['id']);ctx='original' if q['contract']['context']=='original' else 'hypothetical:'+q['id']
+        key=prefix+'.skip';self.evidence[key]=EvidenceItem(id=key,text='I skip this question; my position remains unknown.',context=ctx,source='citizen_control',question_id=q['id'])
         self.responses.append({'question_id':q['id'],'presented_question':q,'choice':None,'code':'unresolved','clarification':'','clarification_context':ctx,
             'evidence_ids':[key],'skipped':True,'outcome':'Skipped; unknowns retained.','numerical_update':None})
         from .updates import contract
@@ -429,13 +474,14 @@ class Session:
         by={c.concern_id:c for c in self.draft.concerns}
         for new in patch.concerns:
             old=by.get(new.concern_id)
-            if old and (old.position!=new.position or old.conditional_willingness!=new.conditional_willingness or set(old.facets)-set(new.facets)):
+            if old and set(old.facets)&set(new.facets) and new.position in {'supported','opposed','mixed'} and old.position!=new.position:
                 self.conflicts['original:'+new.concern_id]={'target':new.concern_id,'before':old.model_dump(),'proposed':new.model_dump(),
                     'question':'For the unchanged original proposal, which position do you mean? Clarify this concern in your own words.'}
                 continue
             by[new.concern_id]=new.model_copy(deep=True)
             self._reasons[new.concern_id]='Reassessed from confirmed original-context follow-up evidence.'
-        self.draft.concerns=list(by.values())
+        safe_patch=patch.model_copy(deep=True);safe_patch.concerns=[c for c in patch.concerns if 'original:'+c.concern_id not in self.conflicts]
+        self.draft,self.original_facets=reconcile_original(self.draft,safe_patch,self.original_facets)
         for name in ['current_route_stance','medical_public_benefit_support','awareness_understanding']:
             new=getattr(patch,name);old=getattr(self.draft,name)
             if new.interpretation=='unassessed':continue
@@ -451,30 +497,30 @@ class Session:
         from .updates import contract
         spec=contract(q)
         if choice not in q['choices']:raise ValueError('Choose an offered answer.')
+        self._checkpoint(qid)
+        prefix=self._answer_prefix(qid)
         selected=spec.choices[q['choices'].index(choice)]
+        if selected.code=='corrected_original' and not clarification.strip():raise AssessmentError('Please explain what should be corrected.',code='clarification')
         r=outcome(q,choice,clarification) if qid in {'q1','q2','q3'} else {'question_id':qid,'choice':choice,'code':selected.code,'clarification':clarification,'outcome':selected.meaning,'numerical_update':None,'presented_question':deepcopy(q)}
         ctx='original' if spec.context=='original' else 'hypothetical:'+qid
-        items={f'{qid}.question':EvidenceItem(id=f'{qid}.question',text=q['text'],context=ctx,source='question',question_id=qid),
-            f'{qid}.choice':EvidenceItem(id=f'{qid}.choice',text=choice,context=ctx,source='citizen_choice',question_id=qid)}
+        items={f'{prefix}.question':EvidenceItem(id=f'{prefix}.question',text=q['text'],context=ctx,source='question',question_id=qid),
+            f'{prefix}.choice':EvidenceItem(id=f'{prefix}.choice',text=choice,context=ctx,source='citizen_choice',question_id=qid)}
         if clarification:
-            key=f'{qid}.clarification';items[key]=EvidenceItem(id=key,text=clarification,
+            key=f'{prefix}.clarification';items[key]=EvidenceItem(id=key,text=clarification,
                 context='original' if clarification_context=='original' else ctx,source='citizen_correction',question_id=qid)
         # Separate selection and clarification interpretation makes contradictions
         # reviewable instead of silently treating the last sentence as decisive.
-        meaning=client.interpret({k:v for k,v in items.items() if v.source!='question' and v.context==ctx and v.source=='citizen_choice'},ctx,q['text'],target=sorted({t.concern_id for t in spec.targets})) if qid!='q3' and spec.context!='original' else None
-        traces=[{'stage':'choice interpretation','diagnostics':deepcopy(getattr(client,'last_diagnostics',[]))}] if meaning else []
+        from .updates import declared_choice_meaning
+        meaning=declared_choice_meaning(q,selected.code,prefix+'.choice') if qid!='q3' and spec.context!='original' else None
+        traces=[{'stage':'choice interpretation','diagnostics':[],'source':'reviewed choice contract'}] if meaning else []
         patch=None
         if clarification:
-            key=f'{qid}.clarification'
+            key=f'{prefix}.clarification'
             if spec.context=='original':
                 items[key]=items[key].model_copy(update={'context':'original'})
             patch=client.interpret({key:items[key]},items[key].context,SCENARIO['text'] if items[key].context=='original' else q['text'])
             traces.append({'stage':'clarification interpretation','diagnostics':deepcopy(getattr(client,'last_diagnostics',[]))})
-        if spec.context=='original' and selected.code=='unresolved' and not clarification:
-            for cid in {t.concern_id for t in spec.targets}:
-                old=next((c for c in self.draft.concerns if c.concern_id==cid),None)
-                if old:
-                    old.position='uncertain';old.status='needs_clarification';old.conditional_willingness='uncertain';old.conditions=[];old.excerpts=[qid+'.choice'];old.rationale='Citizen is unsure about this aspect in the original proposal.'
+        # A broad unsure choice records an unknown response, not a replacement of prior aspects.
         allowed={t.concern_id for t in spec.targets}
         if meaning:meaning.concerns=[c for c in meaning.concerns if c.concern_id in allowed]
         if patch:patch.concerns=[c for c in patch.concerns if c.concern_id in allowed]
@@ -540,12 +586,13 @@ class Session:
         response.setdefault('resolutions',[]).append({'target':problem['target'],'evidence_id':eid,'confirmed_proposed_meaning':patch.model_dump()})
         self.conflicts.pop(key);self._invalidate();self.joint=None;self.conditional_draft=None
 
-    def record_joint(self,choice,remaining,text,client):
+    def record_joint(self,choice,remaining,text,client,unchanged_confirmed=None):
         self._require(State.UPDATED,State.UPDATE_CONFIRMED)
         if not self.joint_required:raise ValueError('No modified proposal has been presented')
         if choice not in {'accept','reject','unsure'}:raise ValueError('Unknown joint response')
         if any(cid not in CONCERNS for cid in remaining):raise ValueError('Unknown remaining concern')
         if text:check_input(text)
+        self._checkpoint('combined_proposal')
         items={};prefix='J'+str(len(self.joint_history)+1)
         # Retain individual gates as explicitly contextualized testimony, never
         # infer combined acceptance from them. The new joint response is required.
@@ -563,11 +610,24 @@ class Session:
         if remaining:
             items[prefix+'.remaining']=EvidenceItem(id=prefix+'.remaining',text='My remaining concerns are: '+', '.join(CONCERNS[c]['label'] for c in remaining),context='modified',source='citizen_choice')
         if text:items[prefix+'.clarification']=EvidenceItem(id=prefix+'.clarification',text=text,context='modified',source='citizen_correction')
+        from .updates import FacetMeaning, facet_state
+        unchanged_confirmed=list(unchanged_confirmed or [])
+        available={(f.concern_id+':'+f.facet):f for f in self.original_facets.values() if f.position in {'supported','opposed','mixed'} and facet_state(self,f.concern_id,f.facet)[0]=='untested'}
+        if any(key not in available for key in unchanged_confirmed):raise ValueError('Choose an established unchanged aspect.')
+        for key in unchanged_confirmed:
+            fact=available[key];eid=prefix+'.applies.'+key
+            testimony='For this exact combined proposal, my earlier view still applies: '+fact.rationale
+            items[eid]=EvidenceItem(id=eid,text=testimony,context='modified',source='citizen_applicability_confirmation')
         proposal=self.combined_proposal
         meaning=client.interpret(items,'modified',proposal+'\nSeparate-gate answers are contextual history, not proof of joint acceptance. Interpret the explicit joint answer and remaining concerns; preserve untested facets.')
-        from .updates import initial_meaning, FacetMeaning
-        initial=initial_meaning(self)
-        required=sorted({(c.concern_id,f) for c in initial.concerns if c.status=='mapped' for f in c.facets}|{(c.concern_id,f) for c in meaning.concerns for f in c.facets})
+        from .updates import FacetMeaning
+        established={(c.concern_id,f) for c in self.draft.concerns if c.status=='mapped' for f in c.facets}|{(f.concern_id,f.facet) for f in self.original_facets.values()}
+        declared={(c['concern_id'],f) for response in self.responses for c in (response.get('choice_meaning') or {}).get('concerns',[]) for f in c['facets']}
+        for candidate in meaning.concerns:
+            direct=any(items[r].source=='citizen_correction' for r in candidate.excerpts)
+            candidate.facets=[f for f in candidate.facets if direct or (candidate.concern_id,f) in established|declared]
+        meaning.concerns=[c for c in meaning.concerns if c.facets]
+        required=sorted(established|{(c.concern_id,f) for c in meaning.concerns if c.status=='mapped' for f in c.facets})
         self._record(client,'combined-proposal interpretation attempt')
         facts=[]
         if choice!='unsure' and required:
@@ -580,19 +640,55 @@ class Session:
                     c=next((c for c in meaning.concerns if c.concern_id==cid),None)
                     usable=c and len(c.facets)==1 and f in c.facets and c.status=='mapped'
                     facts.append(FacetMeaning(concern_id=cid,facet=f,position=c.position if usable else 'unassessed',evidence_ids=c.excerpts if usable else [],condition_ids=c.conditions if usable else [],applicability_explicit=bool(usable),rationale=c.rationale if usable else 'Independent aspect evidence unavailable.'))
+        # Link declared, actually answered gates to explicit acceptance of the combination.
+        # Assumptions alone cannot create a facet, nor can global acceptance create new approval.
+        from .updates import facet_state
+        by={(f.concern_id,f.facet):f for f in facts}
+        for cid,aspect in required:
+            state,refs,qid=facet_state(self,cid,aspect)
+            current=by.get((cid,aspect))
+            accepted=choice=='accept' and state=='resolved_under_modification' and cid not in remaining
+            direct_conflict=current and current.applicability_explicit and current.position in {'opposed','mixed'} and any(items[r].source=='citizen_correction' for r in current.evidence_ids)
+            if accepted and direct_conflict:
+                self.conflicts['joint:'+cid]={'target':cid,'question':'Your earlier answer accepts this change, but your added words retain an objection. Which meaning applies to these changes together?'}
+            elif accepted:
+                linked=[prefix+'.background.'+r for r in refs if prefix+'.background.'+r in items]
+                if linked:by[(cid,aspect)]=FacetMeaning(concern_id=cid,facet=aspect,position='supported',evidence_ids=[linked[-1],prefix+'.choice'],
+                    applicability_explicit=True,rationale='Citizen accepted this tested change and explicitly accepts the combination.')
+            key=cid+':'+aspect
+            if key in unchanged_confirmed:
+                old=available[key];eid=prefix+'.applies.'+key
+                by[(cid,aspect)]=FacetMeaning(concern_id=cid,facet=aspect,position=old.position,evidence_ids=[eid],condition_ids=[],applicability_explicit=True,rationale=old.rationale)
+        facts=list(by.values())
         self.evidence.update(items)
         self.facet_meanings=facts
+        # The facet ledger is authoritative; project its meanings into the existing parent schema.
+        from .schemas import MappingConcern, Dimension
+        meaning.concerns=[]
+        for cid in sorted({f.concern_id for f in facts}):
+            group=[f for f in facts if f.concern_id==cid]
+            clear=all(f.applicability_explicit and f.position in {'supported','opposed','mixed'} for f in group)
+            positions={f.position for f in group}
+            position='mixed' if len(positions)>1 else next(iter(positions))
+            meaning.concerns.append(MappingConcern(concern_id=cid,status='mapped' if clear else 'needs_clarification',position=position,
+                facets=[f.facet for f in group],excerpts=list(dict.fromkeys(f.evidence_ids[0] for f in group if f.evidence_ids)),
+                conditions=list(dict.fromkeys(f.condition_ids[0] for f in group if f.condition_ids)),rationale='Confirmed aspect meanings; see each aspect and its exact evidence.'))
+        medical=next((f for f in facts if f.facet=='medical_public_benefit' and f.applicability_explicit),None)
+        if medical:meaning.medical_public_benefit_support=Dimension(interpretation=medical.position,excerpts=medical.evidence_ids,rationale=medical.rationale)
         self.conditional_draft=meaning.model_copy(deep=True)
         self.joint={'choice':choice,'remaining_concern_ids':list(remaining),'clarification':text,'proposal':proposal,
             'evidence_ids':list(items),'history_links':{eid:eid.removeprefix(prefix+'.background.') for eid in items if eid.startswith(prefix+'.background.')},
-            'provenance':'explicit user choice; question context supplied separately by application'}
+            'unchanged_aspects_confirmed':unchanged_confirmed,'provenance':'explicit user choice; question context supplied separately by application'}
         self.joint_history.append({**deepcopy(self.joint),'version':self.version+1,'evidence_records':{k:v.model_dump() for k,v in items.items()}})
         self.conflicts.pop('joint:current_route_stance',None)
         actual=meaning.current_route_stance.interpretation
         expected={'accept':'supported','reject':'opposed','unsure':'uncertain'}[choice]
-        if actual in {'supported','opposed'} and expected in {'supported','opposed'} and actual!=expected:
+        if actual!='unassessed' and actual!=expected:
             self.conflicts['joint:current_route_stance']={'target':'current_route_stance','choice':choice,'proposed':meaning.current_route_stance.model_dump(),
                 'question':'Your combined-proposal choice and interpreted testimony conflict. Do you accept or reject this exact proposal? Clarify in your own words.'}
+        if 'joint:current_route_stance' not in self.conflicts:
+            from .schemas import Dimension
+            self.conditional_draft.current_route_stance=Dimension(interpretation=expected,excerpts=[prefix+'.choice'],rationale='Explicit citizen answer to the exact combined proposal.')
         self._invalidate();self._remember('joint modified interpretation');self._record(client,'joint interpretation')
 
     def confirm_updated(self,agreed):
@@ -601,7 +697,7 @@ class Session:
         if self.conflicts:raise ValueError('Resolve conflicting answers before confirming.')
         if self.joint_required and self.joint is None:raise ValueError('Respond to the exact combined proposal first, including unsure.')
         for boundary in self.blockers.values():boundary['confirmed']=True
-        self.updated_confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history(),acceptance_boundaries=self._discovery_boundaries())
+        self.updated_confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history(),acceptance_boundaries=self._discovery_boundaries(),facet_meanings=[f.model_dump() for f in self.original_facets.values()])
         if self.joint and self.joint['choice']!='unsure':
             self.conditional_confirmed=freeze(self.conditional_draft,self.evidence,self.version,'modified',self.joint['proposal'],facet_meanings=[f.model_dump() for f in self.facet_meanings])
         self.confirmations.extend(deepcopy([c for c in [self.updated_confirmed,self.conditional_confirmed] if c]))
@@ -622,7 +718,8 @@ class Session:
             initial_record=next(r for r in self.confirmations if r['sha256']==self._initial['interpretation_sha256'])
             initial_meaning,_=verify(initial_record)
             old={c.concern_id:c for c in initial_meaning.concerns}
-            changed={c.concern_id for c in original.concerns if c.concern_id not in old or semantic_key(c)!=semantic_key(old[c.concern_id])}
+            changed={c.concern_id for c in original.concerns if c.concern_id not in old or semantic_key(c)!=semantic_key(old[c.concern_id])}|(set(old)-{c.concern_id for c in original.concerns})
+            for cid in set(old)-{c.concern_id for c in original.concerns}:self._reasons[cid]='Earlier answer superseded; this topic has no current confirmed original-proposal evidence.'
             from .schemas import Assessment, Concern
             result=Assessment.model_validate(self._initial['assessment'])
             # Refresh nonnumeric dimensions from confirmed data without a model call.
@@ -685,10 +782,11 @@ class Session:
             score=min(values) if eligible else None
             refs=list(dict.fromkeys(r for f in facts if f for r in f.evidence_ids))
             conditions=list(dict.fromkeys(r for f in facts if f for r in f.condition_ids))
-            rationale='Minimum of independently reviewed applicable aspects in this modified proposal.' if eligible else 'Insufficient evidence for every relevant aspect in the combined proposal.'
+            missing=[f for f in facets if not any(x and x.facet==f and facet_availability(self,x) for x in facts)]
+            rationale='Minimum of independently reviewed applicable aspects in this modified proposal.' if eligible else 'Clarify these aspects in the combined proposal: '+', '.join(missing) if missing else 'An independent numerical review returned unavailable; see facet review reasons.'
             if not eligible:exclusions[cid]=rationale
             # Parent evidence remains bounded; all exact aspect refs are in confirmed facets/export.
-            items.append(Concern(concern_id=cid,status='assessed' if score is not None else 'unassessed',score=score,position=c.position if c else 'unassessed',
+            items.append(Concern(concern_id=cid,status='assessed' if score is not None else 'unassessed',score=score,position='mixed' if len({f.position for f in facts if f})>1 else facts[0].position if facts and facts[0] else 'unassessed',
                 facets=facets,excerpts=[evidence[r].text for r in refs],conditions=[evidence[r].text for r in conditions],conditional_willingness='willing' if conditions else 'not_stated',rationale=rationale))
             reasons[cid]=rationale
         dims={name:{**getattr(profile,name).model_dump(),'excerpts':[evidence[r].text for r in getattr(profile,name).excerpts]} for name in ['awareness_understanding','medical_public_benefit_support','current_route_stance']}

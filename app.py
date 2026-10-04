@@ -5,7 +5,8 @@ from iam_sra.session import Session, State
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.settings import SCENARIO, CONCERNS, config
 from iam_sra.assessment import AssessmentError
-from iam_sra.reporting import final_summary
+from iam_sra.updates import facet_state
+from iam_sra.reporting import final_summary, citizen_summary, aspect_label, clarification_needs
 
 st.set_page_config(page_title='Medical drones in your neighborhood',page_icon='◈',layout='centered')
 st.title('Medical drones in your neighborhood')
@@ -30,7 +31,7 @@ def plain(text):
     for cid,c in CONCERNS.items():text=text.replace(cid,c['label'])
     for c in CONCERNS.values():
         for f in c['facets']:text=text.replace(f,ASPECTS.get(f,f.replace('_',' ')))
-    return text
+    return text.replace('boundary','condition').replace('facet','aspect').replace('eligibility','supported meaning')
 
 
 def perform(action,*args):
@@ -46,38 +47,70 @@ def perform(action,*args):
         st.session_state.action_error=message
 
 
-def summary(meaning,context):
-    st.write('**'+context+'**')
-    st.write('• You find this proposal '+PLAIN[meaning.current_route_stance.interpretation]+'.')
-    benefit=meaning.medical_public_benefit_support.interpretation
-    if benefit!='unassessed':st.write('• The medical public benefit is '+PLAIN[benefit]+' to you.')
-    for c in meaning.concerns:
-        if c.status=='needs_clarification' and not c.excerpts:continue
-        st.write('• '+CONCERNS[c.concern_id]['label']+': '+plain(c.rationale))
+def summary():
+    view=citizen_summary(s)
+    for line in view['lines']:st.write('• '+line)
+    for aspect in view['remaining_objections']:st.write('• You still have a reservation about '+aspect+'.')
+    for need in view['unresolved']:st.write('Not yet clear: '+plain(need['reason']))
+    if s.draft.awareness_understanding.interpretation!='unassessed':
+        st.write('**My understanding of the drone service**')
+        st.write(plain(s.draft.awareness_understanding.rationale))
     with st.expander('Your supporting words'):
-        refs=list(dict.fromkeys(r for c in meaning.concerns for r in c.excerpts+c.conditions))
-        for r in refs:st.text(s.evidence[r].text)
-        if not refs:st.write('No specific topic has been established. Unmentioned topics remain unknown.')
+        refs=list(dict.fromkeys(r for f in s.original_facets.values() for r in f.evidence_ids))
+        for ref in refs:st.text(s.evidence[ref].text)
+
+
+
+
+def rewind_answer(key):
+    old=next((r for r in s.responses if r['question_id']==key),None)
+    discovery_old=next((r for r in s.discovery_responses if r['question_id']==key),None)
+    if old:
+        st.session_state['choice_'+key]=old['choice'];st.session_state['text_'+key]=old.get('clarification','')
+    elif discovery_old:
+        q=next(q for q in s.discovery_questions if q['id']==key)
+        values=discovery_old['selections'];st.session_state[key+'_selection']=values if q['multiple'] else values[0] if values else None
+        st.session_state[key+'_text']=discovery_old['free_text']
+    elif key=='initial_answer':st.session_state.citizen_answer=s.text
+    elif key=='combined_proposal' and s.joint:
+        st.session_state.joint_choice=s.joint['choice'];st.session_state.joint_text=s.joint['clarification']
+    perform(s.rewind,key)
+
+def answer_edits(label='Edit an earlier answer'):
+    with st.expander(label):
+        if 'initial_answer' in s._checkpoints:st.button('Edit your first answer',on_click=rewind_answer,args=('initial_answer',))
+        for q in s.discovery_questions:
+            if any(r['question_id']==q['id'] for r in s.discovery_responses):st.button('Edit answer: '+q['text'],key='edit_answer_'+q['id'],on_click=rewind_answer,args=(q['id'],))
+        for q in s.presented_followups:
+            if any(r['question_id']==q['id'] for r in s.responses):st.button('Edit answer: '+q['text'],key='edit_answer_'+q['id'],on_click=rewind_answer,args=(q['id'],))
+        if s.joint and 'combined_proposal' in s._checkpoints:st.button('Edit your answer about the changes together',on_click=rewind_answer,args=('combined_proposal',))
+
+
+def back():
+    key='combined_proposal' if s.joint else s.responses[-1]['question_id'] if s.responses else s.discovery_responses[-1]['question_id'] if s.discovery_responses else 'initial_answer'
+    if key in s._checkpoints:st.button('← Back to previous question',on_click=rewind_answer,args=(key,))
 
 
 def edit(modified=False):
-    with st.expander('Edit this interpretation'+(' for the changed proposal' if modified else '')):
+    focus=st.session_state.get('clarify_focus')
+    with st.expander('Correct something'+(' about the changed proposal' if modified else ''),expanded=bool(focus)):
         tag='modified' if modified else 'original'
         with st.form('edit_'+tag):
-            targets=['current_route_stance','medical_public_benefit_support','awareness_understanding']+list(CONCERNS)
-            names={'current_route_stance':'Position on the proposal','medical_public_benefit_support':'Medical public benefit','awareness_understanding':'What I understand'}
-            st.selectbox('What should we correct?',targets,format_func=lambda t:CONCERNS[t]['label'] if t in CONCERNS else names[t],key='target_'+tag)
+            targets=['current_route_stance','medical_public_benefit_support']+(['awareness_understanding'] if s.draft.awareness_understanding.interpretation!='unassessed' else [])+list(CONCERNS)
+            names={'current_route_stance':'Position on the proposal','medical_public_benefit_support':'Medical public benefit','awareness_understanding':'My understanding of the drone service'}
+            if s.conditional_draft:st.radio('Which proposal?',['original','modified'],format_func=lambda v:'Unchanged original proposal' if v=='original' else 'Changes together',index=1 if modified else 0,key='edit_context_'+tag)
+            st.selectbox('What should we correct?',targets,index=targets.index(focus['concern_id']) if focus and focus['concern_id'] in targets else 0,format_func=lambda t:CONCERNS[t]['label'] if t in CONCERNS else names[t],key='target_'+tag)
             st.text_area('Tell us what you meant',key='edit_text_'+tag)
-            def save():perform(s.correct_modified if modified else s.correct,st.session_state['target_'+tag],st.session_state['edit_text_'+tag],'Citizen correction of displayed meaning',client)
+            def save():perform(s.correct_modified if st.session_state.get('edit_context_'+tag,tag)=='modified' else s.correct,st.session_state['target_'+tag],st.session_state['edit_text_'+tag],'Citizen correction of displayed meaning',client)
             st.form_submit_button('Save edit',on_click=save)
         if not modified:
             for cid,b in s.blockers.items():
-                st.write(CONCERNS[cid]['label']+' alone makes the original unacceptable: '+{'yes':'Yes','no':'No','unsure':'Unsure'}[b['status']])
+                st.write(CONCERNS[cid]['label']+' would make you oppose the original route even if other issues were resolved: '+{'yes':'Yes','no':'No','unsure':'Unsure'}[b['status']])
                 with st.form('boundary_'+cid):
-                    st.radio('Correct this boundary',['yes','no','unsure'],format_func=lambda v:v.capitalize(),index=None,key='boundary_'+cid)
-                    st.text_area('Optional explanation',key='boundary_text_'+cid)
+                    st.radio('Would this issue alone make you oppose the original route?' ,['yes','no','unsure'],format_func=lambda v:v.capitalize(),index=None,key='boundary_'+cid)
+                    st.text_area('Explain your answer, if you wish',key='boundary_text_'+cid)
                     def save_boundary(c=cid):perform(s.correct_blocker,c,st.session_state['boundary_'+c],st.session_state['boundary_text_'+c])
-                    st.form_submit_button('Save boundary edit',on_click=save_boundary)
+                    st.form_submit_button('Save answer',on_click=save_boundary)
 
 
 def discovery():
@@ -85,50 +118,39 @@ def discovery():
     if q is None:
         s.finish_discovery('sufficient');st.rerun()
     st.info('A few questions will help us understand your position; there are no preferred answers.')
-    st.write(q['text'])
+    st.write(plain(q['text']))
     st.caption('Question '+str(len(s.discovery_responses)+1)+' of at most '+str(config('discovery')['maximum_questions']))
     labels=config('discovery')['choice_labels']
     label=lambda v:CONCERNS[v]['label'] if v in CONCERNS else config('discovery')['topic_choice_labels'][v] if q['kind']=='topic' else labels[v]
     with st.form('discovery_'+q['id'],clear_on_submit=False):
         if q['multiple']:st.multiselect('What matters to you?',q['choices'],format_func=label,key=q['id']+'_selection')
         else:st.radio('Your view',q['choices'],format_func=label,index=None,key=q['id']+'_selection')
-        st.text_area('Anything to add? (optional)',key=q['id']+'_text')
+        st.text_area('Explain your answer, if you wish',key=q['id']+'_text')
         def answer():
             choice=st.session_state[q['id']+'_selection'];choice=choice if isinstance(choice,list) else [choice] if choice else []
             perform(s.respond_discovery,choice,st.session_state[q['id']+'_text'],client)
         st.form_submit_button('Continue',on_click=answer)
     st.button('Skip',on_click=perform,args=(s.respond_discovery,[],'',client,None,True))
     st.button('Finish these questions',on_click=perform,args=(s.finish_discovery,))
+    back()
 
 
 def confirmation(updated=False):
     st.subheader('Have we understood you correctly?')
-    summary(s.draft,'The unchanged original proposal')
-    if updated and s.conditional_draft:
-        summary(s.conditional_draft,'The combined hypothetical proposal')
-        for f in s.facet_meanings:
-            if f.position!='unassessed' and f.applicability_explicit:st.write('• For '+ASPECTS.get(f.facet,f.facet.replace('_',' '))+', your view of the changed proposal is '+PLAIN[f.position]+'.')
-        for f in s.facet_meanings:
-            if not f.applicability_explicit or f.position in {'uncertain','unassessed'}:st.write('• Your position on '+ASPECTS.get(f.facet,f.facet.replace('_',' '))+' under the combination still needs clarification.')
-        from iam_sra.updates import blocker_report
-        for cid,boundary in blocker_report(s)['modified'].items():
-            st.write('• '+CONCERNS[cid]['label']+' under the combined changes: '+{'unresolved':'the earlier boundary is still unresolved','remaining':'an objection remains','addressed_under_modification':'the earlier boundary is addressed under these assumptions'}[boundary['status']]+'.')
-        edit(True)
-    for cid,b in s.blockers.items():
-        if b['status']=='yes':st.write('• '+CONCERNS[cid]['label']+' alone would make the original proposal unacceptable to you.')
-        elif b['status']=='unsure':st.write('• You have not decided whether '+CONCERNS[cid]['label'].lower()+' alone would be decisive.')
-    edit()
+    summary()
+    edit(bool(updated and s.conditional_draft))
+    answer_edits()
+    back()
     key=('updated_confirm_' if updated else 'confirm_')+str(s.version)
     saved=s.state in {State.CONFIRMED,State.UPDATE_CONFIRMED,State.INITIAL}
     if saved:st.caption('Your confirmation is saved. Continue retries the unfinished step; Edit requires a new confirmation.')
     else:st.checkbox('This reflects what I meant',key=key)
-    with st.expander('Question options'):
-        if not updated:st.checkbox('Use the original FN reference questions',key='reference_mode')
+    if developer and not updated:
+        with st.expander('Question options'):st.checkbox('Use the original FN reference questions',key='reference_mode')
     def go():
         agreed=True if saved else st.session_state.get(key,False)
         perform(s.continue_final if updated else s.continue_initial,*((agreed,client) if updated else (agreed,client,st.session_state.get('reference_mode',False))))
-    st.button('Continue',on_click=go,type='primary')
-    st.caption('Confirmation checks meaning. It does not validate the measurement.')
+    st.button('Confirm and finish' if updated else 'Continue',on_click=go,type='primary')
 
 
 def combined_question():
@@ -136,12 +158,14 @@ def combined_question():
     changes=[q['contract']['modification'] for q in s.presented_followups if q.get('apply_to_joint')]
     for change in changes:st.write('• '+plain(change))
     with st.expander('Full combined proposal'):st.write(s.combined_proposal)
-    st.caption('These are hypothetical assumptions. Accepting separate changes does not mean accepting their combination.')
+    st.write('All other details of the original proposal stay the same.')
     with st.form('joint',clear_on_submit=False):
-        st.radio('Do you accept this exact combined proposal?',['accept','reject','unsure'],format_func=lambda v:{'accept':'Accept','reject':'Reject','unsure':'Unsure'}[v],index=None,key='joint_choice')
+        st.radio('With these changes together, would you accept this route?' ,['accept','reject','unsure'],format_func=lambda v:{'accept':'Accept','reject':'Reject','unsure':'Unsure'}[v],index=None,key='joint_choice')
         st.multiselect('Which issues remain? (optional)',list(CONCERNS),format_func=lambda cid:CONCERNS[cid]['label'],key='joint_remaining')
-        st.text_area('Remaining conditions or anything to clarify (optional)',key='joint_text')
-        def go():perform(s.record_joint,st.session_state.joint_choice,st.session_state.joint_remaining,st.session_state.joint_text,client)
+        st.text_area('What, if anything, would still concern you?',key='joint_text')
+        unchanged=[key for key,f in s.original_facets.items() if f.position in {'supported','opposed','mixed'} and facet_state(s,f.concern_id,f.facet)[0]=='untested']
+        if unchanged:st.multiselect('Which earlier views still apply to these changes? (optional)',unchanged,format_func=lambda key:aspect_label(s.original_facets[key].facet)+': '+PLAIN[s.original_facets[key].position],key='joint_unchanged')
+        def go():perform(s.record_joint,st.session_state.joint_choice,st.session_state.joint_remaining,st.session_state.joint_text,client,st.session_state.get('joint_unchanged',[]))
         st.form_submit_button('Continue',on_click=go)
 
 
@@ -164,17 +188,18 @@ elif s.state in {State.INTERPRETATION,State.CONFIRMED,State.INITIAL}:
     else:confirmation()
 elif s.state==State.FOLLOWUPS:
     q=s.current_question
-    st.write(q['text'])
-    st.caption('Unchanged original proposal' if q['contract']['context']=='original' else 'Hypothetical question; feasibility is not established.')
+    if len(s.responses)==0:st.info('The next questions consider possible changes, assumed to work as described.')
+    st.write(plain(q['text']))
     with st.form('followup_'+q['id'],clear_on_submit=False):
         st.radio('Your view',q['choices'],index=None,key='choice_'+q['id'])
-        st.text_area('Anything to clarify? (optional)',key='text_'+q['id'])
-        if q['contract']['context']=='hypothetical':st.radio('Your added words describe',['hypothetical','original'],format_func=lambda v:'This hypothetical change' if v=='hypothetical' else 'The unchanged original proposal',key='context_'+q['id'])
-        def go():perform(s.respond,st.session_state['choice_'+q['id']],st.session_state['text_'+q['id']],client,st.session_state.get('context_'+q['id'],'original'))
+        st.text_area('Explain your answer, if you wish',key='text_'+q['id'])
+        def go():perform(s.respond,st.session_state['choice_'+q['id']],st.session_state['text_'+q['id']],client,'hypothetical' if q['contract']['context']=='hypothetical' else 'original')
         st.form_submit_button('Continue',on_click=go)
     st.button('Skip',on_click=perform,args=(s.skip_followup,))
     st.button('Finish questions',on_click=perform,args=(s.stop_followups,))
-    if q.get('reference_text'):
+    back()
+    answer_edits('Correct an earlier answer')
+    if developer and q.get('reference_text'):
         with st.expander('Reference wording'):st.write(q['reference_text'])
 elif s.state in {State.UPDATED,State.UPDATE_CONFIRMED}:
     if s.conflicts:
@@ -191,12 +216,20 @@ else:
     else:st.metric('Provisional scenario-readiness score',str(result['headline_score'])+'/9')
     st.write('**Proposal context:** '+('Combined hypothetical proposal' if result['selected_profile']=='conditional_modified' else 'Unchanged original proposal' if result['selected_profile']=='final_original' else 'Your original and hypothetical views, where discussed'))
     st.write(result['explanation'])
-    st.write('Your view of the original route: '+PLAIN[result['original_route_position']]+'.')
-    if result['modified_route_position']:st.write('Your view of the combined changes: '+PLAIN[result['modified_route_position']]+'.')
-    if result['modified_assessment_attempted'] and not result['modified_aggregate_available']:st.info('The modified proposal was considered, but there is insufficient evidence for its numerical assessment. Any displayed score is for the original proposal.')
-    for condition in result['remaining_conditions']:st.write('Condition you stated: '+condition['citizen_quote'])
-    for cid in result['decisive_remaining_boundaries']:st.write('Acceptance boundary still remaining or unresolved: '+CONCERNS[cid]['label']+'.')
-    for cid in result['remaining_modified_topics']:st.write('Remaining issue under the changes: '+CONCERNS[cid]['label']+'.')
+    summary()
+    if result['modified_assessment_attempted'] and not result['modified_aggregate_available']:st.info('There is not enough clear evidence to calculate a score for the changed proposal. Any displayed score describes the unchanged original proposal.')
+    if result['clarification_needs'] or result['headline_score'] is None:
+        for need in result['clarification_needs']:
+            st.write(plain(need['question']))
+            def focus(n=need):
+                tag='modified' if s.conditional_draft else 'original'
+                st.session_state.clarify_focus=n
+                st.session_state['target_'+tag]=n['concern_id']
+                if s.conditional_draft:st.session_state['edit_context_'+tag]=n['context']
+            st.button('Clarify '+aspect_label(need['facet']),key='clarify_'+need['context']+'_'+need['concern_id']+'_'+need['facet'],on_click=focus)
+        st.write('You can clarify a specific view or add an omitted topic below.')
+        edit(bool(s.conditional_draft))
+    answer_edits()
     st.download_button('Download assessment JSONL',s.jsonl(),file_name='iam-assessment.jsonl',mime='application/x-ndjson')
     with st.expander('More about this result'):
         st.write('Coverage: '+str(result['coverage'] or 'Insufficient evidence'))

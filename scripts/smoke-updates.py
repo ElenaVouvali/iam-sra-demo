@@ -22,7 +22,7 @@ for name in args.ids.split(','):
    s.record_joint(args.joint,[],('I accept the combined proposal. Camera shielding makes private-space viewing acceptable, and the bundled altitude, sound and curfew changes make the noise acceptable. I still support lifesaving medical deliveries under these changes.' if args.joint=='accept' else 'I am not sure about accepting all these changes together.'),c)
   stage='updated confirmation and final scoring';s.continue_final(True,c)
   assert json.dumps(s.initial,sort_keys=True)==initial
-  record=s.export();assert record['schema_version']=='5.0.0' and len(record['domain_assessments'])==15
+  record=s.export();assert record['schema_version']=='5.1.0' and len(record['domain_assessments'])==15
   r.update(success=True,final_summary=record['final_summary'],aggregation=record['aggregation'],updates=record['updates'])
  except Exception as e:r.update(error=str(e),failure_stage=stage,error_type=type(e).__name__)
  r.update(latency_seconds=round(time.monotonic()-start,3),inference=s.inference,settings=c.last_settings,diagnostics=c.last_diagnostics)

@@ -32,13 +32,14 @@ class QuestionContract(Strict):
     cannot_establish: list[str]
     policy_version: str
     source: str
+    selection_reason: str = 'Relevant expressed concern or condition.'
 
 class FacetMeaning(FacetTarget):
     position: Literal['supported','opposed','mixed','uncertain','unassessed']
     evidence_ids: list[str] = Field(default_factory=list,max_length=3)
     condition_ids: list[str] = Field(default_factory=list,max_length=3)
     applicability_explicit: bool
-    rationale: str = Field(max_length=250)
+    rationale: str = Field(max_length=400)
 
 class FacetBatch(Strict):
     facets: list[FacetMeaning] = Field(max_length=30)
@@ -75,7 +76,7 @@ def enrich_fn(question,reference=False):
     choices=[ChoiceMeaning(label=label,code=code,meaning=code.replace('_',' ')) for label,code in zip(q['choices'],rules['choice_codes'])]
     spec=QuestionContract(question_id=q['id'],context='hypothetical',proposal_id='hypothetical:'+q['id'],
         targets=[FacetTarget(concern_id=cid,facet=f) for cid,facets in rules['targets'].items() for f in facets],
-        modification=rules['modification'],assumptions=[rules['modification']],choices=choices,cannot_establish=rules['cannot_establish'],policy_version=p['version'],source='FN PDF pp.'+','.join(map(str,q['source_pages'])))
+        modification=rules['modification'],assumptions=[rules['modification']],choices=choices,cannot_establish=rules['cannot_establish'],policy_version=p['version'],source='FN PDF pp.'+','.join(map(str,q['source_pages'])),selection_reason='Test a relevant expressed privacy/noise condition.' if q['id']!='q3' else 'Explore the stated rerouting policy trade-off.')
     q.update(contract=spec.model_dump(),policy_version=p['version'],reference_mode=reference,apply_to_joint=q['id'] in {'q1','q2'})
     return q
 
@@ -84,8 +85,14 @@ def select_followups(meaning,evidence,reference=False):
     from .validation import select_questions
     from .settings import QUESTIONS
     p=config('updates');questions=[enrich_fn(q,reference) for q in (QUESTIONS if reference else select_questions(meaning))]
+    if not reference:
+        def purposeful(q):
+            if q['id']=='q2':return any(c.concern_id in {'noise','visual_pollution'} and (c.position!='supported' or c.conditions) for c in meaning.concerns)
+            if q['id']=='q3':return any(c.concern_id!='welfare_equity' and (c.position in {'opposed','mixed'} or c.conditions) for c in meaning.concerns)
+            return True
+        questions=[q for q in questions if purposeful(q)]
     covered={(t.concern_id,t.facet) for q in questions if q['id']!='q3' for t in contract(q).targets if not (q['id']=='q1' and t.facet=='data_security')}
-    by={c.concern_id:c for c in meaning.concerns if c.status=='mapped'}
+    by={c.concern_id:c for c in meaning.concerns if c.excerpts and c.status in {'mapped','needs_clarification'}}
     for cid in CONCERNS:
         c=by.get(cid)
         if not c:continue
@@ -93,15 +100,16 @@ def select_followups(meaning,evidence,reference=False):
         if not facets:continue
         targets=[FacetTarget(concern_id=cid,facet=f) for f in facets]
         conditions=[evidence[r].text for r in c.conditions if r in evidence and evidence[r].context=='original']
+        if not conditions and c.status=='mapped' and (c.position=='supported' or c.conditional_willingness!='not_stated'):continue
         modified=bool(conditions);qid=('u_change_' if modified else 'u_original_')+cid;context='hypothetical' if modified else 'original'
         condition='; '.join(conditions)
-        text=p['templates']['requested_change' if modified else 'original_check'].format(topic=CONCERNS[cid]['label'],condition=condition)
+        text=p['templates']['requested_change' if modified else 'original_check'].format(topic=CONCERNS[cid]['label'],condition=condition,earlier=c.rationale)
         labels=p['hypothetical_choices' if modified else 'original_choices']
         codes=['aspect_accepted','remaining_objection','partial_resolution','unresolved'] if modified else ['confirmed_unchanged','corrected_original','unresolved']
         change='Assume the citizen-described conditions for '+CONCERNS[cid]['label']+' are met: '+condition if modified else None
         spec=QuestionContract(question_id=qid,context=context,proposal_id='hypothetical:'+qid if modified else 'original',targets=targets,
             modification=change,assumptions=[change] if change else [],choices=[ChoiceMeaning(label=a,code=b,meaning=b.replace('_',' ')) for a,b in zip(labels,codes)],
-            cannot_establish=['Technical/regulatory/clinical feasibility','Full-route acceptance','Acceptance of a combination','Untargeted facets'],policy_version=p['version'],source='Application-reviewed template1.0; citizen condition evidence')
+            cannot_establish=['Technical/regulatory/clinical feasibility','Full-route acceptance','Acceptance of a combination','Untargeted facets'],policy_version=p['version'],source='Application-reviewed template1.1; citizen condition evidence',selection_reason='Test a citizen-described acceptable change.' if modified else 'Clarify missing acceptable changes or a specific ambiguous position.')
         questions.append({'id':qid,'text':text,'choices':labels,'contract':spec.model_dump(),'hypothetical':modified,'source_pages':[],
             'relevant_concerns':[cid],'apply_to_joint':modified,'condition_evidence_ids':c.conditions,'policy_version':p['version']})
     return questions[:p['maximum_questions']]
@@ -140,18 +148,20 @@ def initial_meaning(session):
 
 def modified_facets(session):
     """Required facets are union of original and new meanings, with no inheritance."""
-    initial=initial_meaning(session)
-    required={(c.concern_id,f) for c in initial.concerns if c.status=='mapped' for f in c.facets}
-    required.update((c.concern_id,f) for c in (session.conditional_draft.concerns if session.conditional_draft else []) for f in c.facets)
+    required={(c.concern_id,f) for c in session.draft.concerns if c.status=='mapped' for f in c.facets}
+    required.update((f.concern_id,f.facet) for f in session.original_facets.values())
+    # Only independently mapped modified testimony may introduce a required aspect.
+    required.update((c.concern_id,f) for c in (session.conditional_draft.concerns if session.conditional_draft else []) if c.status=='mapped' for f in c.facets)
     return sorted(required)
 
 
 def facet_availability(session,facet):
     if not facet.applicability_explicit or facet.position in {'uncertain','unassessed'} or not facet.evidence_ids:return False
     sources=[session.evidence[r] for r in facet.evidence_ids]
+    if all(e.id.endswith('.remaining') for e in sources):return False
     if any(e.context!='modified' or e.source in {'question','application_control','citizen_control'} for e in sources):return False
     state,_,_=facet_state(session,facet.concern_id,facet.facet)
-    direct=any(e.source=='citizen_correction' for e in sources)
+    direct=any(e.source in {'citizen_correction','citizen_applicability_confirmation'} for e in sources)
     # A separate gate plus explicit joint acceptance supports that tested facet;
     # route acceptance alone cannot establish applicability of unrelated facets.
     if not direct and not (state in {'resolved_under_modification','remaining_objection'} and session.joint and session.joint['choice'] in {'accept','reject'}):return False
@@ -202,5 +212,26 @@ def blocker_report(session):
             status='remaining' if any(f.position in {'opposed','mixed'} for f in facts) else 'addressed_under_modification'
         if 'remaining_objection' in statuses:status='remaining'
         elif facets and len(assessed)>=len(facets) and statuses.issubset({'resolved_under_modification','confirmed_unchanged'}) and all(any(f.concern_id==cid and f.facet==r['facet'] and facet_availability(session,f) for f in session.facet_meanings) for r in assessed):status='addressed_under_modification'
-        result['modified'][cid]={'original_status':b['status'],'status':status,'confirmed':session.updated_confirmed is not None,'evidence_ids':list(dict.fromkeys(r for t in assessed for r in t['evidence_ids'])),'reason':'Original boundary retained; only relevant confirmed modified evidence can address it. Numerical cap is independent.'}
+        result['modified'][cid]={'original_status':b['status'],'status':status,'confirmed':session.updated_confirmed is not None,'independently_decisive':None,'independently_decisive_reason':'An original acceptance condition does not establish independent decisiveness in the modified proposal.','evidence_ids':list(dict.fromkeys(r for t in assessed for r in t['evidence_ids'])),'reason':'Original boundary retained; only relevant confirmed modified evidence can address it. Numerical cap is independent.'}
     return result
+
+
+def declared_choice_meaning(question, code, evidence_id):
+    """Interpret reviewed choices, never invent positions for question-only topics."""
+    from .schemas import MappingAssessment, MappingConcern
+    dim={'interpretation':'unassessed','excerpts':[],'rationale':'Not stated by this answer.'}
+    concerns=[]
+    for target in contract(question).targets:
+        status=choice_transition(question,code,target.concern_id,target.facet)
+        if status not in {'resolved_under_modification','remaining_objection'}:continue
+        # Each emitted position is expressed by the selected choice itself.
+        concerns.append(MappingConcern(concern_id=target.concern_id,status='mapped',position='supported' if status=='resolved_under_modification' else 'opposed',
+            facets=[target.facet],excerpts=[evidence_id],rationale='The selected answer explicitly '+('accepts this aspect under the stated change.' if status=='resolved_under_modification' else 'retains this objection under the stated change.')))
+    grouped={}
+    for c in concerns:
+        if c.concern_id in grouped:grouped[c.concern_id].facets+=c.facets
+        else:grouped[c.concern_id]=c
+    route=dim if code!='bundle_accepted' else {'interpretation':'supported','excerpts':[evidence_id],'rationale':'Accepted this separate operating-condition proposal.'}
+    from .settings import SCENARIO
+    return MappingAssessment(scenario_id=SCENARIO['id'],concerns=list(grouped.values()),current_route_stance=route,
+        medical_public_benefit_support=dim,awareness_understanding=dim,acceptance_conditions=[])

@@ -1,9 +1,9 @@
 {
-  "version": "5.0.0",
+  "version": "5.1.0",
   "assessment": "prompts/assessment.txt",
   "evidence_selection": "numbered_passages_v1",
   "construct": "concern_specific_conditional_scenario_readiness",
-  "calls": "Submission: one mapping stage plus numeric-free scope review per candidate (maximum15), plus at most one factual-awareness evidence review, all within180s; at most one retry per stage, maximum34 calls. Explicit confirmation precedes up to15 independent numeric-only reviews (maximum30 calls,180s). Follow-up/context meanings are separate bounded interpretation actions. Final original and conditional numeric profiles are independently bounded; no hidden scoring before either confirmation. Initial submission also performs one score-free metadata stage (500 reserved output tokens, two attempts,180s). Supplementary answers use bounded score-free targeted mapping/scope review; maximum six questions, no scoring until confirmation. Modified facet interpretation is score-free in batches of at most six facets with a shared180-second deadline and 1200 reserved output tokens per request; each confirmed applicable facet receives an independent conditional numeric review within the shared 180-second deadline. Failed stages retain confirmation for retry.",
+  "calls": "Submission: one score-free mapping call, up to30 facet scope reviews, at most four independent contrastive routing/visual attribution calls and one factual-awareness call. Maximum72 attempts within a shared180-second deadline; at most one retry per request. A separate score-free discovery metadata call reserves500 output tokens. Approved follow-up choices use declared Python meanings; optional text uses bounded semantic mapping. Initial numeric review follows explicit confirmation, maximum15 concerns/two attempts each/180s. Modified facet interpretation uses batches of six,1200 reserved output tokens and180s; final original/conditional reviews have independent180s budgets. Conditional numeric review is per confirmed applicable facet. Every request checks full-chat prompt plus output against4096, with no silent truncation. Failed calculation retains confirmations/drafts for retry.",
   "mapping": "prompts/assessment.txt",
   "scoring": "prompts/scoring.txt",
   "confirmed_scoring": "prompts/confirmed-scoring.txt",
