@@ -7,9 +7,9 @@ from iam_sra.settings import SCENARIO, CONCERNS, config
 from iam_sra.assessment import AssessmentError
 from iam_sra.reporting import final_summary
 
-st.set_page_config(page_title='IAM · Your perspective',page_icon='◈',layout='centered')
-st.title('IAM · Your perspective')
-st.caption('Experimental scenario assessment. There are no preferred answers.')
+st.set_page_config(page_title='Medical drones in your neighborhood',page_icon='◈',layout='centered')
+st.title('Medical drones in your neighborhood')
+st.write('Share your views on a proposed hospital delivery route. A few questions will help us understand what matters to you—there are no right or wrong answers.')
 mock=os.getenv('IAM_MOCK','0')=='1'
 developer=os.getenv('IAM_DEVELOPER','0')=='1'
 if mock:
