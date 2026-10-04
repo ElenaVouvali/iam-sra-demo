@@ -8,6 +8,8 @@ class Boundary(Strict):
     concern_id: ConcernID
     status: str = Field(pattern='^(yes|no|unsure)$')
     excerpts: list[str] = Field(min_length=1,max_length=3)
+    validated_facets: list[str] = Field(default_factory=list,max_length=2)
+    decisiveness_checked: bool = False
 
 class DiscoveryFacts(Strict):
     reasons_explicit: bool = False
@@ -30,6 +32,10 @@ def next_question(session):
         if kind=='reasons':template='reasons_'+(stance if stance!='unassessed' else 'uncertain')
         label=CONCERNS[target]['label'] if target in CONCERNS else next((i['wording'] for i in session.unmapped_issues if i['id']==target),'')
         text=policy['questions'][template].format(topic=label)
+        if kind=='blocker':
+            c=next((c for c in session.draft.concerns if c.concern_id==target),None)
+            wording=next((session.evidence[r].text for r in c.excerpts if r in session.evidence),'') if c else ''
+            text='You said: “'+wording+'”\nIf the other issues were resolved but '+label.lower()+' stayed as originally described, would you still oppose the route?'
         choices={'stance':['supported','opposed','mixed','uncertain'],
             'reasons':list(CONCERNS)+['other','cannot_specify']+(['no_reservations'] if stance=='supported' else []),
             'topic':['supported','opposed','mixed','uncertain','cannot_specify'],
@@ -85,7 +91,7 @@ def report(session):
     return {'policy_version':config('discovery')['version'],'finished':session.discovery_finished,'stop_reason':session.discovery_stop_reason,
         'presented_questions':deepcopy(session.discovery_questions),'responses':deepcopy(session.discovery_responses),
         'events':deepcopy(session.discovery_events),'excluded_initial_candidates':deepcopy(session.discovery_candidate_exclusions),'selected_topics':deepcopy(session.discovery_topics),'no_reservations':session.no_reservations,
-        'blockers':deepcopy(session.blockers),'acceptable_changes':session._discovery_boundaries(),
+        'blockers':deepcopy(session.blockers),'boundary_nominations':deepcopy(session.boundary_nominations),'acceptable_changes':session._discovery_boundaries(),
         'unmapped_issues':deepcopy(session.unmapped_issues),'topic_followup_coverage':coverage,
         'unresolved_questions':[{'question_id':q['id'],'reason':q['selection_reason'],'status':'skipped' if any(r['question_id']==q['id'] and r['skipped'] for r in session.discovery_responses) else 'unanswered'} for q in session.discovery_questions if not any(r['question_id']==q['id'] and not r['skipped'] for r in session.discovery_responses)],
         'unresolved_topics':list(dict.fromkeys([cid for cid in session.discovery_topics if not any(c.concern_id==cid and c.status=='mapped' for c in session.draft.concerns)]+[c.concern_id for c in session.draft.concerns if c.status=='needs_clarification' or c.position in {'uncertain','unassessed'}])),

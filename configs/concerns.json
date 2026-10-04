@@ -1,5 +1,5 @@
 {
-  "version": "2.1.0",
+  "version": "2.2.0",
   "source_pages": [
     1,
     2
@@ -41,8 +41,33 @@
         "perceived_safety"
       ],
       "inclusion": "Personal surveillance, camera intrusion, fear of injury or perceived risk.",
-      "exclusion": "Camera intrusion is not automatically a technical security defect or aesthetic objection.",
-      "illustrative_anchors": "Strong surveillance boundary with conditional openness=2; cautious safety acceptance=6; clear personal comfort=8."
+      "exclusion": "Camera intrusion is not automatically a technical security defect or aesthetic objection. Low-altitude discomfort alone does not establish fear of physical harm; do not infer a risk meaning without citizen support.",
+      "illustrative_anchors": "Strong surveillance boundary with conditional openness=2; cautious safety acceptance=6; clear personal comfort=8.",
+      "semantic_attribution_by_facet": {
+        "perceived_safety": {
+          "kinds": [
+            "explicit_physical_risk",
+            "altitude_discomfort_only",
+            "noise_or_viewing_only",
+            "not_mentioned",
+            "unclear"
+          ],
+          "supported_kind": "explicit_physical_risk",
+          "instruction": "Classify the actual citizen testimony. Explicit fear of injury, falling aircraft, collision or harm is explicit_physical_risk, including ordinary-language paraphrases. Low altitude or vague discomfort with height alone is altitude_discomfort_only: do not infer why height matters. Hum or private-space viewing alone is noise_or_viewing_only. Do not invent an injury fear."
+        },
+        "personal_privacy": {
+          "kinds": [
+            "private_viewing_or_personal_privacy",
+            "altitude_only",
+            "acoustic_only",
+            "physical_risk_only",
+            "not_mentioned",
+            "unclear"
+          ],
+          "supported_kind": "private_viewing_or_personal_privacy",
+          "instruction": "Classify the actual testimony without a candidate label. Statements about private yards/windows, watching/recording people or personal surveillance boundaries (including explicit comfort with these) are private_viewing_or_personal_privacy. Low height or discomfort with height alone is altitude_only: proximity does not prove a privacy reaction. Sound alone is acoustic_only. Injury fear alone is physical_risk_only. Do not invent viewing or recording claims."
+        }
+      }
     },
     {
       "id": "technical_safety_security_privacy",
@@ -54,8 +79,21 @@
         "data_security"
       ],
       "inclusion": "Explicit failure mechanisms, data retention/access, hacking or technical safeguards.",
-      "exclusion": "Personal discomfort with being viewed, without technical/data claims.",
-      "illustrative_anchors": "Rejects systems even with safeguards=1; requires verified controls=3\u20135; endorses stated controls=7\u20138."
+      "exclusion": "Personal discomfort with being viewed, without technical/data claims. Traffic crowding/separation/coordination alone is airspace capacity, not a system reliability or cybersecurity claim.",
+      "illustrative_anchors": "Rejects systems even with safeguards=1; requires verified controls=3\u20135; endorses stated controls=7\u20138.",
+      "semantic_attribution_by_facet": {
+        "system_reliability": {
+          "kinds": [
+            "explicit_system_failure_or_engineered_safeguard",
+            "traffic_coordination_only",
+            "personal_discomfort_only",
+            "not_mentioned",
+            "unclear"
+          ],
+          "supported_kind": "explicit_system_failure_or_engineered_safeguard",
+          "instruction": "Classify actual citizen testimony. Explicit aircraft failure, malfunction, reliability testing, fail-safe equipment or engineered safeguards are explicit_system_failure_or_engineered_safeguard, including ordinary-language paraphrases. Coordinating competing flights or keeping helicopters/drones apart alone is traffic_coordination_only, even if the citizen says safely. Do not infer a hardware/system failure claim from coordination alone. Vague personal discomfort without a mechanism is personal_discomfort_only."
+        }
+      }
     },
     {
       "id": "noise",
@@ -109,13 +147,25 @@
       "id": "airspace_capacity",
       "label": "Airspace capacity",
       "phase": 2,
-      "scope": "Traffic density, airspace allocation and capacity.",
+      "scope": "Traffic crowding, separation, coordination, airspace allocation and capacity.",
       "facets": [
         "airspace_traffic"
       ],
-      "inclusion": "Explicit airspace crowding, traffic separation or capacity allocation.",
-      "exclusion": "Flight frequency as a noise/visual cause alone.",
-      "illustrative_anchors": "Conditional airspace objection pending separation=3\u20135; supports allocation plan=8."
+      "inclusion": "Explicit crowding, coordination of competing flights, separation of drones/helicopters or allocation of limited flying space, including ordinary-language paraphrases.",
+      "exclusion": "Low altitude alone; frequency solely as an acoustic/visual cause; private-space viewing; fear of injury without a traffic coordination claim.",
+      "illustrative_anchors": "Conditional airspace objection pending separation=3\u20135; supports allocation plan=8.",
+      "semantic_attribution": {
+        "kinds": [
+          "traffic_capacity_separation_coordination",
+          "altitude_only",
+          "noise_or_visibility_only",
+          "privacy_or_perceived_risk_only",
+          "not_mentioned",
+          "unclear"
+        ],
+        "supported_kind": "traffic_capacity_separation_coordination",
+        "instruction": "Classify citizen testimony without a proposed label. Traffic crowding, coordinating competing flights, keeping helicopters and drones apart, or allocating limited flying space supports traffic_capacity_separation_coordination even without technical vocabulary. Low height alone is altitude_only. Fifteen flights causing constant hum is noise_or_visibility_only, not capacity. Camera viewing or generic fear of injury is privacy_or_perceived_risk_only unless the citizen separately expresses traffic separation/coordination. Do not automatically remap exclusions to another topic."
+      }
     },
     {
       "id": "sump_integration",

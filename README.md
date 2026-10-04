@@ -92,7 +92,7 @@ Final original-proposal scoring uses the initial rubric and reviews only concern
 
 The citizen flow hides intermediate numbers and shows one final provisional result, explicitly labelled with its proposal context. The JSON/JSONL records include all15 concerns and initial/final-original/conditional scores, reasons and evidence. Exports contain versioned interpretations, confirmations, corrections, immutable snapshots, questions/answers, contextual evidence IDs, model/rubric settings and arithmetic traces. JSONL is one complete session per line. Coverage differences do not imply personal improvement or decline.
 
-Maximum input is 4000 UTF-8 bytes, plus actual per-call full-chat token budgets of4096. Excessive input is rejected, never truncated. The model selects numbered citizen passages; Python retrieves their original wording, while Qwen interprets their meaning in rationales. Each explicit action has an overall180-second deadline. Submission performs semantic mapping and numeric-free scope review of up to15 candidates, with at most one retry per call; no numeric stage runs before confirmation. After confirmation, independent numeric-only review runs per evidenced concern (up to15), with at most one retry per call. Final original and conditional reviews are separate bounded stages. Empty mappings skip scoring. Mapping reserves1400 output tokens, each semantic or numeric review300; every full-chat prompt plus reserved output must fit4096. Schema/evidence failures are controlled; transport failures are controlled errors with no invented result. Requests are serialized in the app and server concurrency is one. Timeout is 120 seconds per HTTP request; retries are recounted against the full context limit. Eligibility is interpreted semantically under the15 versioned scopes; Python validates facet membership, IDs, null/range and exact passages. There are no lexical vetoes or stance-to-score bands. Semantic correctness is still provisional. Logs rotate at 2 MiB with two backups per service; routine logs omit raw citizen text. Exports include citizen text and should be saved deliberately.
+Maximum input is 4000 UTF-8 bytes, plus actual per-call full-chat token budgets of4096. Excessive input is rejected, never truncated. The model selects numbered citizen passages; Python retrieves their original wording, while Qwen interprets their meaning in rationales. Each explicit action has an overall180-second deadline. Submission performs semantic mapping and numeric-free scope review of up to30 candidate facets, with at most one retry per call; no numeric stage runs before confirmation. After confirmation, independent numeric-only review runs per evidenced concern (up to15), with at most one retry per call. Final original and conditional reviews are separate bounded stages. Empty mappings skip scoring. Mapping reserves1400 output tokens, each semantic or numeric review300; every full-chat prompt plus reserved output must fit4096. Schema/evidence failures are controlled; transport failures are controlled errors with no invented result. Requests are serialized in the app and server concurrency is one. Timeout is 120 seconds per HTTP request; retries are recounted against the full context limit. Eligibility is interpreted semantically under the15 versioned scopes; Python validates facet membership, IDs, null/range and exact passages. There are no lexical vetoes or stance-to-score bands. Semantic correctness is still provisional. Logs rotate at 2 MiB with two backups per service; routine logs omit raw citizen text. Exports include citizen text and should be saved deliberately.
 
 ## Repository
 - `src/iam_sra/`: UI-independent schemas, assessment, session, scoring, validation and HTTP client.
@@ -114,7 +114,7 @@ The existing vLLM server does not need a restart. If laptop8501 is occupied, use
 
 No database, RAG, agents, fine-tuning or dashboard. PDF, credentials, weights, environments, logs and exports are excluded from Git. The updated application, including evidence discovery, is published on the single `main` branch. Fully merged implementation branches have been removed. Running services require a project-only UI restart to load changed modules. See [calibration report](docs/calibration-report.md) and [methodology](docs/methodology.md) for before/after results and source limitations.
 
-### Evidence-preserving follow-ups (policy 1.1, export 5.1)
+### Evidence-preserving follow-ups (policy 1.1, export 5.2)
 
 Python owns typed facet transitions and a reviewed question bank, with at most six follow-ups. Questions declare proposal context, facets, assumptions, choice meanings and limits. Non-FN topics receive a specific clarification only when a relevant meaning or acceptable change is missing, or a question using only citizen-described changes. Clear established positions are not routinely reconfirmed. Unknowns and skipped questions remain unknown. Q3 records policy priority without changing welfare support or caps.
 
@@ -124,7 +124,7 @@ Completion chooses the conditional aggregate when available, otherwise the final
 
 ### Review and editing
 
-Initial and final meaning confirmations remain required before scoring. The updated review shows one structured summary, with genuine uncertainties listed separately; **Correct something** supplies targeted testimony and **Confirm and finish** saves the final assessment. Follow-up explanations default to the displayed question's proposal. Q2 explicitly retains residential overflight up to15 times/day. One combined-proposal check asks about the exact changes together; Q3's policy trade-off is never included as a physical change. Tested privacy/noise answers remain usable with explicit joint acceptance. For an unchanged established aspect, a concise selection confirms that the displayed earlier view still applies; its numeric value is independently reviewed rather than inherited. Silence cannot confirm equity, cybersecurity or physical safety.
+Initial and final meaning confirmations remain required before scoring. The updated review shows one structured summary, with genuine uncertainties listed separately; **Correct something** supplies targeted testimony and **Confirm and finish** saves the final assessment. Follow-up explanations default to the displayed question's proposal. Q2 explicitly retains residential overflight up to15 times/day. One combined-proposal check asks about the exact changes together; Q3's policy trade-off is never included as a physical change. Tested privacy/noise answers remain usable with explicit joint acceptance. For each relevant untested established aspect, an explicit unselected Yes / My view has changed / Unsure / Skip question asks whether the earlier view still applies; its numeric value is independently reviewed rather than inherited. Silence cannot confirm equity, cybersecurity or physical safety.
 
 **← Back to previous question** and answer-specific edit links restore the same presented question/context and saved draft. Editing clears dependent answers/interpretations, confirmations and final results, preserves the immutable initial snapshot, and records superseded answers/evidence. Initial-answer revisions use distinct evidence IDs; final-original reassessment removes superseded topics that no longer have current evidence. Sessions and revision history remain in memory.
 
@@ -137,3 +137,23 @@ PYTHONPATH=src .venv/bin/python scripts/replay-fn-evidence.py
 ```
 
 Live and deterministic test results, including the first incorrect mapping and its correction, are documented in [the focused report](docs/evidence-preservation-report.md). Numeric anchors, minimum three-concern coverage, averaging, bottleneck and rounding remain experimental and unchanged.
+
+
+### Focused attribution and applicability fixes (registry 2.2, export 5.2)
+
+Low altitude or frequency explaining hum cannot establish traffic capacity/separation. Independent contrastive attribution distinguishes traffic coordination from height, acoustic/visual effects and privacy; low height is not automatically remapped to fear of injury. Rerouting remains a flight condition, not a facility/land-allocation objection. Reviews apply to initial mapping, discovery, corrections and modified mappings. Raw exclusions remain in audit and cannot become scored topics or required modified aspects.
+
+Discovery blocker nominations pass separate topic and independent-decisiveness reviews, then must match the scoped aspect ledger. Strong opposition or several requested changes do not establish that each issue alone prevents acceptance. An unknown independent position can prompt one concrete question; it does not create a low score. Concern edits invalidate stale blocker records.
+
+The combined-proposal screen explicitly asks whether each established, untested earlier view still applies. Nothing is preselected; Skip and Unsure preserve unknown applicability. **My view has changed** requires an explanation. Tested privacy/noise gates remain linked to joint acceptance. **Yes** confirms meaning and conditions for independent conditional review, never copies a score. Missing modified evidence has a direct clarification action before completion and in the result/edit flow.
+
+Export 5.2 retains the existing sections and legacy4.1 audit adapter, adding boundary-review decisions and applicability response records (displayed wording, original links, response, context and policy). Historical exports are unchanged. The numerical rubric, three-concern threshold and cap policy are unchanged.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m pytest -q
+# Optional live checks, only when your existing localhost endpoint is healthy:
+PYTHONPATH=src .venv/bin/python scripts/replay-fn-evidence.py
+PYTHONPATH=src .venv/bin/python scripts/replay-attribution.py
+```
+
+See [all attempted checks and remaining limits](docs/attribution-confirmation-report.md). These changes are local until explicitly published; services have not been restarted.

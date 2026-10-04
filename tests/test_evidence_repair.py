@@ -41,7 +41,7 @@ def test_joint_acceptance_keeps_tested_choices_and_explicit_unchanged_benefit():
     s.continue_final(True,c)
     assert s.conditional['aggregate']['trace']['denominator']==3 and s.initial==original
     assert not citizen_summary(s)['remaining_objections']
-    assert s.export()['schema_version']=='5.1.0'
+    assert s.export()['schema_version']=='5.2.0'
 
 
 def test_no_implicit_inheritance_of_untested_medical_meaning():
@@ -181,7 +181,7 @@ def test_completed_ui_has_one_summary_and_editable_answers(monkeypatch):
         assert not any(r.label=='Your added words describe' for r in app.radio)
         app.radio(key='choice_'+q['id']).set_value(q['choices'][0]);click(app);assert_simple(app)
     app.radio(key='joint_choice').set_value('accept')
-    app.multiselect(key='joint_unchanged').set_value(['welfare_equity:medical_public_benefit']);click(app)
+    app.radio(key='applies_welfare_equity:medical_public_benefit').set_value('yes');click(app)
     lines=' '.join(e.value for e in app.markdown)
     assert 'You support its medical purpose' in lines and 'would accept the route' in lines
     assert not any('boundary' in e.value or 'facet' in e.value for e in app.markdown)

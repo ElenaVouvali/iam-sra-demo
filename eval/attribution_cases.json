@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "source": "Minimal synthetic contrasts for the reported FN failure, not calibration data or a copied citizen export.",
+  "cases": [
+    {
+      "id": "altitude_only",
+      "text": "Sixty metres is incredibly low. I am uncomfortable with that height.",
+      "exclude": [
+        "airspace_capacity",
+        "infrastructure_land_use",
+        "perceived_safety_privacy"
+      ]
+    },
+    {
+      "id": "frequency_noise",
+      "text": "Fifteen flights a day would mean constant humming while I relax. I oppose that sound, but would accept quieter flights.",
+      "require": [
+        "noise"
+      ],
+      "exclude": [
+        "airspace_capacity"
+      ]
+    },
+    {
+      "id": "traffic_separation",
+      "text": "How will helicopters and drones be kept apart in that crowded sky? I could accept it if their movements are coordinated safely.",
+      "require": [
+        "airspace_capacity"
+      ],
+      "exclude": [
+        "technical_safety_security_privacy"
+      ]
+    },
+    {
+      "id": "capacity_paraphrase",
+      "text": "There is not enough room for all those competing flights. I oppose adding more until somebody coordinates which aircraft can use the limited space.",
+      "require": [
+        "airspace_capacity"
+      ]
+    },
+    {
+      "id": "rerouting_only",
+      "text": "Route them over the industrial park so they cannot look into my windows. I oppose the cameras viewing my home.",
+      "require": [
+        "perceived_safety_privacy"
+      ],
+      "exclude": [
+        "infrastructure_land_use",
+        "airspace_capacity"
+      ],
+      "discovery": true
+    },
+    {
+      "id": "landing_pad",
+      "text": "I oppose allocating our community garden to a landing pad. Use an existing hospital roof instead and that facility location would be acceptable.",
+      "require": [
+        "infrastructure_land_use"
+      ]
+    },
+    {
+      "id": "independent_noise",
+      "text": "Even if all my other issues were solved, the original noise alone would make me reject this route. I could accept it if the noise were inaudible.",
+      "require": [
+        "noise"
+      ],
+      "discovery": true
+    }
+  ]
+}

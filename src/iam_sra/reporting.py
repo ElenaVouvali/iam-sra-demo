@@ -3,7 +3,7 @@ from copy import deepcopy
 from .settings import SCENARIO, CONCERNS, REGISTRY, POLICY, config
 from .updates import blocker_report, initial_meaning
 
-EXPORT_VERSION='5.1.0'
+EXPORT_VERSION='5.2.0'
 PROFILES={'initial_original':'initial','final_original':'final','conditional_modified':'conditional'}
 
 def final_summary(session):
@@ -70,7 +70,7 @@ def export_session(session):
             'planned_followups':session.questions,'presented_followups':session.presented_followups,'answers':session.responses,'followup_stop_reason':session.followup_stop_reason,
             'joint_answers':session.joint_history,'corrections':session.corrections,'confirmed_interpretations':session.confirmations,'interpretation_versions':session.interpretations,'answer_revisions':session.revision_history,
             'confirmation_note':'Confirmation agrees on meaning, not scientific validity.'},
-        'audit':{'model_diagnostics':session.inference,'snapshots':snapshots,'facet_meanings':[f.model_dump() for f in session.facet_meanings],
+        'audit':{'model_diagnostics':session.inference,'boundary_nominations':session.boundary_nominations,'snapshots':snapshots,'facet_meanings':[f.model_dump() for f in session.facet_meanings],
             'original_facet_meanings':[f.model_dump() for f in session.original_facets.values()],
             'legacy_export_schema':'4.1.0','legacy_record':legacy}})
 

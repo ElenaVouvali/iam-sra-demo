@@ -74,6 +74,10 @@ def rewind_answer(key):
     elif key=='initial_answer':st.session_state.citizen_answer=s.text
     elif key=='combined_proposal' and s.joint:
         st.session_state.joint_choice=s.joint['choice'];st.session_state.joint_text=s.joint['clarification']
+        st.session_state.joint_remaining=s.joint['remaining_concern_ids']
+        for answer in s.joint.get('applicability_confirmations',[]):
+            st.session_state['applies_'+answer['aspect_key']]=answer['response']
+            st.session_state['applies_text_'+answer['aspect_key']]=answer['clarification']
     perform(s.rewind,key)
 
 def answer_edits(label='Edit an earlier answer'):
@@ -138,6 +142,11 @@ def discovery():
 def confirmation(updated=False):
     st.subheader('Have we understood you correctly?')
     summary()
+    if updated and s.joint:
+        for need in clarification_needs(s):
+            key=need['concern_id']+':'+need['facet']
+            if need['context']=='modified' and key in s.unchanged_aspects():
+                st.button('Clarify whether '+aspect_label(need['facet'])+' still applies',key='review_applies_'+key,on_click=rewind_answer,args=('combined_proposal',))
     edit(bool(updated and s.conditional_draft))
     answer_edits()
     back()
@@ -163,9 +172,17 @@ def combined_question():
         st.radio('With these changes together, would you accept this route?' ,['accept','reject','unsure'],format_func=lambda v:{'accept':'Accept','reject':'Reject','unsure':'Unsure'}[v],index=None,key='joint_choice')
         st.multiselect('Which issues remain? (optional)',list(CONCERNS),format_func=lambda cid:CONCERNS[cid]['label'],key='joint_remaining')
         st.text_area('What, if anything, would still concern you?',key='joint_text')
-        unchanged=[key for key,f in s.original_facets.items() if f.position in {'supported','opposed','mixed'} and facet_state(s,f.concern_id,f.facet)[0]=='untested']
-        if unchanged:st.multiselect('Which earlier views still apply to these changes? (optional)',unchanged,format_func=lambda key:aspect_label(s.original_facets[key].facet)+': '+PLAIN[s.original_facets[key].position],key='joint_unchanged')
-        def go():perform(s.record_joint,st.session_state.joint_choice,st.session_state.joint_remaining,st.session_state.joint_text,client,st.session_state.get('joint_unchanged',[]))
+        unchanged=s.unchanged_aspects()
+        for key,fact in unchanged.items():
+            st.radio(s.applicability_statement(fact),['yes','changed','unsure','skip'],format_func=lambda v:{'yes':'Yes','changed':'My view has changed','unsure':'I’m unsure','skip':'Skip'}[v],index=None,key='applies_'+key)
+            # Keep the draft visible; a changed response requires this explanation.
+            st.text_area('If your view has changed, please explain',key='applies_text_'+key)
+        def go():
+            answers={key:{'response':st.session_state.get('applies_'+key),'clarification':st.session_state.get('applies_text_'+key,'')} for key in unchanged}
+            if any(a['response'] is None for a in answers.values()):
+                st.session_state.action_error='Please answer each earlier-view question, or choose Skip. Your answers are saved.'
+                return
+            perform(s.record_joint,st.session_state.joint_choice,st.session_state.joint_remaining,st.session_state.joint_text,client,answers)
         st.form_submit_button('Continue',on_click=go)
 
 
@@ -222,6 +239,10 @@ else:
         for need in result['clarification_needs']:
             st.write(plain(need['question']))
             def focus(n=need):
+                key=n['concern_id']+':'+n['facet']
+                if n['context']=='modified' and key in s.unchanged_aspects() and 'combined_proposal' in s._checkpoints:
+                    rewind_answer('combined_proposal')
+                    return
                 tag='modified' if s.conditional_draft else 'original'
                 st.session_state.clarify_focus=n
                 st.session_state['target_'+tag]=n['concern_id']

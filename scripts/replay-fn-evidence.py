@@ -16,10 +16,10 @@ try:
  if s.joint_required:
   stage='explicit joint acceptance'
   unchanged=[key for key,f in s.original_facets.items() if f.facet=='medical_public_benefit' and f.position=='supported' and facet_state(s,f.concern_id,f.facet)[0]=='untested']
-  s.record_joint('accept',[],'',c,unchanged)
+  s.record_joint('accept',[],'',c,{key:{'response':'yes','clarification':''} for key in unchanged})
  stage='final meaning confirmation and scoring';s.continue_final(True,c)
  record.update(success=True,session=s.export())
 except Exception as exc:record.update(error_type=type(exc).__name__,error=str(exc),failure_stage=stage,meanings=s.draft.model_dump() if s.draft else None)
-record.update(latency_seconds=round(time.monotonic()-start,3),inference=s.inference,last_diagnostics=c.last_diagnostics,last_settings=c.last_settings)
+record.update(latency_seconds=round(time.monotonic()-start,3),inference=s.inference,last_diagnostics=c.last_diagnostics,last_raw_trace=c.last_trace,last_settings=c.last_settings)
 path=Path(args.output);path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(record,indent=2)+'\n')
 print(json.dumps({k:record[k] for k in ['success','latency_seconds','failure_stage','error'] if k in record}),flush=True)

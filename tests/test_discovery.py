@@ -103,7 +103,7 @@ def test_blocker_and_change_metadata_never_directly_changes_meaning_or_arithmeti
 
 
 def test_existing_explicit_conditions_and_boundary_skip_redundant_questions():
-    facts=DiscoveryFacts(blockers=[Boundary(concern_id='noise',status='yes',excerpts=['O.p001'])])
+    facts=DiscoveryFacts(blockers=[Boundary(concern_id='noise',status='yes',excerpts=['O.p001'],validated_facets=['acoustic_impact'],decisiveness_checked=True)])
     s,c=start(topics=('noise',),facts=facts)
     s.draft.concerns[0].conditional_willingness='willing';s.draft.concerns[0].conditions=['O.p001']
     assert s.discovery_question is None
@@ -222,7 +222,7 @@ def test_skip_and_finish_have_explicit_stable_control_evidence():
 
 
 def test_blocker_correction_keeps_numeric_mapping_and_is_confirmation_bound():
-    facts=DiscoveryFacts(blockers=[Boundary(concern_id='noise',status='yes',excerpts=['O.p001'])])
+    facts=DiscoveryFacts(blockers=[Boundary(concern_id='noise',status='yes',excerpts=['O.p001'],validated_facets=['acoustic_impact'],decisiveness_checked=True)])
     s,c=start(topics=('noise',),facts=facts);s.finish_discovery();s.confirm(True)
     before=s.draft.model_dump();s.correct_blocker('noise','unsure','I have not decided whether noise alone is decisive.')
     assert s.confirmed is None and s.draft.model_dump()==before
