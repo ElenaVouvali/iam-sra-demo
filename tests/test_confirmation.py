@@ -103,6 +103,7 @@ def test_followup_clarification_has_stable_original_evidence_and_changes_only_af
     assert s.evidence['q2.clarification'].context=='original'
     assert s.draft.concerns[0].excerpts==['q2.clarification']
     s.respond(s.questions[2]['choices'][2],'',c)
+    if s.state==State.FOLLOWUPS:s.stop_followups()
     s.record_joint('unsure',[],'',c);s.confirm_updated(True);s.score_final(c)
     final_call=next(call for call in reversed(c.calls) if call[0]=='score')
     assert final_call[3]=={'noise'}
@@ -151,7 +152,7 @@ def test_joint_is_required_and_never_inferred_from_separate_yes_answers():
     s.confirm_updated(True);s.score_final(c)
     assert s.conditional['context']=='modified'
     assert next(x for x in s.initial['assessment']['concerns'] if x['concern_id']=='noise')['score']==3
-    assert len(s.export()['comparison'])==15
+    assert len(s.legacy_export()['comparison'])==15
 
 
 def test_context_isolation_and_untested_privacy_facets():
@@ -175,7 +176,7 @@ def test_unknown_and_insufficient_coverage_export_jsonl_one_complete_line():
     assert s.final['aggregate']['rounded'] is None
     assert len(s.jsonl().splitlines())==1
     assert json.loads(s.jsonl())==json.loads(s.json())
-    assert len(s.export()['comparison'])==15
+    assert len(s.legacy_export()['comparison'])==15
 
 
 def test_wrong_context_evidence_and_question_citations_rejected():
@@ -208,7 +209,8 @@ def test_caps_recomputed_per_profile_without_question_bonuses():
     s,c=initially_scored(c);initial=s.initial
     assert initial['aggregate']['cap']==4 and initial['aggregate']['rounded']==4
     s.begin_followups(True)
-    while s.state==State.FOLLOWUPS:s.respond(s.questions[len(s.responses)]['choices'][-1],'',c)
+    while s.state==State.FOLLOWUPS:
+        q=s.questions[len(s.responses)];s.respond(q['choices'][0] if q['contract']['context']=='original' else q['choices'][-1],'',c)
     c.next=meaning('C1.testimony',scores=('perceived_safety_privacy',),position='supported',facets={'perceived_safety_privacy':['personal_privacy']})
     s.correct('perceived_safety_privacy','I meant that I am comfortable with the original viewing cameras.','Correction of original interpretation',c)
     s.record_joint('unsure',[],'',c);s.confirm_updated(True);s.score_final(c)
@@ -222,7 +224,7 @@ def test_scoring_insufficiency_returns_to_clarification_and_saves_no_result():
     def reject(*args,**kwargs):raise AssessmentError('Clarify noise: insufficient evidence',code='clarification')
     c.score=reject
     with pytest.raises(AssessmentError):s.score_initial(c)
-    assert s.state==State.INTERPRETATION and s.initial is None and s.confirmed is None
+    assert s.state==State.CONFIRMED and s.initial is None and s.confirmed is not None
 
 
 def test_modified_edit_invalidates_final_confirmation_not_initial_snapshot():
@@ -239,12 +241,13 @@ def test_modified_edit_invalidates_final_confirmation_not_initial_snapshot():
 def test_conditional_failure_preserves_original_and_no_partial_final_snapshot():
     s,c=initially_scored();initial=s.initial;s.begin_followups()
     while s.state==State.FOLLOWUPS:s.respond(s.questions[len(s.responses)]['choices'][-1],'',c)
+    c.next=meaning('J1.clarification',position='supported')
     s.record_joint('accept',[],'The modified hum is tolerable.',c);s.confirm_updated(True)
     def reject(*args,**kwargs):raise AssessmentError('Clarify conditional noise',code='clarification')
     c.score=reject
     with pytest.raises(AssessmentError):s.score_final(c)
     assert s.initial==initial and s.final is None and s.conditional is None
-    assert s.state==State.UPDATED
+    assert s.state==State.UPDATE_CONFIRMED
 
 
 def test_joint_choice_text_conflict_requires_explicit_resolution():

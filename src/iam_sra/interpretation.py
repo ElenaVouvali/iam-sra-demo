@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 from .schemas import MappingAssessment
 from .assessment import AssessmentError
 
-INTERPRETATION_VERSION = '1.2.0'
+INTERPRETATION_VERSION = '1.3.0'
 
 class EvidenceItem(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True, frozen=True)
@@ -30,10 +30,10 @@ def check_meaning(meaning, evidence, context):
             raise AssessmentError('Interpretation cites missing, non-citizen or wrong-context evidence; clarify before scoring.',code='evidence')
     return meaning
 
-def freeze(meaning, evidence, version, context, proposal, actor='user', supporting_history=None, acceptance_boundaries=None):
+def freeze(meaning, evidence, version, context, proposal, actor='user', supporting_history=None, acceptance_boundaries=None, facet_meanings=None):
     check_meaning(meaning,evidence,context)
     payload={'schema':INTERPRETATION_VERSION,'version':version,'context':context,'proposal':proposal,
-        'meaning':meaning.model_dump(),'evidence':{k:v.model_dump() for k,v in evidence.items() if v.context==context},
+        'meaning':meaning.model_dump(),'facet_meanings':deepcopy(facet_meanings or []),'evidence':{k:v.model_dump() for k,v in evidence.items() if v.context==context},
         'confirmation':{'actor':actor,'meaning_only':True},'acceptance_boundaries':deepcopy(acceptance_boundaries or {}),'supporting_history_by_concern':deepcopy(supporting_history or {})}
     return {**deepcopy(payload),'sha256':digest(payload)}
 
@@ -48,6 +48,13 @@ def verify(record):
         for ref in refs:
             if ref not in evidence or evidence[ref].source=='question' or evidence[ref].context!=record['context']:
                 raise AssessmentError('Invalid supporting history citation; clarify before scoring.',code='evidence')
+    if record.get('facet_meanings'):
+        from .updates import FacetMeaning
+        for item in record['facet_meanings']:
+            facet=FacetMeaning.model_validate(item)
+            for ref in facet.evidence_ids+facet.condition_ids:
+                if ref not in evidence or evidence[ref].context!=record['context'] or evidence[ref].source in {'question','application_control','citizen_control'}:
+                    raise AssessmentError('Aspect cites missing or wrong-context citizen evidence.',code='evidence')
     return meaning,evidence
 
 def semantic_key(concern):

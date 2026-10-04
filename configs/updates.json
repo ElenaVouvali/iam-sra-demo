@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0-experimental",
+  "maximum_questions": 6,
+  "facet_combination": "For the modified profile only, review every required facet independently with the unchanged conditional rubric. Parent score is the minimum only when all original/modified evidenced facets have explicit applicable modified-context evidence. Otherwise parent is null. Facets never become extra aggregate items.",
+  "inheritance": "No original numeric value is silently inherited by a modified proposal. Applicability must be explicitly confirmed, then re-reviewed with conditional anchors.",
+  "blockers": "Original blockers are retained. Their modified status is unresolved unless all relevant facets are addressed by confirmed modified evidence; an addressed viewing boundary never resolves safety/security.",
+  "templates": {
+    "original_check": "For {topic}, does your earlier view still describe your position on the unchanged original proposal? You may confirm it or explain a correction.",
+    "requested_change": "Hypothetically, suppose the changes you described for {topic} were met: {condition}. Would all the aspects you raised for this topic be acceptable, or what would remain? This assumes your requested condition only; feasibility is not established."
+  },
+  "original_choices": ["My earlier view is unchanged", "I want to correct my earlier view", "I am unsure"],
+  "hypothetical_choices": ["All the aspects I raised for this topic would be acceptable", "An objection would remain", "Some aspects would be addressed, others would remain", "Unsure / none of these"],
+  "fn": {
+    "q1": {
+      "targets": {"perceived_safety_privacy": ["personal_privacy"], "technical_safety_security_privacy": ["data_security"]},
+      "modification": "Navigation cameras have forward-only viewing and cannot view private yards/windows; telemetry/security remain unspecified.",
+      "citizen_text": "Hypothetically, suppose camera shielding prevents viewing private yards and windows. Would that address your concern about viewing private space? This makes no promise about data security or physical safety.",
+      "citizen_choices": ["My concern about viewing private space would be addressed", "A concern about access to data would remain", "The presence of a camera would still be unacceptable", "Unsure / none of these"],
+      "choice_codes": ["privacy_resolved", "data_access_remaining", "camera_presence_remaining", "unresolved"],
+      "cannot_establish": ["Cybersecurity assurance", "Physical safety", "Full-route or combined-proposal acceptance"]
+    },
+    "q2": {
+      "targets": {"noise": ["acoustic_impact"], "visual_pollution": ["aesthetic_clutter", "visible_physical_intrusion"]},
+      "modification": "120m altitude, curfew19:00–07:00 and assumed sound below ambient city noise, bundled; frequency/residential routing unchanged.",
+      "citizen_text": "Hypothetically, flights move to 120 meters, stop between 19:00 and 07:00, and sound quieter than ambient street noise. The residential route and frequency stay the same. How would you respond to these changes together?",
+      "citizen_choices": ["With the quieter evening conditions, I would accept this route", "Visual intrusion would still be unacceptable", "I would still oppose routing over a residential area", "Unsure / none of these"],
+      "choice_codes": ["bundle_accepted", "visual_clutter_remaining", "residential_routing_remaining", "unresolved"],
+      "cannot_establish": ["A single causal effect", "Noise resolution from a routing or visual objection", "Engineering sound guarantees", "Combined-proposal acceptance"]
+    },
+    "q3": {
+      "targets": {"welfare_equity": ["medical_public_benefit"], "noise": ["acoustic_impact"], "perceived_safety_privacy": ["personal_privacy"]},
+      "modification": "Policy preference under the hypothetical 12-minute rerouting delay; this is not a modification added to the combined proposal.",
+      "citizen_text": "For this hypothetical policy choice only, suppose avoiding the neighborhood adds 12 minutes to medical deliveries. Which priority should the city favor? This delay is a scenario assumption, not an established clinical fact.",
+      "citizen_choices": ["Medical delivery speed", "Neighborhood privacy and tranquility", "Unsure / none of these"],
+      "choice_codes": ["medical_speed_priority", "local_rights_priority", "unresolved"],
+      "cannot_establish": ["Rejection of medical welfare", "Distributive equity", "Numerical score or cap changes", "Psychological diagnosis"]
+    }
+  }
+}

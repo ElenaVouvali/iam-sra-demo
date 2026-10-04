@@ -25,12 +25,13 @@ class ScopeReview(Strict):
 
 STAGE_LIMITS['scope_review']=300
 STAGE_LIMITS['discovery']=500
+STAGE_LIMITS['facets']=1200
 
 class ConversationClient(LLMClient):
     def _start(self):
         self.last_diagnostics=[];self.last_trace=[];self.last_raw_scores={}
         self.last_score_decisions=[];self.last_candidate_projections=[]
-        self._deadline=time.monotonic()+180
+        self._deadline=min(time.monotonic()+180,getattr(self,'external_deadline',float('inf')))
         self.last_settings={'enable_thinking':False,'backend':BACKEND,'context_tokens':4096,
             'temperature':0.2,'top_p':0.8,'stage_deadline_seconds':180,'confirmation_scoring':True,
             'stage_output_limits':dict(STAGE_LIMITS),'maximum_attempts_per_call':2,
@@ -42,16 +43,19 @@ class ConversationClient(LLMClient):
             self._start()
             sources={k:v.text for k,v in evidence.items() if v.context==context and v.source!='question'}
             if not sources:raise AssessmentError('No citizen testimony for this context.',code='evidence')
-            registry='\n'.join(cid+' ['+','.join(c['facets'])+']: '+c['scope']+' EXCLUDE: '+c['exclusion'] for cid,c in CONCERNS.items() if target is None or target==cid or target not in CONCERNS)
+            targets=set(target) if isinstance(target,list) else {target} if target in CONCERNS else set(CONCERNS)
+            registry='\n'.join(cid+' ['+','.join(c['facets'])+']: '+c['scope']+' EXCLUDE: '+c['exclusion'] for cid,c in CONCERNS.items() if cid in targets)
             system=(ROOT/'prompts/assessment.txt').read_text()+'\nRegistry:\n'+registry
             system+='\nInterpret ONLY the proposal context '+context+'. Scenario/question wording is background, NOT evidence. Use original-position fields for the position in THIS context. No numeric scoring. Hypothetical responses do not revise the original proposal.'
             system+='\nProposal: '+(proposal or SCENARIO['text'])
             if context=='hypothetical:q1':system+='\nQ1 privacy resolved is ONLY a viewing-privacy interpretation. It does not establish full-route acceptance: current_route_stance stays unassessed unless separate citizen testimony explicitly accepts or rejects the whole hypothetical route. Shielding does not assure cybersecurity.'
             if context=='hypothetical:q2':system+='\nQ2 is a bundled altitude/sound/curfew proposal. Rejecting residential routing or visual clutter alone does not establish acoustic acceptance/rejection; leave noise ambiguous if no noise position is stated.'
-            if target:system+='\nThis is user-authored correction for '+target+'. Map that meaning only; omissions in this patch do not delete other concerns.'
+            if isinstance(target,list):system+='\nMap only these question-targeted topics: '+','.join(target)+'. Unmentioned topics stay absent; uncertainty uses needs_clarification, never mapped without an explicit position.'
+            elif target:system+='\nThis is user-authored correction for '+target+'. Map that meaning only; omissions in this patch do not delete other concerns.'
             self.last_settings['mapping_prompt_sha256']=hashlib.sha256(system.encode()).hexdigest()
             schema=reference_schema(MappingAssessment.model_json_schema(),sources)
             base=schema['$defs']['MappingConcern']
+            if isinstance(target,list):base['properties']['concern_id']={'type':'string','enum':sorted(targets)}
             mapped=copy.deepcopy(base);ambiguous=copy.deepcopy(base)
             facets=[]
             for definition in CONCERNS.values():
@@ -131,6 +135,37 @@ class ConversationClient(LLMClient):
             except httpx.HTTPError as exc:
                 raise AssessmentError('Discovery interpretation is temporarily unavailable. Your draft is retained; please retry.',code='transport') from exc
 
+    def interpret_facets(self,evidence,proposal,required):
+        from .updates import FacetBatch
+        with _LOCK:
+            self._start()
+            sources={k:v for k,v in evidence.items() if v.context=='modified' and v.source not in {'question','citizen_control','application_control'}}
+            system=(ROOT/'prompts/facet-evidence.txt').read_text()
+            self.last_settings['facet_prompt_sha256']=hashlib.sha256(system.encode()).hexdigest()
+            schema=FacetBatch.model_json_schema()
+            definition=schema['$defs']['FacetMeaning'];definition['required']=list(definition['properties'])
+            definition['properties']['concern_id']={'type':'string','enum':sorted({cid for cid,f in required})}
+            definition['properties']['facet']={'type':'string','enum':sorted({f for cid,f in required})}
+            for field in ['evidence_ids','condition_ids']:
+                definition['properties'][field]={'type':'array','enum':[[]]+[[ref] for ref in sources]}
+            def validate(raw):
+                result=FacetBatch.model_validate_json(raw)
+                if {(f.concern_id,f.facet) for f in result.facets}!=set(required):raise AssessmentError('Review each requested aspect exactly once.',code='schema')
+                for f in result.facets:
+                    if any(r not in sources for r in f.evidence_ids+f.condition_ids):raise AssessmentError('Aspect cites unsupported evidence.',code='evidence')
+                    if f.applicability_explicit and not f.evidence_ids:raise AssessmentError('Applicable aspect requires citizen evidence.',code='evidence')
+                return result.facets
+            try:
+                with httpx.Client(timeout=120,trust_env=False) as client:
+                    results=[]
+                    all_required=required
+                    for start in range(0,len(all_required),6):
+                        required=all_required[start:start+6]
+                        results.extend(self._request(client,'facets',system,{'proposal':proposal,'requested_facets':[{'concern_id':cid,'facet':f} for cid,f in required],
+                            'citizen_passages':[v.model_dump() for v in sources.values()]},schema,validate))
+                    return results
+            except httpx.HTTPError as exc:raise AssessmentError('Aspect interpretation unavailable; your answers are retained.',code='transport') from exc
+
     def score(self, confirmed, only=None, unavailable=None):
         """Frozen meanings enter scoring; models cannot output semantic changes."""
         meaning,evidence=verify(confirmed)
@@ -167,8 +202,6 @@ class ConversationClient(LLMClient):
                                 'proposal':confirmed['proposal'],'citizen_evidence':[evidence[ref].model_dump() for ref in refs],
                                 'original_testimony_history':[item.model_dump() for key,item in evidence.items() if key in history_refs and item.source=='citizen_original'] if not conditional else [],
                                 'history_note':'Original testimony is retained context. The explicitly confirmed corrected meaning governs this concern; other topics must not change its score.'},schema,NumericReview.model_validate_json)
-                            if review.score is None:
-                                raise AssessmentError('The numeric reviewer could not score '+cid+' from the confirmed evidence: '+review.rationale+' Review the cited evidence or clarify this meaning.',code='clarification')
                             self.last_raw_scores[cid]=review.score
                         data.update(status='assessed' if review.score is not None else 'unassessed',score=review.score,rationale=review.rationale,
                             excerpts=[evidence[r].text for r in candidate.excerpts],conditions=[evidence[r].text for r in candidate.conditions])

@@ -132,11 +132,11 @@ def test_finish_is_explicit_and_exports_all_discovery_provenance():
     assert s.unmapped_issues[0]['status']=='unmapped' and s.unmapped_issues[0]['wording']=='Delivery vibrations affect my art materials.'
     s.finish_discovery();s.confirm(True);s.score_initial(c);s.begin_followups();s.confirm_updated(True);s.score_final(c)
     data=s.export();assert json.loads(s.jsonl())==data
-    assert data['discovery']['stop_reason']=='user_finish'
-    assert data['discovery']['presented_questions'][0]['selection_reason']
-    assert data['discovery']['responses'][0]['context']=='original'
-    assert data['discovery']['unmapped_issues'][0]['evidence_ids']
-    assert not any(x['score'] is not None for x in data['initial']['assessment']['concerns'])
+    assert data['dialogue_and_confirmations']['discovery']['stop_reason']=='user_finish'
+    assert data['dialogue_and_confirmations']['discovery']['presented_questions'][0]['selection_reason']
+    assert data['dialogue_and_confirmations']['discovery']['responses'][0]['context']=='original'
+    assert data['dialogue_and_confirmations']['discovery']['unmapped_issues'][0]['evidence_ids']
+    assert not any(x['score'] is not None for x in data['audit']['snapshots']['initial_original']['assessment']['concerns'])
 
 
 def test_discovery_failure_is_atomic_and_can_retry_same_question():
