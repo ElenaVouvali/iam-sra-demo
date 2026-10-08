@@ -23,7 +23,7 @@ def start(position='opposed',topics=(),facts=None):
     c=DiscoveryFake(meaning(scores=topics,position=position),facts)
     s=Session();s.begin();s.submit('My original answer.',c);return s,c
 
-@pytest.mark.parametrize('position',['supported','opposed','uncertain','mixed'])
+@pytest.mark.parametrize('position',['opposed','uncertain','mixed'])
 def test_sparse_answers_get_neutral_reason_question_without_scores(position):
     s,c=start(position)
     q=s.discovery_question
@@ -153,7 +153,7 @@ def test_discovered_evidence_reaches_confirmation_and_fn_selector():
     c.next=meaning(eid=q['id']+'.text',scores=('perceived_safety_privacy',),facets={'perceived_safety_privacy':['personal_privacy']})
     s.respond_discovery([],'Cameras viewing my windows bother me.',c)
     s.finish_discovery();s.confirm(True);s.score_initial(c);s.begin_followups()
-    assert 'q1' in [q['id'] for q in s.questions]
+    assert 'u_change_perceived_safety_privacy' in [q['id'] for q in s.questions]
     assert s.confirmed['evidence']['D2.text']['context']=='original'
     assert c.calls[-1][2]['meaning']['concerns'][0]['excerpts']==['D2.text']
 
@@ -256,3 +256,63 @@ def test_bare_original_stance_is_not_numeric_concern_history():
     assert s.confirmed['supporting_history_by_concern']=={}
     assert s.confirmed['meaning']['concerns'][0]['excerpts']==['D2.text']
     assert s.confirmed['evidence']['O.p001']['text']=='I reject the proposal.'
+
+
+@pytest.mark.parametrize('answer',['no_reservations','unsure',None])
+def test_bare_acceptance_optional_gate_finishes_without_inventing_scores(answer):
+    from iam_sra.reporting import final_summary
+    s,c=start('supported')
+    q=s.discovery_question
+    assert q['kind']=='acceptance_check' and not q['multiple']
+    before=len(c.calls)
+    s.respond_discovery([answer] if answer else [],'',c,skip=answer is None)
+    assert len(c.calls)==before
+    assert s.discovery_finished and s.discovery_question is None
+    assert s.draft.current_route_stance.interpretation=='supported'
+    assert s.no_reservations==(answer=='no_reservations')
+    assert not s.draft.concerns
+    result=final_summary(s)
+    assert result['headline_score']==(9 if answer=='no_reservations' else None)
+    assert result['score_basis']==('overall_acceptance_confirmation' if answer=='no_reservations' else None)
+    if answer=='no_reservations':
+        assert result['score_evidence_ids']==['D1.selection1']
+        assert result['proposal_context']=='original'
+        assert result['coverage']=='0/15'
+    assert result['accepts_without_reservations']==(answer=='no_reservations')
+
+
+def test_bare_acceptance_reservation_opens_specific_evidence_collection():
+    s,c=start('supported')
+    s.respond_discovery(['reservation'],'',c)
+    assert s.discovery_question['kind']=='reasons'
+    s.respond_discovery(['noise'],'',c)
+    q=s.discovery_question
+    assert q['kind']=='topic' and q['concern_id']=='noise'
+    c.next=meaning(eid=q['id']+'.selection1',scores=('noise',),position='supported')
+    s.respond_discovery(['supported'],'',c,facets=['acoustic_impact'])
+    assert any(x.concern_id=='noise' for x in s.draft.concerns)
+
+
+@pytest.mark.parametrize('reply',['unsure','irrelevant_text','skip'])
+def test_zero_score_uncertain_topics_always_get_one_second_chance(reply):
+    s,c=start('uncertain',('noise','perceived_safety_privacy','energy_emissions'))
+    for concern in s.draft.concerns:
+        concern.position='uncertain'
+        concern.conditions=['O.p001']
+    # The immutable initial snapshot records no assessed scores, even when
+    # topic meanings and information requests have already been established.
+    s.confirm(True,defer_discovery=True)
+    s.score_initial(c)
+    assert s.initial['aggregate']['trace']['denominator']==0
+    assert s.initial['aggregate']['rounded'] is None
+    s.continue_initial_review()
+    q=s.discovery_question
+    assert q['kind']=='score_clarification'
+    assert 'Noise' in q['text'] and 'Energy demand' in q['text']
+    if reply=='unsure':s.respond_discovery(['unsure'],'',c)
+    elif reply=='skip':s.respond_discovery([],'',c,skip=True)
+    else:
+        c.next=meaning(eid=q['id']+'.text',scores=(),position='uncertain')
+        s.respond_discovery([],'Banana spaceship!',c)
+    assert s.discovery_finished and s.discovery_question is None
+    assert not s.no_reservations

@@ -9,7 +9,6 @@ import signal
 import socket
 import subprocess
 import sys
-import time
 ROOT=Path(__file__).resolve().parents[1]
 RUNTIME=ROOT/".runtime"
 UUID=os.getenv("IAM_GPU_UUID","GPU-cea3d9e4-d189-a5b9-cf2e-9bd77b8218fb")
@@ -19,8 +18,11 @@ def gpu():
     output=subprocess.check_output(["nvidia-smi","--query-gpu=index,uuid,name,compute_cap,memory.total,memory.used,driver_version","--format=csv,noheader,nounits"],text=True)
     rows=[list(map(str.strip,r.split(","))) for r in output.strip().splitlines()]
     selected=[r for r in rows if r[1]==UUID]
-    if len(selected)!=1 or "V100" not in selected[0][2] or selected[0][3]!="7.0":
-        raise RuntimeError("Selected UUID is not the verified Volta V100; refusing launch")
+    if len(selected)!=1:
+        raise RuntimeError("Selected GPU UUID was not found uniquely; refusing launch")
+    row=selected[0]
+    if not (("V100" in row[2] and row[3]=="7.0") or ("A30" in row[2] and row[3]=="8.0")):
+        raise RuntimeError("Selected GPU must be a V100 (7.0) or A30 (8.0); refusing launch")
     print(output)
     return selected[0]
 def port_free(port):
@@ -31,7 +33,7 @@ def port_free(port):
 def preflight(check_ui_port=True):
     print("Python",sys.version,"OS",Path('/etc/os-release').read_text())
     row=gpu()
-    if float(row[5])>2048: raise RuntimeError("V100 has an existing workload (>2 GiB); refusing to reserve GPU")
+    if float(row[5])>2048: raise RuntimeError(f"{row[2]} has an existing workload (>2 GiB); refusing to reserve GPU")
     stat=os.statvfs(ROOT)
     print("Home available GiB",stat.f_bavail*stat.f_frsize/1024**3)
     if stat.f_bavail*stat.f_frsize<30*1024**3: raise RuntimeError("Require 30 GiB /home headroom")
@@ -43,9 +45,31 @@ def preflight(check_ui_port=True):
 def identity(pid):
     # start-time field protects against PID reuse.
     return Path(f"/proc/{pid}/stat").read_text().split(") ",1)[1].split()[19]
+def recover_record(kind):
+    """Recover only this user's exact project supervisor, never a port owner."""
+    matches=[]
+    for procdir in Path('/proc').glob('[0-9]*'):
+        try:
+            if procdir.stat().st_uid!=os.getuid():continue
+            args=[part.decode() for part in (procdir/'cmdline').read_bytes().split(b'\0') if part]
+            if len(args)!=4 or args[0]!=sys.executable or args[1]!=str(ROOT/'scripts/supervise.py') or args[2]!=kind:continue
+            command=json.loads(args[3])
+            if kind=='ui' and command[:5]!=[sys.executable,'-m','streamlit','run',str(ROOT/'app.py')]:continue
+            pid=int(procdir.name)
+            if os.getpgid(pid)!=pid:continue
+            matches.append({'pid':pid,'start_time':identity(pid),'command':args,'root':str(ROOT)})
+        except (OSError,ValueError,IndexError,UnicodeError):continue
+    if len(matches)>1:raise RuntimeError('Multiple project supervisors found; refusing automatic recovery')
+    if matches:
+        RUNTIME.mkdir(exist_ok=True)
+        (RUNTIME/(kind+'.pid.json')).write_text(json.dumps(matches[0]))
+        print('Recovered project-owned',kind,'supervisor PID',matches[0]['pid'])
+        return True
+    return False
 def start(kind):
     RUNTIME.mkdir(exist_ok=True)
     record=RUNTIME/(kind+".pid.json")
+    if not record.exists():recover_record(kind)
     if record.exists():
         old=json.loads(record.read_text())
         try:
@@ -73,7 +97,7 @@ def start(kind):
     print(kind,"supervisor PID",proc.pid,"log",RUNTIME/(kind+".log"))
 def stop(kind):
     record=RUNTIME/(kind+".pid.json")
-    if not record.exists(): print("No project-owned",kind,"record");return
+    if not record.exists() and not recover_record(kind): print("No project-owned",kind,"process found");return
     info=json.loads(record.read_text())
     try:
         actual=Path(f"/proc/{info['pid']}/cmdline").read_bytes().split(b"\0")
@@ -82,7 +106,10 @@ def stop(kind):
             raise RuntimeError("Process identity mismatch; refusing to signal")
         os.killpg(info['pid'],signal.SIGTERM)
         print("Stopped project-owned",kind)
-    except FileNotFoundError: print("Project process already exited")
+    except FileNotFoundError:
+        # A restricted PID namespace may hide a still-running host process.
+        print("Project process is not visible here; retaining its record. Run this command in the terminal that launched it.")
+        return
     record.unlink()
 def health():
     import httpx

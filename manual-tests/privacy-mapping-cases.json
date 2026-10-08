@@ -1,0 +1,336 @@
+{
+  "mapping_only": true,
+  "notice": "Human-authored development cases. Not live-model results or scientific validation. Fresh validation cases T25–T32 remain untouched.",
+  "cases": [
+    {
+      "id": "P01",
+      "title": "FN plain baseline",
+      "response": "Look, I get that this is for hospital use and saving lives, which is obviously a vital public service we need to support. But 60 meters is incredibly low. If these drones are buzzing past 15 times a day, that constant electric hum is going to drive me crazy, especially when I'm trying to relax on my balcony in the evening. Plus, knowing there are navigation cameras constantly pointed downward right over my yard and windows makes me deeply uncomfortable—how do I know they aren't recording my family? If they can route them over the industrial park or high enough that I can't hear them or see cameras looking into my property, fine. Otherwise, I completely oppose this route.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "noise": {
+          "acoustic_impact": null
+        },
+        "perceived_safety_privacy": {
+          "personal_privacy": null
+        },
+        "welfare_equity": {
+          "medical_public_benefit": null
+        }
+      },
+      "expected_positions": {
+        "noise": {
+          "acoustic_impact": "opposed"
+        },
+        "perceived_safety_privacy": {
+          "personal_privacy": "opposed"
+        },
+        "welfare_equity": {
+          "medical_public_benefit": "supported"
+        }
+      },
+      "expected_conditions": {
+        "noise": {
+          "acoustic_impact": {
+            "required": true,
+            "verbatim_fragment": "high enough that"
+          }
+        },
+        "perceived_safety_privacy": {
+          "personal_privacy": {
+            "required": true,
+            "verbatim_fragment": "high enough that"
+          }
+        },
+        "welfare_equity": {
+          "medical_public_benefit": {
+            "required": false
+          }
+        }
+      }
+    },
+    {
+      "id": "P02",
+      "title": "Exact PDF-pasted baseline, including orsee",
+      "response": "Look, I get that this is for hospital use and saving lives, which is obviously a\nvital public service we need to support. But 60 meters is incredibly low. If\nthese drones are buzzing past 15 times a day, that constant electric hum is\ngoing to drive me crazy, especially when I'm trying to relax on my balcony in\nthe evening. Plus, knowing there are navigation cameras constantly pointed\ndownward right over my yard and windows makes me deeply\nuncomfortable—how do I know they aren't recording my family? If they can\nroute them over the industrial park or high enough that I can't hear them orsee cameras looking into my property, fine. Otherwise, I completely oppose\nthis route.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "noise": {
+          "acoustic_impact": null
+        },
+        "perceived_safety_privacy": {
+          "personal_privacy": null
+        },
+        "welfare_equity": {
+          "medical_public_benefit": null
+        }
+      },
+      "expected_positions": {
+        "noise": {
+          "acoustic_impact": "opposed"
+        },
+        "perceived_safety_privacy": {
+          "personal_privacy": "opposed"
+        },
+        "welfare_equity": {
+          "medical_public_benefit": "supported"
+        }
+      },
+      "expected_conditions": {
+        "noise": {
+          "acoustic_impact": {
+            "required": true,
+            "verbatim_fragment": "high enough that"
+          }
+        },
+        "perceived_safety_privacy": {
+          "personal_privacy": {
+            "required": true,
+            "verbatim_fragment": "high enough that"
+          }
+        },
+        "welfare_equity": {
+          "medical_public_benefit": {
+            "required": false
+          }
+        }
+      }
+    },
+    {
+      "id": "P03",
+      "title": "Privacy without the formal word",
+      "response": "Filming my family in our garden makes me uncomfortable. I oppose this route.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "perceived_safety_privacy": {
+          "personal_privacy": null
+        }
+      },
+      "expected_positions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": "opposed"
+        }
+      },
+      "expected_conditions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": {
+            "required": false
+          }
+        }
+      }
+    },
+    {
+      "id": "P04",
+      "title": "Privacy explicitly accepted",
+      "response": "I have no privacy concerns about the navigation cameras.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "perceived_safety_privacy": {
+          "personal_privacy": null
+        }
+      },
+      "expected_positions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": "supported"
+        }
+      },
+      "expected_conditions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": {
+            "required": false
+          }
+        }
+      }
+    },
+    {
+      "id": "P05",
+      "title": "Noise only",
+      "response": "The constant hum would ruin my rest. I oppose these flights.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "noise": {
+          "acoustic_impact": null
+        }
+      },
+      "expected_positions": {
+        "noise": {
+          "acoustic_impact": "opposed"
+        }
+      },
+      "expected_conditions": {
+        "noise": {
+          "acoustic_impact": {
+            "required": false
+          }
+        }
+      }
+    },
+    {
+      "id": "P06",
+      "title": "Camera fact without a privacy evaluation",
+      "response": "The aircraft has navigation cameras.",
+      "evaluation_split": "development",
+      "expected_facets": {},
+      "expected_positions": {},
+      "expected_conditions": {}
+    },
+    {
+      "id": "P07",
+      "title": "Generic opposition without a specific aspect",
+      "response": "I completely oppose this project.",
+      "evaluation_split": "development",
+      "expected_facets": {},
+      "expected_positions": {},
+      "expected_conditions": {}
+    },
+    {
+      "id": "P08",
+      "title": "Uncertainty about recording",
+      "response": "I cannot decide whether filming my family is acceptable.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "perceived_safety_privacy": {
+          "personal_privacy": null
+        }
+      },
+      "expected_positions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": "uncertain"
+        }
+      },
+      "expected_conditions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": {
+            "required": false
+          }
+        }
+      }
+    },
+    {
+      "id": "P09",
+      "title": "Conditional privacy acceptance",
+      "response": "I would accept only if private yards and windows were excluded from the camera view.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "perceived_safety_privacy": {
+          "personal_privacy": null
+        }
+      },
+      "expected_positions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": "opposed"
+        }
+      },
+      "expected_conditions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": {
+            "required": true,
+            "verbatim_fragment": "private yards and windows"
+          }
+        }
+      }
+    },
+    {
+      "id": "P10",
+      "title": "Low altitude does not prove privacy",
+      "response": "The drones fly at 60 metres.",
+      "evaluation_split": "development",
+      "expected_facets": {},
+      "expected_positions": {},
+      "expected_conditions": {}
+    },
+    {
+      "id": "P11",
+      "title": "Medical support does not imply equity",
+      "response": "I support lifesaving medical deliveries.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "welfare_equity": {
+          "medical_public_benefit": null
+        }
+      },
+      "expected_positions": {
+        "welfare_equity": {
+          "medical_public_benefit": "supported"
+        }
+      },
+      "expected_conditions": {
+        "welfare_equity": {
+          "medical_public_benefit": {
+            "required": false
+          }
+        }
+      }
+    },
+    {
+      "id": "P12",
+      "title": "Correction denies privacy attribution and expresses physical fear",
+      "response": "I am not talking about cameras watching people; I mean fear of physical injury from a falling aircraft.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "perceived_safety_privacy": {
+          "perceived_safety": null
+        }
+      },
+      "expected_positions": {
+        "perceived_safety_privacy": {
+          "perceived_safety": "opposed"
+        }
+      },
+      "expected_conditions": {
+        "perceived_safety_privacy": {
+          "perceived_safety": {
+            "required": false
+          }
+        }
+      }
+    },
+    {
+      "id": "P13",
+      "title": "Factual uncertainty does not erase a privacy objection",
+      "response": "I do not know whether those cameras store pictures, but the thought of them watching us through our windows makes me deeply uneasy. I could accept the viewing aspect only if private windows were excluded.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "perceived_safety_privacy": {
+          "personal_privacy": null
+        }
+      },
+      "expected_positions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": "opposed"
+        }
+      },
+      "expected_conditions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": {
+            "required": true,
+            "verbatim_fragment": "private windows were excluded"
+          }
+        }
+      }
+    },
+    {
+      "id": "P14",
+      "title": "Genuinely undecided about private viewing remains uncertain",
+      "response": "I know the aircraft use cameras. I have not decided whether viewing our garden would bother me, and I am neither accepting nor rejecting that aspect.",
+      "evaluation_split": "development",
+      "expected_facets": {
+        "perceived_safety_privacy": {
+          "personal_privacy": null
+        }
+      },
+      "expected_positions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": "uncertain"
+        }
+      },
+      "expected_conditions": {
+        "perceived_safety_privacy": {
+          "personal_privacy": {
+            "required": false
+          }
+        }
+      }
+    }
+  ]
+}

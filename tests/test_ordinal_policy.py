@@ -50,7 +50,7 @@ def reply(obj):return {'finish_reason':'stop','message':{'content':json.dumps(ob
  ('citizen_original','I endorse the medical purpose without reservations.',True,9),
 ])
 def test_highest_requires_authored_independent_evidence(monkeypatch,source,text,checked,score):
-    answers=[reply(facts('endorsement',endorsement=True).model_dump())]
+    answers=[reply({'score':score,'evidence_ids':['O.p001'],'endorsement_evidence_ids':['O.p001'] if score==9 else [],'rationale':'Model numerical review.'})]
     if checked is not None:answers.append(reply({'supported':checked,'rationale':'Specific endorsement criterion.'}))
     calls=fake_client(monkeypatch,answers)
     evidence={'O.p001':EvidenceItem(id='O.p001',text=text,context='original',source=source)}
@@ -58,33 +58,42 @@ def test_highest_requires_authored_independent_evidence(monkeypatch,source,text,
     result=c.score(freeze(m,evidence,1,'original','Original proposal'))
     assert next(x.score for x in result.concerns if x.concern_id=='welfare_equity')==score
     assert len(calls)==(4 if checked is not None else 2)
-    assert c.last_raw_scores=={'welfare_equity':None}
+    assert c.last_raw_scores=={'welfare_equity':score}
     assert c.last_score_decisions[0]['highest_criterion_verified']==(score==9)
+    if checked is not None:
+        review=next(body for url,body in reversed(calls) if url.endswith('/v1/chat/completions'))
+        payload=json.loads(review['messages'][1]['content'])
+        assert payload['facet']=='medical_public_benefit'
+        assert 'facet_scope' in payload and 'proposal' not in payload
+        assert 'Do not require route acceptance' in review['messages'][0]['content']
 
 def test_session_cache_exact_context_edit_and_policy_invalidation(monkeypatch):
-    calls=fake_client(monkeypatch,[reply(facts().model_dump()) for _ in range(5)])
+    calls=fake_client(monkeypatch,[response for _ in range(5) for response in [reply({'score':8,'evidence_ids':['O.p001'],'endorsement_evidence_ids':[],'rationale':'Model numerical review.'}),reply({'supported':False,'rationale':'Ordinary acceptance.'})]])
     c=ConversationClient();c.bind_session('one',0)
     evidence={'O.p001':EvidenceItem(id='O.p001',text='The hum is acceptable.',context='original',source='citizen_original')}
     record=freeze(meaning(position='supported'),evidence,1,'original','Original proposal')
     assert c.score(record).concerns[0].score==8
     c.score(record)
-    assert len(calls)==2 and c.last_metrics['cache_hits']==1
-    c.bind_session('one',1);c.score(record);assert len(calls)==4
-    c.bind_session('two',1);c.score(record);assert len(calls)==6
+    assert len(calls)==4 and c.last_metrics['cache_hits']==2
+    c.bind_session('one',1);c.score(record);assert len(calls)==8
+    c.bind_session('two',1);c.score(record);assert len(calls)==12
     changed=freeze(meaning(position='supported'),evidence,1,'original','Other original wording')
-    c.score(changed);assert len(calls)==8
+    c.score(changed);assert len(calls)==16
     old=config('ordinal')['version']
     original_config=config
-    monkeypatch.setattr('iam_sra.conversation_client.config',lambda name: {**original_config(name),'version':old+'-changed'} if name=='ordinal' else original_config(name))
-    c.score(record);assert len(calls)==10
+    monkeypatch.setattr('iam_sra.conversation_client.config',lambda name: {**original_config(name),'version':old+'-changed'} if name=='ordinal' else {**original_config(name),'contrastive_endorsement_review':False,'omit_automatic_discovery_metadata':False} if name=='prompts' else original_config(name))
+    c.score(record)
+    assert len(calls)==18 and c.last_metrics['generation_calls']==2
+    assert c.last_metrics['tokenize_cache_hits']==2
 
 def test_cache_does_not_save_schema_failure(monkeypatch):
-    calls=fake_client(monkeypatch,[reply({'score':9}),reply({'score':9}),reply(facts().model_dump())])
+    calls=fake_client(monkeypatch,[reply({'score':9}),reply({'score':9}),reply({'score':8,'evidence_ids':['O.p001'],'endorsement_evidence_ids':[],'rationale':'Model numerical review.'}),reply({'supported':False,'rationale':'Ordinary acceptance.'})])
     c=ConversationClient();c.bind_session('one',0)
     record=freeze(meaning(position='supported'),{'O.p001':EvidenceItem(id='O.p001',text='Noise is fine.',context='original',source='citizen_original')},1,'original','Original')
     with pytest.raises(AssessmentError):c.score(record)
     c.score(record)
-    assert len(calls)==6 and c.last_metrics['cache_hits']==0
+    assert len(calls)==7 and c.last_metrics['cache_hits']==0
+    assert c.last_metrics['generation_calls']==2 and c.last_metrics['tokenize_cache_hits']==1
 
 class AnchoredFake(ContextFake):
     """Controlled semantic descriptors, not a simulation of Qwen accuracy."""
@@ -139,7 +148,7 @@ def test_equivalence_rejects_changed_policy_construct_conditions_and_edits():
 
 def test_replay_completion_is_not_correctness_and_exports_have_origins():
     s,c,initial=completed();export=s.export()
-    assert export['schema_version']=='5.3.0'
+    assert export['schema_version']=='5.4.0'
     for domain in export['domain_assessments']:
         for row in domain['profiles'].values():
             assert row['score_record'] is not None and row['score_record']['reason']
@@ -169,7 +178,7 @@ def test_skip_unsure_do_not_reuse_unchanged_scores():
         s.continue_final(True,c)
         medical=s.conditional['score_records']['welfare_equity']
         assert medical['score'] is None and medical['origin']=='unavailable'
-        assert s.conditional['aggregate']['rounded'] is None and s.conditional['aggregate']['trace']['denominator']==2
+        assert s.conditional['aggregate']['rounded']==8 and s.conditional['aggregate']['trace']['denominator']==2
 
 def test_replay_no_live_exits_nonzero_and_never_contacts_endpoint(tmp_path):
     import subprocess,sys
@@ -207,11 +216,11 @@ def test_replay_reports_transport_failure_as_failure_not_live_pass(monkeypatch):
         def __enter__(self):return self
         def __exit__(self,*a):pass
         def post(self,*a,**k):raise httpx.ConnectError('offline test only')
-    monkeypatch.setattr('iam_sra.llm_client.httpx.Client',Down)
+    monkeypatch.setattr('iam_sra.conversation_client.httpx.Client',Down)
     row=module.replay(ConversationClient())
     assert row['failure_stage']=='initial interpretation' and not row['success']
     assert not row['live_model_used'] and not row['dialogue_completed']
-    assert row['stage_metrics']['mapping']['model_calls']==0
+    assert row['stage_metrics']['initial_interpretation']['model_calls']==0
 
 def test_uncertain_facet_is_not_scored_even_with_willingness(monkeypatch):
     calls=fake_client(monkeypatch,[])

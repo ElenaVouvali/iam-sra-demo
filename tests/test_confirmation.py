@@ -6,7 +6,7 @@ from iam_sra.schemas import MappingAssessment, MappingConcern, Assessment, Conce
 from iam_sra.interpretation import EvidenceItem, freeze, verify
 from iam_sra.settings import CONCERNS, QUESTIONS
 from iam_sra.assessment import AssessmentError
-from iam_sra.validation import select_questions
+from iam_sra.updates import select_followups
 
 
 def meaning(eid='O.p001',scores=('noise',),position='opposed',facets=None):
@@ -134,15 +134,15 @@ def test_choice_and_hypothetical_text_conflict_not_silently_overwritten():
     def interpret(*args,**kwargs):
         nonlocal count
         count+=1
-        return meaning('q2.clarification',position='opposed')
+        return meaning('u_change_noise.clarification',position='opposed')
     c.interpret=interpret
     s.respond(s.questions[0]['choices'][0],'Actually I still reject that sound.',c)
-    assert 'q2:noise' in s.conflicts
+    assert 'u_change_noise:noise' in s.conflicts
     assert s.draft.concerns[0].position=='opposed'
 
 
 def test_joint_is_required_and_never_inferred_from_separate_yes_answers():
-    s,c=initially_scored();s.begin_followups()
+    s,c=initially_scored();s.require_combined_review=True;s.begin_followups()
     while s.state==State.FOLLOWUPS:s.respond(s.questions[len(s.responses)]['choices'][0],'',c)
     with pytest.raises(ValueError,match='combined'):s.confirm_updated(True)
     assert s.joint is None and s.conditional is None
@@ -185,9 +185,10 @@ def test_wrong_context_evidence_and_question_citations_rejected():
     with pytest.raises(AssessmentError,match='non-citizen'):freeze(m,e,1,'original','original')
 
 
-def test_q1_needs_privacy_facet_not_personal_safety_only():
+def test_safety_followup_does_not_invent_a_privacy_target():
     m=meaning(scores=('perceived_safety_privacy',),facets={'perceived_safety_privacy':['perceived_safety']})
-    assert 'q1' not in [q['id'] for q in select_questions(m)]
+    questions=select_followups(m,{'O.p001':EvidenceItem(id='O.p001',text='I oppose the physical crash risk.',source='citizen_original',context='original')},assessed_scores={'perceived_safety_privacy':2})
+    assert questions[0]['contract']['targets']==[{'concern_id':'perceived_safety_privacy','facet':'perceived_safety'}]
 
 
 def test_session_isolation():
@@ -213,9 +214,9 @@ def test_caps_recomputed_per_profile_without_question_bonuses():
     c.next=meaning('C1.testimony',scores=('perceived_safety_privacy',),position='supported',facets={'perceived_safety_privacy':['personal_privacy']})
     s.correct('perceived_safety_privacy','I meant that I am comfortable with the original viewing cameras.','Correction of original interpretation',c)
     s.record_joint('unsure',[],'',c);s.confirm_updated(True);s.score_final(c)
-    assert s.initial==initial and s.final['aggregate']['cap'] is None
+    assert s.initial==initial and s.final['aggregate']['cap']==min(i['score'] for i in s.final['aggregate']['trace']['mean_inputs'])+2
     assert s.final['aggregate']['mean']==pytest.approx((8+3+8)/3)
-    assert s.final['aggregate']['rounded']==6
+    assert s.final['aggregate']['adjusted']==5 and s.final['aggregate']['rounded']==5
 
 
 def test_scoring_insufficiency_returns_to_clarification_and_saves_no_result():
@@ -277,11 +278,11 @@ def test_joint_revisions_preserve_unique_ids_testimony_and_history():
 
 
 def test_hypothetical_route_conflict_and_resolution_text_reach_joint_interpretation():
-    s,c=initially_scored();s.begin_followups()
+    s,c=initially_scored();s.begin_followups(True);s.skip_followup()
     replies=[meaning('q2.clarification',position='opposed')]
     saved=c.interpret
     c.interpret=lambda *args,**kwargs:replies.pop(0)
-    s.respond(s.questions[0]['choices'][0],'I still reject this hypothetical route.',c)
+    s.respond(s.current_question['choices'][0],'I still reject this hypothetical route.',c)
     c.interpret=saved
     while s.state==State.FOLLOWUPS:s.respond(s.questions[len(s.responses)]['choices'][-1],'',c)
     assert 'q2:current_route_stance' in s.conflicts
@@ -294,4 +295,4 @@ def test_hypothetical_route_conflict_and_resolution_text_reach_joint_interpretat
     evidence_sent=c.calls[-1][2]
     resolution_items=[v for v in evidence_sent.values() if v.source=='citizen_resolved_prior_gate']
     assert {v.text for v in resolution_items}=={'I mean the modified noise is acceptable.','I also accept this hypothetical route.'}
-    assert s.responses[0]['resolutions'][1]['evidence_id']=='R2.testimony'
+    assert s.responses[1]['resolutions'][1]['evidence_id']=='R2.testimony'

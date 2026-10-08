@@ -31,19 +31,27 @@ def next_question(session):
         template=kind
         if kind=='reasons':template='reasons_'+(stance if stance!='unassessed' else 'uncertain')
         label=CONCERNS[target]['label'] if target in CONCERNS else next((i['wording'] for i in session.unmapped_issues if i['id']==target),'')
+        if kind=='score_clarification':
+            label=', '.join(CONCERNS[c.concern_id]['label'] for c in session.draft.concerns) or 'the proposal'
         text=policy['questions'][template].format(topic=label)
         if kind=='blocker':
             c=next((c for c in session.draft.concerns if c.concern_id==target),None)
             wording=next((session.evidence[r].text for r in c.excerpts if r in session.evidence),'') if c else ''
-            text='You said: “'+wording+'”\nIf the other issues were resolved but '+label.lower()+' stayed as originally described, would you still oppose the route?'
+            text='You said: “'+wording+'”\nIf your other concerns were resolved, but this issue remained, would you still oppose the proposed route?'
         choices={'stance':['supported','opposed','mixed','uncertain'],
             'reasons':list(CONCERNS)+['other','cannot_specify']+(['no_reservations'] if stance=='supported' else []),
             'topic':['supported','opposed','mixed','uncertain','cannot_specify'],
+            'acceptance_check':['no_reservations','reservation','unsure'],
+            'score_clarification':['unsure'],
             'changes':['yes','no','unsure'], 'blocker':['yes','no','unsure'], 'unmapped':['cannot_specify']}[kind]
         return {'id':'D'+str(len(session.discovery_responses)+1),'selection_key':key,'kind':kind,'concern_id':target if target in CONCERNS else None,
             'issue_id':target if kind=='unmapped' else None,'facets':deepcopy(CONCERNS[target]['facets']) if target in CONCERNS else [],
             'text':text,'choices':choices,'multiple':kind=='reasons','context':'original','selection_reason':reason,'policy_version':policy['version']}
     stance=session.draft.current_route_stance.interpretation
+    if 'score_clarification:overall' in done:return None
+    zero_scores=bool(session.initial and session.initial['aggregate']['trace']['denominator']==0)
+    if zero_scores and not session.discovery_responses and session.draft.concerns:
+        return make('score_clarification',reason='No concern received an initial score; offer one chance to clarify the established topics.')
     if stance=='unassessed':
         q=make('stance',reason='Overall original-proposal stance is not explicit.')
         if q:return q
@@ -51,7 +59,12 @@ def next_question(session):
     by={c.concern_id:c for c in session.draft.concerns}
     clear_topics=[c for c in by.values() if c.status=='mapped' and (c.position!='unassessed' or c.conditional_willingness!='not_stated')]
     if (not clear_topics) and not session.discovery_topics:
-        q=make('reasons',reason='No assessment topic/reason is evidenced; acceptance and rejection are treated symmetrically.')
+        if stance=='supported' and not by:
+            gate=next((r for r in session.discovery_responses if r['selection_key']=='acceptance_check:overall'),None)
+            if gate is None:
+                return make('acceptance_check',reason='Overall acceptance is explicit, but reservations have not been confirmed.')
+            if 'reservation' not in gate['selections']:return None
+        q=make('reasons',reason='No assessment topic/reason is evidenced; ask for a specific reason only when needed.')
         if q:return q
     # Canonical ordering keeps priority stable across model array ordering.
     topics=[cid for cid in CONCERNS if cid in session.discovery_topics]+[cid for cid in CONCERNS if cid in by and cid not in session.discovery_topics and cid not in session.discovery_candidate_exclusions]
@@ -73,6 +86,8 @@ def next_question(session):
     for issue in session.unmapped_issues:
         q=make('unmapped',issue['id'],'Issue has no supported canonical mapping; preserve and clarify its wording.')
         if q:return q
+    if zero_scores and not session.discovery_responses:
+        return make('score_clarification',reason='No concern received an initial score and no other clarification is available.')
     return None
 
 

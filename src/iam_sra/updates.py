@@ -4,7 +4,6 @@ from typing import Literal
 from pydantic import Field, model_validator
 from .schemas import Strict, ConcernID
 from .settings import CONCERNS, SCENARIO, config
-from .assessment import AssessmentError
 
 TransitionKind=Literal['confirmed_unchanged','corrected_original','resolved_under_modification','partially_resolved','remaining_objection','unresolved','untested']
 
@@ -40,6 +39,7 @@ class FacetMeaning(FacetTarget):
     condition_ids: list[str] = Field(default_factory=list,max_length=3)
     applicability_explicit: bool
     rationale: str = Field(max_length=400)
+    conditional_willingness: Literal['willing','not_willing','uncertain','not_stated'] = 'not_stated'
 
 class FacetBatch(Strict):
     facets: list[FacetMeaning] = Field(max_length=30)
@@ -86,44 +86,69 @@ def enrich_fn(question,reference=False):
     return q
 
 
-def select_followups(meaning,evidence,reference=False):
-    from .validation import select_questions
+def select_followups(meaning,evidence,reference=False,facet_meanings=None,assessed_scores=None):
     from .settings import QUESTIONS
-    p=config('updates');questions=[enrich_fn(q,reference) for q in (QUESTIONS if reference else select_questions(meaning))]
-    if not reference:
-        def purposeful(q):
-            if q['id']=='q2':return any(c.concern_id in {'noise','visual_pollution'} and (c.position!='supported' or c.conditions) for c in meaning.concerns)
-            if q['id']=='q3':return any(c.concern_id!='welfare_equity' and (c.position in {'opposed','mixed'} or c.conditions) for c in meaning.concerns)
-            return True
-        questions=[q for q in questions if purposeful(q)]
-    covered={(t.concern_id,t.facet) for q in questions if q['id']!='q3' for t in contract(q).targets if not (q['id']=='q1' and t.facet=='data_security')}
-    by={c.concern_id:c for c in meaning.concerns if c.excerpts and c.status in {'mapped','needs_clarification'}}
-    for cid in CONCERNS:
-        c=by.get(cid)
-        if not c:continue
-        facets=[f for f in c.facets if (cid,f) not in covered]
-        if not facets:continue
-        targets=[FacetTarget(concern_id=cid,facet=f) for f in facets]
-        conditions=[evidence[r].text for r in c.conditions if r in evidence and evidence[r].context=='original']
-        if not conditions and c.status=='mapped' and (c.position=='supported' or c.conditional_willingness!='not_stated'):continue
-        modified=bool(conditions);qid=('u_change_' if modified else 'u_original_')+cid;context='hypothetical' if modified else 'original'
-        condition='; '.join(conditions)
-        text=p['templates']['requested_change' if modified else 'original_check'].format(topic=CONCERNS[cid]['label'],condition=condition,earlier=c.rationale)
-        labels=p['hypothetical_choices' if modified else 'original_choices']
-        codes=['aspect_accepted','remaining_objection','partial_resolution','unresolved'] if modified else ['confirmed_unchanged','corrected_original','unresolved']
-        change='Assume the citizen-described conditions for '+CONCERNS[cid]['label']+' are met: '+condition if modified else None
-        spec=QuestionContract(question_id=qid,context=context,proposal_id='hypothetical:'+qid if modified else 'original',targets=targets,
-            modification=change,assumptions=[change] if change else [],choices=[ChoiceMeaning(label=a,code=b,meaning=b.replace('_',' ')) for a,b in zip(labels,codes)],
-            cannot_establish=['Technical/regulatory/clinical feasibility','Full-route acceptance','Acceptance of a combination','Untargeted facets'],policy_version=p['version'],source='Application-reviewed template1.1; citizen condition evidence',selection_reason='Test a citizen-described acceptable change.' if modified else 'Clarify missing acceptable changes or a specific ambiguous position.')
+    from .reporting import aspect_label
+    p=config('updates')
+    if reference:
+        return [enrich_fn(q,True) for q in QUESTIONS]
+    if assessed_scores is None:return []
+    questions=[]
+    ledger={(f.concern_id,f.facet):f for f in (facet_meanings or [])}
+    for c in meaning.concerns:
+        if not c.excerpts or c.status!='mapped' or not c.facets:
+            continue
+        cid=c.concern_id
+        if type(assessed_scores.get(cid)) is not int or not 1<=assessed_scores[cid]<=9:continue
+        selected=[f for f in dict.fromkeys(c.facets) if ((cid,f) not in ledger and (c.position in {'opposed','mixed'} or (c.position=='supported' and c.conditions))) or ((cid,f) in ledger and (ledger[(cid,f)].position in {'opposed','mixed'} or (ledger[(cid,f)].position=='supported' and ledger[(cid,f)].condition_ids)))]
+        if not selected:continue
+        targets=[FacetTarget(concern_id=cid,facet=f) for f in selected]
+        refs=list(dict.fromkeys(r for f in selected for r in ledger[(cid,f)].condition_ids)) if all((cid,f) in ledger for f in selected) else list(c.conditions)
+        conditions=[evidence[r].text for r in refs if r in evidence and evidence[r].context=='original']
+        positions={ledger[(cid,f)].position for f in selected} if all((cid,f) in ledger for f in selected) else {c.position}
+        # Clarify an ambiguous meaning before assuming what would mitigate it.
+        modified=c.status=='mapped' and (bool(positions & {'opposed','mixed'}) or bool(conditions))
+        if not modified:continue
+        qid='u_change_'+cid
+        topic=' and '.join(aspect_label(f) for f in selected)
+        if modified:
+            change=' '.join(p['mitigations'][t.facet] for t in targets)
+            text=(f'About {topic}\n\nImagine this proposal:\n\n{change}')
+            text+=(f'\n\nWould this proposal fully address your concern about {topic}? '
+                   'Please consider any conditions you stated. You can explain what would still need to change below.')
+            labels=p['hypothetical_choices'];codes=['aspect_accepted','partial_resolution','remaining_objection','unresolved']
+        else:
+            change=None
+            text=(f'About {topic}\n\nWhat is still unclear, or what would make this acceptable to you? '
+                  'Please explain your view below.')
+            labels=p['original_choices'];codes=['confirmed_unchanged','corrected_original','unresolved']
+        spec=QuestionContract(question_id=qid,context='hypothetical' if modified else 'original',
+            proposal_id='hypothetical:'+qid if modified else 'original',targets=targets,modification=change,
+            assumptions=([change,'Hypothetical proposal; feasibility and effectiveness require verification.'] if modified else []),
+            choices=[ChoiceMeaning(label=a,code=b,meaning=b.replace('_',' ')) for a,b in zip(labels,codes)],
+            cannot_establish=['Technical/regulatory/clinical feasibility','Full-route acceptance','Acceptance of a combination','Untargeted facets'],
+            policy_version=p['version'],source='Application-reviewed mitigation bank; citizen conditions retained for comparison, not assumed satisfied',
+            selection_reason='One targeted test per distinct expressed objection.' if modified else 'Clarify the expressed uncertainty before proposing a mitigation.')
         questions.append({'id':qid,'text':text,'choices':labels,'contract':spec.model_dump(),'hypothetical':modified,'source_pages':[],
-            'relevant_concerns':[cid],'apply_to_joint':modified,'condition_evidence_ids':c.conditions,'policy_version':p['version']})
+            'relevant_concerns':[cid],'apply_to_joint':modified,'condition_evidence_ids':refs,'policy_version':p['version']})
+    if any(c.position in {'opposed','mixed'} for c in meaning.concerns) and any(q['apply_to_joint'] for q in questions):
+        topics=list(dict.fromkeys(aspect_label(t.facet) for q in questions for t in contract(q).targets))
+        rules=p['macro_policy'];qid='macro_policy';labels=rules['choices']
+        spec=QuestionContract(question_id=qid,context='hypothetical',proposal_id='policy_tradeoff',targets=[],
+            modification=None,assumptions=['Assume addressing the expressed concerns makes medical deliveries less efficient; this is hypothetical, not a verified consequence.'],
+            choices=[ChoiceMeaning(label=a,code=b,meaning=b.replace('_',' ')) for a,b in zip(labels,rules['codes'])],
+            cannot_establish=['Medical-purpose rejection','Concern resolution','Route acceptance'],
+            policy_version=p['version'],source=rules['source'],selection_reason='Understand policy priorities after independent concern tests.')
+        questions.append({'id':qid,'kind':'policy_priority','text':rules['text'].format(topics=', '.join(topics)),
+            'choices':labels,'contract':spec.model_dump(),'hypothetical':True,'source_pages':[9],
+            'relevant_concerns':[],'apply_to_joint':False,'condition_evidence_ids':[],'policy_version':p['version']})
     return questions[:p['maximum_questions']]
 
 
 def choice_transition(q,code,cid,facet):
     if (cid,facet) not in {(t.concern_id,t.facet) for t in contract(q).targets}:return 'untested'
     if contract(q).context=='original':return {'confirmed_unchanged':'confirmed_unchanged','corrected_original':'corrected_original'}.get(code,'unresolved')
-    if q['id']=='q3':return 'untested'
+    if q['id'] in {'q3','macro_policy'}:return 'untested'
     if code in {'aspect_accepted'}:return 'resolved_under_modification'
     if code=='privacy_resolved':return 'resolved_under_modification' if facet=='personal_privacy' else 'untested'
     if code=='data_access_remaining':return 'remaining_objection' if facet=='data_security' else 'partially_resolved'

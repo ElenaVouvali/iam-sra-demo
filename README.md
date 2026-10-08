@@ -1,184 +1,130 @@
 # iam-sra-demo
-A guided English chatbot for one experimental IAM assessment: **The Urban Medical Transit Corridor**, from Future Needs’ *SRA_LLM concept feasibility.pdf*. Python owns the state machine, question selection, arithmetic and validation. Qwen/Qwen3-8B maps citizen evidence and independently reviews each supported concern through a separate localhost vLLM server. Readiness combines concern-specific boundaries and conditional willingness; original-route stance stays separate. Sessions stay in memory; JSON and JSONL export are explicit. Meaning is confirmed before any numeric review.
 
-**Experimental demo:** scores are provisional conditional-readiness interpretations for this scenario. This is not a psychometrically validated instrument, an official EU citizen-readiness measure, or a calibrated SRL scale. All 15 concerns are registered; this scenario cannot assess them all. Missing evidence stays unassessed/null. Medical-benefit support, awareness, original-route acceptance and hypothetical conditional acceptance are kept separate.
+A Streamlit application for one experimental IAM scenario: **The Urban Medical Transit Corridor**, based on Future Needs’ *SRA_LLM concept feasibility.pdf*. Qwen/Qwen3-8B interprets citizen evidence and assigns confirmed aspect scores through a separate vLLM server. Python controls the conversation, validates evidence, selects follow-ups and calculates the aggregate.
 
-Read [latest evidence-preservation verification](docs/evidence-preservation-report.md), [universal-updates verification](docs/universal-updates-report.md), [evidence-discovery verification and limits](docs/discovery-report.md), [confirmation/reassessment verification](docs/confirmation-report.md), [implementation contract](docs/implementation-contract.md), [methodology and FN questions](docs/methodology.md), [deployment](docs/deployment.md) and [verification results](docs/verification.md).
+Scores are experimental scenario indices, not a calibrated citizen or ecosystem SRL measure. Missing evidence remains unavailable. Medical-purpose support, route acceptance, policy preferences and acceptance of hypothetical changes remain distinct.
 
-## Guided evidence discovery
+## Current application flow
 
-After submitting your answer with **Continue**, a few neutral questions can clarify an unspecified stance, reasons, topic/facet, acceptance changes or an independently decisive objection. All questions concern the **unchanged original proposal**. Python selects one at a time from `configs/discovery.json`, at most six, and recomputes after each answer. Registry topics can be positive, negative or uncertain; choosing a topic does not establish its severity. Other issues retain their wording with an unmapped status and no invented topic ID. **Skip** and **Finish these questions** preserve unknowns. Explicit acceptance with no reservations ends unnecessary questioning without assessing silent topics.
+1. Read the scenario and give an original response.
+2. Review the score-free interpretation and clarify or correct it. Original-context discovery can collect missing information.
+3. Confirm the meaning and inspect the initial score, concern scores and aggregation calculation.
+4. Answer independent mitigation questions for expressed objections or conditions. Unknown aspects receive clarification; independently accepted companion aspects are not retested. A relevant FN-style macro-policy trade-off follows these questions.
+5. Review and confirm the follow-up answers. A combined-proposal assessment is optional, for interacting changes or explicit acceptance of one revised proposal.
+6. Inspect the final screen: initial assessment, validated original-proposal assessment, final result, concern changes, reasons, evidence and arithmetic. Download JSON or JSONL if needed.
 
-Review the consolidated meaning and any acceptance boundaries, correct individual meanings, then tick **This reflects what I meant** and click **Continue**. That action confirms meaning and calculates the initial snapshot internally before follow-ups. Boundary answers are stored separately from numbers; they do not directly alter caps or scores. The existing anchors, assessed-only mean, minimum coverage, bottleneck rules and rounding are unchanged and experimental. Discovery can improve coverage but does not guarantee an aggregate.
+Initial interpretation uses one score-free model request over the complete answer. Python checks valid facets and passage references, then asks you to confirm the meaning. It does not run a chain of semantic reviews before showing the interpretation. Actual accuracy and latency need live evaluation.
 
-FN Q1–Q3 remain hypothetical follow-ups with their original provenance and developer-only all-reference mode. Their selector includes discovered confirmed topics; some facets have no relevant FN hypothetical test. Updated confirmation, separate original/conditional reassessment, immutable initial scores, all15 assessment records and JSON/JSONL remain available. Exports include discovery questions, selections, free text, skips/finish, stable evidence IDs, selection reasons, blockers, unknowns, policy version and unmapped issues. Model interpretations can be wrong; completion is not semantic accuracy or scientific validation.
+The initial scoring model assigns 1–9 scores to confirmed facets. Python combines assessed facets into concern scores using their minimum. The scenario aggregate is the equally weighted assessed-concern mean, capped at the minimum assessed concern plus 2 across all phases, with halves rounded down. One assessed concern is sufficient; no assessed concerns means an unavailable aggregate.
 
-## Run on liono
-This checkout already has an isolated `.venv` and a downloaded, revision-pinned model in `.runtime/` (both Git-ignored). Use a normal shell on liono; no sudo or driver changes.
+The default follow-up result is a **bounded progression index**: up to +2 once per already assessed concern when every originally opposed/mixed or conditioned aspect is fully resolved. Partial resolution, rejection, uncertainty and skipping yield no automatic gain or penalty. The policy trade-off changes no numeric score or medical-purpose support. Original-context corrections can independently trigger reassessment; they do not overwrite the initial snapshot. A requested combined assessment uses a separate conditional rating, with its proposal context disclosed.
+
+Read [the FN follow-up/update policy](docs/fn-followup-update-policy.md), [methodology](docs/methodology.md), [implementation contract](docs/implementation-contract.md), [deployment](docs/deployment.md), [data handling](docs/privacy.md) and [verification status](docs/verification.md).
+
+## Run the application
+
+The local checkout has an isolated `.venv` and revision-pinned model weights under the ignored `.runtime/` directory. From this repository:
 
 ```bash
-cd ~/IAM_CC/iam-sra-demo
+scripts/health-check.sh
+# If this project's services are not already running:
 scripts/preflight.sh
 scripts/start-vllm.sh
-# Initial loading takes approximately one minute; check until healthy.
+# Wait for the model server to become healthy:
 scripts/health-check.sh
 scripts/start-ui.sh
 scripts/health-check.sh
 ```
 
-If a project server is already running, use health-check instead of starting another. Preflight before both services start checks available ports, V100 UUID, disk headroom and workloads. The vLLM launcher verifies UUID, then uses physical index 1 because vLLM 0.8.5's NVML implementation rejects UUID strings. The selected GPU becomes logical 0. No A2 or tensor parallelism.
+Default ports are 8000 for vLLM and 8501 for Streamlit, bound to localhost. Set `IAM_GPU_UUID` to the intended GPU on the current host before launch; `.env.example` documents environment settings, but `.env` is not automatically sourced. The launch scripts preserve the pinned V100-compatible configuration and check process identity before stopping services.
 
-On your laptop:
+For a remote host, forward the ports from your laptop:
 
 ```bash
-ssh -N -L 8501:127.0.0.1:8501 -L 8000:127.0.0.1:8000 elvouvali@liono.microlab.ntua.gr
+ssh -N -L 8501:127.0.0.1:8501 -L 8000:127.0.0.1:8000 USER@HOST
 ```
 
-Open `http://localhost:8501`. DNS/VPN access to the lab must work from the laptop. Streamlit and vLLM bind only to 127.0.0.1. Ports are configurable through exported `IAM_UI_PORT` and `IAM_VLLM_PORT`; update both forwarding ports accordingly. `.env.example` documents settings; `.env` is not automatically loaded.
-
-Stop only this project's processes:
+Open `http://localhost:8501`. Stop only this project's services with:
 
 ```bash
 scripts/stop-ui.sh
 scripts/stop-vllm.sh
 ```
 
-## Fresh installation
-Use Python 3.10–3.12. On this liono installation, the following existing Python interpreter can create a separate environment without changing its packages:
+For direct local UI development with an existing model endpoint:
 
 ```bash
-cd ~/IAM_CC/iam-sra-demo
-/home/elvouvali/miniforge3/envs/mailohls-llm-v2/bin/python -m venv .venv
-mkdir -p .runtime/tmp .runtime/pip
-export TMPDIR="$PWD/.runtime/tmp"
-export PIP_CACHE_DIR="$PWD/.runtime/pip"
-# Full observed package lock, including vLLM/PyTorch CUDA 12.4 binaries.
-.venv/bin/pip install --only-binary=:all: -r requirements-lock.txt
-.venv/bin/python scripts/download-model.py
-scripts/preflight.sh
+.venv/bin/python -m streamlit run app.py
 ```
 
-`requirements-app.txt` is sufficient for GPU-free development; `requirements-vllm.txt` contains principal server pins. The full lock is for the verified Linux x86-64/Python 3.10 stack; do not reuse an existing research environment. Reserve at least 60 GiB /home headroom before a fresh install/download. Installation caches, temporary files and weights remain under `.runtime/` on /home; no source build is required.
+Explicit GPU-free UI plumbing mode:
 
-## Tests and synthetic evaluation
+```bash
+IAM_MOCK=1 .venv/bin/python -m streamlit run app.py
+```
+
+Mock mode is visibly labelled and does not evaluate citizen views. Live errors never switch to mock mode. `IAM_DEVELOPER=1` exposes additional diagnostics and the preserved FN reference-question mode; the default end-to-end tests use reference mode off.
+
+## Installation
+
+Use Python 3.10–3.12. For GPU-free development in a new checkout:
+
+```bash
+python3.10 -m venv .venv
+.venv/bin/pip install -r requirements-app.txt
+```
+
+For the full pinned Linux GPU stack, `scripts/install.sh` creates a new environment, installs `requirements-lock.txt` and downloads the pinned model. It refuses to overwrite an existing `.venv`; set `IAM_PYTHON` if needed. `requirements-vllm.txt` records the principal server pins. See [deployment](docs/deployment.md) for GPU and runtime requirements.
+
+## Automated checks
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m pytest -q
 PYTHONPATH=src .venv/bin/python eval/run.py --mock --repeats 1
-# Requires running Qwen server; no implicit mock fallback.
+```
+
+`eval/run.py` now uses the same interpretation → confirmation → initial scoring path as the application. Its scripted confirmations and synthetic examples do not establish citizen agreement or semantic accuracy. Without `--mock`, it requires a live model server:
+
+```bash
 PYTHONPATH=src .venv/bin/python eval/run.py --repeats 2 --output .runtime/evaluation-live.json
 PYTHONPATH=src .venv/bin/python eval/run.py --held-out --repeats 2 --output .runtime/heldout-live.json
-PYTHONPATH=src .venv/bin/python scripts/smoke-discovery.py --output .runtime/discovery-repeat.json
-PYTHONPATH=src .venv/bin/python scripts/smoke-updates.py
-PYTHONPATH=src .venv/bin/python -m pytest tests/test_live_ui_flow.py tests/test_ui.py -q
 ```
 
-Explicit GPU-free UI mode:
+Focused diagnostic runners remain available: `scripts/replay-attribution.py`, `scripts/replay-ordinal.py`, `scripts/replay-fn-evidence.py`, and `scripts/smoke-discovery.py`. They retain failures and distinguish execution completion from semantic correctness. The ordinal runner's filename is retained; its current scorer uses LLM-assigned numbers. Live runners are not part of offline CI.
+
+## End-to-end manual tests
+
+Start with [the manual walkthrough](manual-tests/end-to-end-manual-tests.md). [The T01–T32 case guide](manual-tests/followup-assessment-manual-tests.md) provides **155 scripted baseline runs** with expected questions, exact choices, concern gains and final mean/cap/rounding calculations. Nine extension experiments cover policy invariance, reservations, new clarifications, early finish, combined assessment and editing. Record actual outcomes in [the blank results sheet](manual-tests/end-to-end-results-template.csv).
+
+T01–T24 are development cases; T25–T32 retain the fresh-validation split. Fixed final-score targets assume the initial assessment matches the authored baseline. Otherwise record the initial mismatch and independently check follow-up arithmetic from the actual validated-original scores. Authored expectations are not live results or scientifically validated ground truth.
+
+For live initial-stage comparisons:
 
 ```bash
-IAM_MOCK=1 scripts/start-ui.sh
+.venv/bin/python scripts/run-initial-manual-tests.py --mapping-only
+.venv/bin/python scripts/run-initial-manual-tests.py
+.venv/bin/python scripts/run-initial-manual-tests.py --split fresh_validation
 ```
 
-Mock mode is visibly labeled and produces a fixed uncertain, unassessed fixture. It checks UI plumbing, not interpretation. Restart the UI with `IAM_MOCK=0` for live mode. Synthetic evaluation checks schema/evidence compliance, qualitative agreement, repeated score variation and latency; it does not establish scientific validity.
-
-## Session flow and limits
-Answer → score-free interpretation → explicit confirmation → initial scoring → follow-ups → updated interpretation and explicit confirmation → final scoring → comparison/export.
-
-Correct individual meanings or add omitted concerns in your own words; a complete restatement is not required. The UI shows model wording separately from citizen evidence. Edits invalidate confirmation and dependent final scores. Initial scores are saved once as an immutable snapshot. Confirmation establishes agreement about meaning, not scientific validity. Ambiguous meanings stay unassessed and conflicting answers require a targeted clarification.
-
-Follow-up choices and optional text have stable evidence IDs and an explicit original/hypothetical context. Q1 addresses viewing privacy, Q2 bundles altitude/sound/curfew, and Q3 records policy preference. Relevant questions follow the confirmed facets, with an explicit all-reference option. Before conditional scoring, respond to the exact combined proposal; accepting separate Q1/Q2 changes is insufficient. Include any remaining concerns and confirm the resulting modified-context meaning.
-
-Final original-proposal scoring uses the initial rubric and reviews only concerns with relevant confirmed original-context evidence changes; other scores carry forward with a reason. Conditional scoring uses a separate experimental acceptance-after-mitigation rubric. Untested original facets remain unavailable unless explicitly addressed. Each profile recomputes its own mean/cap/coverage/phase summaries in Python. No fixed bonus, inferred cap removal or automatic FN6–7/2–3 outcome is used. No new relevant original evidence means unchanged original scores. See [the reassessment policy](configs/reassessment.json) and [methodology](docs/methodology.md).
-
-The citizen flow hides intermediate numbers and shows one final provisional result, explicitly labelled with its proposal context. The JSON/JSONL records include all15 concerns and initial/final-original/conditional scores, reasons and evidence. Exports contain versioned interpretations, confirmations, corrections, immutable snapshots, questions/answers, contextual evidence IDs, model/rubric settings and arithmetic traces. JSONL is one complete session per line. Coverage differences do not imply personal improvement or decline.
-
-Maximum input is 4000 UTF-8 bytes, plus actual per-call full-chat token budgets of4096. Excessive input is rejected, never truncated. The model selects numbered citizen passages; Python retrieves their original wording, while Qwen interprets their meaning in rationales. Each explicit action has an overall180-second deadline. Submission performs semantic mapping and numeric-free scope review of up to30 candidate facets, with at most one retry per call; no numeric stage runs before confirmation. After confirmation, Qwen reviews descriptive anchor facts per evidenced facet (up to30); Python assigns ordinal scores using configs/ordinal.json. There is at most one retry per call; a proposed highest endorsement receives one conditional independent evidence check. Final original and conditional reviews are separate bounded stages. Empty mappings skip scoring. Mapping reserves1400 output tokens, each scope review300 and each descriptive scoring review500; every full-chat prompt plus reserved output must fit4096. Schema/evidence failures are controlled; transport failures are controlled errors with no invented result. Requests are serialized in the app and server concurrency is one. Timeout is 120 seconds per HTTP request; retries are recounted against the full context limit. Eligibility is interpreted semantically under the15 versioned scopes; Python validates facet membership, IDs, null/range and exact passages. There are no lexical vetoes or stance-to-score bands. Semantic correctness is still provisional. Logs rotate at 2 MiB with two backups per service; routine logs omit raw citizen text. Exports include citizen text and should be saved deliberately.
-
-## Repository
-- `src/iam_sra/`: UI-independent schemas, assessment, session, scoring, validation and HTTP client.
-- `configs/`, `prompts/`: versioned registry, scenario, questions, provisional anchors/policy and model revision.
-- `eval/fn_reference.json`: historical fixture (8,3,4,2; mean 4.25; illustrative final 4), never substituted into inference.
-- `tests/`, `eval/`, `scripts/`, `docs/`: checks, synthetic cases, operations and traceability.
-
-For a project-only UI restart after deploying this branch (not performed during implementation):
+The defaults select the 24 development cases; `--ids` and `--split` control selection. This runner stops after the initial assessment. For the full UI flow use the end-to-end walkthrough. Regenerate the follow-up guide without inference or rewriting its fixtures:
 
 ```bash
-cd /home/elvouvali/IAM_CC/iam-sra-demo
-scripts/stop-ui.sh
-scripts/start-ui.sh
-sleep 5
-scripts/health-check.sh
+.venv/bin/python scripts/build-followup-manual-guide.py
 ```
 
-The existing vLLM server does not need a restart. If laptop8501 is occupied, use `ssh -N -L 8502:127.0.0.1:8501 elvouvali@liono.microlab.ntua.gr` and open `http://localhost:8502`.
+## Repository layout
 
-No database, RAG, agents, fine-tuning or dashboard. PDF, credentials, weights, environments, logs and exports are excluded from Git. The updated application, including evidence discovery, is published on the single `main` branch. Fully merged implementation branches have been removed. Running services require a project-only UI restart to load changed modules. See [calibration report](docs/calibration-report.md) and [methodology](docs/methodology.md) for before/after results and source limitations.
+| Location | Purpose |
+|---|---|
+| `app.py` | Current Streamlit interface |
+| `src/iam_sra/` | Evidence interpretation, session flow, scoring, updates and reporting |
+| `configs/` | Versioned scenario, concern registry, model and experimental policies |
+| `prompts/` | Prompts used by current interpretation and confirmed scoring |
+| `manual-tests/` | Authored stage-1 and end-to-end experiments, guides and blank results sheet |
+| `tests/` | Offline contract, arithmetic and UI regression checks |
+| `eval/` | Synthetic fixtures and current-path initial evaluation runner |
+| `scripts/` | Service operations, current diagnostics and manual-test tooling |
+| `docs/` | Current methodology, update policy, deployment and verification |
+| `.runtime/` | Ignored model cache, service state, logs and newly generated reports |
 
-### Evidence-preserving follow-ups (policy 1.1, export 5.2)
-
-Python owns typed facet transitions and a reviewed question bank, with at most six follow-ups. Questions declare proposal context, facets, assumptions, choice meanings and limits. Non-FN topics receive a specific clarification only when a relevant meaning or acceptable change is missing, or a question using only citizen-described changes. Clear established positions are not routinely reconfirmed. Unknowns and skipped questions remain unknown. Q3 records policy priority without changing welfare support or caps.
-
-Modified-context meanings receive a score-free facet review in batches of at most six, within a shared180-second deadline and4096-token full-chat budget. After updated confirmation, applicable facets are scored independently with the shared version3 ordinal predicates in the explicitly modified context. A concern receives the minimum facet score only when every relevant facet has explicitly applicable, clear modified-context citizen evidence; otherwise it is unavailable. Facets never become extra aggregate items. This conservative rule extends FN and requires calibration.
-
-Completion chooses the conditional aggregate when available, otherwise the final-original aggregate with an explicit original-proposal label. A failed modified aggregate is disclosed. With neither, a qualitative completion explains insufficient evidence. Readable export sections separate the summary, proposals, all15 domains, chronological transitions, blockers, arithmetic and dialogue; detailed traces and a legacy4.1 adapter live in audit. Historical export files remain unchanged. Set `IAM_DEVELOPER=1` only to reveal diagnostic UI and reference wording. See [verification report](docs/universal-updates-report.md).
-
-### Review and editing
-
-Initial and final meaning confirmations remain required before scoring. The updated review shows one structured summary, with genuine uncertainties listed separately; **Correct something** supplies targeted testimony and **Confirm and finish** saves the final assessment. Follow-up explanations default to the displayed question's proposal. Q2 explicitly retains residential overflight up to15 times/day. One combined-proposal check asks about the exact changes together; Q3's policy trade-off is never included as a physical change. Tested privacy/noise answers remain usable with explicit joint acceptance. For each relevant untested established aspect, an explicit unselected Yes / My view has changed / Unsure / Skip question asks whether the earlier view still applies; its meaning is reviewed under the shared ordinal policy, or its prior decision reused only after explicit unchanged applicability and exact construct/meaning/condition/policy equivalence. Silence cannot confirm equity, cybersecurity or physical safety.
-
-**← Back to previous question** and answer-specific edit links restore the same presented question/context and saved draft. Editing clears dependent answers/interpretations, confirmations and final results, preserves the immutable initial snapshot, and records superseded answers/evidence. Initial-answer revisions use distinct evidence IDs; final-original reassessment removes superseded topics that no longer have current evidence. Sessions and revision history remain in memory.
-
-The result chooses one explicitly labelled proposal score, or explains the actual missing meanings and offers targeted **Clarify** actions. Original objections are not displayed as remaining objections to an accepted modified proposal. Detailed scores/exclusions are in JSONL/JSON, not the conversation. Version5.1 adds original facet meanings, answer revisions, initial/current original testimony and targeted clarification needs; the existing sections and legacy4.1 audit adapter remain available. Historical files are untouched.
-
-```bash
-PYTHONPATH=src .venv/bin/python -m pytest -q
-# One bounded live engineering replay; no downloads/restarts or mock fallback:
-PYTHONPATH=src .venv/bin/python scripts/replay-fn-evidence.py
-```
-
-Live and deterministic test results, including the first incorrect mapping and its correction, are documented in [the focused report](docs/evidence-preservation-report.md). Numeric anchors, minimum three-concern coverage, averaging, bottleneck and rounding remain experimental and unchanged.
-
-
-### Focused attribution and applicability fixes (registry 2.2, export 5.2)
-
-Low altitude or frequency explaining hum cannot establish traffic capacity/separation. Independent contrastive attribution distinguishes traffic coordination from height, acoustic/visual effects and privacy; low height is not automatically remapped to fear of injury. Rerouting remains a flight condition, not a facility/land-allocation objection. Reviews apply to initial mapping, discovery, corrections and modified mappings. Raw exclusions remain in audit and cannot become scored topics or required modified aspects.
-
-Discovery blocker nominations pass separate topic and independent-decisiveness reviews, then must match the scoped aspect ledger. Strong opposition or several requested changes do not establish that each issue alone prevents acceptance. An unknown independent position can prompt one concrete question; it does not create a low score. Concern edits invalidate stale blocker records.
-
-The combined-proposal screen explicitly asks whether each established, untested earlier view still applies. Nothing is preselected; Skip and Unsure preserve unknown applicability. **My view has changed** requires an explanation. Tested privacy/noise gates remain linked to joint acceptance. **Yes** confirms applicability and conditions. Changed/mitigated meanings are independently re-reviewed; a demonstrably equivalent unchanged meaning can retain its audited source decision under ordinal3.0, without a new endorsement. Missing modified evidence has a direct clarification action before completion and in the result/edit flow.
-
-Export 5.2 retains the existing sections and legacy4.1 audit adapter, adding boundary-review decisions and applicability response records (displayed wording, original links, response, context and policy). Historical exports are unchanged. The numerical rubric, three-concern threshold and cap policy are unchanged.
-
-```bash
-PYTHONPATH=src .venv/bin/python -m pytest -q
-# Optional live checks, only when your existing localhost endpoint is healthy:
-PYTHONPATH=src .venv/bin/python scripts/replay-fn-evidence.py
-PYTHONPATH=src .venv/bin/python scripts/replay-attribution.py
-```
-
-See [all attempted checks and remaining limits](docs/attribution-confirmation-report.md). These changes are local until explicitly published; services have not been restarted.
-
-### Consistent ordinal reassessment (policy3.0, export5.3)
-
-The guided app now asks Qwen for descriptive evidence fields, not integer scores. Python applies one experimental table: categorical refusal1, strong personal intrusion2, strong disruption3, further change required4, balanced position5, cautious acceptance6, qualified acceptance7, clear acceptance8, explicit unqualified endorsement9. Unknown/inconsistent descriptions stay unavailable. The intensity distinctions are provisional semantic judgments, not measured quantities.
-
-A short acceptance can establish8; Yes, a supplied choice or unchanged confirmation cannot by itself establish9. Actual authored endorsement needs an independent semantic criterion check. Explicit unchanged medical support retains its existing decision when construct, meaning, conditions and policy are equivalent; mitigated noise/privacy must be reviewed in their changed context. Decreases are possible when testimony changes. No bonus, forced FN outcome or automatic cap removal is applied. Minimum3, assessed-only mean, phase-1 bottleneck and half-up rounding are unchanged.
-
-A bounded session-only cache stores successfully validated exact requests (evidence, context, model and policy). Back/edit/correction clears it; another session cannot share it. The UI retains the client across reruns, shows plain-language stage progress, saves confirmations on calculation failures and continues to hide intermediate numbers.
-
-Replay completion is separate from correctness. Mandatory failures or unexecuted live checks exit nonzero. Every attempted case, failure stage, request/retry/cache metrics and stage latency is recorded. No mock is a live pass. This task used **offline verification only**, following the request not to use GPU; no services were started or restarted. See [ordinal reassessment report](docs/ordinal-reassessment-report.md).
-
-```bash
-cd /home/elvouvali/IAM_CC/iam-sra-demo
-PYTHONPATH=src .venv/bin/python -m pytest -q
-PYTHONPATH=src .venv/bin/python -m compileall -q src app.py scripts
-# GPU-free interface demonstration only; fixed labelled mock, not citizen inference:
-IAM_MOCK=1 PYTHONPATH=src .venv/bin/python -m streamlit run app.py --server.address 127.0.0.1 --server.port 8502
-# Record that live checks were not run; intentionally exits1:
-PYTHONPATH=src .venv/bin/python scripts/replay-fn-evidence.py --no-live
-# Only when GPU use is permitted and the existing endpoint is healthy:
-PYTHONPATH=src .venv/bin/python scripts/replay-fn-evidence.py
-PYTHONPATH=src .venv/bin/python scripts/replay-ordinal.py --cases medical_short qualified_noise medical_privacy_mixed
-```
-
-Export5.3 adds score records for every domain and profile, descriptive anchor facts, rule/policy IDs, equivalence/source decisions and stage metrics. Existing field `model_explanation` remains for compatibility; `assessment_explanation` identifies the current application explanation, separately from citizen quotations and raw model descriptions. Historical files are not modified; the legacy4.1 adapter remains. Original-to-modified differences compare proposals, not personal improvement.
+The old pre-confirmation session, one-shot scorer, obsolete smoke scripts and historical reports have been removed from the active repository. Recoverable historical material is in an external archive; see [cleanup notes](docs/repository-cleanup.md). Current export/audit compatibility remains where the application and diagnostic tools use it.

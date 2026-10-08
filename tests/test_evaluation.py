@@ -26,3 +26,23 @@ def test_correct_topic_does_not_hide_unsupported_medical_support():
     assert result['checks']['required_concerns']
     assert not result['checks']['expected_medical_support']
     assert not result['qualitative_agreement']
+
+
+def test_evaluator_uses_the_current_confirmed_initial_path():
+    from test_confirmation import Fake,meaning
+    from iam_sra.interpretation import verify
+    class ConfirmedOnly(Fake):
+        def __call__(self,text):
+            raise AssertionError('The retired one-shot assessment must not run')
+        def score(self,record,only=None,unavailable=None):
+            profile,_=verify(record)
+            assert record['context']=='original'
+            assert all('score' not in c for c in record['meaning']['concerns'])
+            assert profile.concerns[0].concern_id=='noise'
+            return super().score(record,only,unavailable)
+    client=ConfirmedOnly(meaning())
+    result,session=module.assess_case('The noise bothers me.',client)
+    assert [call[0] for call in client.calls]==['interpret','score']
+    assert result.model_dump()==session.initial['assessment']
+    assert session.initial['interpretation_sha256']==session.confirmed['sha256']
+    assert session.discovery_finished and not session.responses

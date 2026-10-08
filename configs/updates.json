@@ -1,11 +1,11 @@
 {
-  "version": "1.1.0-experimental",
-  "maximum_questions": 6,
+  "version": "3.5.0-experimental",
+  "maximum_questions": 30,
   "facet_combination": "For the modified profile only, review every required facet independently with the unchanged conditional rubric. Parent score is the minimum only when all original/modified evidenced facets have explicit applicable modified-context evidence. Otherwise parent is null. Facets never become extra aggregate items.",
   "inheritance": "No original numeric value is silently inherited by a modified proposal. Applicability must be explicitly confirmed, then re-reviewed with conditional anchors.",
   "blockers": "Original blockers are retained. Their modified status is unresolved unless all relevant facets are addressed by confirmed modified evidence; an addressed viewing boundary never resolves safety/security.",
   "templates": {
-    "original_check": "You previously said: \u201c{earlier}\u201d For {topic}, what would need to change for this aspect to be acceptable, or what is still unclear?",
+    "original_check": "You previously said: “{earlier}” For {topic}, what would need to change for this aspect to be acceptable, or what is still unclear?",
     "requested_change": "If the changes you described for {topic} were met: {condition}. Would all the aspects you raised for this topic be acceptable, or what would remain? "
   },
   "original_choices": [
@@ -14,10 +14,10 @@
     "I am unsure"
   ],
   "hypothetical_choices": [
-    "All the aspects I raised for this topic would be acceptable",
-    "An objection would remain",
-    "Some aspects would be addressed, others would remain",
-    "Unsure / none of these"
+    "Fully addresses this concern",
+    "Partly addresses this concern",
+    "Does not address this concern",
+    "Unsure"
   ],
   "fn": {
     "q1": {
@@ -29,7 +29,7 @@
           "data_security"
         ]
       },
-      "modification": "Navigation cameras have forward-only viewing and cannot view private yards/windows; telemetry/security remain unspecified.",
+      "modification": "The drones' navigation cameras can only look forward and cannot view private yards or windows. How flight data is handled and protected is still unspecified.",
       "citizen_text": "If camera shielding prevents viewing private yards and windows, would that address your concern about viewing private space?",
       "citizen_choices": [
         "My concern about viewing private space would be addressed",
@@ -59,7 +59,7 @@
           "visible_physical_intrusion"
         ]
       },
-      "modification": "120m altitude, curfew19:00\u201307:00 and assumed sound below ambient city noise, bundled; frequency/residential routing unchanged.",
+      "modification": "The drones fly at 120 metres, with no flights between 19:00 and 07:00. At this height, their sound is assumed to be quieter than normal city street noise. The number of flights and the route over residential areas stay the same.",
       "citizen_text": "If flights move to 120 metres, stop between 19:00 and 07:00, and sound quieter than ambient street noise, how would you respond? The drones would still fly over your neighbourhood up to 15 times a day.",
       "citizen_choices": [
         "With the quieter evening conditions, I would accept this route",
@@ -111,5 +111,63 @@
         "Psychological diagnosis"
       ]
     }
-  }
+  },
+  "mitigations": {
+    "awareness": "Publish plain-language information about routes, operating hours, benefits, risks and complaint procedures, and hold accessible public question sessions.",
+    "institutional_trust": "Publish independent oversight reports, incident disclosures and responses to resident complaints, with a named accountable operator.",
+    "training": "Offer free, accessible resident training with practical demonstrations and alternative formats.",
+    "participation_skills": "Provide accessible instruction and assisted channels for residents to report problems and participate in decisions.",
+    "personal_privacy": "Use privacy masking of residential windows and yards, minimise collection of identifiable imagery, restrict retention and access, and independently audit these controls. Navigation still needs to operate safely; these controls do not guarantee zero intrusion.",
+    "perceived_safety": "Review routes to reduce exposure of people on the ground, assess emergency landing arrangements, and publish independent safety assessments and incident procedures. Residual risk remains.",
+    "system_reliability": "Require independently reviewed reliability testing, failure-response procedures, maintenance checks and a monitored pilot before expansion. Failures cannot be ruled out.",
+    "data_security": "Minimise retained data, encrypt stored and transmitted data, restrict access, specify deletion periods and commission independent security audits. No system is guaranteed immune to attack.",
+    "acoustic_impact": "Introduce agreed quiet periods for routine flights, define emergency exceptions, and test quieter equipment or alternative routing using measurements at affected homes before expansion. Actual sound reduction would need verification.",
+    "aesthetic_clutter": "Trial alternative corridors and lower flight frequency to reduce visible aircraft in affected views, and consult residents on the trial results. Aircraft may remain visible.",
+    "visible_physical_intrusion": "Trial corridors farther from residential properties and review flight frequency with affected residents. Aircraft may remain visible.",
+    "rotor_wind": "Site take-off and landing areas away from pedestrians and vulnerable structures, with tested separation distances and barriers where appropriate.",
+    "airspace_traffic": "Coordinate drone operations with other airspace users, set traffic limits and separation procedures, and review capacity before expansion.",
+    "urban_mobility_plan": "Include the service in the city mobility plan through public consultation, with published objectives, alternatives and review criteria.",
+    "facility_siting": "Compare alternative facility locations through public consultation and assess impacts on nearby residents before selecting a site.",
+    "land_allocation": "Publish proposed land allocations and alternatives, protect essential public uses, and consult affected communities before approval.",
+    "energy_demand": "Publish an energy budget, compare demand with existing transport options and limit expansion unless agreed energy targets are met.",
+    "emissions": "Commission a lifecycle emissions comparison with existing delivery options and make expansion conditional on agreed emissions targets.",
+    "cost_financing": "Publish costs and funding sources, compare financing alternatives, and set explicit limits on public spending and resident charges before approval.",
+    "business_viability": "Run a limited pilot with independently reviewed operating costs, demand and funding commitments, and publish criteria for continuation.",
+    "remote_access": "Include remote communities in service planning and publish coverage and delivery commitments alongside existing delivery alternatives.",
+    "vulnerable_access": "Design access with vulnerable groups, provide assisted options and assess whether service arrangements introduce new barriers.",
+    "transport_connections": "Coordinate drone deliveries with hospital, ambulance and ground transport workflows, with explicit handover and backup procedures.",
+    "congestion": "Pilot the service and measure effects on road traffic and ground deliveries before claiming congestion benefits.",
+    "medical_public_benefit": "Evaluate clinical usefulness with healthcare providers, compare delivery alternatives and publish pilot outcomes before expansion.",
+    "distributive_equity": "Publish how benefits and burdens are distributed across neighbourhoods and groups, consult affected communities and revise unequal allocations."
+  },
+  "progression": {
+    "version": "3.1.0-experimental",
+    "maximum_positive_change_per_concern": 2,
+    "rejection_change": -2,
+    "partial_change": 1,
+    "uncertain_change": 0,
+    "construct": "Baseline-dependent readiness progression index; not a new conditional acceptance rating or calibrated SRL.",
+    "rule": "Apply once per assessed concern after confirmation: +2 for all required aspects fully addressed, +1 for partial resolution with every required aspect tested, -2 if any required aspect is rejected. Unsure, skipped, untested or conflicting answers give no adjustment. Clamp concern scores to 1–9. The final policy-priority answer adjusts the rounded overall index once by +2/-2/0, retaining the 1–9 bounds and bottleneck ceiling.",
+    "calibration": "Candidate policy for FN/ISCTE and Living Lab calibration. No claim of psychometric validity."
+  },
+  "macro_policy": {
+    "text": "If addressing your concerns about {topics} made medical deliveries less efficient, what should the city prioritise?",
+    "choices": [
+      "Prioritise medical delivery benefits, within acceptable safeguards",
+      "Prioritise addressing these concerns, even if delivery is less efficient",
+      "It depends; I would need evidence about the impacts and alternatives"
+    ],
+    "codes": [
+      "medical_benefit_priority",
+      "concern_priority",
+      "depends"
+    ],
+    "source": "Application policy inspired by FN Q3; +2/-2/0 weighting is experimental, not a validated FN formula.",
+    "score_adjustments": {
+      "medical_benefit_priority": 2,
+      "concern_priority": -2,
+      "depends": 0
+    }
+  },
+  "followup_selection": "Standard follow-ups require an assessed initial concern score and confirmed opposed/mixed or conditioned facets. Uncertain, unassessed and unsupported aspects generate no follow-up and no policy-topic nomination. Reference replay is a separate historical mode."
 }

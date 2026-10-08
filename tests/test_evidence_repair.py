@@ -36,12 +36,12 @@ def test_joint_acceptance_keeps_tested_choices_and_explicit_unchanged_benefit():
     assert all(facet_availability(s,f) for f in s.facet_meanings)
     assert {(f.facet,f.position) for f in s.facet_meanings}=={('personal_privacy','supported'),('acoustic_impact','supported'),('medical_public_benefit','supported')}
     privacy=next(f for f in s.facet_meanings if f.facet=='personal_privacy')
-    assert any(s.evidence[r].source=='citizen_prior_gate' and s.evidence[r].question_id=='q1' for r in privacy.evidence_ids)
+    assert any(s.evidence[r].source=='citizen_prior_gate' and s.evidence[r].question_id=='u_change_perceived_safety_privacy' for r in privacy.evidence_ids)
     assert s.joint['history_links'] and not clarification_needs(s)
     s.continue_final(True,c)
     assert s.conditional['aggregate']['trace']['denominator']==3 and s.initial==original
     assert not citizen_summary(s)['remaining_objections']
-    assert s.export()['schema_version']=='5.3.0'
+    assert s.export()['schema_version']=='5.4.0'
 
 
 def test_no_implicit_inheritance_of_untested_medical_meaning():
@@ -87,13 +87,13 @@ def test_established_positions_have_no_redundant_original_check():
 
 def test_edit_completed_gate_invalidates_results_keeps_initial_and_old_evidence():
     s,c=ready();s.record_joint('accept',[],'',c,['welfare_equity:medical_public_benefit']);s.continue_final(True,c)
-    initial=deepcopy(s.initial);old=s.evidence['q1.choice'];old_confirmations=len(s.confirmations)
-    s.rewind('q1')
-    assert s.state==State.FOLLOWUPS and s.current_question['id']=='q1'
+    initial=deepcopy(s.initial);old=s.evidence['u_change_perceived_safety_privacy.choice'];old_confirmations=len(s.confirmations)
+    s.rewind('u_change_perceived_safety_privacy')
+    assert s.state==State.FOLLOWUPS and s.current_question['id']=='u_change_perceived_safety_privacy'
     assert s.final is None and s.conditional is None and s.updated_confirmed is None and s.joint is None
-    assert s.initial==initial and s.evidence['q1.choice']==old and len(s.confirmations)==old_confirmations
+    assert s.initial==initial and s.evidence['u_change_perceived_safety_privacy.choice']==old and len(s.confirmations)==old_confirmations
     s.respond(s.current_question['choices'][-1],'',c)
-    assert s.responses[-1]['evidence_ids'][1]=='q1.v2.choice'
+    assert s.responses[-1]['evidence_ids'][1]=='u_change_perceived_safety_privacy.v2.choice'
     assert s.revision_history[0]['snapshots']['conditional_modified'] is not None
 
 
@@ -107,7 +107,7 @@ def test_edit_initial_answer_preserves_immutable_snapshot_and_testimony():
 
 def test_privacy_does_not_resolve_safety_or_security():
     m=profile();m.concerns[1].facets=['personal_privacy','perceived_safety']
-    s,c=initially_scored(Fake(m));s.begin_followups();answer_all(s,c)
+    s,c=initially_scored(Fake(m));s.begin_followups(True);answer_all(s,c)
     s.record_joint('accept',[],'',c,['welfare_equity:medical_public_benefit'])
     facts={f.facet:f for f in s.facet_meanings}
     assert facet_availability(s,facts['personal_privacy']) and not facet_availability(s,facts['perceived_safety'])
@@ -174,19 +174,27 @@ def test_completed_ui_has_one_summary_and_editable_answers(monkeypatch):
     from test_ui import fresh,click,assert_simple
     app=fresh(monkeypatch,ContextFake(profile()));click(app)
     app.text_area(key='citizen_answer').set_value('I support medical deliveries but oppose noise and cameras.');click(app)
-    click(app,'Finish these questions');app.checkbox(key='confirm_1').check().run();click(app)
+    app.checkbox(key='confirm_1').check().run();click(app)
+    assert app.session_state.session.state==State.INITIAL
+    assert app.metric[0].value=='4/9' and len(app.dataframe)==1
+    calculations=' '.join(e.value for e in app.markdown)
+    assert '/ 3 = 4.33' in calculations and 'Cap: 2 + 2 = 4' in calculations
+    assert not app.session_state.session.responses
+    app.session_state.session.require_combined_review=True
+    click(app,'Continue to follow-up questions')
     s=app.session_state.session
     while s.state==State.FOLLOWUPS:
         q=s.current_question
         assert not any(r.label=='Your added words describe' for r in app.radio)
         app.radio(key='choice_'+q['id']).set_value(q['choices'][0]);click(app);assert_simple(app)
+    if not any(x.key=='joint_choice' for x in app.radio):click(app,'Assess the combined proposal')
     app.radio(key='joint_choice').set_value('accept')
     app.radio(key='applies_welfare_equity:medical_public_benefit').set_value('yes');click(app)
     lines=' '.join(e.value for e in app.markdown)
     assert 'You support its medical purpose' in lines and 'would accept the route' in lines
     assert not any('boundary' in e.value or 'facet' in e.value for e in app.markdown)
     app.checkbox(key='updated_confirm_'+str(s.version)).check().run();click(app,'Confirm and finish')
-    assert len(app.metric)==1 and s.export()['final_summary']['selected_profile']=='conditional_modified'
+    assert len(app.metric)==1 and not app.dataframe and s.export()['final_summary']['selected_profile']=='conditional_modified'
     initial=s.initial;click(app,'Edit your first answer')
     assert s.state==State.ANSWER and s.final is None and s.initial==initial
     assert app.text_area(key='citizen_answer').value=='I support medical deliveries but oppose noise and cameras.'
@@ -195,8 +203,9 @@ def test_completed_ui_has_one_summary_and_editable_answers(monkeypatch):
 def test_back_to_previous_question_preserves_answer_draft(monkeypatch):
     from test_ui import fresh,click
     app=fresh(monkeypatch,ContextFake(profile()));click(app)
-    app.text_area(key='citizen_answer').set_value('I object to the hum.');click(app);click(app,'Finish these questions')
+    app.text_area(key='citizen_answer').set_value('I object to the hum.');click(app)
     app.checkbox(key='confirm_1').check().run();click(app)
+    click(app,'Continue to follow-up questions')
     s=app.session_state.session;q=s.current_question
     app.radio(key='choice_'+q['id']).set_value(q['choices'][0]);click(app)
     click(app,'← Back to previous question')
@@ -215,12 +224,11 @@ def test_discovery_answer_revision_uses_new_evidence_ids_and_same_question():
     assert s.discovery_responses[-1]['evidence_ids']==[q['id']+'.v2.selection1']
 
 
-def test_correction_choice_requires_explanation():
-    s,c=initially_scored(Fake(meaning(scores=('cost_roi_business',))));s.begin_followups()
-    q=s.current_question
-    from iam_sra.assessment import AssessmentError
-    with pytest.raises(AssessmentError):s.respond(q['choices'][1],'',c)
-    assert not s.responses and s.initial is not None
+def test_uncertain_cost_does_not_generate_a_stage_two_clarification():
+    s,c=initially_scored(Fake(meaning(scores=('cost_roi_business',),position='uncertain')))
+    s.begin_followups()
+    assert not s.questions and not s.responses
+    assert s.initial is not None
 
 
 def test_explicit_broad_unsure_edit_requires_scope_without_erasing_clear_support():

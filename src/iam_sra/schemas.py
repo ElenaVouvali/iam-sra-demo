@@ -86,32 +86,3 @@ class MappingAssessment(Strict):
         ids=[c.concern_id for c in self.concerns]
         if len(ids)!=len(set(ids)):raise ValueError("Duplicate concern")
         return self
-
-class ScoreDecision(Strict):
-    concern_id: ConcernID
-    scope_supported: bool = False
-    position: Literal["supported","opposed","mixed","uncertain","unassessed"] = "unassessed"
-    facets: list[str] = Field(default_factory=list,max_length=2)
-    excerpts: list[str] = Field(default_factory=list,max_length=3)
-    status: Literal["assessed","unassessed"]
-    decision: Literal["retained","excluded","needs_clarification"]
-    conditional_willingness: Literal["willing","not_willing","uncertain","not_stated"] = "not_stated"
-    conditions: list[str] = Field(default_factory=list,max_length=3)
-    score: int | None = Field(ge=1,le=9)
-    rationale: str = Field(max_length=400)
-    @model_validator(mode="after")
-    def coherent(self):
-        if any(f not in CONCERNS[self.concern_id]["facets"] for f in self.facets):raise ValueError("Facet outside concern scope")
-        if self.status=="assessed" and (not self.facets or not self.excerpts):raise ValueError("Assessed review requires facet and evidence")
-        if self.status=="assessed" and not self.scope_supported:raise ValueError("A score requires explicit semantic scope support")
-        if (self.status=="assessed") != (self.score is not None):raise ValueError("Status and nullable score disagree")
-        if (self.status=="assessed") != (self.decision=="retained"):raise ValueError("Decision and status disagree")
-        return self
-
-class ScoreBatch(Strict):
-    concern_scores: list[ScoreDecision] = Field(max_length=15)
-    @model_validator(mode="after")
-    def unique(self):
-        ids=[c.concern_id for c in self.concern_scores]
-        if len(ids)!=len(set(ids)):raise ValueError("Duplicate score decision")
-        return self

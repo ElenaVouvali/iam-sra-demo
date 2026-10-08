@@ -1,0 +1,88 @@
+{
+  "mapping_only": true,
+  "purpose": "Contrast flight routing with actual facility siting and land allocation. Authored semantic targets, not live results.",
+  "cases": [
+    {
+      "id": "R01",
+      "title": "Routing remedy is not a facility judgment",
+      "response": "The hum would ruin my sleep. Keep flights above the freight district instead of our houses; only then could I accept the noise. I support urgent medical deliveries.",
+      "expected_facets": {
+        "noise": {
+          "acoustic_impact": 3
+        },
+        "welfare_equity": {
+          "medical_public_benefit": 8
+        }
+      },
+      "expected_positions": {
+        "noise": {
+          "acoustic_impact": "opposed"
+        },
+        "welfare_equity": {
+          "medical_public_benefit": "supported"
+        }
+      },
+      "expected_conditions": {}
+    },
+    {
+      "id": "R02",
+      "title": "Actual landing-site objection despite acceptable overflight",
+      "response": "The flights overhead are acceptable to me. But I oppose putting the landing pad beside our school: use the existing depot instead, and I could accept that facility location.",
+      "expected_facets": {
+        "infrastructure_land_use": {
+          "facility_siting": 4
+        }
+      },
+      "expected_positions": {
+        "infrastructure_land_use": {
+          "facility_siting": "opposed"
+        }
+      },
+      "expected_conditions": {}
+    },
+    {
+      "id": "R03",
+      "title": "Actual land allocation and acceptable noise",
+      "response": "The drone sound is acceptable to me. I would accept the land allocation only if the community garden is protected from construction.",
+      "expected_facets": {
+        "noise": {
+          "acoustic_impact": 8
+        },
+        "infrastructure_land_use": {
+          "land_allocation": 4
+        }
+      },
+      "expected_positions": {
+        "noise": {
+          "acoustic_impact": "supported"
+        },
+        "infrastructure_land_use": {
+          "land_allocation": "opposed"
+        }
+      },
+      "expected_conditions": {}
+    },
+    {
+      "id": "R04",
+      "title": "Flight avoidance for physical safety does not imply ground facilities",
+      "response": "I cannot live with the risk of a drone injuring my children at home. Fly away from our house; I could accept a corridor elsewhere. The aircraft appearance is acceptable to me.",
+      "expected_facets": {
+        "perceived_safety_privacy": {
+          "perceived_safety": 2
+        },
+        "visual_pollution": {
+          "aesthetic_clutter": 8
+        }
+      },
+      "expected_positions": {
+        "perceived_safety_privacy": {
+          "perceived_safety": "opposed"
+        },
+        "visual_pollution": {
+          "aesthetic_clutter": "supported"
+        }
+      },
+      "expected_conditions": {}
+    }
+  ]
+}

@@ -4,8 +4,7 @@ import pytest
 from iam_sra.assessment import parse_assessment, AssessmentError
 from iam_sra.settings import ROOT, CONCERNS, QUESTIONS, POLICY
 from iam_sra.scoring import aggregate
-from iam_sra.legacy_session import Session, State
-from iam_sra.validation import outcome, select_questions, conclusions
+from iam_sra.validation import outcome
 
 def payload(scores=None,text="noise privacy visual welfare"):
     dim={"interpretation":"uncertain","excerpts":[text],"rationale":"Explicit uncertainty."}
@@ -16,9 +15,15 @@ def test_fn_reference_arithmetic():
     f=json.loads((ROOT/'eval/fn_reference.json').read_text());r=aggregate(assessment(f['scores']))
     assert r['mean']==4.25 and r['cap']==4 and r['rounded']==4
     assert r['coverage']=='4/15' and len(r['missing'])==11
-@pytest.mark.parametrize('scores',[{}, {'noise':9},{'noise':9,'visual_pollution':9}])
+@pytest.mark.parametrize('scores',[{}])
 def test_insufficient(scores):
     r=aggregate(assessment(scores));assert r['mean'] is None and r['rounded'] is None
+@pytest.mark.parametrize('scores',[{'noise':9},{'noise':9,'visual_pollution':9}])
+def test_sparse_assessed_scores_are_available(scores):
+    r=aggregate(assessment(scores));assert r['mean']==9 and r['rounded']==9
+def test_single_phase_one_concern_applies_cap_without_increasing_score():
+    r=aggregate(assessment({'perceived_safety_privacy':2}))
+    assert r['mean']==2 and r['cap']==4 and r['rounded']==2
 @pytest.mark.parametrize('scores',[{'noise':1,'visual_pollution':1,'perceived_safety_privacy':3},{'noise':9,'visual_pollution':9,'perceived_safety_privacy':2}])
 def test_cap_never_increases(scores):
     r=aggregate(assessment(scores));assert r['adjusted']<=r['mean']
@@ -26,9 +31,9 @@ def test_nulls_and_phases():
     a=assessment({'noise':3,'visual_pollution':4,'perceived_safety_privacy':2})
     assert all(c.score is None for c in a.concerns if c.status=='unassessed')
     r=aggregate(a);assert r['phases']['3']['mean'] is None and r['phases']['2']['mean']==3.5
-def test_round_half_up():
+def test_round_half_down():
     p={**POLICY,'minimum_assessed':2,'bottleneck_enabled':False}
-    assert aggregate(assessment({'noise':4,'visual_pollution':5}),p)['rounded']==5
+    assert aggregate(assessment({'noise':4,'visual_pollution':5}),p)['rounded']==4
 @pytest.mark.parametrize('change',['foreign','duplicate','extra','float','unsupported','empty','null','wrong_scenario','bad_condition'])
 def test_invalid_output(change):
     d=payload({'noise':3});c=d['concerns'][0]
@@ -48,35 +53,13 @@ def test_malformed(raw):
 def test_exact_evidence_and_unicode_budget():
     with pytest.raises(AssessmentError):parse_assessment(json.dumps(payload({'noise':3},'Noise')),'noise')
     with pytest.raises(AssessmentError):assessment(text='é'*2001)
-def test_session_isolation_and_failed_submit():
-    a,b=Session(),Session();a.begin()
-    with pytest.raises(AssessmentError):a.submit('x',lambda t:parse_assessment('{',t))
-    assert a.state==State.ANSWER and a.original is None and b.state==State.SCENARIO
-    a.submit('noise',lambda t:assessment({'noise':3},t));assert b.original is None and not b.responses
-def test_state_transitions_and_original_preserved():
-    s=Session()
-    with pytest.raises(ValueError):s.validate(True)
-    s.begin();s.submit('original',lambda t:assessment({'noise':3,'visual_pollution':4,'perceived_safety_privacy':2},t))
-    original=s.original.model_dump()
-    s.correct('corrected','Misread stance',lambda t:assessment({'noise':8,'visual_pollution':8,'perceived_safety_privacy':8},t))
-    assert s.original.model_dump()==original
-    s.validate(True)
-    while s.state==State.VALIDATION:s.respond(s.questions[len(s.responses)]['choices'][0])
-    result=s.export();assert result['original']==original and result['original_aggregate']['rounded']==3
-    assert result['corrections'][0]['assessment']!=original
 @pytest.mark.parametrize('indices',list(itertools.product(range(4),range(4),range(3))))
 def test_validation_combinations(indices):
     responses=[outcome(q,q['choices'][i]) for q,i in zip(QUESTIONS,indices)]
     assert all(r['numerical_update'] is None for r in responses)
-    assert len(conclusions(responses)['conditional_outcomes'])==3
+    assert len(responses)==3
     for q,i,r in zip(QUESTIONS,indices,responses):
         if i==len(q['choices'])-1:assert 'Unresolved' in r['outcome']
-def test_question_selection():
-    assert select_questions(assessment())==[]
-    assert [q['id'] for q in select_questions(assessment({'noise':3}))]==['q2','q3']
-    privacy=assessment({'perceived_safety_privacy':2})
-    privacy.current_route_stance.interpretation='opposed'
-    assert [q['id'] for q in select_questions(privacy)]==['q1','q3']
 def test_invalid_choice():
     with pytest.raises(ValueError):outcome(QUESTIONS[0],'invented')
 
@@ -102,3 +85,21 @@ def test_explicit_ambiguity_preserves_null():
     d['concerns']=[{'concern_id':'visual_pollution','status':'unassessed','position':'uncertain','score':None,'excerpts':[text],'rationale':'Explicitly undecided.'}]
     a=parse_assessment(json.dumps(d),text)
     assert a.concerns[0].score is None and aggregate(a)['rounded'] is None
+
+@pytest.mark.parametrize('cid', ['perceived_safety_privacy','noise','welfare_equity'])
+def test_bottleneck_uses_minimum_from_any_phase(cid):
+    other='public_awareness_trust' if cid!='public_awareness_trust' else 'noise'
+    r=aggregate(assessment({cid:1,other:9}))
+    assert r['mean']==5 and r['cap']==3 and r['rounded']==3
+
+def test_bottleneck_has_no_severity_threshold():
+    r=aggregate(assessment({'noise':4,'welfare_equity':9,'public_awareness_trust':9}))
+    assert r['cap']==6 and r['rounded']==6
+
+def test_empty_assessment_has_no_cap():
+    r=aggregate(assessment({}))
+    assert r['cap'] is None and r['rounded'] is None
+
+@pytest.mark.parametrize('scores,expected', [({'noise':4,'visual_pollution':4,'welfare_equity':5},4),({'noise':4,'visual_pollution':5,'welfare_equity':5},5)])
+def test_half_down_still_rounds_to_nearest(scores,expected):
+    assert aggregate(assessment(scores))['rounded']==expected

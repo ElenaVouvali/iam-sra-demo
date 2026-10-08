@@ -1,5 +1,5 @@
 from pydantic import ValidationError
-from iam_sra.schemas import ScoreDecision
+from iam_sra.schemas import Concern
 from iam_sra.llm_client import schema_error
 
 
@@ -21,8 +21,9 @@ def test_model_rule_error_includes_actionable_reason():
 
 def test_excess_evidence_retry_names_limit_without_echoing_text():
     try:
-        ScoreDecision.model_validate(dict(concern_id='noise', status='assessed',
-            decision='retained', score=3, excerpts=['private text'] * 4))
+        Concern.model_validate(dict(concern_id='noise', status='assessed',
+            position='opposed', facets=['acoustic_impact'], score=3,
+            excerpts=['private text'] * 4, rationale='Explicit objection.'))
     except ValidationError as exc:
         message = str(schema_error(exc))
         assert 'excerpts:too_long' in message

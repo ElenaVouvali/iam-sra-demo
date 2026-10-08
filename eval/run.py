@@ -7,8 +7,10 @@ import time
 from pathlib import Path
 from iam_sra.settings import ROOT, config
 from iam_sra.schemas import SCHEMA_VERSION
-from iam_sra.llm_client import LLMClient
-from iam_sra.mock import assess as mock_assess
+from iam_sra.conversation_client import ConversationClient
+from iam_sra.mock import MockConversationClient
+from iam_sra.session import Session
+from iam_sra.schemas import Assessment
 from iam_sra.scoring import aggregate
 from iam_sra.assessment import AssessmentError
 
@@ -42,6 +44,12 @@ def gpu_snapshot():
         return value.stdout.strip().splitlines()
     except (OSError,subprocess.SubprocessError):return None
 
+def assess_case(text,client):
+    """Use the application's score-free interpretation and confirmed initial review."""
+    session=Session();session.begin();session.submit(text,client)
+    session.finish_discovery();session.confirm(True);session.score_initial(client)
+    return Assessment.model_validate(session.initial['assessment']),session
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--mock',action='store_true');parser.add_argument('--repeats',type=int,default=3);parser.add_argument('--ids',help='Comma-separated case IDs');parser.add_argument('--output',default='.runtime/evaluation.json');parser.add_argument('--capture-raw',action='store_true',help='Explicitly save raw structured model outputs for synthetic cases only; not routine logs.')
     parser.add_argument('--sample-gpu',action='store_true',help='Record read-only GPU snapshots before/after each assessment; these are samples, not peak measurements.')
@@ -55,7 +63,7 @@ def main():
         ids=set(args.ids.split(','));unknown=ids-{c['id'] for c in cases}
         if unknown:parser.error('Unknown case IDs: '+','.join(sorted(unknown)))
         cases=[c for c in cases if c['id'] in ids]
-    client=mock_assess if args.mock else LLMClient();rows=[];output=Path(args.output);output.parent.mkdir(parents=True,exist_ok=True)
+    client=MockConversationClient() if args.mock else ConversationClient();rows=[];output=Path(args.output);output.parent.mkdir(parents=True,exist_ok=True)
     def write():
         variation={cid:{i:sorted({r['scores'][i] for r in rows if r['id']==cid and i in r.get('scores',{})}) for i in {k for r in rows if r['id']==cid for k in r.get('scores',{})}} for cid in {r['id'] for r in rows}}
         report={'notice':'Synthetic engineering evaluation, not scientific validation. Denominators include all attempted cases. Source integer agreement is empirical, never forced. Raw outputs saved only with explicit --capture-raw.','mode':'MOCK' if args.mock else 'LIVE','versions':{'schema':SCHEMA_VERSION,'prompt':config('prompts')['version'],'rubric':config('scoring')['rubric_version'],'registry':config('concerns')['version']},'model':config('model'),'settings':getattr(client,'last_settings',{}),'summary':summary(rows),'results':rows,'score_variation':variation}
@@ -65,7 +73,12 @@ def main():
             start=time.monotonic();row={'id':case['id'],'repeat':repeat,'mode':'MOCK' if args.mock else 'LIVE','accepted':False,'qualitative_agreement':False}
             if args.sample_gpu:row['gpu_before']=gpu_snapshot()
             try:
-                result=client(case['text']);row.update(evaluate_result(result,case,ref),accepted=True)
+                result,session=assess_case(case['text'],client)
+                row.update(evaluate_result(result,case,ref),accepted=True,
+                           scripted_confirmation=True,scope='Current confirmed initial assessment; no follow-ups.',
+                           confirmed_meaning=session.confirmed,
+                           stage_diagnostics=[{'stage':item['stage'],'diagnostics':item['diagnostics']} for item in session.inference])
+                if args.capture_raw:row['stage_raw_traces']=[{'stage':item['stage'],'raw_model_trace':item['raw_model_trace']} for item in session.inference]
             except AssessmentError as exc:row.update(error=str(exc),failure_category=exc.code)
             row.update(attempts=getattr(client,'last_diagnostics',[]),raw_model_scores=getattr(client,'last_raw_scores',{}),latency_seconds=round(time.monotonic()-start,3))
             if args.capture_raw:row['raw_trace']=getattr(client,'last_trace',[])

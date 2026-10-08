@@ -1,9 +1,8 @@
-"""Bounded serial interpretation + confirmed ordinal contrasts. Never use mocks."""
+"""Bounded serial interpretation + confirmed numerical contrasts. Never use mocks."""
 import argparse,json,time
 from pathlib import Path
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.interpretation import EvidenceItem,freeze
-from iam_sra.ordinal import AnchorFacts,decide
 from iam_sra.settings import SCENARIO
 from iam_sra.replay_checks import write_report
 
@@ -27,7 +26,7 @@ def main():
             frozen=freeze(m,evidence,1,'original',SCENARIO['text'])
             a=c.score(frozen);stages.extend(c.last_settings.get('request_metrics',[]))
             values={x.concern_id:x.score for x in a.concerns};ds=c.last_score_decisions
-            rubric_ok=all(decide(AnchorFacts.model_validate(d['descriptive_facts']),d['confirmed_position'],d['highest_criterion_verified'])['score']==d['score'] for d in ds if 'descriptive_facts' in d)
+            rubric_ok=bool(ds) and all(d.get('model_assigned_score')==d['score'] and (d['score']!=9 or d.get('highest_criterion_verified')) for d in ds)
             if case.get('no_highest'):rubric_ok=rubric_ok and all(v!=9 for v in values.values())
             row.update(dialogue_completed=True,structural_evidence_checks_passed=mapping_ok and all(values[cid] is None for cid in case.get('exclude_scores',[])),
                 rubric_checks_passed=rubric_ok,scores=values,decisions=ds,attribution=c.last_candidate_projections)

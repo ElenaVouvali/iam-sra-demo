@@ -2,8 +2,7 @@
 from collections import defaultdict
 from .schemas import Assessment
 from .scoring import aggregate
-from .ordinal import AnchorFacts, decide
-from .settings import config
+from .ordinal import AnchorFacts, NumericScore, decide
 
 def check_export(record, initial_before=None, expected=None):
     checks=[];rubric=[]
@@ -26,7 +25,15 @@ def check_export(record, initial_before=None, expected=None):
                 require(name+':context:'+decision['facet'],all(evidence[r]['context']=='modified' for r in decision.get('evidence_ids',[])))
             source=decision.get('source_decision',decision)
             facts=source.get('descriptive_facts')
-            if facts:
+            if source.get('model_assigned_score') is not None or source.get('origin')=='llm_assigned_score':
+                numeric=NumericScore.model_validate(source['model_proposed_description'])
+                ok=numeric.score==source['score']==source.get('model_assigned_score')
+                ok=ok and all(r in evidence for r in numeric.evidence_ids)
+                if numeric.score==9:
+                    ids=source.get('endorsement_source_ids',[])
+                    ok=ok and bool(ids) and all(evidence[r]['source'] in {'citizen_original','citizen_discovery','citizen_correction'} for r in ids) and bool((source.get('endorsement_review') or {}).get('supported'))
+                rubric.append({'check':name+':llm_score_preserved:'+source['concern_id']+':'+source['facet'],'passed':bool(ok),'detail':'Numerical provenance and evidence validation, not independent semantic validation.'})
+            elif facts:
                 result=decide(AnchorFacts.model_validate(facts),source.get('confirmed_position','uncertain'),source.get('highest_criterion_verified',False))
                 ok=result['score']==source['score'] and result['anchor_rule_id']==source['anchor_rule_id']
                 if source['score']==9:

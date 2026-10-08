@@ -12,5 +12,4 @@ QUESTIONS = config("validation")["questions"]
 MODEL = "Qwen/Qwen3-8B"
 BASE_URL = os.getenv("IAM_BASE_URL", "http://127.0.0.1:8000")
 MAX_INPUT_BYTES = 4000
-MAX_OUTPUT_TOKENS = 1600
 CONTEXT_TOKENS = 4096

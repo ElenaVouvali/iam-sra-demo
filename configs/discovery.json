@@ -19,7 +19,9 @@
     "topic": "For {topic}, what specifically matters to you, what is your position on the ORIGINAL proposal, and does acceptance depend on a change?",
     "changes": "For {topic}, could any change make that aspect acceptable to you? If so, what would need to change?",
     "blocker": "For {topic}: would this issue alone make the ORIGINAL proposal unacceptable, even if your other concerns were addressed?",
-    "unmapped": "You mentioned \u2018{topic}\u2019. What specifically matters to you about this issue, and would it affect acceptance of the ORIGINAL proposal?"
+    "unmapped": "You mentioned \u2018{topic}\u2019. What specifically matters to you about this issue, and would it affect acceptance of the ORIGINAL proposal?",
+    "acceptance_check": "Do you accept the proposal without reservations, or is there anything you would like changed?",
+    "score_clarification": "We could not yet assess your position on {topic}. Would you accept these aspects as described, reject them, or accept them only if something changed? Please explain what matters to you, or choose unsure."
   },
   "choice_labels": {
     "supported": "I accept the original proposal",
@@ -31,7 +33,8 @@
     "no_reservations": "I accept the proposal as described, with no reservations or conditions",
     "yes": "Yes",
     "no": "No",
-    "unsure": "Unsure"
+    "unsure": "Unsure",
+    "reservation": "I have a reservation or would like a change"
   },
   "note": "Extension of FN evidence collection. Topic selection is not stance, severity or a score. Blockers are citizen boundaries, not numerical bottleneck rules. Silence remains unknown.",
   "topic_choice_labels": {
@@ -41,5 +44,12 @@
     "uncertain": "I am unsure about this aspect",
     "cannot_specify": "Cannot specify"
   },
-  "maximum_boundary_reviews": 4
+  "maximum_boundary_reviews": 4,
+  "overall_acceptance_rule": {
+    "version": "1.0.0",
+    "score": 9,
+    "requires": "Explicitly confirmed acceptance without reservations, supported original stance, no assessed concern scores and no modified proposal.",
+    "basis": "overall_acceptance_confirmation",
+    "concern_scores": "Remain unassessed; this is a direct overall score, not a concern mean."
+  }
 }

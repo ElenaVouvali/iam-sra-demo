@@ -67,7 +67,7 @@ def test_reviewed_non_fn_bank_covers_declared_facets_without_new_assumptions(cid
     s,c=initially_scored(Fake(meaning(scores=(cid,),facets={cid:[facet]})))
     s.begin_followups();q=next(q for q in s.questions if q['id'].startswith('u_'))
     spec=contract(q)
-    assert spec.context=='original' and spec.modification is None and spec.assumptions==[]
+    assert spec.context=='hypothetical' and spec.modification and spec.assumptions
     assert (cid,facet) in [(t.concern_id,t.facet) for t in spec.targets]
 
 
@@ -75,11 +75,14 @@ def test_citizen_requested_change_is_hypothetical_with_exact_evidence_and_joint_
     c=Fake(meaning(scores=('cost_roi_business',),facets={'cost_roi_business':['cost_financing']}))
     s=Session();s.begin();s.submit('I would accept only if residents paid no fees.',c)
     s.draft.concerns[0].conditions=['O.p001'];s.draft.concerns[0].conditional_willingness='willing'
+    s.original_facets['cost_roi_business:cost_financing'].condition_ids=['O.p001']
     s.finish_discovery();s.continue_initial(True,c)
     q=s.current_question
-    assert q['contract']['context']=='hypothetical' and 'residents paid no fees' in q['contract']['modification']
-    s.respond(q['choices'][0],'',c)
-    assert s.joint_required and 'residents paid no fees' in s.combined_proposal
+    assert q['contract']['context']=='hypothetical' and q['condition_evidence_ids']==['O.p001']
+    assert 'residents paid no fees' not in q['contract']['modification']
+    s.require_combined_review=True;s.respond(q['choices'][0],'',c)
+    assert s.joint_required and q['contract']['modification'] in s.combined_proposal
+    assert 'residents paid no fees' not in s.combined_proposal
     with pytest.raises(ValueError):s.confirm_updated(True)
 
 
@@ -152,7 +155,7 @@ def test_readable_export_sections_and_headline_context_are_explicit():
     s,c=initially_scored(c);s.begin_followups();answer_all(s,c)
     s.record_joint('accept',[],'The modified noise and private viewing are acceptable; I still support the medical public benefit in this exact modified proposal.',c)
     s.continue_final(True,c);data=s.export()
-    assert data['schema_version']=='5.3.0' and len(data['domain_assessments'])==15
+    assert data['schema_version']=='5.4.0' and len(data['domain_assessments'])==15
     assert data['final_summary']['selected_profile']=='conditional_modified'
     assert data['final_summary']['headline_score']==s.conditional['aggregate']['rounded']
     assert data['aggregation']['conditional_modified']['trace']['denominator']==3
@@ -173,7 +176,7 @@ def test_headline_fallback_and_unavailable_qualitative_completion():
 
 def test_unknown_original_followup_invalidates_only_target_numeric_value():
     s,c=initially_scored(Fake(meaning(scores=('cost_roi_business',),facets={'cost_roi_business':['cost_financing']})))
-    initial=s.initial;s.begin_followups();q=s.current_question;s.respond(q['choices'][-1],'',c,'original');s.continue_final(True,c)
+    initial=s.initial;s.begin_followups();q=s.current_question;s.respond(q['choices'][-1],'',c,'original');s.stop_followups();s.record_joint('unsure',[],'',c);s.continue_final(True,c)
     assert s.initial==initial
     assert s.final['assessment']==initial['assessment']
     assert s.final['aggregate']['trace']['denominator']==1
@@ -184,7 +187,7 @@ def test_unrelated_original_clarification_does_not_trigger_score_change():
     initial=s.initial;s.begin_followups();q=s.current_question
     c.next=meaning(q['id']+'.clarification',scores=('noise',))
     s.respond(q['choices'][1],'Noise would bother me.',c,'original')
-    s.continue_final(True,c)
+    s.stop_followups();s.record_joint('unsure',[],'',c);s.continue_final(True,c)
     assert s.final['assessment']==initial['assessment']
     assert not any(t['transition']=='corrected_original' and t['proposal_id']=='original' and t['new_score'] is not None for t in s.transitions)
 
@@ -223,7 +226,7 @@ def test_new_original_conditions_can_add_a_nonrepeating_bounded_hypothetical():
 
 def test_skipped_followup_has_unresolved_typed_transition():
     s,c=initially_scored(Fake(meaning(scores=('cost_roi_business',),facets={'cost_roi_business':['cost_financing']})))
-    s.begin_followups();qid=s.current_question['id'];s.skip_followup();s.continue_final(True,c)
+    s.begin_followups();qid=s.current_question['id'];s.skip_followup();s.stop_followups();s.record_joint('unsure',[],'',c);s.continue_final(True,c)
     record=next(t for t in s.transitions if t['question_id']==qid)
     assert record['transition']=='unresolved' and record['new_score'] is None
     assert s.evidence[record['evidence_ids'][0]].source=='citizen_control'

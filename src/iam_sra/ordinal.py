@@ -1,4 +1,4 @@
-"""Descriptive semantic facts -> deterministic experimental ordinal decision."""
+"""Current numeric score schema and compatibility checks for archived ordinal audits."""
 from typing import Literal
 from pydantic import Field
 from .schemas import Strict
@@ -43,3 +43,11 @@ def decide(facts,position,endorsement_verified=False):
         'construct':policy['construct'],'descriptive_facts':facts.model_dump(),'evidence_ids':facts.evidence_ids,
         'highest_criterion_verified':bool(rule=='explicit_unqualified_endorsement'),
         'origin':'python_anchor_predicate','reuse_decision':'not_reused','reason':reason}
+
+
+class NumericScore(Strict):
+    """The LLM supplies the number; Python checks shape and evidence only."""
+    score: int | None = Field(ge=1,le=9)
+    evidence_ids: list[str] = Field(min_length=1,max_length=3)
+    endorsement_evidence_ids: list[str] = Field(default_factory=list,max_length=3)
+    rationale: str = Field(min_length=1,max_length=400)

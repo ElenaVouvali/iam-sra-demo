@@ -86,7 +86,7 @@ def test_supported_topic_without_independent_answer_gets_one_concrete_question()
     for candidate in p.concerns:candidate.conditional_willingness='willing'
     c=DiscoveryFake(p,facts);s=Session();s.begin();s.submit('I object to hum, but may accept quieter flights.',c)
     q=s.discovery_question
-    assert q['kind']=='blocker' and 'If the other issues were resolved' in q['text']
+    assert q['kind']=='blocker' and 'If your other concerns were resolved, but this issue remained' in q['text']
     before=s.draft.model_dump();s.respond_discovery(['unsure'],'',c)
     assert s.draft.model_dump()==before and s.blockers[q['concern_id']]['status']=='unsure'
     assert not s.discovery_question or s.discovery_question['selection_key']!=q['selection_key']
@@ -101,7 +101,7 @@ def test_explicit_applicability_responses_control_modified_review(response,avail
     assert all(facet_availability(s,f) for f in s.facet_meanings if f.facet in {'personal_privacy','acoustic_impact'})
     a=s.joint['applicability_confirmations'][0]
     assert a['response']==response and a['context']=='modified' and a['original_evidence_ids']
-    assert 'Does that still apply' in a['displayed_statement']
+    assert 'if the service operated with the changes listed above?' in a['displayed_statement']
     s.continue_final(True,c)
     assert s.initial==initial
     assert s.conditional['aggregate']['trace']['denominator']==(3 if available else 2)
@@ -111,11 +111,13 @@ def test_explicit_applicability_responses_control_modified_review(response,avail
     assert s.revision_history[-1]['joint']['applicability_confirmations'][0]['response']==response
 
 
-def test_changed_applicability_requires_explanation_without_mutating_answers():
-    s,c=ready();evidence=deepcopy(s.evidence)
-    with pytest.raises(ValueError,match='changed'):
-        s.record_joint('accept',[],'',c,{'welfare_equity:medical_public_benefit':{'response':'changed'}})
-    assert s.joint is None and s.evidence==evidence and s.conditional is None
+def test_changed_applicability_without_explanation_does_not_invent_new_position():
+    s,c=ready();initial=deepcopy(s.initial)
+    s.record_joint('accept',[],'',c,{'welfare_equity:medical_public_benefit':{'response':'changed'}})
+    f=next(f for f in s.facet_meanings if f.facet=='medical_public_benefit')
+    assert f.position=='unassessed' and not facet_availability(s,f)
+    assert s.initial==initial
+    assert s.joint['applicability_confirmations'][0]['response']=='changed'
 
 
 def test_three_input_trace_not_just_the_rounded_headline():
@@ -136,12 +138,15 @@ def test_ui_applicability_is_explicit_unselected_and_blocks_missing_answer(monke
     from iam_sra.session import State
     app=fresh(monkeypatch,ContextFake(profile()));click(app)
     app.text_area(key='citizen_answer').set_value('I support medicine but oppose hum and cameras.');click(app)
-    click(app,'Finish these questions');app.checkbox(key='confirm_1').check().run();click(app)
+    app.checkbox(key='confirm_1').check().run();click(app)
+    app.session_state.session.require_combined_review=True
+    click(app,'Continue to follow-up questions')
     while app.session_state.session.state==State.FOLLOWUPS:
         q=app.session_state.session.current_question
         app.radio(key='choice_'+q['id']).set_value(q['choices'][0]);click(app)
     key='applies_welfare_equity:medical_public_benefit'
     assert app.radio(key=key).value is None
+    assert any(x.key=='joint_choice' for x in app.radio)
     app.radio(key='joint_choice').set_value('accept');click(app)
     assert app.session_state.session.joint is None and app.radio(key='joint_choice').value=='accept'
     app.radio(key=key).set_value('yes');click(app)
@@ -188,12 +193,12 @@ def test_metadata_schema_does_not_allow_model_to_self_certify(monkeypatch):
     assert schema['properties']['unmapped_issues']['items']['enum']==['I am unsure.']
 
 
-def test_report_fallback_names_original_and_specific_modified_gap():
+def test_report_sparse_modified_score_preserves_specific_gap():
     from iam_sra.reporting import final_summary
     s,c=ready();s.record_joint('accept',[],'',c,{'welfare_equity:medical_public_benefit':{'response':'skip'}});s.continue_final(True,c)
     result=final_summary(s)
-    assert result['selected_profile']=='final_original' and result['proposal_context']=='original'
-    assert result['headline_score']==4 and result['modified_aggregate_available'] is False
+    assert result['selected_profile']=='conditional_modified' and result['proposal_context']=='modified'
+    assert result['headline_score']==8 and result['modified_aggregate_available'] is True
     assert result['clarification_needs'][0]['facet']=='medical_public_benefit'
     assert citizen_summary(s)['remaining_objections']==[]
 
@@ -232,3 +237,91 @@ def test_no_secondary_privacy_or_reliability_inference(monkeypatch,cid,facet,kin
     raw=meaning('O.p001',scores=(cid,),facets={cid:[facet]});raw.awareness_understanding.interpretation='unassessed'
     fake_client(monkeypatch,replies([raw.model_dump(),{'supported':True,'rationale':'Overbroad generic scope acceptance.'},{'kind':kind,'rationale':'Actual facet meaning checked independently.'}]))
     assert bool(ConversationClient().interpret(item('Height or coordination alone does not specify another concern.')).concerns)==eligible
+
+
+@pytest.mark.parametrize('facet,text,kind,eligible',[
+ ('awareness','This saves lives and is a vital hospital service.','medical_support_only',False),
+ ('awareness','The drones deliver hospital supplies.','purpose_or_factual_recognition_only',False),
+ ('institutional_trust','I support hospital deliveries if they are quiet and cameras cannot view my yard.','local_operating_objection_only',False),
+ ('awareness','I need clear public information about how this route will operate.','public_information_position',True),
+ ('institutional_trust','I trust the hospital and city to supervise the service.','institutional_trust_position',True),
+])
+def test_awareness_trust_requires_distinct_information_or_institutional_position(monkeypatch,facet,text,kind,eligible):
+    raw=meaning('O.p001',scores=('public_awareness_trust',),facets={'public_awareness_trust':[facet]})
+    raw.awareness_understanding.interpretation='unassessed'
+    fake_client(monkeypatch,replies([raw.model_dump(),{'supported':True,'rationale':'Broad nomination passed initial scope.'},{'kind':kind,'rationale':'Independent attribution of actual meaning.'}]))
+    c=ConversationClient();result=c.interpret(item(text))
+    assert bool(result.concerns)==eligible
+    assert c.last_candidate_projections[-1]['supported']==eligible
+    assert c.last_raw_scores=={}
+
+
+@pytest.mark.parametrize('text',[
+ 'Seeing the aircraft against the sky is acceptable to me; it does not spoil the view.',
+ 'The aircraft would not bother me visually. I am comfortable with their appearance.',
+])
+def test_explicit_positive_visual_position_survives_scope_and_attribution(monkeypatch,text):
+    raw=meaning('O.p001',position='supported',scores=('visual_pollution',),facets={'visual_pollution':['aesthetic_clutter']})
+    raw.awareness_understanding.interpretation='unassessed'
+    calls=fake_client(monkeypatch,replies([raw.model_dump(),{'supported':True,'rationale':'Explicit aesthetic acceptance.'},{'kind':'aesthetic_or_visible_aircraft','rationale':'Aircraft appearance accepted.'}]))
+    c=ConversationClient();result=c.interpret(item(text))
+    assert len(result.concerns)==1
+    assert result.concerns[0].concern_id=='visual_pollution'
+    assert result.concerns[0].position=='supported'
+    assert result.concerns[0].facets==['aesthetic_clutter']
+    assert 'INCLUDING positive' in calls[0][1]['messages'][0]['content']
+    assert any('including acceptance' in request['messages'][0]['content'] for _,request in calls if 'messages' in request)
+    assert any('do not spoil the view' in request['messages'][0]['content'] for _,request in calls if 'messages' in request)
+
+
+@pytest.mark.parametrize('text',[
+ 'I categorically reject public funding. No subsidy or return would make public financing acceptable; I would consider private funding.',
+ 'I accept taxpayer funding for this service; the city should pay for it.',
+])
+def test_public_financing_is_cost_evidence_without_inventing_business_viability(monkeypatch,text):
+    raw=meaning('O.p001',position='supported' if 'I accept' in text else 'opposed',scores=('cost_roi_business',),facets={'cost_roi_business':['cost_financing','business_viability']})
+    raw.awareness_understanding.interpretation='unassessed'
+    calls=fake_client(monkeypatch,replies([raw.model_dump(),{'supported':True,'rationale':'Explicit financing position.'},{'supported':False,'rationale':'No separate viability position.'}]))
+    c=ConversationClient();result=c.interpret(item(text))
+    assert len(result.concerns)==1
+    assert result.concerns[0].facets==['cost_financing']
+    assert result.concerns[0].position==raw.concerns[0].position
+    systems=[request['messages'][0]['content'] for _,request in calls if 'messages' in request]
+    assert any('Specific facet scope: Who pays' in s for s in systems)
+    assert any('Specific facet scope: Whether the service' in s for s in systems)
+    assert c.last_raw_scores=={}
+
+
+def test_resident_reporting_education_is_positive_competence_evidence(monkeypatch):
+    raw=meaning('O.p001',position='supported',scores=('competence_building',),facets={'competence_building':['participation_skills']})
+    raw.awareness_understanding.interpretation='unassessed'
+    calls=fake_client(monkeypatch,replies([raw.model_dump(),{'supported':True,'rationale':'Support for resident reporting skills.'}]))
+    result=ConversationClient().interpret(item('I support teaching residents how to report problems.'))
+    assert result.concerns[0].facets==['participation_skills']
+    assert result.concerns[0].position=='supported'
+    assert any('Specific facet scope: Citizen abilities' in request['messages'][0]['content'] for _,request in calls if 'messages' in request)
+
+
+def test_summary_labels_are_readable_for_supported_resident_topics():
+    from iam_sra.reporting import aspect_label
+    assert 'report problems' in aspect_label('participation_skills')
+    assert 'safely separated' in aspect_label('airspace_traffic')
+    assert aspect_label('rotor_wind')=='air pushed down by the rotors'
+
+
+@pytest.mark.parametrize('text',[
+ 'I will never accept drones spoiling the appearance of the sky. No height, colour, frequency or benefit change would make this visual intrusion acceptable.',
+ 'Aircraft ruining this skyline are unacceptable even if recoloured or flown higher. I support their medical purpose separately.',
+])
+def test_categorical_sky_appearance_refusal_is_visual_not_altitude_only(monkeypatch,text):
+    raw=meaning('O.p001',position='opposed',scores=('visual_pollution',),facets={'visual_pollution':['aesthetic_clutter']})
+    raw.concerns[0].conditional_willingness='not_willing'
+    raw.awareness_understanding.interpretation='unassessed'
+    calls=fake_client(monkeypatch,replies([raw.model_dump(),{'supported':True,'rationale':'Explicit sky appearance refusal.'},{'kind':'aesthetic_or_visible_aircraft','rationale':'Visual complaint; height is a rejected remedy.'}]))
+    c=ConversationClient();result=c.interpret(item(text))
+    assert result.concerns[0].concern_id=='visual_pollution'
+    assert result.concerns[0].position=='opposed'
+    assert result.concerns[0].conditional_willingness=='not_willing'
+    assert result.concerns[0].facets==['aesthetic_clutter']
+    assert any('spoiling the sky or view' in request['messages'][0]['content'] for _,request in calls if 'messages' in request)
+    assert any('rejected remedies' in request['messages'][0]['content'] for _,request in calls if 'messages' in request)

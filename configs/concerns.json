@@ -1,5 +1,5 @@
 {
-  "version": "2.3.0",
+  "version": "2.8.0",
   "source_pages": [
     1,
     2
@@ -9,27 +9,59 @@
       "id": "public_awareness_trust",
       "label": "Public awareness and trust",
       "phase": 1,
-      "scope": "Informed public understanding or institutional trust.",
+      "scope": "Citizen position on public information, transparency or institutional trust concerning IAM.",
       "facets": [
         "awareness",
         "institutional_trust"
       ],
-      "inclusion": "Explicit informedness, public communication or trust in institutions.",
-      "exclusion": "Route approval, medical support or specific camera discomfort alone.",
-      "illustrative_anchors": "Refusal of institutional involvement; openness pending transparency; informed institutional support."
+      "inclusion": "Explicit acceptance, objection or uncertainty about being adequately informed, public communication, transparency, or trust in responsible institutions.",
+      "exclusion": "Recognizing the hospital purpose or scenario facts, supporting lifesaving deliveries, route approval, acoustic conditions or private-camera discomfort alone. Factual understanding is recorded separately; medical support belongs to medical_public_benefit.",
+      "illustrative_anchors": "Needs clearer public information before acceptance; trusts or distrusts the responsible institutions; supports transparent public communication.",
+      "semantic_attribution_by_facet": {
+        "awareness": {
+          "kinds": [
+            "public_information_position",
+            "purpose_or_factual_recognition_only",
+            "medical_support_only",
+            "local_operating_objection_only",
+            "unclear"
+          ],
+          "supported_kind": "public_information_position",
+          "instruction": "Classify only the cited citizen testimony. A position about the adequacy, availability or transparency of public information supports public_information_position. Merely knowing hospital purpose or route facts is purpose_or_factual_recognition_only. Supporting lifesaving service is medical_support_only. Noise or viewing conditions alone are local_operating_objection_only. Do not infer public-information satisfaction or needs from factual recognition."
+        },
+        "institutional_trust": {
+          "kinds": [
+            "institutional_trust_position",
+            "purpose_or_factual_recognition_only",
+            "medical_support_only",
+            "local_operating_objection_only",
+            "unclear"
+          ],
+          "supported_kind": "institutional_trust_position",
+          "instruction": "Classify only the cited citizen testimony. Explicit trust, distrust or uncertainty about responsible institutions supports institutional_trust_position. Merely knowing hospital purpose or route facts is purpose_or_factual_recognition_only. Supporting lifesaving service is medical_support_only. Noise or private-camera conditions alone are local_operating_objection_only. Do not infer institutional trust from medical benefit support or camera discomfort."
+        }
+      },
+      "facet_scopes": {
+        "awareness": "An evaluated position on available public information, explanations or understanding needed to make an informed decision. Recognizing the medical purpose or trusting city honesty alone is not a separate information position.",
+        "institutional_trust": "Trust or distrust in institutions, operator honesty, accountability or communication integrity. Trusting honest communication alone is not a separate awareness position."
+      }
     },
     {
       "id": "competence_building",
       "label": "Competence building",
       "phase": 1,
-      "scope": "Skills, training and ability to participate in IAM.",
+      "scope": "Resident skills, training, learning and ability to participate in IAM, including learning how to report problems.",
       "facets": [
         "training",
         "participation_skills"
       ],
-      "inclusion": "Explicit training, skills or learning requirements.",
+      "inclusion": "Explicit support, rejection, uncertainty or conditions about resident training, learning or participation skills. Supporting teaching residents how to report problems is participation_skills evidence; no objection or training requirement is needed.",
       "exclusion": "Verbosity, knowledge of the scenario or generic safety.",
-      "illustrative_anchors": "Rejects training altogether; willing with accessible training; supports skills programmes."
+      "illustrative_anchors": "Rejects training altogether; willing with accessible training; supports skills programmes.",
+      "facet_scopes": {
+        "participation_skills": "Citizen abilities to participate, report problems, raise concerns or use feedback channels. Explicit support for teaching residents how to report problems is direct positive evidence. Do not require professional piloting skills. Support for residents learning these skills is evaluable by itself; actual participation or acceptance of the entire route is unnecessary.",
+        "training": "Training programmes, instruction, access to learning and training quality. Nominate only when a distinct training position is evidenced; do not create extra required facets from incidental wording."
+      }
     },
     {
       "id": "perceived_safety_privacy",
@@ -65,8 +97,12 @@
             "unclear"
           ],
           "supported_kind": "private_viewing_or_personal_privacy",
-          "instruction": "Classify the actual testimony without a candidate label. Statements about private yards/windows, watching/recording people or personal surveillance boundaries (including explicit comfort with these) are private_viewing_or_personal_privacy. Low height or discomfort with height alone is altitude_only: proximity does not prove a privacy reaction. Sound alone is acoustic_only. Injury fear alone is physical_risk_only. Do not invent viewing or recording claims."
+          "instruction": "Classify the actual testimony without a candidate label. Statements about private yards/windows, watching/recording people or personal surveillance boundaries (including explicit comfort with these) are private_viewing_or_personal_privacy. Low height or discomfort with height alone is altitude_only: proximity does not prove a privacy reaction. Sound alone is acoustic_only. Injury fear alone is physical_risk_only. Do not invent viewing or recording claims. References to home or children in an injury/falling-drone statement are physical_risk_only, not viewing evidence. A denial such as \"I do not mean private-space viewing; I mean falling drones\" rejects a mistaken attribution rather than establishing a privacy position."
         }
+      },
+      "facet_scopes": {
+        "perceived_safety": "Expressed fear or comfort concerning physical harm, injury, falling aircraft or danger to people. A falling-drone risk to children belongs here. Fear of harm is an evaluable safety position without acceptance or endorsement. Requests to avoid the exposure, coupled with willingness to accept a different route, express opposition with conditional openness; do not invent refusal despite all modifications.",
+        "personal_privacy": "An evaluated reaction to viewing, recording or surveillance of private life. Discomfort or unease at cameras watching family/windows is opposition even if recording is unverified. Explicitly undecided about the viewing itself is uncertain. Home, children or injury fear alone are not privacy."
       }
     },
     {
@@ -93,6 +129,10 @@
           "supported_kind": "explicit_system_failure_or_engineered_safeguard",
           "instruction": "Classify actual citizen testimony. Explicit aircraft failure, malfunction, reliability testing, fail-safe equipment or engineered safeguards are explicit_system_failure_or_engineered_safeguard, including ordinary-language paraphrases. Coordinating competing flights or keeping helicopters/drones apart alone is traffic_coordination_only, even if the citizen says safely. Do not infer a hardware/system failure claim from coordination alone. Vague personal discomfort without a mechanism is personal_discomfort_only."
         }
+      },
+      "facet_scopes": {
+        "system_reliability": "An evaluated position on mechanical reliability, operational dependability or engineered failure prevention. Personal fear of injury, camera viewing and data access alone are different facets.",
+        "data_security": "An evaluated position on data access controls, storage, protection, misuse or cybersecurity. Accepting cameras viewing private spaces does not establish data-security acceptance."
       }
     },
     {
@@ -105,20 +145,23 @@
       ],
       "inclusion": "Explicit sound, hum, rest disruption or audibility conditions.",
       "exclusion": "Flight visibility or routing alone.",
-      "illustrative_anchors": "Strong acoustic objection, willing if inaudible or rerouted; moderate reservation; qualified acoustic acceptance."
+      "illustrative_anchors": "Strong acoustic objection, willing if inaudible or rerouted; moderate reservation; qualified acoustic acceptance.",
+      "facet_scopes": {
+        "acoustic_impact": "An evaluated position on drone sound, hum, audibility or disruption by noise. A condition on quietness belongs here, not physical safety."
+      }
     },
     {
       "id": "visual_pollution",
       "label": "Visual pollution",
       "phase": 2,
-      "scope": "Aesthetic sky clutter and visible physical intrusion.",
+      "scope": "Position on aircraft appearance, spoiling the sky or view, visual clutter and visible intrusion, including explicit acceptance or refusal despite height, colour or frequency changes.",
       "facets": [
         "aesthetic_clutter",
         "visible_physical_intrusion"
       ],
-      "inclusion": "Explicit aesthetic/clutter objection or separate objection to visible low aircraft.",
+      "inclusion": "Explicit aesthetic/view/sky-clutter or visible-aircraft position, including acceptance, tolerability, endorsement, opposition or uncertainty. Aircraft against the sky being acceptable or not spoiling the view is positive aesthetic_clutter evidence.",
       "exclusion": "Seeing cameras watch property alone is privacy. Altitude alone does not prove aesthetic objection.",
-      "illustrative_anchors": "Conditional low tolerance for explicit visible intrusion; no visual acceptance position; clear aesthetic acceptance.",
+      "illustrative_anchors": "Categorical aesthetic refusal despite modifications; conditional visual tolerance; clear aesthetic acceptance.",
       "semantic_attribution": {
         "kinds": [
           "aesthetic_or_visible_aircraft",
@@ -128,7 +171,11 @@
           "unclear"
         ],
         "supported_kind": "aesthetic_or_visible_aircraft",
-        "instruction": "Classify the actual citizen reaction, without a proposed label. Watching private yards/windows or seeing surveillance cameras is private_space_viewing_only unless there is a separate explicit aesthetic/clutter/visible-aircraft reaction. Low altitude alone is altitude_only. Do not infer aesthetic opposition from a privacy or acoustic objection."
+        "instruction": "Classify the actual citizen reaction, without a proposed label. Watching private yards/windows or seeing surveillance cameras is private_space_viewing_only unless there is a separate explicit aesthetic/clutter/visible-aircraft reaction. Low altitude alone is altitude_only. Do not infer aesthetic opposition from a privacy or acoustic objection. Explicit acceptance of aircraft visibility, comfort with aircraft against the sky, or saying aircraft do not spoil the view is aesthetic_or_visible_aircraft, equally with visual objections. A negative construction such as \"does not spoil the view\" expresses acceptance, not absence of topic evidence. Explicit refusal of aircraft spoiling the sky, scenery or appearance is aesthetic_or_visible_aircraft. When height, colour or frequency changes are said not to solve an explicitly visual complaint, classify the complaint as visual rather than altitude_only. Refusal despite benefit does not erase the visual position."
+      },
+      "facet_scopes": {
+        "aesthetic_clutter": "Appearance of aircraft against the sky, spoiling the view, aesthetic clutter or scenery. Explicit refusal of drones spoiling the sky is direct opposition, even without the term visual pollution. Height, colour and frequency mentioned as rejected remedies are conditions on this aesthetic position, not unrelated topics. An explicit aesthetic refusal is evaluable without any acceptance evidence or acceptable alternative.",
+        "visible_physical_intrusion": "The visible presence or proximity of aircraft experienced as intrusion, distinct from watching private spaces or noise. Do not invent a second independent visual facet for an aesthetic complaint merely because it says visual intrusion."
       }
     },
     {
@@ -141,7 +188,10 @@
       ],
       "inclusion": "Explicit gusts, rotor wash, outwash or wind-related placement.",
       "exclusion": "Noise or ordinary wind weather without rotor effects.",
-      "illustrative_anchors": "Strong impact boundary with mitigation openness; accepts protective placement."
+      "illustrative_anchors": "Strong impact boundary with mitigation openness; accepts protective placement.",
+      "facet_scopes": {
+        "rotor_wind": "An evaluated position on air pushed by rotors, downwash or outwash. Air movement is not energy consumption or emissions."
+      }
     },
     {
       "id": "airspace_capacity",
@@ -165,6 +215,9 @@
         ],
         "supported_kind": "traffic_capacity_separation_coordination",
         "instruction": "Classify citizen testimony without a proposed label. Traffic crowding, coordinating competing flights, keeping helicopters and drones apart, or allocating limited flying space supports traffic_capacity_separation_coordination even without technical vocabulary. Low height alone is altitude_only. Fifteen flights causing constant hum is noise_or_visibility_only, not capacity. Camera viewing or generic fear of injury is privacy_or_perceived_risk_only unless the citizen separately expresses traffic separation/coordination. Do not automatically remap exclusions to another topic."
+      },
+      "facet_scopes": {
+        "airspace_traffic": "Evaluate airborne traffic capacity, separation or coordination with other aircraft. Height, flight frequency and rerouting for noise/privacy alone establish no position, including uncertainty. Ground transfers and data access are different facets. Explicit support for keeping aircraft separated or coordinating flights is a positive position on this facet; it does not require accepting flight frequency or the entire route."
       }
     },
     {
@@ -177,7 +230,10 @@
       ],
       "inclusion": "Explicit city mobility strategy, governance integration or SUMP.",
       "exclusion": "Mention of city or routing alone.",
-      "illustrative_anchors": "Conditional planning acceptance pending consultation; supports mobility-plan integration."
+      "illustrative_anchors": "Conditional planning acceptance pending consultation; supports mobility-plan integration.",
+      "facet_scopes": {
+        "urban_mobility_plan": "An evaluated position on integration into a city sustainable mobility strategy or urban transport plan. Route avoidance, funding and equitable allocation alone are different facets."
+      }
     },
     {
       "id": "infrastructure_land_use",
@@ -200,6 +256,10 @@
         ],
         "supported_kind": "facility_or_land_planning",
         "instruction": "Classify the citizen statement without using a proposed model label. A flight path, low altitude, residential overflight, or request to reroute over an industrial park is flight_routing_only. Do not infer vertiports, facilities or land use from any of these. facility_or_land_planning requires the citizen to separately discuss physical facilities, construction, siting, zoning or allocating land. A named place to fly over is not a facility."
+      },
+      "facet_scopes": {
+        "facility_siting": "Evaluate the location of physical landing, launch, loading, charging or support facilities. A flight corridor over another area to avoid noise, viewing or injury is NOT a facility location.",
+        "land_allocation": "Evaluate ground land allocated/occupied for facilities, competing uses or protection of existing land uses. Flight routing and altitude alone are NOT land allocation."
       }
     },
     {
@@ -213,20 +273,28 @@
       ],
       "inclusion": "Explicit electricity, energy use, carbon or emissions.",
       "exclusion": "Electric hum alone or vague responsible language.",
-      "illustrative_anchors": "Conditional acceptance pending net environmental benefit; supports specified benefit."
+      "illustrative_anchors": "Conditional acceptance pending net environmental benefit; supports specified benefit.",
+      "facet_scopes": {
+        "energy_demand": "Energy consumption, electricity demand, energy budgets or acceptance of those demands. Emissions uncertainty does not erase separately expressed energy acceptance.",
+        "emissions": "Lifecycle or operating emissions, greenhouse gases or environmental emissions effects. Energy acceptance alone does not establish emissions acceptance; explicit no position on emissions remains unknown."
+      }
     },
     {
       "id": "cost_roi_business",
       "label": "Cost, ROI and business models",
       "phase": 3,
-      "scope": "Costs, financing, return and business viability.",
+      "scope": "Costs, financing sources (public funding, taxes, subsidies or private funding), financial returns and business viability.",
       "facets": [
         "cost_financing",
         "business_viability"
       ],
-      "inclusion": "Explicit taxes, funding, operating cost, affordability of business or returns.",
+      "inclusion": "Explicit position on public or private financing, taxes, subsidies, spending, operating costs, affordability or financial returns, including acceptance and categorical refusal.",
       "exclusion": "A flight delay alone; public service support alone.",
-      "illustrative_anchors": "Conditional support pending affordable funding; endorses a viable funding model."
+      "illustrative_anchors": "Conditional support pending affordable funding; endorses a viable funding model.",
+      "facet_scopes": {
+        "cost_financing": "Who pays, public funding, taxpayer spending, subsidies, private financing, costs or financing affordability. Explicit rejection of public financing is direct evidence for this facet, even if private financing would be considered. Do not require a price, subsidy amount or business plan.",
+        "business_viability": "Whether the service can sustain operations financially, profitability, revenue adequacy, return on investment or a workable business model. Rejecting public funding alone is not business viability. Mentioning financial return only to say it cannot overcome a public-funding refusal does not establish an independent viability position."
+      }
     },
     {
       "id": "accessibility",
@@ -239,7 +307,11 @@
       ],
       "inclusion": "Explicit geographic or vulnerability access barriers/benefits.",
       "exclusion": "Saving lives alone does not establish accessibility or fair distribution.",
-      "illustrative_anchors": "Concern about exclusion with conditional support; supports targeted access."
+      "illustrative_anchors": "Concern about exclusion with conditional support; supports targeted access.",
+      "facet_scopes": {
+        "remote_access": "An evaluated position on access for remote locations or villages. Medical purpose alone does not establish geographical access.",
+        "vulnerable_access": "An evaluated position on service access for disabled people or vulnerable groups. Fear of aircraft injuring children is personal safety, not service access."
+      }
     },
     {
       "id": "multimodality_congestion",
@@ -252,7 +324,11 @@
       ],
       "inclusion": "Explicit links to buses, roads, ambulances or relieving congestion.",
       "exclusion": "Generic route relocation or medical speed alone.",
-      "illustrative_anchors": "Conditional acceptance pending integration; supports transport connections."
+      "illustrative_anchors": "Conditional acceptance pending integration; supports transport connections.",
+      "facet_scopes": {
+        "transport_connections": "An evaluated position on transfers or connections with ground transport and couriers. Helicopter separation belongs to airspace traffic.",
+        "congestion": "An evaluated position on traffic congestion or crowding of ground transport. Road-courier connections alone do not evaluate congestion."
+      }
     },
     {
       "id": "welfare_equity",
@@ -265,7 +341,11 @@
       ],
       "inclusion": "Explicit lifesaving medical public-service endorsement (FN facet) OR distribution/fairness claims.",
       "exclusion": "Benefit support does not imply equity knowledge or fair access; count this concern once.",
-      "illustrative_anchors": "Clear lifesaving public-service support even with local opposition; explicit equity reservation can lower combined concern readiness; categorical rejection of welfare goals."
+      "illustrative_anchors": "Clear lifesaving public-service support even with local opposition; explicit equity reservation can lower combined concern readiness; categorical rejection of welfare goals.",
+      "facet_scopes": {
+        "medical_public_benefit": "The stated medical/lifesaving public purpose itself. Ordinary support or explicit full endorsement is valid even while other aspects are rejected. Overall route approval alone is not purpose support. A distribution prerequisite in the same sentence does not condition the separately endorsed medical purpose.",
+        "distributive_equity": "Fair allocation of benefits or burdens, equal treatment or distribution across districts/groups. A condition about equitable allocation is separate from supporting the medical purpose. Acceptance only after an allocation rule is added is a prerequisite on distribution; endorsement of the medical purpose in the same sentence does not endorse this allocation aspect."
+      }
     }
   ],
   "phases": {
@@ -291,6 +371,6 @@
       ]
     }
   },
-  "ga_verification": "Separate GA Living Lab table not yet supplied; IDs/phases preserved from FN PDF pp.1\u20132.",
+  "ga_verification": "Separate GA Living Lab table not yet supplied; IDs/phases preserved from FN PDF pp.1–2.",
   "scoring_guidance": "Concern examples describe semantic scope, not a second numerical table. Shared ordinal3.0 predicates are authoritative for original and modified proposals; the source-proposed integer example remains in eval/fn_reference.json. Equivalent meanings use equivalent anchors. Medical vocabulary, verbosity, choices and agreement cannot establish9."
 }

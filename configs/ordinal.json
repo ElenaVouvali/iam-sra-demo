@@ -1,5 +1,5 @@
 {
-  "version": "3.0.0-experimental",
+  "version": "4.4.1-llm-experimental",
   "construct": "expressed_concern_specific_position",
   "scope": "One confirmed facet in one explicitly defined proposal. Both contexts use the same ordinal predicates; hypothetical assumptions change the meaning, not the numeric table.",
   "acceptance": {
@@ -13,7 +13,7 @@
     "unknown": "No evaluable position or inconsistent evidence."
   },
   "objection": {
-    "categorical": "Explicitly refuses despite specified changes/no stated acceptable modification.",
+    "categorical": "Explicit categorical refusal of the specified aspect despite all acceptable modifications; takes precedence over a personal boundary. Removing the aspect does not make it acceptable.",
     "strong_personal_boundary": "Strong personal intrusion/risk requiring avoidance/removal.",
     "strong_disruption": "Strong concrete disruption requiring substantial mitigation.",
     "meaningful_reservation": "Material objection/additional requirement.",
@@ -32,8 +32,9 @@
     "clear_acceptance": 8,
     "explicit_unqualified_endorsement": 9
   },
-  "highest_criterion": "Endorsement, no objection or additional requirement, user-authored testimony and separate semantic criterion check. A generated rationale, approved choice, bare agreement or applicability confirmation cannot alone establish endorsement. Brevity itself is irrelevant.",
+  "highest_criterion": "Explicit unqualified citizen-authored endorsement of the specific aspect, without remaining requirements, independently checked. Review citizen-authored score-8 answers as well as score-9 answers; if endorsement was overlooked, request a bounded LLM numerical reassessment rather than substitute a Python score. Other-aspect objections, brevity and lack of technical vocabulary do not disqualify endorsement. Bare agreement and applicability confirmations are insufficient. A proposed 9 rejected by the independent criterion check receives a bounded LLM numerical reassessment below 9, preserving actual reservations; Python does not substitute the number. If a bounded 8/9 reassessment still supplies a valid 8, preserve that LLM-assigned clear acceptance and audit the unresolved endorsement strength; do not erase the facet or substitute 9.",
   "uncertainty": "No neutral substitute. Inconsistent/missing descriptions return null with clarification.",
   "reuse": "Explicit unchanged applicability and equivalent construct, facet position, conditions and policy. Preserve the source decision and testimony; reuse is not a new endorsement.",
-  "facet_combination": "Minimum independently anchored clear relevant facets, once per concern. Unknown required modified facets make that concern unavailable."
+  "facet_combination": "Minimum independently anchored clear relevant facets, once per concern. Unknown required modified facets make that concern unavailable.",
+  "scoring_engine": "llm_assigned_score"
 }

@@ -1,21 +1,21 @@
 {
   "version": "2.0.0-experimental",
-  "original_rubric": "3.0.0-experimental",
-  "conditional_rubric": "3.0.0-experimental",
+  "original_rubric": "3.1.0-experimental",
+  "conditional_rubric": "3.1.0-experimental",
   "original_policy": "Only confirmed original-context evidence changes trigger independent concern review; unaffected scores are carried with a reason. Unknown/contradictory meanings stay null or require clarification.",
-  "conditional_policy": "Shared ordinal predicates in the modified context. Explicit equivalent unchanged applicability can reuse a facet decision under the same policy; mitigated objections must be reassessed. Unknown required facets remain unavailable. No bonus or automatic cap removal.",
+  "conditional_policy": "Shared LLM scoring rubric in the modified context. Explicit equivalent unchanged applicability can reuse a facet decision under the same policy; mitigated objections must be reassessed. Unknown required facets remain unavailable. No bonus or automatic cap removal.",
   "conditional_anchors": {
-    "1": "Explicit categorical refusal for this concern even under any stated modification; never infer from current-route rejection alone.",
-    "2": "Strong personal boundary with very limited tolerance; may accept only if the intrusive effect is removed or avoided. Conditional openness does not erase the boundary.",
-    "3": "Strong concrete disruption objection; accepts only after substantial mitigation, removal or avoidance of that effect.",
+    "1": "Explicit categorical refusal of this specified aspect despite any restriction, consent, mitigation, benefit or other modification. This takes precedence over score 2; removing the rejected aspect does not make that aspect acceptable. Do not infer from route rejection alone.",
+    "2": "Strong personal intrusion/risk boundary requiring removal or avoidance of the effect; needs evidence beyond strong disruption to daily life. Conditional openness does not erase the boundary.",
+    "3": "Strong concrete disruption to rest or daily life requiring substantial mitigation, removal or avoidance; strong acoustic disturbance alone fits here rather than automatically constituting a personal intrusion boundary.",
     "4": "Localized intrusion/reservation with conditional openness requiring a meaningful change.",
     "5": "Balanced concern-specific willingness and reservations; uncertainty without a position stays null.",
-    "6": "Accepts this specified aspect with caution or limited reservations; conditions already stipulated in this proposal are not additional requirements.",
+    "6": "Accepts this specified aspect with explicitly expressed caution or limited reservations. Plain acceptance without a stated reservation is 8; other-aspect objections do not supply caution. Already stipulated proposal conditions are not further requirements.",
     "7": "Accepts this specified aspect with manageable remaining requirements or reservations; preserve those requirements.",
-    "8": "Clear concern-specific support, including medical-public-service welfare support; other concern opposition is separate.",
+    "8": "Clear acceptance or support of this specified aspect without an expressed reservation, including a brief statement that it is acceptable. Lack of enthusiasm is not caution; other concern opposition is separate. Unqualified endorsement uses 9.",
     "9": "Explicit citizen-authored unqualified endorsement, no remaining requirements; independently checked. Bare Yes/choices/confirmation do not suffice."
   },
-  "aggregation": "Each profile independently uses scoring.json, assessed-only mean, minimum coverage, phase-1 threshold/cap, half-up rounding. Coverage differences are not personal improvement or decline.",
+  "aggregation": "Each profile independently uses scoring.json: assessed-only mean, at least one assessed concern, minimum assessed concern plus 2 cap across all phases without a severity threshold, and half-down rounding. Coverage differences are not personal improvement or decline.",
   "combined_changes": {
     "q1": "Navigation cameras use the hypothetical Lens-Shielding Hardware Shroud: only direct forward viewing, with no downward viewing into private yards/windows. Telemetry and cybersecurity arrangements remain unspecified.",
     "q2": "The residential route operates at120 meters instead of60 meters, with no flights between19:00 and07:00. Assume the sound profile is below ambient city street noise. Frequency remains up to15 flights/day. Altitude, sound and curfew are a bundle, not independently tested changes."

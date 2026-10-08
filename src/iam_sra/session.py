@@ -8,10 +8,10 @@ from .assessment import AssessmentError, check_input
 from .schemas import MappingAssessment, SCHEMA_VERSION
 from .evidence import passages
 from .interpretation import EvidenceItem, freeze, verify, semantic_key, comparison, reconcile_original
-from .validation import select_questions, outcome, conclusions
+from .validation import outcome
 from .scoring import aggregate
-from .settings import CONCERNS, SCENARIO, QUESTIONS, POLICY, REGISTRY, config
-from .legacy_session import inference_record
+from .settings import CONCERNS, SCENARIO, POLICY, REGISTRY, config
+from .inference import inference_record
 
 class State(str, Enum):
     SCENARIO='scenario'
@@ -34,6 +34,7 @@ class Session:
     draft: MappingAssessment | None = None
     version: int = 0
     discovery_finished: bool = False
+    discovery_deferred: bool = False
     discovery_stop_reason: str | None = None
     discovery_questions: list = field(default_factory=list)
     discovery_responses: list = field(default_factory=list)
@@ -52,6 +53,7 @@ class Session:
     responses: list = field(default_factory=list)
     conflicts: dict = field(default_factory=dict)
     include_reference_questions: bool = False
+    require_combined_review: bool = False
     confirmed: dict | None = None
     updated_confirmed: dict | None = None
     conditional_confirmed: dict | None = None
@@ -72,6 +74,7 @@ class Session:
     _pending_final_original: dict | None = None
     _reasons: dict = field(default_factory=dict)
     original_facets: dict = field(default_factory=dict)
+    mapping_review_errors: dict = field(default_factory=dict)
     revision_history: list = field(default_factory=list)
     _checkpoints: dict = field(default_factory=dict)
 
@@ -136,10 +139,18 @@ class Session:
         self._checkpoint('initial_answer')
         prefix='O' if 'O.p001' not in self.evidence else 'O'+str(len(self.revision_history)+1)
         items={f'{prefix}.{k}':EvidenceItem(id=f'{prefix}.{k}',text=v,context='original',source='citizen_original') for k,v in passages(text).items()}
-        result=self._client(client).interpret(items)
+        try:result=self._client(client).interpret(items)
+        except (AssessmentError,ValueError):
+            self._record(client,'initial interpretation failure')
+            raise
+        reviewed_facets=getattr(client,'last_original_facets',None)
         self._record(client,'interpretation attempt')
+        unresolved=deepcopy(getattr(client,'last_settings',{}).get('unresolved_facet_reviews',{}))
+        if unresolved:
+            raise AssessmentError('The model could not complete the interpretation. Retry the saved answer.',code='interpretation')
+        self.mapping_review_errors={}
         facts=self._client(client).discovery_facts(items) if hasattr(client,'discovery_facts') else None
-        self.text=text;self.evidence.update(items);self.draft,self.original_facets=reconcile_original(None,result,{})
+        self.text=text;self.evidence.update(items);self.draft,self.original_facets=reconcile_original(None,result,{},reviewed_facets=reviewed_facets)
         self.version=1;self._remember('initial proposal')
         self.state=State.INTERPRETATION
         if facts is not None:
@@ -200,6 +211,7 @@ class Session:
         if skip:selections=[];text='';facets=[]
         if text:check_input(text)
         if not skip and not selections and not text.strip() and not facets:raise ValueError('Choose an answer, add your own words, or Skip.')
+        if q['kind']=='score_clarification' and 'unsure' in selections and text.strip():raise ValueError('Choose unsure on its own, or explain your position instead.')
         if 'no_reservations' in selections and (len(selections)>1 or text.strip()):raise ValueError('Confirm no reservations on its own, or describe your reservations instead.')
         prefix=self._answer_prefix(q['id'])
         items={};labels=config('discovery')['choice_labels'];cid=q['concern_id']
@@ -283,6 +295,7 @@ class Session:
         self.discovery_responses.append({'question_id':q['id'],'selection_key':q['selection_key'],'selections':selections,'free_text':text,'selected_facets':facets,
             'skipped':skip,'context':'original','concern_id':cid,'issue_id':q['issue_id'],'evidence_ids':list(items),'selection_reason':q['selection_reason'],'policy_version':q['policy_version']})
         self._invalidate();self._remember('discovery')
+        if self.discovery_deferred:self.state=State.INTERPRETATION
         from .discovery import next_question
         if len(self.discovery_responses)>=config('discovery')['maximum_questions']:self.finish_discovery('question_limit')
         elif next_question(self) is None:self.finish_discovery('sufficient_or_unknown_after_skips')
@@ -351,13 +364,15 @@ class Session:
         self.corrections.append({'id':prefix,'target':'blocker:'+cid,'citizen_text':text,'before':before,'after':deepcopy(self.blockers[cid]),'evidence_ids':refs,'context':'original'})
         self._invalidate();self._remember('boundary correction')
 
-    def confirm(self,agreed):
+    def confirm(self,agreed,defer_discovery=False):
         self._require(State.INTERPRETATION)
         if agreed is not True:raise ValueError('Explicit confirmation is required before scoring.')
         if self.conflicts:raise ValueError('Resolve the targeted clarification questions before confirmation.')
         from .discovery import next_question
-        if not self.discovery_finished and next_question(self) is not None:raise ValueError('Answer the next discovery question, Skip it, or Finish discovery before confirming.')
-        if not self.discovery_finished:self.finish_discovery('sufficient')
+        if not defer_discovery:
+            if not self.discovery_finished and next_question(self) is not None:raise ValueError('Answer the next discovery question, Skip it, or Finish discovery before confirming.')
+            if not self.discovery_finished:self.finish_discovery('sufficient')
+        else:self.discovery_deferred=True
         for boundary in self.blockers.values():boundary['confirmed']=True
         self.confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history(),acceptance_boundaries=self._discovery_boundaries(),facet_meanings=[f.model_dump() for f in self.original_facets.values()])
         self.confirmations.append(deepcopy(self.confirmed));self.state=State.CONFIRMED
@@ -422,7 +437,7 @@ class Session:
         inference=inference_record(assessment,client)
         inference['raw_model_descriptions']=deepcopy(getattr(client,'last_anchor_facts',{}))
         inference['application_derived_concern_scores']={c.concern_id:c.score for c in assessment.concerns}
-        inference['score_policy']='Model descriptive facts; Python ordinal predicates and per-profile aggregation. Explicit equivalent-meaning reuse is audited.'
+        inference['score_policy']='LLM-assigned facet scores; Python evidence/schema validation, facet minimum and per-profile aggregation. Explicit equivalent-meaning reuse is audited.'
         snapshot={'kind':kind,'interpretation_sha256':record['sha256'],'interpretation_version':record['version'],
             'context':record['context'],'proposal':record['proposal'],'assessment':assessment.model_dump(),
             'aggregate':aggregate(assessment),'update_reasons':deepcopy(reasons or {}),
@@ -444,13 +459,15 @@ class Session:
                 'condition_ids':list(dict.fromkeys(r for d in decisions for r in d.get('condition_ids',[]))) or meaning.get('conditions',[]),
                 'anchor_rule_ids':[d.get('anchor_rule_id') for d in decisions],
                 'scoring_policy_version':config('ordinal')['version'],
-                'origin':'unavailable' if c['score'] is None else 'carried_original' if cid in snapshot.get('carried_scores',{}) else 'equivalent_meaning_reuse' if decisions and all(d.get('origin')=='equivalent_meaning_reuse' for d in decisions) else 'python_anchor_predicate' if decisions else 'test_or_legacy_client',
+                'origin':'unavailable' if c['score'] is None else 'carried_original' if cid in snapshot.get('carried_scores',{}) else 'equivalent_meaning_reuse' if decisions and all(d.get('origin')=='equivalent_meaning_reuse' for d in decisions) else decisions[0].get('origin','unavailable') if decisions else 'test_or_legacy_client',
                 'reason':snapshot.get('update_reasons',{}).get(cid,c['rationale']),
                 'facet_decisions':deepcopy(decisions)}
         snapshot['score_records']=records
 
     def score_initial(self,client):
         self._require(State.CONFIRMED);verify(self.confirmed)
+        if getattr(self,'mapping_review_errors',{}):
+            raise AssessmentError('The model interpretation is incomplete. Retry the saved first answer before scoring; rewriting is not required.',code='interpretation')
         if self._initial is not None:
             self.state=State.INITIAL;return
         try:result=self._client(client).score(deepcopy(self.confirmed))
@@ -473,11 +490,27 @@ class Session:
     def begin_followups(self,include_reference_questions=False):
         self._require(State.INITIAL)
         self.include_reference_questions=bool(include_reference_questions)
-        # Use confirmed semantics/facets, not whether numeric review succeeded.
+        # Follow up only confirmed concerns that received an initial numerical score.
         meaning,evidence=verify(self.confirmed)
         from .updates import select_followups
-        self._questions=select_followups(meaning,evidence,include_reference_questions)
+        self._questions=select_followups(meaning,evidence,include_reference_questions,list(self.original_facets.values()),assessed_scores={c['concern_id']:c['score'] for c in self._initial['assessment']['concerns'] if c['status']=='assessed'})
         self.state=State.FOLLOWUPS if self._questions else State.UPDATED
+
+    def continue_initial_review(self,include_reference_questions=False):
+        """Go directly to targeted follow-ups when an initial score exists.
+
+        Sparse or unclear answers retain the existing clarification opportunity.
+        Independent decisiveness is not inferred when discovery is omitted.
+        """
+        self._require(State.INITIAL)
+        from .discovery import next_question
+        if self.discovery_deferred and not self.discovery_finished:
+            self.state=State.INTERPRETATION
+            assessed=self.initial['aggregate']['trace']['denominator']>0
+            if not assessed and next_question(self) is not None:return
+            self.finish_discovery('covered_by_targeted_followups' if assessed else 'sufficient')
+            self.state=State.INITIAL
+        self.begin_followups(include_reference_questions)
 
     @property
     def current_question(self):
@@ -516,7 +549,7 @@ class Session:
         by={c.concern_id:c for c in self.draft.concerns}
         for new in patch.concerns:
             old=by.get(new.concern_id)
-            if old and set(old.facets)&set(new.facets) and new.position in {'supported','opposed','mixed'} and old.position!=new.position:
+            if old and set(old.facets)&set(new.facets) and new.position in {'supported','opposed','mixed'} and old.position in {'supported','opposed','mixed'} and old.position!=new.position:
                 self.conflicts['original:'+new.concern_id]={'target':new.concern_id,'before':old.model_dump(),'proposed':new.model_dump(),
                     'question':'For the unchanged original proposal, which position do you mean? Clarify this concern in your own words.'}
                 continue
@@ -527,7 +560,7 @@ class Session:
         for name in ['current_route_stance','medical_public_benefit_support','awareness_understanding']:
             new=getattr(patch,name);old=getattr(self.draft,name)
             if new.interpretation=='unassessed':continue
-            if old.interpretation!='unassessed' and old.interpretation!=new.interpretation:
+            if old.interpretation not in {'unassessed','uncertain'} and old.interpretation!=new.interpretation:
                 self.conflicts['original:'+name]={'target':name,'before':old.model_dump(),'proposed':new.model_dump(),
                     'question':'Clarify what you mean about '+name.replace('_',' ')+' in the original proposal.'}
             else:setattr(self.draft,name,new.model_copy(deep=True))
@@ -591,13 +624,21 @@ class Session:
         self.responses.append(r);self.version+=1;self._remember('follow-up interpretation')
         from .updates import select_followups
         existing={q['id'] for q in self._questions}
-        for candidate in select_followups(self.draft,self.evidence,self.include_reference_questions):
+        for candidate in select_followups(self.draft,self.evidence,self.include_reference_questions,list(self.original_facets.values()),assessed_scores={c['concern_id']:c['score'] for c in self._initial['assessment']['concerns'] if c['status']=='assessed'}):
             if candidate['id'] not in existing and len(self._questions)<config('updates')['maximum_questions']:
                 self._questions.append(candidate);existing.add(candidate['id'])
+        answered={r['question_id'] for r in self.responses}
+        pending=[q for q in self._questions if q['id'] not in answered]
+        pending.sort(key=lambda q:q['id']=='macro_policy')
+        self._questions=[q for q in self._questions if q['id'] in answered]+pending
         if len(self.responses)==len(self._questions):self.state=State.UPDATED
 
     @property
     def joint_required(self):return any(q.get('apply_to_joint') for q in self.presented_followups)
+    @property
+    def joint_confirmation_required(self):
+        return self.joint_required and (self.include_reference_questions or self.require_combined_review)
+
     @property
     def combined_proposal(self):
         changes=[config('reassessment')['combined_changes'].get(q['id'],q['contract']['modification']) for q in self.presented_followups if q.get('apply_to_joint')]
@@ -635,10 +676,11 @@ class Session:
     def applicability_statement(self,fact):
         from .reporting import aspect_label
         position={'supported':'support','opposed':'object to','mixed':'have a mixed view of'}[fact.position]
-        statement='You previously said that you '+position+' '+aspect_label(fact.facet)+'.'
+        aspect='the service’s medical benefit' if fact.facet=='medical_public_benefit' else aspect_label(fact.facet)
+        statement='You said you '+position+' '+aspect+'.'
         if fact.condition_ids:
             statement+=' Your conditions were: '+'; '.join(self.evidence[r].text for r in fact.condition_ids)
-        return statement+' Does that still apply with these changes?'
+        return statement+' Would you still '+position+' '+aspect+' if the service operated with the changes listed above?'
 
     def record_joint(self,choice,remaining,text,client,unchanged_confirmed=None):
         self._require(State.UPDATED,State.UPDATE_CONFIRMED)
@@ -673,7 +715,6 @@ class Session:
             response=answer['response'];clarification=answer.get('clarification','').strip()
             if clarification:check_input(clarification)
             if response not in {'yes','changed','unsure','skip'}:raise ValueError('Choose an explicit applicability answer.')
-            if response=='changed' and not clarification:raise AssessmentError('Please explain how your earlier view has changed.',code='clarification')
             fact=available[key];eid=prefix+'.applies.'+key
             statement=self.applicability_statement(fact)
             if response=='yes':
@@ -718,7 +759,7 @@ class Session:
             direct_conflict=current and current.applicability_explicit and current.position in {'opposed','mixed'} and any(items[r].source=='citizen_correction' for r in current.evidence_ids)
             if accepted and direct_conflict:
                 self.conflicts['joint:'+cid]={'target':cid,'question':'Your earlier answer accepts this change, but your added words retain an objection. Which meaning applies to these changes together?'}
-            elif accepted:
+            elif accepted and not (current and current.position in {'uncertain','unassessed'} and any(items[r].source=='citizen_correction' for r in current.evidence_ids)):
                 linked=[prefix+'.background.'+r for r in refs if prefix+'.background.'+r in items]
                 if linked:by[(cid,aspect)]=FacetMeaning(concern_id=cid,facet=aspect,position='supported',evidence_ids=[linked[-1],prefix+'.choice'],
                     applicability_explicit=True,rationale='Citizen accepted this tested change and explicitly accepts the combination.')
@@ -730,7 +771,7 @@ class Session:
                     continue
                 by[(cid,aspect)]=FacetMeaning(concern_id=cid,facet=aspect,position=old.position,evidence_ids=[eid],condition_ids=[eid] if old.condition_ids else [],applicability_explicit=True,rationale=old.rationale)
         for answer in applicability:
-            if answer['response'] in {'unsure','skip'}:
+            if answer['response'] in {'unsure','skip'} or (answer['response']=='changed' and not answer['clarification']):
                 cid,aspect=answer['aspect_key'].split(':')
                 by[(cid,aspect)]=FacetMeaning(concern_id=cid,facet=aspect,position='uncertain' if answer['response']=='unsure' else 'unassessed',evidence_ids=[answer['id']] if answer['response']=='unsure' else [],applicability_explicit=False,rationale='Citizen did not confirm applicability of the earlier view to these changes.')
         facts=list(by.values())
@@ -772,7 +813,7 @@ class Session:
         self._require(State.UPDATED)
         if agreed is not True:raise ValueError('Explicit updated-meaning confirmation is required.')
         if self.conflicts:raise ValueError('Resolve conflicting answers before confirming.')
-        if self.joint_required and self.joint is None:raise ValueError('Respond to the exact combined proposal first, including unsure.')
+        if self.joint_confirmation_required and self.joint is None:raise ValueError('Respond to the exact combined proposal first, including unsure.')
         for boundary in self.blockers.values():boundary['confirmed']=True
         self.updated_confirmed=freeze(self.draft,self.evidence,self.version,'original',SCENARIO['text'],supporting_history=self._supporting_history(),acceptance_boundaries=self._discovery_boundaries(),facet_meanings=[f.model_dump() for f in self.original_facets.values()])
         if self.joint and self.joint['choice']!='unsure':
