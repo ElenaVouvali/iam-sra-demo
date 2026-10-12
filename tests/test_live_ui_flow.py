@@ -22,7 +22,7 @@ def test_ui_full_validation_and_export(monkeypatch):
     assert_simple(app)
     app.checkbox(key='updated_confirm_'+str(s.version)).check().run();click(app)
     assert s.state==State.FINAL and s.initial==original
-    assert len(app.metric)==1 and app.metric[0].label=='Updated SRL after follow-ups'
+    assert len(app.metric)==1 and app.metric[0].label=='Updated historical acceptance index'
     assert not app.dataframe and not app.json and len(app.get('download_button'))==2
     data=s.export()
     assert data['final_summary']['selected_profile']=='final_original'

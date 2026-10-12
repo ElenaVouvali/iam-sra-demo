@@ -9,7 +9,7 @@ from iam_sra.schemas import MappingAssessment
 from iam_sra.interpretation import EvidenceItem, check_meaning
 from iam_sra.updates import FacetMeaning, select_followups, contract
 from iam_sra.settings import config, CONCERNS
-from iam_sra.session import Session, State
+from iam_sra.session import LegacySession as Session, State
 from test_confirmation import Fake
 from iam_sra.scoring import aggregate
 from iam_sra.schemas import Assessment

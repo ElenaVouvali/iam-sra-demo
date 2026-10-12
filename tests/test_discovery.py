@@ -2,7 +2,7 @@
 from copy import deepcopy
 import json
 import pytest
-from iam_sra.session import Session, State
+from iam_sra.session import LegacySession as Session, State
 from iam_sra.discovery import DiscoveryFacts, Boundary, report
 from iam_sra.settings import CONCERNS, config
 from iam_sra.assessment import AssessmentError

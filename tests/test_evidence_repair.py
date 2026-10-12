@@ -2,7 +2,7 @@
 from copy import deepcopy
 import json
 import pytest
-from iam_sra.session import Session,State
+from iam_sra.session import LegacySession as Session,State
 from iam_sra.reporting import citizen_summary,clarification_needs
 from iam_sra.interpretation import reconcile_original
 from iam_sra.updates import FacetMeaning,modified_facets,facet_availability

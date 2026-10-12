@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0",
+  "review_date": "2026-10-11",
+  "private_sources_git_ignored": true,
+  "sources": [
+    {
+      "document": "IAM-CC_Topic_experts.xlsx",
+      "local_path": "references/private/IAM-CC_Topic_experts.xlsx",
+      "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+      "reviewed_sections": [
+        "Read me!J1:L13",
+        "SRA IAM indicators!C2:D16",
+        "SRA IAM indicators!H2:I16",
+        "Use case(s) per LL!A1:D2"
+      ],
+      "interpretation": "Draft partner workbook; not an approved numerical instrument.",
+      "approval_of_demo": null
+    },
+    {
+      "document": "WP3_IAM-CC_Minutes_20261008.docx",
+      "local_path": "references/private/WP3_IAM-CC_Minutes_20261008.docx",
+      "sha256": "1b65188970fadabc8d58ebb36228cb92c5282670878548106fd66243d4899048",
+      "reviewed_sections": [
+        "Discussion and Decision",
+        "Action Points 1–3"
+      ],
+      "interpretation": "8 October 2026 minutes: definitions/criteria review due 14 October; concrete use cases due 12 November.",
+      "approval_of_demo": null
+    },
+    {
+      "document": "IAM-CC_WP3_2026.09.10.pptx",
+      "local_path": "references/private/IAM-CC_WP3_2026.09.10.pptx",
+      "sha256": "4bb274b029c752b392c5c1edca381f9481c9d64904a4c8408912a84e6079bb44",
+      "reviewed_sections": [
+        "slides 3–6"
+      ],
+      "interpretation": "Planning presentation distinguishes acceptance and societal readiness; does not approve this interview.",
+      "approval_of_demo": null
+    },
+    {
+      "document": "SRA_LLM_FN_concept.pdf",
+      "local_path": "references/private/SRA_LLM_FN_concept.pdf",
+      "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+      "reviewed_sections": [
+        "pages 1–9; scenario p.5, historical example pp.6–7, gates pp.8–9"
+      ],
+      "interpretation": "Historical illustrative acceptance-oriented concept, not approval for a numerical CRL formula.",
+      "approval_of_demo": null
+    },
+    {
+      "document": "GA.pdf",
+      "local_path": "references/private/GA.pdf",
+      "sha256": "d2eb185831a9b3ca0c7f1c2f7ade571e1dc5dafe7b4daeb39a367b4d539dcf86",
+      "reviewed_sections": [
+        "T3.2–T3.4 (document printed p.9)",
+        "Part B p.5 (empowerment/agency)",
+        "Part B p.16 (IAM-SRA2)"
+      ],
+      "interpretation": "Grant Agreement obligations; no operational numerical CRL formula inferred.",
+      "approval_of_demo": null
+    }
+  ]
+}

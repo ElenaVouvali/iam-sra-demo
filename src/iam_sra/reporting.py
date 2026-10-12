@@ -7,6 +7,9 @@ EXPORT_VERSION='5.4.0'
 PROFILES={'initial_original':'initial','final_original':'final','conditional_modified':'conditional'}
 
 def final_summary(session):
+    if getattr(session, "assessment_mode", None) == "acceptance_and_readiness_evidence":
+        from .readiness import citizen_result
+        return citizen_result(session)
     selected=None;snapshot=None
     for key,attribute in [('conditional_modified','conditional'),('final_original','final')]:
         candidate=getattr(session,attribute)
@@ -51,6 +54,7 @@ def final_summary(session):
 
 
 def export_session(session):
+    if getattr(session, "assessment_mode", None) == "acceptance_and_readiness_evidence": return session.export()
     from .assessment_review import final_review
     review=final_review(session)
     snapshots={key:getattr(session,attribute) for key,attribute in PROFILES.items()}
@@ -81,6 +85,9 @@ def export_session(session):
     if review['progression']:aggregations['bounded_followup']=review['progression']['aggregate']
     legacy=session.legacy_export()
     return deepcopy({'schema_version':EXPORT_VERSION,
+        'assessment_mode':'legacy_fn_acceptance_demo','mode_version':config('assessment_modes')['version'],
+        'methodological_label':'Historical experimental acceptance index',
+        'methodological_status':'Legacy application policy; not an approved FN numerical formula.',
         'metadata':{'session_id':session.session_id,'experimental':True,'source':{'document':'SRA_LLM concept feasibility.pdf','scenario_pages':[5],'validation_pages':[8,9],'calibration_pages':[6,7],'GA':'GA.pdf, Task 3.2 and Part B pp.5/16: reflective indicators, citizen agency and Living Lab validation; numerical progression is experimental, not specified by the GA.'},
             'model':config('model'),'registry_version':REGISTRY['version'],'scenario_version':SCENARIO['version'],
             'policies':{'ordinal':config('ordinal'),'scoring':POLICY,'reassessment':config('reassessment'),'updates':config('updates'),'prompts':config('prompts')}},

@@ -7,7 +7,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
-from iam_sra.session import Session
+from iam_sra.session import LegacySession as Session
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.settings import config
 

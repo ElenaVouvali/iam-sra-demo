@@ -117,7 +117,7 @@ def test_completed_screen_shows_only_updated_srl_and_keeps_initial_in_export(mon
     assert not any(x.key=='joint_choice' for x in app.radio)
     assert not any(x.label=='This reflects what I meant' for x in app.checkbox)
     assert s.state==State.FINAL and s.initial==initial
-    assert [(m.label,m.value) for m in app.metric]==[('Updated SRL after follow-ups','6/9')]
+    assert [(m.label,m.value) for m in app.metric]==[('Updated historical acceptance index','6/9')]
     assert not app.dataframe and not app.json and not app.exception
     text=' '.join(x.value for x in app.markdown)
     assert 'How the update policy works' not in text

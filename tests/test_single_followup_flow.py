@@ -1,6 +1,6 @@
 """Citizen flow skips redundant discovery without changing initial scoring."""
 from copy import deepcopy
-from iam_sra.session import Session,State
+from iam_sra.session import LegacySession as Session,State
 from test_confirmation import Fake,meaning
 
 

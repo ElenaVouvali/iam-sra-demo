@@ -8,6 +8,7 @@ from .updates import facet_state
 
 def progression(session):
     """Derive at most one bounded adjustment per concern from confirmed independent gates."""
+    if getattr(session, 'assessment_mode', None) == 'acceptance_and_readiness_evidence': return None
     policy=config('updates')['progression']
     base=session.final or session.initial
     if not base:return None
@@ -66,6 +67,9 @@ def progression(session):
 
 def final_review(session):
     """Presentation/export data share one arithmetic source and preserve all profiles."""
+    if getattr(session, 'assessment_mode', None) == 'acceptance_and_readiness_evidence':
+        from .readiness import citizen_result
+        return citizen_result(session)
     from .reporting import final_summary
     summary=final_summary(session)
     progressive=progression(session)

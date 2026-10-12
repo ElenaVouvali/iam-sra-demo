@@ -13,7 +13,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src'))
 import httpx
 from iam_sra.conversation_client import ConversationClient
-from iam_sra.session import Session
+from iam_sra.session import LegacySession as Session
 from iam_sra.settings import config, CONCERNS, BASE_URL
 
 

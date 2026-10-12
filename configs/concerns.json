@@ -372,5 +372,6 @@
     }
   },
   "ga_verification": "Separate GA Living Lab table not yet supplied; IDs/phases preserved from FN PDF pp.1–2.",
-  "scoring_guidance": "Concern examples describe semantic scope, not a second numerical table. Shared ordinal3.0 predicates are authoritative for original and modified proposals; the source-proposed integer example remains in eval/fn_reference.json. Equivalent meanings use equivalent anchors. Medical vocabulary, verbosity, choices and agreement cannot establish9."
+  "scoring_guidance": "Concern examples describe semantic scope, not a second numerical table. Shared ordinal3.0 predicates are authoritative for original and modified proposals; the source-proposed integer example remains in eval/fn_reference.json. Equivalent meanings use equivalent anchors. Medical vocabulary, verbosity, choices and agreement cannot establish9.",
+  "phase_metadata_status": "Historical acceptance-demo compatibility only; thematic areas are not CRL maturity stages."
 }

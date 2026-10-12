@@ -7,6 +7,7 @@ def click(app,label='Continue'):
 
 def fresh(monkeypatch,client=None):
     monkeypatch.delenv('IAM_DEVELOPER',raising=False)
+    monkeypatch.setenv('IAM_ASSESSMENT_MODE','legacy_fn_acceptance_demo')
     monkeypatch.setenv('IAM_MOCK','0' if client else '1')
     if client:monkeypatch.setattr('iam_sra.conversation_client.ConversationClient',lambda:client)
     return AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()

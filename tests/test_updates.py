@@ -2,7 +2,7 @@
 import json
 from copy import deepcopy
 import pytest
-from iam_sra.session import Session,State
+from iam_sra.session import LegacySession as Session,State
 from iam_sra.updates import FacetMeaning,FacetTarget,QuestionContract,choice_transition,enrich_fn,blocker_report,contract
 from iam_sra.reporting import final_summary
 from iam_sra.settings import QUESTIONS,CONCERNS,config

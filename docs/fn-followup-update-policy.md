@@ -1,3 +1,5 @@
+> Historical acceptance-demo documentation. The default citizen evidence mode is described in [readiness-evidence-mode.md](readiness-evidence-mode.md). Historical phases and indices are not CRL maturity stages or an approved FN formula.
+
 # FN-led follow-up update policy and final assessment review
 
 Policy: updates 3.0.0-experimental; bounded progression 1.0.0-pilot. This is a candidate implementation for methodological review, not a scientifically calibrated citizen or ecosystem SRL.

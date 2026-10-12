@@ -25,7 +25,7 @@ class State(str, Enum):
     FINAL='comparison_export'
 
 @dataclass
-class Session:
+class LegacySession:
     session_id: str = field(default_factory=lambda:str(uuid4()))
     state: State = State.SCENARIO
     text: str = ''
@@ -77,6 +77,12 @@ class Session:
     mapping_review_errors: dict = field(default_factory=dict)
     revision_history: list = field(default_factory=list)
     _checkpoints: dict = field(default_factory=dict)
+
+    @property
+    def assessment_mode(self): return "legacy_fn_acceptance_demo"
+
+    @property
+    def mode_version(self): return config("assessment_modes")["version"]
 
     def _require(self,*states):
         if self.state not in states:raise ValueError('Invalid session transition')
@@ -967,7 +973,22 @@ class Session:
     def export(self):
         self._require(State.FINAL)
         from .reporting import export_session
-        return export_session(self)
+        result = export_session(self)
+        result["assessment_mode"] = self.assessment_mode
+        result["mode_version"] = self.mode_version
+        result["methodological_label"] = "Historical experimental acceptance index"
+        result["methodological_status"] = "Legacy application policy; not an approved FN numerical formula."
+        return result
 
     def json(self):return json.dumps(self.export(),ensure_ascii=False,indent=2)
     def jsonl(self):return json.dumps(self.export(),ensure_ascii=False,separators=(',',':'))+'\n'
+
+
+def Session(*, assessment_mode="acceptance_and_readiness_evidence", **kwargs):
+    """Create an explicitly fixed-mode session; historical records are never migrated."""
+    if assessment_mode == "acceptance_and_readiness_evidence":
+        from .readiness_session import ReadinessSession
+        return ReadinessSession(**kwargs)
+    if assessment_mode == "legacy_fn_acceptance_demo":
+        return LegacySession(**kwargs)
+    raise ValueError("Unknown assessment mode")

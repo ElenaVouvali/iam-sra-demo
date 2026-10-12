@@ -1,7 +1,7 @@
 from copy import deepcopy
 import json
 import pytest
-from iam_sra.session import Session, State
+from iam_sra.session import LegacySession as Session, State
 from iam_sra.schemas import MappingAssessment, MappingConcern, Assessment, Concern
 from iam_sra.interpretation import EvidenceItem, freeze, verify
 from iam_sra.settings import CONCERNS, QUESTIONS

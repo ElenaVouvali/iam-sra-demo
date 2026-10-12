@@ -8,8 +8,10 @@ from .settings import MODEL, BASE_URL, CONTEXT_TOKENS
 from .assessment import AssessmentError
 
 _LOCK=threading.Lock()
-STAGE_LIMITS={"initial_interpretation":1400,"mapping":1400,"coverage_review":700,"scope_review":300,"discovery":500,"facets":1200,"scoring":500}
+STAGE_LIMITS={"readiness_evidence":1200,"initial_interpretation":1400,"mapping":1400,"coverage_review":700,"scope_review":300,"discovery":500,"facets":1200,"scoring":500}
 BACKEND="xgrammar:no-fallback,disable-any-whitespace"
+STAGE_LIMITS['readiness_grounding'] = 1400
+STAGE_LIMITS['readiness_evidence'] = 1600
 
 def guided_schema(value):
     # Pinned XGrammar constrains structure/types/enums; local Pydantic enforces

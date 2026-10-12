@@ -1,3 +1,5 @@
+> Historical acceptance-demo fixtures. These expected numbers test `legacy_fn_acceptance_demo`; they are not CRL criteria and do not apply to the default evidence interview.
+
 # Manual test pack: initial IAM assessment
 
 32 copy-ready responses for the original Urban Medical Transit Corridor. The expected scores are human-authored targets under the current experimental rubric, **not model-generated results or scientifically validated ground truth**. All 32 expected calculations were checked against the application’s aggregation code. No live inference was run to create this pack.

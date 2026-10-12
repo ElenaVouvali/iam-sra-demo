@@ -59,7 +59,7 @@ def test_one_semantic_failure_preserves_other_facets_and_is_explicitly_unresolve
 
 
 def test_incomplete_mapping_cannot_silently_produce_an_overall_score():
-    from iam_sra.session import Session
+    from iam_sra.session import LegacySession as Session
     from test_confirmation import Fake,meaning
     client=Fake(meaning(scores=('noise',)))
     s=Session();s.begin();s.submit('The hum is acceptable.',client)

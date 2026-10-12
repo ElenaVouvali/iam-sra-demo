@@ -9,7 +9,7 @@ from iam_sra.settings import ROOT, config
 from iam_sra.schemas import SCHEMA_VERSION
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.mock import MockConversationClient
-from iam_sra.session import Session
+from iam_sra.session import LegacySession as Session
 from iam_sra.schemas import Assessment
 from iam_sra.scoring import aggregate
 from iam_sra.assessment import AssessmentError

@@ -1,0 +1,189 @@
+{
+  "version": "1.2.0",
+  "locale": "en",
+  "use_case_id": "urban_medical_corridor",
+  "review_status": "draft_pending_FN",
+  "approved_by": null,
+  "maximum_questions": 5,
+  "numerical_policy": {
+    "label": "Proposal views and readiness evidence",
+    "numerical_crl": null,
+    "numerical_srl": null,
+    "unavailable_reason": "Numerical criteria and aggregation awaiting methodological approval."
+  },
+  "original_candidates": [
+    {
+      "question_id": "candidate_understanding",
+      "question_text": "What factors do you think could affect how this service influences people in your neighbourhood?",
+      "origin": "User-supplied starting candidate; not an FN-approved question."
+    },
+    {
+      "question_id": "candidate_information",
+      "question_text": "What information, if any, would help you form an informed view?",
+      "origin": "User-supplied starting candidate; not an FN-approved question."
+    },
+    {
+      "question_id": "candidate_participation",
+      "question_text": "Have you taken part in a discussion, consultation or demonstration about this or a similar service? If so, what did you contribute?",
+      "origin": "User-supplied starting candidate; not an FN-approved question."
+    },
+    {
+      "question_id": "candidate_influence",
+      "question_text": "Did anything change following your contribution? What changed, if anything?",
+      "origin": "User-supplied starting candidate; not an FN-approved question."
+    },
+    {
+      "question_id": "candidate_opportunity",
+      "question_text": "Do you have a way to raise concerns or contribute to decisions about this proposal?",
+      "origin": "User-supplied starting candidate; not an FN-approved question."
+    }
+  ],
+  "indicators": [
+    {
+      "indicator_id": "citizen_understanding",
+      "topic_ids": [],
+      "readiness_type": "citizen",
+      "criterion_id": "understanding",
+      "question_id": "readiness_understanding",
+      "question_text": "What effects do you think this service could have on daily life, and why?",
+      "clarification_text": "Is there an effect on daily life you would like to explain? You can also skip.",
+      "answer_format": "free_text_or_unsure_skip_finish",
+      "evidence_requirements": "Specific explanation of possible impacts; agreement, enthusiasm or copied scenario facts alone are insufficient.",
+      "source_reference": [
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "Read me!L6:L7"
+        },
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!D8:I8"
+        },
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!I14"
+        }
+      ],
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "1.2.0",
+      "locale": "en",
+      "use_case_id": "urban_medical_corridor"
+    },
+    {
+      "indicator_id": "citizen_information",
+      "topic_ids": [],
+      "readiness_type": "citizen",
+      "criterion_id": "information",
+      "question_id": "readiness_information",
+      "question_text": "What would you want to find out about this service before deciding? You can also say you have enough information.",
+      "clarification_text": "Is there a particular question you would want answered about this service? You can also skip.",
+      "answer_format": "free_text_or_unsure_skip_finish",
+      "evidence_requirements": "Explicit evidence needs, uncertainty, or a stated absence of additional information needs.",
+      "source_reference": [
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!I2"
+        },
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!I4"
+        },
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!I15"
+        }
+      ],
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "1.2.0",
+      "locale": "en",
+      "use_case_id": "urban_medical_corridor"
+    },
+    {
+      "indicator_id": "citizen_participation",
+      "topic_ids": [],
+      "readiness_type": "citizen",
+      "criterion_id": "participation",
+      "question_id": "readiness_participation",
+      "question_text": "Have you taken part in a discussion, consultation or demonstration about drones or a similar transport service? If yes, what did you contribute?",
+      "clarification_text": "Have you actually taken part in a discussion or consultation, or were you describing something you would like to do? You can also say no or skip.",
+      "answer_format": "free_text_or_unsure_skip_finish",
+      "evidence_requirements": "Separate an actual activity and contribution from hypothetical willingness, assessment participation and explicit absence of experience.",
+      "source_reference": [
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "Read me!L8:L10"
+        },
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!D16:I16"
+        }
+      ],
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "1.2.0",
+      "locale": "en",
+      "use_case_id": "urban_medical_corridor"
+    },
+    {
+      "indicator_id": "citizen_influence",
+      "topic_ids": [],
+      "readiness_type": "citizen",
+      "criterion_id": "influence",
+      "question_id": "readiness_influence",
+      "question_text": "Did anything change following your contribution? What changed, if anything?",
+      "clarification_text": "What changed after your contribution, if anything, or is the outcome unknown to you?",
+      "answer_format": "free_text_or_unsure_skip_finish",
+      "evidence_requirements": "A reported outcome linked to an actual contribution; unknown outcome remains unknown. Self-report is not independent verification.",
+      "source_reference": [
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "Read me!L11"
+        },
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!D2"
+        },
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!D15"
+        }
+      ],
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "1.2.0",
+      "locale": "en",
+      "use_case_id": "urban_medical_corridor"
+    },
+    {
+      "indicator_id": "citizen_opportunity",
+      "topic_ids": [],
+      "readiness_type": "citizen",
+      "criterion_id": "opportunity",
+      "question_id": "readiness_opportunity",
+      "question_text": "Do you know how you could give feedback or take part in decisions about a proposal like this? Is anything preventing you from taking part?",
+      "clarification_text": "Do you know of a way to give feedback or take part? It is fine to say you do not know, or to skip.",
+      "answer_format": "free_text_or_unsure_skip_finish",
+      "evidence_requirements": "A reported available route to participate, explicit lack of opportunity or barrier; no interest is not lack of opportunity.",
+      "source_reference": [
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "Read me!L12:L13"
+        },
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!I15"
+        },
+        {
+          "document": "IAM-CC_Topic_experts.xlsx",
+          "sheet_cells": "SRA IAM indicators!I16"
+        }
+      ],
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "1.2.0",
+      "locale": "en",
+      "use_case_id": "urban_medical_corridor"
+    }
+  ]
+}

@@ -7,7 +7,7 @@ from iam_sra.interpretation import EvidenceItem
 from iam_sra.discovery import Boundary,DiscoveryFacts
 from iam_sra.scoring import aggregate
 from iam_sra.schemas import Assessment,Concern
-from iam_sra.session import Session
+from iam_sra.session import LegacySession as Session
 from iam_sra.reporting import citizen_summary,clarification_needs
 from iam_sra.updates import facet_availability
 from test_client import fake_client

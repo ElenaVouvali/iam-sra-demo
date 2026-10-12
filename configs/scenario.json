@@ -10,5 +10,48 @@
     "visual_pollution",
     "perceived_safety_privacy",
     "welfare_equity"
-  ]
+  ],
+  "illustrative_context": {
+    "version": "1.0.0",
+    "status": "illustrative_hypothetical_not_completed_LL_scenario",
+    "city": null,
+    "origin": {
+      "type": "central_hospital",
+      "name": null
+    },
+    "destination": {
+      "type": "regional_clinic",
+      "name": null
+    },
+    "cargo": [
+      "urgent laboratory specimens",
+      "blood components",
+      "transplant organs"
+    ],
+    "maximum_flights_per_day": 15,
+    "hours": {
+      "description": "including early morning and late evening",
+      "start": null,
+      "end": null
+    },
+    "altitude_metres": 60,
+    "sites": null,
+    "existing_logistics": null,
+    "unknown_assumptions": [
+      "named city and endpoints",
+      "take-off and landing sites",
+      "existing delivery arrangements",
+      "technical feasibility",
+      "data handling and cybersecurity"
+    ],
+    "mitigation_feasibility": "Camera shielding, 120-metre routing and below-ambient sound remain hypothetical; no engineering validation is recorded.",
+    "source_reference": {
+      "document": "SRA_LLM_FN_concept.pdf",
+      "page": 5
+    },
+    "LL_template_reference": {
+      "document": "IAM-CC_Topic_experts.xlsx",
+      "sheet_cells": "Use case(s) per LL!A2:D2"
+    }
+  }
 }

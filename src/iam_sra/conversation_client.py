@@ -48,7 +48,7 @@ class ConversationClient(LLMTransport):
             'relevance_recheck','relevance_check','balance_check','quotations','mapping_batch','position_review') if k in user),
             'facet_evidence' if 'nominated_passages' in user else 'interpretation')
         self.last_request_context={'stage':stage,'task':task,'facet':user.get('facet'),
-            'request_id':request_id,'prompt_version':config('prompts')['version']}
+            'request_id':request_id,'prompt_version':getattr(self,'prompt_version',config('prompts')['version'])}
         self.last_settings['last_request_context']=dict(self.last_request_context)
         key=digest({'stage':stage,'system':system,'user':user,'schema':schema,'endpoint':self.base_url,
             'cache_format':'validated_wire_v2',

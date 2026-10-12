@@ -1,7 +1,9 @@
 """Serial bounded FN replay with mandatory correctness checks and truthful exits."""
 import argparse,json,time
 from pathlib import Path
-from iam_sra.session import Session,State
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"src"))
+from iam_sra.session import LegacySession as Session,State
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.updates import facet_state
 from iam_sra.replay_checks import check_export,stage_metrics,live_response_received,write_report

@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "default_mode": "acceptance_and_readiness_evidence",
+  "modes": {
+    "acceptance_and_readiness_evidence": {
+      "label": "Proposal views and readiness evidence",
+      "numerical_crl": null,
+      "numerical_srl": null,
+      "unavailable_reason": "Numerical criteria and aggregation awaiting methodological approval."
+    },
+    "legacy_fn_acceptance_demo": {
+      "label": "Historical experimental acceptance index",
+      "methodological_status": "Legacy application policy; not an approved FN numerical formula.",
+      "phase_metadata": "Historical compatibility only; not CRL maturity stages."
+    }
+  }
+}

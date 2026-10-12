@@ -8,7 +8,7 @@ from iam_sra.assessment import AssessmentError
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.evidence import passages
 from iam_sra.interpretation import EvidenceItem
-from iam_sra.session import Session,State
+from iam_sra.session import LegacySession as Session,State
 
 
 ROOT=Path(__file__).parents[1]

@@ -1,3 +1,5 @@
+> Historical acceptance-demo documentation. The default citizen evidence mode is described in [readiness-evidence-mode.md](readiness-evidence-mode.md). Historical phases and indices are not CRL maturity stages or an approved FN formula.
+
 # Current assessment methodology
 
 This is an experimental interpretation of the FN medical-drone scenario, not a calibrated SRL instrument. FN supplies the scenario, concern taxonomy, illustrative scores, targeted hypothetical barrier tests and a macro-policy trade-off. The exact numerical progression policy is an application proposal requiring FN/ISCTE and Living Lab review. [The follow-up policy](fn-followup-update-policy.md) explains that distinction and the GA relationship.

@@ -1,3 +1,5 @@
+> Historical acceptance-demo documentation. The default citizen evidence mode is described in [readiness-evidence-mode.md](readiness-evidence-mode.md). Historical phases and indices are not CRL maturity stages or an approved FN formula.
+
 # Current implementation contract
 
 `app.py` uses `Session` and `ConversationClient`. The model transport is `LLMTransport`; it has no one-shot assessment interface. Synthetic evaluation uses the same confirmed initial-stage path. Mock mode is explicit and never an error fallback.

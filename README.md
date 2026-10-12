@@ -1,25 +1,29 @@
 # iam-sra-demo
 
-A Streamlit application for one experimental IAM scenario: **The Urban Medical Transit Corridor**, based on Future Needs’ *SRA_LLM concept feasibility.pdf*. Qwen/Qwen3-8B interprets citizen evidence and assigns confirmed aspect scores through a separate vLLM server. Python controls the conversation, validates evidence, selects follow-ups and calculates the aggregate.
+The default citizen demo separates **views of the proposal** from **readiness evidence**: understanding of possible impacts, information needs, participation, reported influence and opportunities or barriers to agency. Opposition can contain strong evidence; support alone does not establish readiness.
 
-Scores are experimental scenario indices, not a calibrated citizen or ecosystem SRL measure. Missing evidence remains unavailable. Medical-purpose support, route acceptance, policy preferences and acceptance of hypothetical changes remain distinct.
+The five-question draft interview adapts to confirmed evidence already supplied, permits skipping and finishing, and asks about influence only after actual participation is reported. Confirming an interpretation does not verify events or approve the methodology. Initial confirmed evidence is preserved when later answers or corrections refine the assessment.
 
-## Current application flow
+**No numerical CRL or SRL is assigned in the default mode.** Numerical criteria and aggregation await methodological approval. The 15 areas remain topics; historical phase assignments are not CRL stages. The workbook is a partner-review draft.
 
-1. Read the scenario and give an original response.
-2. Review the score-free interpretation and clarify or correct it. Original-context discovery can collect missing information.
-3. Confirm the meaning and inspect the initial score, concern scores and aggregation calculation.
-4. Answer independent mitigation questions for expressed objections or conditions. Unknown aspects receive clarification; independently accepted companion aspects are not retested. A relevant FN-style macro-policy trade-off follows these questions.
-5. Review and confirm the follow-up answers. A combined-proposal assessment is optional, for interacting changes or explicit acceptance of one revised proposal.
-6. Inspect the final screen: initial assessment, validated original-proposal assessment, final result, concern changes, reasons, evidence and arithmetic. Download JSON or JSONL if needed.
+The older arithmetic remains available explicitly as **Historical experimental acceptance index**, a legacy application policy, not an approved FN formula. Existing acceptance calibration scripts now explicitly select historical sessions; their outputs must not be treated as CRL evidence.
 
-Initial interpretation uses one score-free model request over the complete answer. Python checks valid facets and passage references, then asks you to confirm the meaning. It does not run a chain of semantic reviews before showing the interpretation. Actual accuracy and latency need live evaluation.
+Read [the evidence-mode implementation and validation notes](docs/readiness-evidence-mode.md) and [curated source references](references/source-register.json). Partner source documents remain local and Git-ignored under `references/private/`.
 
-The initial scoring model assigns 1–9 scores to confirmed facets. Python combines assessed facets into concern scores using their minimum. The scenario aggregate is the equally weighted assessed-concern mean, capped at the minimum assessed concern plus 2 across all phases, with halves rounded down. One assessed concern is sufficient; no assessed concerns means an unavailable aggregate.
+Default demo (with the existing vLLM service running):
 
-The default follow-up result is a **bounded progression index**: up to +2 once per already assessed concern when every originally opposed/mixed or conditioned aspect is fully resolved. Partial resolution, rejection, uncertainty and skipping yield no automatic gain or penalty. The policy trade-off changes no numeric score or medical-purpose support. Original-context corrections can independently trigger reassessment; they do not overwrite the initial snapshot. A requested combined assessment uses a separate conditional rating, with its proposal context disclosed.
+```bash
+scripts/start-ui.sh
+```
 
-Read [the FN follow-up/update policy](docs/fn-followup-update-policy.md), [methodology](docs/methodology.md), [implementation contract](docs/implementation-contract.md), [deployment](docs/deployment.md), [data handling](docs/privacy.md) and [verification status](docs/verification.md).
+Historical demo (restart the UI when changing mode):
+
+```bash
+scripts/stop-ui.sh
+IAM_ASSESSMENT_MODE=legacy_fn_acceptance_demo scripts/start-ui.sh
+```
+
+`IAM_DEVELOPER=1` also enables a mode selector before session creation. The chosen mode remains fixed for that session. Start over to create a session in another mode. `IAM_MOCK=1` in evidence mode is an explicitly empty UI fixture, not a model evaluation.
 
 ## Run the application
 
@@ -128,3 +132,5 @@ The defaults select the 24 development cases; `--ids` and `--split` control sele
 | `.runtime/` | Ignored model cache, service state, logs and newly generated reports |
 
 The old pre-confirmation session, one-shot scorer, obsolete smoke scripts and historical reports have been removed from the active repository. Recoverable historical material is in an external archive; see [cleanup notes](docs/repository-cleanup.md). Current export/audit compatibility remains where the application and diagnostic tools use it.
+
+Current readiness interview (1.2.0): [understanding, optional learning and evidence review](docs/readiness-v120-fn-review.md). The historical acceptance index remains separate.

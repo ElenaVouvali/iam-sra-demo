@@ -17,6 +17,32 @@ st.title('Medical drones in your neighborhood')
 st.write('Share your views on a proposed hospital delivery route. A few questions will help us understand what matters to you—there are no right or wrong answers.')
 mock=os.getenv('IAM_MOCK','0')=='1'
 developer=os.getenv('IAM_DEVELOPER','0')=='1'
+# Mode is selected only when creating a session. Existing sessions retain their
+# original instrument, including historical sessions created before this update.
+selected_mode=os.getenv('IAM_ASSESSMENT_MODE','acceptance_and_readiness_evidence')
+if developer and 'session' not in st.session_state:
+    st.selectbox('Demo assessment mode',list(config('assessment_modes')['modes']),
+        index=list(config('assessment_modes')['modes']).index(selected_mode),
+        format_func=lambda m:config('assessment_modes')['modes'][m]['label'],key='assessment_mode_choice')
+    def start_selected_demo():
+        st.session_state.session=Session(assessment_mode=st.session_state.assessment_mode_choice)
+    st.button('Start selected demo',on_click=start_selected_demo)
+    st.stop()
+if 'session' not in st.session_state:
+    st.session_state.session=Session(assessment_mode=selected_mode)
+if getattr(st.session_state.session,'assessment_mode','legacy_fn_acceptance_demo')=='acceptance_and_readiness_evidence':
+    from iam_sra.readiness_ui import render
+    from iam_sra.readiness_client import ReadinessClient
+    if '_readiness_client' not in st.session_state:
+        st.session_state._readiness_client=ReadinessClient()
+    if mock:
+        from iam_sra.readiness_mock import MockReadinessClient
+        st.session_state._readiness_client=MockReadinessClient()
+        st.warning('MOCK MODE — empty evidence fixture; this does not evaluate your views.')
+    render(st.session_state.session,st.session_state._readiness_client,developer)
+    st.stop()
+st.warning('Historical experimental acceptance index')
+st.caption('Legacy application policy; not an approved FN numerical formula or a citizen-readiness assessment.')
 if mock:
     from iam_sra.mock import MockConversationClient
     if "_conversation_client" not in st.session_state:st.session_state._conversation_client=MockConversationClient()
@@ -264,7 +290,7 @@ elif s.state==State.INITIAL:
             'Score':str(concern['score'])+'/9' if concern['score'] is not None else 'Not assessed','Reason':plain(concern['rationale'])})
     st.dataframe(rows,hide_index=True,use_container_width=True)
     if aggregation['rounded'] is None:st.info('No concern has a valid score yet, so an overall score is unavailable.')
-    else:st.metric('Initial scenario-readiness score',str(aggregation['rounded'])+'/9')
+    else:st.metric('Initial historical acceptance index',str(aggregation['rounded'])+'/9')
     trace=aggregation['trace']
     st.write('Aggregation: the equally weighted mean of assessed concerns. Unassessed concerns are excluded.')
     if aggregation['mean'] is not None:
@@ -321,7 +347,7 @@ else:
     review=final_review(s)
     st.subheader('Your final assessment')
     value=lambda n:str(n)+'/9' if n is not None else 'Unavailable'
-    st.metric('Updated SRL after follow-ups',value(review['final_headline']))
+    st.metric('Updated historical acceptance index',value(review['final_headline']))
     if review['final_headline'] is None:
         st.info('An SRL is unavailable because there is not enough evidence to assess your view.')
     answer_edits()
