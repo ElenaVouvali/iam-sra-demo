@@ -6,7 +6,7 @@ participate. Opposition can demonstrate understanding. Support alone does not.
 
 `Session()` starts the general baseline; explicit
 `acceptance_and_readiness_evidence` starts the scenario. The historical acceptance
-mode is available only on `legacy/iam-sra-demo-2026-10-08`.
+mode is available only on `legacy`.
 
 The model extracts source-linked claims and a second request reviews their
 classification. The application retrieves original quotations, validates IDs and

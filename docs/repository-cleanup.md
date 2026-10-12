@@ -1,6 +1,6 @@
 # Main and legacy separation — 12 October 2026
 
-`legacy/iam-sra-demo-2026-10-08` preserves the original IAM-SRA demo at
+`legacy` preserves the original IAM-SRA demo at
 `708024817f31b48c7a9009a8ba5103cbf10b93f8`. Its existing local worktree remains
 at `~/iam-sra-demo-2026-10-08`, configured separately on port 8502.
 
@@ -10,7 +10,7 @@ workbook score screen, current tests and service tools. The old acceptance UI,
 scoring/aggregation and follow-up machinery, calibration scripts, manual packs,
 old prompts/configuration and superseded implementation documents are removed.
 Shared transport, passage provenance, input validation and topic metadata are
-trimmed to the updated app. CI runs the retained test suite.
+trimmed to the updated app. CI retains the existing workflow. Its eval/run.py entry point verifies current flows with synthetic doubles.
 
 Before cleanup, all tracked and nonignored untracked files were backed up outside
 the repository in `~/iam-sra-pre-main-cleanup-20261012T144606Z.tar.gz`.

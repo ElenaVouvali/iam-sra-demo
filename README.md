@@ -8,7 +8,7 @@ requires technical and organisational evidence and is not inferred from one
 citizen interview.
 
 The original IAM-SRA acceptance demo is preserved on
-[`legacy/iam-sra-demo-2026-10-08`](https://github.com/ElenaVouvali/iam-sra-demo/tree/legacy/iam-sra-demo-2026-10-08),
+[`legacy`](https://github.com/ElenaVouvali/iam-sra-demo/tree/legacy),
 commit `708024817f31b48c7a9009a8ba5103cbf10b93f8`. Its numerical acceptance
 policies, calibration runners and manual packs belong to that branch.
 
