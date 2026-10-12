@@ -58,6 +58,17 @@
       ],
       "interpretation": "Grant Agreement obligations; no operational numerical CRL formula inferred.",
       "approval_of_demo": null
+    },
+    {
+      "document": "IAM-CC_UI_guidelines_for_tools-2.pdf",
+      "local_path": "references/private/IAM-CC_UI_guidelines_for_tools-2.pdf",
+      "sha256": "c062b1ff1c38a40848cd0a34dc600ca46f121add7d0e876db056083697618cc3",
+      "reviewed_sections": [
+        "All 19 pages; all rendered pages visually inspected",
+        "Foundations pp.5–9; components pp.11–15; hub and handover pp.17–18"
+      ],
+      "interpretation": "UI guide v1.0, September 2026. Partner kit not supplied; partial alignment, not approval of this implementation.",
+      "approval_of_demo": null
     }
   ]
 }

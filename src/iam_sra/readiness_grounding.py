@@ -1,5 +1,6 @@
 """Source-grounded semantic claims; no numerical or acceptance-based readiness."""
 from typing import Literal
+import json
 from pydantic import Field
 from .schemas import Strict, ConcernID
 from .readiness import EvidenceExtraction, ProposalView, ReadinessRecord
@@ -65,6 +66,26 @@ def validate_source(raw, evidence):
     if result.interaction != 'substantive' and result.claims:
         raise AssessmentError('Interview-only confusion or refusal cannot generate semantic claims.', code='schema')
     return result
+
+
+def validate_source_selection(raw, evidence):
+    """Retrieve quotations by ID instead of requiring the model to copy prose.
+
+    Existing explicit quotations are still validated, never silently repaired.
+    The live wire schema omits quotation; the internal audit retains source text.
+    """
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise AssessmentError('Source selection must be valid JSON.', code='schema') from exc
+    if isinstance(data, dict) and isinstance(data.get('claims'), list):
+        for claim in data['claims']:
+            if isinstance(claim, dict) and 'quotation' not in claim:
+                eid = claim.get('evidence_id')
+                if not isinstance(eid, str) or eid not in evidence:
+                    raise AssessmentError('A claim must select one of the supplied passage IDs.', code='evidence')
+                claim['quotation'] = evidence[eid].text
+    return validate_source(json.dumps(data, ensure_ascii=False), evidence)
 
 
 # Kind assigns criterion and status, so the model cannot quietly relabel support

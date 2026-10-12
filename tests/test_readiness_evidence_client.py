@@ -177,3 +177,24 @@ def test_claim_limits_fail_at_extraction_before_review(kind,count):
     source={'interaction':'substantive','claims':[claim(kind) for _ in range(count)]}
     with pytest.raises(AssessmentError,match='Combine overlapping'):
         validate_source(json.dumps(source),evidence())
+
+
+def test_live_source_schema_selects_id_and_application_retrieves_original_words(monkeypatch):
+    text='A machine watching our yard makes me deeply uncomfortable—orsee through glass.'
+    row=claim('concern',interpretation='You object to viewing your private space.')
+    row.pop('quotation')
+    calls=install(monkeypatch,{'interaction':'substantive','claims':[row]},[verdict(kind='concern')])
+    c=ReadinessClient();r=c.extract_readiness(evidence(text))
+    assert r.acceptance.concerns==[row['interpretation']]
+    generated=[p for path,p in calls if path=='/v1/chat/completions']
+    wire=generated[0]['guided_json']['$defs']['SourceClaim']
+    assert 'quotation' not in wire['properties'] and 'quotation' not in wire['required']
+    reviewed=json.loads(generated[1]['messages'][1]['content'])
+    assert reviewed['candidates'][0]['quotation']==text
+    assert c.last_settings['readiness_grounding']['source_claims'][0]['quotation']==text
+
+
+@pytest.mark.parametrize('raw', ['not JSON', json.dumps({'interaction':'substantive','claims':[dict(kind='concern',evidence_id='missing') ]})])
+def test_source_selection_rejects_invalid_json_or_unavailable_id(raw):
+    from iam_sra.readiness_grounding import validate_source_selection
+    with pytest.raises(AssessmentError):validate_source_selection(raw,evidence())

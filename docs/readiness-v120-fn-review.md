@@ -1,5 +1,15 @@
 # Readiness demo 1.2.0: understanding, learning and evidence integrity
 
+## Citation reliability patch 1.2.1
+
+The live extraction schema now asks for a listed passage ID rather than copied
+quotation text. Python retrieves the complete original passage for the blind review
+and audit. Unknown IDs are rejected; an explicitly supplied quotation is still
+validated rather than silently repaired. This removes exact-copy generation failures
+without equating a valid citation with semantic support. The reviewer must still
+classify the meaning and criterion independently. Activity/time scope validation is
+unchanged. This patch does not establish live semantic accuracy.
+
 This is a draft instrument pending FN review, not an approved SRL/CRL measurement.
 Default numerical fields remain null. Historical acceptance scoring is unchanged.
 
@@ -97,5 +107,7 @@ contracts and UI behaviour, not Qwen's semantic accuracy. An ungrounded interpre
 could still be misclassified by both calls; the FN demonstration needs a successful
 live replay and human inspection before presenting it as validated.
 
-Restart only the UI, click Start over, and enter a new answer to use instrument 1.2.0.
+The presentation update uses instrument 1.2.2 for the neutral initial invitation.
+See [UI source checklist and verification](readiness-ui-guidelines-review.md).
+Restart only the UI, confirm Start over, and enter a new answer to use instrument 1.2.2.
 Existing sessions retain their original snapshots; they are not silently repaired.

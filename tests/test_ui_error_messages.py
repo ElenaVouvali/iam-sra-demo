@@ -49,7 +49,7 @@ def test_fn_model_evidence_failure_is_not_reported_as_missing_user_answer(monkey
     assert 'private diagnostic quotation' not in app.error[0].value
     assert app.session_state.failure_details['error_code']=='evidence'
     assert app.session_state.session.inference[-1]['stage']=='initial interpretation failure'
-    assert any(e.label=='Technical details for this failed attempt' for e in app.expander)
+    assert not any(e.label=='Technical details for this failed attempt' for e in app.expander)
     client.interpret=interpret;click(app)
     assert not app.error and app.session_state.session.state==State.INTERPRETATION
     assert 'failure_details' not in app.session_state

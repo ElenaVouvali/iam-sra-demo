@@ -133,4 +133,4 @@ The defaults select the 24 development cases; `--ids` and `--split` control sele
 
 The old pre-confirmation session, one-shot scorer, obsolete smoke scripts and historical reports have been removed from the active repository. Recoverable historical material is in an external archive; see [cleanup notes](docs/repository-cleanup.md). Current export/audit compatibility remains where the application and diagnostic tools use it.
 
-Current readiness interview (1.2.0): [understanding, optional learning and evidence review](docs/readiness-v120-fn-review.md). The historical acceptance index remains separate.
+Current readiness interview (1.2.2): [understanding, optional learning and evidence review](docs/readiness-v120-fn-review.md). The historical acceptance index remains separate. See the [UI guide checklist, source pages and verification limits](docs/readiness-ui-guidelines-review.md) for the current interface and missing partner-kit assets.

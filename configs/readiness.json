@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.2",
   "locale": "en",
   "use_case_id": "urban_medical_corridor",
   "review_status": "draft_pending_FN",
@@ -65,7 +65,7 @@
       ],
       "review_status": "draft_pending_FN",
       "approved_by": null,
-      "version": "1.2.0",
+      "version": "1.2.1",
       "locale": "en",
       "use_case_id": "urban_medical_corridor"
     },
@@ -95,7 +95,7 @@
       ],
       "review_status": "draft_pending_FN",
       "approved_by": null,
-      "version": "1.2.0",
+      "version": "1.2.1",
       "locale": "en",
       "use_case_id": "urban_medical_corridor"
     },
@@ -121,7 +121,7 @@
       ],
       "review_status": "draft_pending_FN",
       "approved_by": null,
-      "version": "1.2.0",
+      "version": "1.2.1",
       "locale": "en",
       "use_case_id": "urban_medical_corridor"
     },
@@ -151,7 +151,7 @@
       ],
       "review_status": "draft_pending_FN",
       "approved_by": null,
-      "version": "1.2.0",
+      "version": "1.2.1",
       "locale": "en",
       "use_case_id": "urban_medical_corridor"
     },
@@ -181,9 +181,15 @@
       ],
       "review_status": "draft_pending_FN",
       "approved_by": null,
-      "version": "1.2.0",
+      "version": "1.2.1",
       "locale": "en",
       "use_case_id": "urban_medical_corridor"
     }
-  ]
+  ],
+  "initial_invitation": "What do you think about this proposal? What matters most to you?",
+  "presentation_revision": {
+    "version": "1.0.0",
+    "previous_invitation": "How do you feel about this proposal? What would make it acceptable?",
+    "reason": "Neutral citizen invitation; supplied scenario and all scored/extracted criteria and follow-up questions unchanged. Initial elicitation wording may affect responses; compare instrument versions explicitly."
+  }
 }

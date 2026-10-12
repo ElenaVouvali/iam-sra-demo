@@ -4,20 +4,25 @@ from .conversation_client import ConversationClient
 from .llm_client import _LOCK
 from .settings import ROOT, CONCERNS, config
 from .readiness import validate_extraction
-from .readiness_grounding import (SourceExtraction, SourceReview, validate_source, assemble_reviewed)
+from .readiness_grounding import (SourceExtraction, SourceReview, validate_source_selection, assemble_reviewed)
 from .assessment import AssessmentError
 
 
 class ReadinessClient(ConversationClient):
-    prompt_version = 'readiness-1.2.0'
+    prompt_version = 'readiness-1.2.1'
 
     def extract_readiness(self, evidence, *, elicitation='initial_answer', context='original', version=1, question=None, existing=()):
         with _LOCK:
             self._start()
-            self.last_settings['readiness_protocol_version'] = '3.0.0'
+            self.last_settings['readiness_protocol_version'] = '3.1.0'
             self.last_settings['readiness_instrument_version'] = config('readiness')['version']
             schema = SourceExtraction.model_json_schema()
             schema['$defs']['SourceClaim']['properties']['evidence_id'] = {'type':'string', 'enum':list(evidence)}
+            # The application retrieves exact words by selected ID. Requiring
+            # an 8B model to copy them adds failure modes without stronger proof.
+            claim_schema = schema['$defs']['SourceClaim']
+            del claim_schema['properties']['quotation']
+            claim_schema['required'].remove('quotation')
             # Previous model interpretations are deliberately excluded. They
             # contaminated new answers in the exported FN session.
             payload = {'question':question, 'context':context, 'elicitation':elicitation,
@@ -26,7 +31,7 @@ class ReadinessClient(ConversationClient):
             try:
                 with httpx.Client(timeout=180, trust_env=False) as http:
                     source = self._request(http, 'readiness_evidence', (ROOT/'prompts/readiness-evidence.txt').read_text(),
-                        payload, schema, lambda raw:validate_source(raw,evidence))
+                        payload, schema, lambda raw:validate_source_selection(raw,evidence))
                     decisions = []
                     # Six claims per review keep broad answers within the pinned
                     # context. All batches share _start's deadline and retry cap;
@@ -55,7 +60,8 @@ class ReadinessClient(ConversationClient):
                     review = SourceReview(decisions=decisions)
                     result = assemble_reviewed(source,review,elicitation,context,version)
                     self.last_settings['readiness_grounding'] = {
-                        'protocol_version':'3.0.0', 'interaction':source.interaction,
+                        'protocol_version':'3.1.0', 'interaction':source.interaction,
+                        'quotation_source':'application_retrieved_citizen_passage',
                         'source_claims':[c.model_dump() for c in source.claims],
                         'decisions':[dict(d.model_dump(), accepted=d.meaning_supported and
                             d.evidence_type == source.claims[d.candidate].kind and

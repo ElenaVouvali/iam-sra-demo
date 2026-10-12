@@ -1,0 +1,51 @@
+/* Guide v1.0 pp. 5,7–14. Application-owned hooks; no generated class names.
+   Google Sans kit absent: use the documented p.8 fallback, no remote font fetch. */
+.stApp {
+  --iam-azure: #16364D; --iam-slate: #55788E; --iam-border: #D0D7DB;
+  --iam-divider: #E7ECEF; --iam-surface: #F3F6F8; --iam-hover: #0F2438;
+  --iam-coral: #FF8174; --iam-danger: #B3261E; --iam-warning: #8F5117;
+  --iam-font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--iam-azure);
+  font-family: var(--iam-font);
+}
+.stApp :is(h1,h2,h3,p,label,button,textarea,input,summary) {font-family:var(--iam-font);}
+.stApp h1 {font-size:32px; line-height:1.15; font-weight:700;}
+.stApp h2, .stApp h3 {font-size:24px; line-height:1.25; font-weight:600;}
+.stApp p, .stApp textarea {font-size:15px; line-height:1.6;}
+.stApp label p {font-size:14px; font-weight:500; line-height:1.4;}
+.stApp [data-testid="stCaptionContainer"] p {color:var(--iam-slate); font-size:13px; line-height:1.5;}
+.stApp [data-testid="stMainBlockContainer"] {max-width:1312px; padding:24px 64px 48px;}
+.iam-header {display:flex; align-items:center; flex-wrap:wrap; gap:16px; min-height:64px;
+  border-bottom:1px solid var(--iam-divider); margin-bottom:24px; font-size:18px;}
+.iam-header a {margin-left:auto; color:var(--iam-azure); font-size:14px; text-decoration:underline;}
+.stApp button {border-radius:999px; min-height:40px; border:1.5px solid var(--iam-border);}
+.stApp button p {font-size:14px; font-weight:500; white-space:normal; overflow-wrap:anywhere;}
+.stApp button[kind="secondary"] {background:white; color:var(--iam-azure); border-color:var(--iam-azure);}
+.stApp button[kind="primary"] {background:var(--iam-azure); color:white;}
+.stApp button[kind="primary"]:hover:not(:disabled) {background:var(--iam-hover); color:white;}
+.st-key-iam_accent button[kind="primary"] {background:var(--iam-coral); color:var(--iam-azure); border-color:var(--iam-azure);}
+.st-key-iam_accent button[kind="primary"]:hover:not(:disabled) {background:var(--iam-coral); color:var(--iam-azure); border-color:var(--iam-azure);}
+.stApp button:disabled {background:var(--iam-divider); color:var(--iam-slate); border-color:var(--iam-border); opacity:1;}
+.st-key-iam_accent button[kind="primary"]:disabled {background:var(--iam-divider); color:var(--iam-slate); border-color:var(--iam-border);}
+.stApp :is(button,a,input,textarea,summary,[role="checkbox"],[role="radio"],[role="combobox"]):focus-visible {
+  outline:3px solid var(--iam-slate); outline-offset:3px;
+}
+.stApp button[kind="primary"]:focus-visible {outline-color:var(--iam-coral);}
+.st-key-iam_accent button[kind="primary"]:focus-visible {outline-color:var(--iam-slate);}
+.stApp textarea, .stApp [data-baseweb="input"], .stApp [data-baseweb="select"] {border-radius:12px;}
+.stApp [data-testid="stExpander"] {border-radius:20px; border-color:var(--iam-divider);}
+.stApp [data-testid="stForm"] {border-radius:20px; border:1px solid var(--iam-divider); padding:24px;}
+.stApp [data-testid="stText"] {white-space:pre-wrap; overflow-wrap:anywhere; font-family:inherit; font-size:15px; line-height:1.6;}
+.stApp [data-testid="stAlert"] {border-radius:12px; background:var(--iam-surface); color:var(--iam-azure);}
+.st-key-iam_error [data-testid="stAlert"] {border-left:4px solid var(--iam-danger);}
+.st-key-iam_reset [data-testid="stAlert"] {border-left:4px solid var(--iam-warning);}
+.st-key-iam_reset button {color:var(--iam-danger); border-color:var(--iam-danger);}
+.stApp a {color:var(--iam-azure); text-decoration:underline;}
+@media (min-width:768px) and (max-width:1199px) {
+ .stApp [data-testid="stMainBlockContainer"] {padding-left:40px; padding-right:40px;}
+}
+@media (max-width:767px) {
+ .stApp [data-testid="stMainBlockContainer"] {padding:24px 20px 32px;}
+ .stApp [data-testid="stForm"] {padding:16px;}
+ .iam-header {gap:8px;}
+}

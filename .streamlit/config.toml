@@ -1,3 +1,12 @@
 [server]
 # Shared hosts may exhaust inotify watches. Restart the UI after code changes.
 fileWatcherType = "none"
+
+[theme]
+# IAM-CC UI guidelines v1.0, pp. 7–8. Google Sans partner kit is not supplied.
+base = "light"
+primaryColor = "#16364D"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F3F6F8"
+textColor = "#16364D"
+font = "sans serif"

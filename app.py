@@ -12,9 +12,9 @@ from iam_sra.reporting import final_summary, citizen_summary, aspect_label, clar
 from iam_sra.assessment_review import final_review
 from iam_sra.ui_errors import user_error
 
-st.set_page_config(page_title='Medical drones in your neighborhood',page_icon='◈',layout='centered')
-st.title('Medical drones in your neighborhood')
-st.write('Share your views on a proposed hospital delivery route. A few questions will help us understand what matters to you—there are no right or wrong answers.')
+from iam_sra.ui_presentation import TITLE, header, restart_control, footer
+st.set_page_config(page_title=TITLE,layout='centered')
+header()
 mock=os.getenv('IAM_MOCK','0')=='1'
 developer=os.getenv('IAM_DEVELOPER','0')=='1'
 # Mode is selected only when creating a session. Existing sessions retain their
@@ -53,7 +53,7 @@ else:
     client=st.session_state._conversation_client
 if 'session' not in st.session_state:st.session_state.session=Session()
 s=st.session_state.session
-st.button('Start over',on_click=st.session_state.clear)
+if restart_control(): st.stop()
 labels={State.SCENARIO:'The proposal',State.ANSWER:'Your answer',State.INTERPRETATION:'Understanding your view',State.CONFIRMED:'Review saved',State.INITIAL:'Your initial assessment',State.FOLLOWUPS:'A few follow-ups',State.UPDATED:'Reviewing the outcome',State.UPDATE_CONFIRMED:'Review saved',State.FINAL:'Complete'}
 st.progress((list(State).index(s.state)+1)/len(State),text=labels[s.state])
 
@@ -259,7 +259,7 @@ if choice_only_outcome and not st.session_state.get('action_error'):
 
 if st.session_state.get('action_error'):
     st.error(st.session_state.action_error)
-    if st.session_state.get('failure_details'):
+    if developer and st.session_state.get('failure_details'):
         with st.expander('Technical details for this failed attempt'):
             st.code(json.dumps(st.session_state.failure_details,indent=2),language='json')
 if s.state==State.SCENARIO:
@@ -362,3 +362,4 @@ if developer:
     with st.expander('Developer diagnostics'):
         st.json({'state':s.state.value,'last_error':st.session_state.get('developer_error'),'model':config('model'),'policy':config('updates'),'inference':s.inference})
         if s.state==State.FINAL:st.json(s.export()['aggregation'])
+footer()
