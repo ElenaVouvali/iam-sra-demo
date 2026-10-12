@@ -9,7 +9,7 @@ from .assessment import AssessmentError
 
 
 class ReadinessClient(ConversationClient):
-    prompt_version = 'readiness-1.2.1'
+    prompt_version = 'readiness-1.3.1'
 
     def extract_readiness(self, evidence, *, elicitation='initial_answer', context='original', version=1, question=None, existing=()):
         with _LOCK:
@@ -21,8 +21,12 @@ class ReadinessClient(ConversationClient):
             # The application retrieves exact words by selected ID. Requiring
             # an 8B model to copy them adds failure modes without stronger proof.
             claim_schema = schema['$defs']['SourceClaim']
-            del claim_schema['properties']['quotation']
-            claim_schema['required'].remove('quotation')
+            for field in ('quotation', 'claim_subject', 'time_scope'):
+                del claim_schema['properties'][field]
+                claim_schema['required'].remove(field)
+            # Optional activity/date scopes remain unknown in live extraction.
+            # Free-text paraphrases must never become evidence of a shared scope.
+            self.last_settings['scope_policy'] = 'unspecified_live_scopes'
             # Previous model interpretations are deliberately excluded. They
             # contaminated new answers in the exported FN session.
             payload = {'question':question, 'context':context, 'elicitation':elicitation,

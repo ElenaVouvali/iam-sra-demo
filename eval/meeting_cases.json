@@ -1,0 +1,96 @@
+{
+  "version": "1.0.0",
+  "use_case_id": "urban_medical_corridor",
+  "confirmation": "Scripted automation, not citizen validation",
+  "cases": [
+    {
+      "id": "fn_exact",
+      "origin": "Source simulated citizen example, not a real citizen transcript",
+      "initial_answer": "Look, I get that this is for hospital use and saving lives, which is obviously a vital public service we need to support. But 60 meters is incredibly low. If these drones are buzzing past 15 times a day, that constant electric hum is going to drive me crazy, especially when I'm trying to relax on my balcony in the evening. Plus, knowing there are navigation cameras constantly pointed downward right over my yard and windows makes me deeply uncomfortable—how do I know they aren't recording my family? If they can route them over the industrial park or high enough that I can't hear them or see cameras looking into my property, fine. Otherwise, I completely oppose this route.",
+      "tests": [
+        "Noise/privacy causal reasoning and evidence needs without invented experience",
+        "Historical numbers remain a separate reference"
+      ],
+      "should_infer": [
+        "Route opposition with conditions; medical-purpose support",
+        "Noise disturbance reasoning; question about recording"
+      ],
+      "must_not_infer": [
+        "Actual consultation, influence or participation opportunity",
+        "Equity knowledge, airspace capacity or infrastructure expertise"
+      ],
+      "followup_by_criterion": {
+        "understanding": "Repeated flights could interrupt rest; whether that happens depends on when people are resting and the measured sound at their homes. I do not know the measured levels.",
+        "information": "I would want actual sound measurements at homes and a clear statement about whether camera images are stored or shared.",
+        "participation": "I have not attended a public discussion, consultation or demonstration about a transport service.",
+        "influence": "I do not know whether my contribution changed a decision.",
+        "opportunity": "I do not know a way to give feedback on this proposal. Evening meetings would be difficult because of caring responsibilities."
+      },
+      "followup_by_question_id": {
+        "readiness_understanding_after_information": "The explanation gives no actual sound measurements or image-retention policy. In my view, flights while shift workers sleep could disturb them; that needs measurements at their homes, not an assumed noise reduction."
+      },
+      "optional_information_question": "Are camera images recorded or retained?",
+      "correction_suffix": " To clarify, I am describing my own view or experience, not claiming independent verification.",
+      "semantic_review_status": "Not live-reviewed; runner records actual outputs for human inspection."
+    },
+    {
+      "id": "enthusiastic_support",
+      "origin": "Authored synthetic example",
+      "initial_answer": "Absolutely yes! I love this idea and support the route without reservations. I do not know how it works or what effects it might have.",
+      "tests": [
+        "Unreasoned support does not establish understanding or high readiness"
+      ],
+      "should_infer": [
+        "Proposal support; explicit uncertainty about impacts"
+      ],
+      "must_not_infer": [
+        "Demonstrated understanding from enthusiasm",
+        "Experience, influence or numerical 9"
+      ],
+      "followup_by_criterion": {
+        "understanding": "I am unsure what effects it could have. I cannot explain them yet.",
+        "information": "I would want actual sound measurements at homes and a clear statement about whether camera images are stored or shared.",
+        "participation": "I have not attended a public discussion, consultation or demonstration about a transport service.",
+        "influence": "I do not know whether my contribution changed a decision.",
+        "opportunity": "I do not know a way to give feedback on this proposal. Evening meetings would be difficult because of caring responsibilities."
+      },
+      "followup_by_question_id": {
+        "readiness_understanding_after_information": "The explanation gives no actual sound measurements or image-retention policy. In my view, flights while shift workers sleep could disturb them; that needs measurements at their homes, not an assumed noise reduction."
+      },
+      "optional_information_question": "Are camera images recorded or retained?",
+      "correction_suffix": " To clarify, I am describing my own view or experience, not claiming independent verification.",
+      "semantic_review_status": "Not live-reviewed; runner records actual outputs for human inspection."
+    },
+    {
+      "id": "reasoned_opposition",
+      "origin": "Authored synthetic example",
+      "initial_answer": "I oppose this route because repeated early flights could wake people who work late shifts. I want measured noise at homes before deciding about another route. Last year I attended a public bus-route consultation and suggested moving a stop closer to the clinic. I do not know whether my contribution changed the decision. I would attend a drone discussion, but I do not know where to submit comments and caring responsibilities make evening meetings difficult.",
+      "tests": [
+        "Informed opposition with transferable experience, hypothetical intention and unknown influence",
+        "Access barrier is separate from lack of interest"
+      ],
+      "should_infer": [
+        "Explained rest impact and wanted measurements",
+        "Reported bus consultation contribution, transferable experience",
+        "Influence unknown; willingness separate from actual participation; opportunity barrier"
+      ],
+      "must_not_infer": [
+        "Drone consultation attendance",
+        "Verified influence, co-design award or a CRL level"
+      ],
+      "followup_by_criterion": {
+        "understanding": "Repeated flights could interrupt rest; whether that happens depends on when people are resting and the measured sound at their homes. I do not know the measured levels.",
+        "information": "I would want actual sound measurements at homes and a clear statement about whether camera images are stored or shared.",
+        "participation": "Last year I attended a public bus-route consultation and proposed a clinic stop. I have not attended a drone consultation.",
+        "influence": "I do not know whether my contribution changed a decision.",
+        "opportunity": "I do not know a way to give feedback on this proposal. Evening meetings would be difficult because of caring responsibilities."
+      },
+      "followup_by_question_id": {
+        "readiness_understanding_after_information": "The explanation gives no actual sound measurements or image-retention policy. In my view, flights while shift workers sleep could disturb them; that needs measurements at their homes, not an assumed noise reduction."
+      },
+      "optional_information_question": "Are camera images recorded or retained?",
+      "correction_suffix": " To clarify, I am describing my own view or experience, not claiming independent verification.",
+      "semantic_review_status": "Not live-reviewed; runner records actual outputs for human inspection."
+    }
+  ]
+}

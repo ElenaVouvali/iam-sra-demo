@@ -15,17 +15,25 @@ from iam_sra.settings import BASE_URL
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--input', required=True)
+    p.add_argument('--report-only', action='store_true', help='Generate an evidence report without model calls or replay.')
     p.add_argument('--output', default='.runtime/readiness-session-replay.json')
     p.add_argument('--base-url', default=BASE_URL)
     args = p.parse_args()
-    original = json.loads(next(line for line in Path(args.input).read_text().splitlines() if line.strip()))
+    raw = Path(args.input).read_text()
+    try: original = json.loads(raw)
+    except json.JSONDecodeError: original = json.loads(next(line for line in raw.splitlines() if line.strip()))
+    if args.report_only:
+        from iam_sra.readiness_report import markdown_report
+        output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(markdown_report(original))
+        print(str(output)); return 0
     if original.get('assessment_mode') != 'acceptance_and_readiness_evidence':
         p.error('Input must be an evidence-mode session; historical scores are not readiness data.')
     events = [e for e in original['questions_and_answers'] if e['active']]
     initial = next(e for e in events if e['kind'] == 'initial')
     output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True)
     report = {'original_session_id': original['session_id'], 'live_model_used': False,
-              'semantic_accuracy_verified': False, 'replayed': [], 'not_replayed': []}
+              'semantic_accuracy_verified': False, 'confirmation_basis':'scripted automation, not citizen validation', 'replayed': [], 'not_replayed': []}
     started = time.monotonic()
     session = ReadinessSession(); client = ReadinessClient(base_url=args.base_url)
     try:
@@ -36,10 +44,13 @@ def main():
         report['initial_output'] = session.export()
         for event in events:
             if event['kind'] != 'readiness_followup': continue
+            if any(r.get('elicitation_context') == 'after_information_exposure' for r in event.get('records', [])) or any(e.get('version_at_exposure', float('inf')) < event['version'] for e in original.get('information_exposures', [])):
+                report['not_replayed'].append({'event_id':event['id'], 'reason':'Original answer followed information exposure; exact exposure is not recreated by this replay.'})
+                continue
             current = session.current_question
             # A denial to a participation question cannot answer an opportunity
             # question merely because it was the next saved response.
-            if current is None or current['criterion_id'] != event['criterion_id']:
+            if current is None or current['criterion_id'] != event['criterion_id'] or current['id'] != event['question']['id']:
                 report['not_replayed'].append({'event_id': event['id'], 'reason': 'Current question has a different context; no answer invented.'})
                 continue
             if event['control'] in {'skip', 'unsure'}: session.skip(event['control'] == 'unsure')

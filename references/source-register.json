@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "review_date": "2026-10-11",
+  "version": "1.1.0",
+  "review_date": "2026-10-12",
   "private_sources_git_ignored": true,
   "sources": [
     {
@@ -70,5 +70,14 @@
       "interpretation": "UI guide v1.0, September 2026. Partner kit not supplied; partial alignment, not approval of this implementation.",
       "approval_of_demo": null
     }
-  ]
+  ],
+  "meeting_review": {
+    "baseline": "f451bec",
+    "originals_present": true,
+    "original_source_paths": "references/private/ (ignored), also supplied in /home/evouvali",
+    "retrieval_corpus": "configs/readiness_corpus.json",
+    "retrieval_review_status": "draft_pending_FN",
+    "approval_of_demo": null,
+    "scope": "Original FN PDF pages 1–9, all UI PDF pages 1–19 and rendered contact sheets, workbook Read me and relevant C/D/H/I reviews and J8/threaded comments, WP3 minutes decisions, slides 3–6 and registered GA sections rechecked. No new approved assets supplied."
+  }
 }

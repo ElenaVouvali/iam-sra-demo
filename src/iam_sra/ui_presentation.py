@@ -20,10 +20,7 @@ def navigation(state):
     stage = {'answer': 'Proposal and your views', 'review': 'Check our interpretation',
              'correction': 'Correct an answer', 'interview': 'Relevant questions',
              'final': 'Your summary'}.get(state, 'Your summary')
-    st.caption('Current step: ' + stage)
-    with st.expander('About this interview'):
-        st.write('Read the proposal, share your views, check our interpretation, answer relevant questions, and review your summary. You may check interpretations more than once.')
-        st.write('Questions and criteria are draft proposals awaiting FN review. Question counts show where you are in the interview, not your readiness.')
+    st.subheader(stage)
 
 
 def restart_control():

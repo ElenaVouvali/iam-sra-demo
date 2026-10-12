@@ -31,6 +31,12 @@ class ReadinessSession:
         self.inference = []
         self.information_exposures = []
         self.information_module = deepcopy(config('readiness_information'))
+        from .readiness_retrieval import corpus
+        self.retrieval_corpus = corpus()
+        self.retrieval_corpus['passages'] = [p for p in self.retrieval_corpus['passages']
+                                             if 'citizen_explanation' in p['permitted_use']]
+        self.pre_information_snapshot = None
+        self.information_acknowledgements = []
         self.learning_pending = False
         self._initial_readiness = None
         self._final_readiness = None
@@ -48,14 +54,52 @@ class ReadinessSession:
     def assessment_mode(self): return DEFAULT_MODE
 
     def record_information_exposure(self):
-        if not hasattr(self, 'information_exposures'): self.information_exposures = []
-        module = getattr(self, 'information_module', config('readiness_information'))
-        exposure = {'id': module['id'], 'module_version': module['version'],
-                    'version_at_exposure': self.version,
-                    'source': 'controlled_demo_explanation', 'content': deepcopy(module),
-                    'completion_claim': 'citizen_clicked_read',
-                    'understanding_verified': False}
-        if exposure not in self.information_exposures: self.information_exposures.append(exposure)
+        # Preserve the old public method, with explicit display/ack events for
+        # new calls. Previously saved exposure dictionaries are never rewritten.
+        displays = [e for e in self.information_exposures
+                    if e['source'] == 'controlled_demo_explanation_display']
+        exposure = displays[-1] if displays else self.display_information()
+        self.acknowledge_information(exposure['exposure_id'])
+
+    def _log_display(self, content, source):
+        from datetime import datetime, timezone
+        if not self._current_initial_confirmed or self.pending is not None:
+            raise ValueError('Confirm your interpretation before displaying information.')
+        if not hasattr(self, 'pre_information_snapshot') or self.pre_information_snapshot is None:
+            self.pre_information_snapshot = deepcopy(self.current_profile)
+        exposure = {'exposure_id': 'display_' + str(len(self.information_exposures) + 1),
+            'sequence': len(self.information_exposures) + 1,
+            'displayed_at': datetime.now(timezone.utc).isoformat(),
+            'version_at_exposure': self.version, 'source': source,
+            'display': True, 'acknowledgement': False,
+            'understanding_verified': False, 'content': deepcopy(content)}
+        self.information_exposures.append(exposure)
+        return deepcopy(exposure)
+
+    def display_information(self):
+        return self._log_display(getattr(self, 'information_module', config('readiness_information')),
+                                 'controlled_demo_explanation_display')
+
+    def ask_information(self, question, client=None):
+        from .readiness_retrieval import corpus, explain
+        if not self._current_initial_confirmed or self.pending is not None:
+            raise ValueError('Confirm your interpretation before displaying information.')
+        collection = getattr(self, 'retrieval_corpus', corpus())
+        count = sum(e['source'] == 'local_retrieval_display' for e in self.information_exposures)
+        if count >= collection['maximum_requests_per_session']:
+            raise ValueError('The optional information budget has been reached.')
+        answer = explain(question, client, collection=collection)
+        return self._log_display(answer, 'local_retrieval_display')
+
+    def acknowledge_information(self, exposure_id):
+        from datetime import datetime, timezone
+        if not any(e.get('exposure_id') == exposure_id for e in self.information_exposures):
+            raise ValueError('Select displayed information to acknowledge.')
+        if not hasattr(self, 'information_acknowledgements'): self.information_acknowledgements = []
+        if not any(a['exposure_id'] == exposure_id for a in self.information_acknowledgements):
+            self.information_acknowledgements.append({'exposure_id': exposure_id,
+                'acknowledged_at': datetime.now(timezone.utc).isoformat(), 'meaning': 'citizen_clicked_read',
+                'understanding_verified': False})
 
     def start_learning(self):
         if not self._current_initial_confirmed or self.pending is not None:
@@ -263,7 +307,7 @@ class ReadinessSession:
 
     def export(self):
         final = self.final_readiness
-        return {'schema_version': '6.2.0', 'assessment_mode': self.assessment_mode, 'mode_version': self.mode_version,
+        return {'schema_version': '6.3.0', 'assessment_mode': self.assessment_mode, 'mode_version': self.mode_version,
             'instrument': deepcopy(self.instrument), 'session_id': self.session_id, 'state': self.state,
             'scenario': deepcopy(self.scenario), 'acceptance_profile': self.acceptance,
             'initial_readiness_profile': self.initial_readiness, 'initial_readiness_snapshots': deepcopy(self._initial_snapshots),
@@ -276,6 +320,9 @@ class ReadinessSession:
             'questions_and_answers': deepcopy(self.events), 'pending_interpretation': deepcopy(self.pending),
             'information_exposures': deepcopy(getattr(self, 'information_exposures', [])),
             'information_module': deepcopy(getattr(self, 'information_module', config('readiness_information'))),
+            'pre_information_snapshot': deepcopy(getattr(self, 'pre_information_snapshot', None)),
+            'information_acknowledgements': deepcopy(getattr(self, 'information_acknowledgements', [])),
+            'retrieval_corpus': deepcopy(getattr(self, 'retrieval_corpus', None)),
             'evidence': {k: v.model_dump() for k, v in self.evidence.items()},
             'confirmations': deepcopy(self.confirmations), 'corrections': deepcopy(self.corrections),
             'assessment_participation': deepcopy(self.assessment_participation),

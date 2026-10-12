@@ -98,6 +98,7 @@ def test_optional_learning_uses_a_bounded_question_and_preserves_initial(monkeyp
     app.text_area(key='readiness_answer').set_value('Repeated flights could disturb my rest.')
     click(app,'Continue');confirm(app)
     initial=app.session_state.session.initial_readiness
+    click(app,'Show explanation')
     click(app,'Read and reflect')
     q=app.session_state.session.current_question
     assert q['elicitation_context']=='after_information_exposure'
@@ -161,7 +162,8 @@ def test_long_text_is_not_cut_and_every_screen_has_one_main_action(monkeypatch):
     assert sum(b.proto.type=='primary' for b in app.button)==1
     click(app,'Continue')
     assert any(long.strip()==t.value for t in app.text)
-    assert any(text.strip()==t.value for t in app.text)
+    assert not any(e.label=='Your supporting words' for e in app.expander)
+    assert not any(text.strip()==t.value for t in app.text)
     assert app.session_state.session.pending['text']==text
     assert sum(b.proto.type=='primary' for b in app.button)==1
     confirm(app)
@@ -208,3 +210,55 @@ def test_existing_instrument_keeps_previous_invitation(monkeypatch):
     assert app.text_area(key='readiness_answer').label=='How do you feel about this proposal? What would make it acceptable?'
     assert app.warning
     assert app.session_state.session.instrument['version']=='1.2.1'
+
+
+def test_optional_information_needs_explicit_logged_display(monkeypatch):
+    app=start(monkeypatch,Extractor([record()]))
+    app.text_area(key='readiness_answer').set_value('Sound could interrupt rest.')
+    click(app,'Continue');confirm(app)
+    s=app.session_state.session
+    # Streamlit executes collapsed expanders too: content must be absent, not hidden.
+    assert not s.information_exposures
+    assert not any('example specifies up to 15' in e.value for e in app.markdown)
+    assert not any(b.label=='Read and reflect' for b in app.button)
+    click(app,'Show explanation')
+    s=app.session_state.session
+    assert s.information_exposures[-1]['source']=='controlled_demo_explanation_display'
+    assert any('example specifies up to 15' in e.value for e in app.markdown)
+    assert not s.information_acknowledgements
+    click(app,'I have read this')
+    assert len(app.session_state.session.information_acknowledgements)==1
+
+
+def test_optional_retrieval_failure_shows_sources_and_logs_exact_content(monkeypatch):
+    from test_readiness_retrieval import Composer
+    monkeypatch.setattr('iam_sra.readiness_retrieval.ExplanationClient',Composer)
+    app=start(monkeypatch,Extractor([record()]))
+    app.text_area(key='readiness_answer').set_value('Sound could interrupt rest.')
+    click(app,'Continue');confirm(app)
+    initial=app.session_state.session.initial_readiness
+    app.text_input(key='information_custom').set_value('Are camera images recorded or retained?')
+    click(app,'Show sourced answer')
+    s=app.session_state.session;exposure=s.information_exposures[-1]
+    assert exposure['source']=='local_retrieval_display'
+    assert exposure['content']['excerpts'] and s.initial_readiness==initial
+    assert len(s.answers)==0 and not app.exception
+    assert not any(e.label=='Researcher evidence report' for e in app.expander)
+    assert not any(e.label=='FN historical reference comparison' for e in app.expander)
+
+
+def test_developer_reference_and_report_do_not_change_citizen_session(monkeypatch):
+    client=Extractor(stance='opposed');app=start(monkeypatch,client)
+    app.text_area(key='readiness_answer').set_value('I oppose this route.');click(app,'Continue');confirm(app)
+    click(app,'Finish questions')
+    before=app.session_state.session.export()
+    monkeypatch.setenv('IAM_DEVELOPER','1');app.run()
+    assert not app.exception
+    assert any(e.label=='FN historical reference comparison' for e in app.expander)
+    assert any(e.label=='Researcher evidence report' for e in app.expander)
+    assert app.session_state.session.export()==before
+    click(app,'Interpret reference answer')
+    reference=app.session_state.fn_reference_interpretation
+    assert reference['confirmation'].startswith('Unconfirmed')
+    assert reference['pending_interpretation']['text'].startswith('Look, I get')
+    assert app.session_state.session.export()==before

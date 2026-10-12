@@ -111,3 +111,14 @@ The presentation update uses instrument 1.2.2 for the neutral initial invitation
 See [UI source checklist and verification](readiness-ui-guidelines-review.md).
 Restart only the UI, confirm Start over, and enter a new answer to use instrument 1.2.2.
 Existing sessions retain their original snapshots; they are not silently repaired.
+
+## Meeting increment 1.3.0
+
+See [FN meeting guide](fn-meeting-guide.md). Existing five-question definitions and
+eligibility are unchanged. Optional information now requires a logged display action,
+with separate acknowledgement and first pre-information snapshot; a small allowlisted
+lexical/extractive RAG module is independent of assessment extraction. Default numbers
+remain null. Export schema 6.3.0 adds information provenance without rewriting old
+history. Prompts explicitly retain belief/report attribution for unverified facts.
+Model source-first extraction/blind review remains required; this is not an external
+truth verifier or approved learning/CRL rubric.

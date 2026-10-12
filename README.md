@@ -134,3 +134,19 @@ The defaults select the 24 development cases; `--ids` and `--split` control sele
 The old pre-confirmation session, one-shot scorer, obsolete smoke scripts and historical reports have been removed from the active repository. Recoverable historical material is in an external archive; see [cleanup notes](docs/repository-cleanup.md). Current export/audit compatibility remains where the application and diagnostic tools use it.
 
 Current readiness interview (1.2.2): [understanding, optional learning and evidence review](docs/readiness-v120-fn-review.md). The historical acceptance index remains separate. See the [UI guide checklist, source pages and verification limits](docs/readiness-ui-guidelines-review.md) for the current interface and missing partner-kit assets.
+
+### FN meeting increment (instrument 1.3.0)
+
+See [the meeting guide](docs/fn-meeting-guide.md) for the three cases, grounded
+optional information, researcher audit, source limitations, exact commands and four
+FN decisions. Default CRL/SRL remain null. The small local lexical RAG prototype
+uses only a versioned allowlist; model-selected exact excerpts have validated
+citations and sourced fallbacks. It is not a comprehensive knowledge service.
+
+```bash
+.venv/bin/python scripts/smoke-readiness-evidence.py --meeting --output .runtime/fn-meeting-live.json
+```
+
+Scripted confirmations are automation, not citizen validation. Structural passes
+are not semantic approval; inspect real outputs. Live execution was blocked in the
+editing environment by localhost `Operation not permitted`; no live accuracy claim.

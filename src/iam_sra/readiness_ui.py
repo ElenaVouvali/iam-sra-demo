@@ -61,22 +61,47 @@ def render(session, client, developer=False):
                     st.button(label, key='edit_' + e['id'], on_click=edit)
 
     def learning_option():
+        from .readiness_retrieval import corpus, ExplanationClient
         with st.expander('Optional: learn more about this example'):
             module = getattr(s, 'information_module', config('readiness_information'))
-            st.caption('Optional explanation. You can keep your original view.')
-            for paragraph in module['paragraphs']: st.write(paragraph)
-            st.caption('Reading is recorded separately from understanding. Any optional question uses the same total question budget.')
-            check_done = any(a['question']['id'] == module['understanding_check']['id'] for a in s.answers)
-            if len(s.answers) >= s.question_budget or check_done:
-                st.write('No additional reflection question will be asked in this session.')
-                st.button('Record reading', on_click=s.record_information_exposure)
-            else:
-                st.button('Read and reflect', on_click=perform, args=(s.start_learning,))
+            collection = getattr(s, 'retrieval_corpus', corpus())
+            st.caption('Draft demo explanations, awaiting FN review. Optional; your view can stay the same.')
+            st.button('Show explanation', on_click=perform, args=(s.display_information,))
+            displays = [e for e in s.information_exposures if e['source'] == 'controlled_demo_explanation_display']
+            if displays:
+                for paragraph in displays[-1]['content']['paragraphs']: st.write(paragraph)
+                for ref in module['source_references']: st.caption(ref['document'] + ' · ' + ref['location'])
+                st.button('I have read this', on_click=perform, args=(s.acknowledge_information, displays[-1]['exposure_id']))
+                check_done = any(a['question']['id'] == module['understanding_check']['id'] for a in s.answers)
+                st.caption('Reading adds no readiness evidence. Optional reflection uses the existing interview question budget.')
+                if len(s.answers) >= s.question_budget or check_done:
+                    st.write('No additional reflection question will be asked in this session.')
+                    st.button('Record reading', on_click=perform, args=(s.record_information_exposure,))
+                else:
+                    st.button('Read and reflect', on_click=perform, args=(s.start_learning,))
+            st.selectbox('Suggested question', collection['suggested_questions'], key='information_question')
+            st.text_input('Your short question (optional)', max_chars=collection['maximum_question_characters'], key='information_custom')
+            count = sum(e['source'] == 'local_retrieval_display' for e in s.information_exposures)
+            def ask():
+                if '_explanation_client' not in st.session_state: st.session_state._explanation_client = ExplanationClient()
+                perform(s.ask_information, st.session_state.get('information_custom', '').strip() or st.session_state.information_question,
+                        st.session_state._explanation_client)
+            st.button('Show sourced answer', on_click=ask, disabled=count >= collection['maximum_requests_per_session'])
+            st.caption('At most four optional information requests, separate from interview questions. No answer from model memory.')
+            retrieved = [e for e in s.information_exposures if e['source'] == 'local_retrieval_display']
+            if retrieved:
+                exposure = retrieved[-1]; answer = exposure['content']
+                st.caption(answer['label']); st.text(answer['question']); st.write(answer['notice'])
+                sources = {p['id']:p for p in answer['passages']}
+                for item in answer['excerpts']:
+                    st.text(item['quotation']); source = sources[item['passage_id']]
+                    st.caption(source['id'] + ' · ' + source['document_title'] + ' · ' + source['location'] + ' · ' + source['review_status'])
+                st.button('Acknowledge answer', on_click=perform, args=(s.acknowledge_information, exposure['exposure_id']))
 
     if s.state == 'answer':
         st.subheader('The proposal')
         st.write(s.scenario['text'])
-        st.caption('An illustrative scenario, not a confirmed plan in a named city.')
+        st.write('An illustrative scenario, not a confirmed plan in a named city.')
         with st.container(key='iam_accent'):
             with st.form('readiness_initial'):
                 st.text_area(s.instrument.get('initial_invitation', 'How do you feel about this proposal? What would make it acceptable?'), key='readiness_answer', height=180)
@@ -95,7 +120,6 @@ def render(session, client, developer=False):
         if interaction == 'confused': st.write('The question was unclear to you. This does not change the evidence you already shared.')
         elif interaction in {'declined', 'already_answered'}: st.write('You do not want to repeat this answer. We will move on.')
         elif not pending['records']: st.write('This answer adds no further details about understanding or participation.')
-        with st.expander('Your supporting words'): st.text(pending['text'])
         st.caption('Confirm whether we understood you. This does not independently verify events you described.')
         key = 'readiness_confirm_' + str(pending['version'])
         st.checkbox('This reflects what I meant', key=key)
@@ -174,6 +198,30 @@ def render(session, client, developer=False):
             st.write(s.assessment_participation['note'])
             st.write('Thematic areas are topics, not CRL maturity stages.')
     if developer:
+        from .readiness_report import evidence_report, markdown_report, fn_reference
+        with st.expander('Researcher evidence report'):
+            report = evidence_report(s.export())
+            st.caption(report['note'])
+            st.json(report)
+            st.download_button('Download evidence report', markdown_report(s.export()), file_name='iam-researcher-report.md')
+        with st.expander('FN historical reference comparison'):
+            reference = fn_reference()
+            st.write(reference['label']); st.caption('SRA_LLM_FN_concept.pdf · pp.6–7 · source checked, not an approved instrument')
+            st.json(reference['source_scores']); st.write(reference['arithmetic'])
+            for difference in reference['differences']: st.write(difference)
+            st.caption('Separate reference session; values above never enter the citizen assessment. Model interpretation remains unconfirmed.')
+            def run_reference():
+                from .readiness_session import ReadinessSession
+                from .readiness_client import ReadinessClient
+                comparison = ReadinessSession()
+                comparison.submit(reference['source_citizen_text'], ReadinessClient())
+                st.session_state.fn_reference_interpretation = {'pending_interpretation':comparison.pending,
+                    'instrument_version':comparison.instrument['version'], 'provenance':comparison.export()['provenance'],
+                    'confirmation':'Unconfirmed model interpretation; not citizen validation'}
+            st.button('Interpret reference answer', on_click=perform, args=(run_reference,))
+            if st.session_state.get('fn_reference_interpretation'):
+                st.json(st.session_state.fn_reference_interpretation)
+            else: st.caption(reference['current_model_output_status'])
         with st.expander('Developer diagnostics'):
             st.json({'assessment_mode': s.assessment_mode, 'inference': s.inference, 'last_error': st.session_state.get('readiness_diagnostic')})
             if s.final_readiness:

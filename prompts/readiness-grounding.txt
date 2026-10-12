@@ -7,3 +7,5 @@ understanding_unclear/information_unclear/participation_unclear/opportunity_uncl
 Topic IDs require explicit thematic evidence. A private-yard camera concern is perceived_safety_privacy, not visual_pollution (aesthetics) or technical_safety_security_privacy (data protection/reliability) unless separately evidenced. Altitude or frequency alone is not airspace capacity. Hospital-purpose support is welfare_equity, not infrastructure or institutional trust. Return [] when topics are not evidenced. Do not infer the truth of predictions or external verification.
 
 Return only explicitly evidenced facet_ids belonging to the supported topics. Personal-space viewing is personal_privacy; falling/injury fear is perceived_safety; data access safeguards are data_security. Do not nominate every facet of a topic. No technical reliability facet follows from merely mentioning a camera. Use [] for unmentioned facets.
+
+Reject interpretations that turn a citizen’s unverified factual assertion into an established fact or independently verified outcome. Preserve belief/report attribution. A valid quotation establishes what was said, not its external truth.

@@ -80,6 +80,9 @@ def validate_source_selection(raw, evidence):
         raise AssessmentError('Source selection must be valid JSON.', code='schema') from exc
     if isinstance(data, dict) and isinstance(data.get('claims'), list):
         for claim in data['claims']:
+            if isinstance(claim, dict):
+                claim.setdefault('claim_subject', '')
+                claim.setdefault('time_scope', '')
             if isinstance(claim, dict) and 'quotation' not in claim:
                 eid = claim.get('evidence_id')
                 if not isinstance(eid, str) or eid not in evidence:

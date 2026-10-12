@@ -163,3 +163,29 @@ from the AppTest description artifact.
 - Source PDF and both runtime review artifacts confirmed Git-ignored.
 - No browser screenshots, live-model validation, hub deployment or service restart
   performed. Uncommitted work remains uncommitted; no push performed.
+
+## Meeting increment — instrument 1.3.0
+
+The original 19-page guide and rendered contact sheets were rechecked. Existing
+palette, typography fallback, layout and one-primary-action flow are retained.
+Optional retrieval is secondary; short questions use visible labels. No new approved
+assets were supplied, and no official mark/font was recreated. All outstanding
+logo/font/EU-emblem/partner/privacy/hub decisions above remain open.
+
+The previous optional-expander exposure gap is corrected: **Show explanation**
+and **Show sourced answer** log exact content before it is rendered; mere expansion
+shows no explanation. Reading acknowledgement is a separate event. Existing reflection
+is reused rather than adding another understanding question. Researcher reports and
+FN fixed-score comparison remain developer-only. Complete JSON/JSONL downloads
+remain citizen-accessible, with additive schema 6.3.0.
+
+No browser automation/runtime is installed (Chromium/Chrome, Playwright and Selenium
+were checked). Actual 1440/390/360px screenshots, 200% zoom, keyboard navigation,
+modal focus and rendered contrast remain **unverified**, not replaced by AppTest
+screens. Use the manual checklist above before the meeting and retain screenshots
+under ignored .runtime/. No claim of full compliance or approval is made.
+
+Meeting increment verification: full suite **1,137 passed in 56.82s**, including
+explicit-display logging, developer-reference isolation and retained citizen downloads.
+Compileall and diff checks pass. Live cases are blocked by localhost permissions;
+no screenshots or browser/mobile/keyboard checks have been claimed as completed.
