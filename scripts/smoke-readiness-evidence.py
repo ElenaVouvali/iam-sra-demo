@@ -87,7 +87,7 @@ def main():
         output.write_text(json.dumps(screened_export(report),indent=2));print(json.dumps(report));return 2
     selected = [(c['id'],c['initial_answer']) for c in definitions] if definitions else CASES
     for name,text in selected:
-        s=Session();client=ReadinessClient(base_url=args.base_url);started=time.monotonic()
+        s=Session(assessment_mode="acceptance_and_readiness_evidence");client=ReadinessClient(base_url=args.base_url);started=time.monotonic()
         row={'id':name,'input':text}
         try:
             if definitions:

@@ -4,7 +4,7 @@ from test_readiness_evidence_mode import Extractor, record
 
 
 def start(monkeypatch, client):
-    monkeypatch.delenv('IAM_ASSESSMENT_MODE',raising=False)
+    monkeypatch.setenv('IAM_ASSESSMENT_MODE','acceptance_and_readiness_evidence')
     monkeypatch.delenv('IAM_DEVELOPER',raising=False)
     monkeypatch.setenv('IAM_MOCK','0')
     monkeypatch.setattr('iam_sra.readiness_client.ReadinessClient',lambda:client)

@@ -6,14 +6,14 @@ TITLE = 'IAM-SRA2 | IAM-CC'
 SUBTITLE = 'Medical drones in your neighborhood'
 
 
-def header():
+def header(baseline=False):
     st.html('<style>' + (ROOT / 'assets/ui/iam-cc.css').read_text() + '</style>')
     # Plain project identity, not a substitute/recreation of the unsupplied logo.
     st.html('<header class="iam-header"><span>IAM-CC</span><span aria-hidden="true">|</span>'
             '<strong>IAM-SRA2</strong><a href="https://hub.iamcc.eu" target="_blank" '
             'rel="noopener noreferrer">IAM-CC hub</a></header>')
-    st.title(SUBTITLE)
-    st.write('Share your views on this illustrative hospital delivery route. There are no right or wrong answers.')
+    st.title('IAM-SRA2 · Your starting point' if baseline else SUBTITLE)
+    st.write('Tell us what you know about delivery drones and any experience you have had.' if baseline else 'Share your views on this illustrative hospital delivery route. There are no right or wrong answers.')
 
 
 def navigation(state):
@@ -48,13 +48,13 @@ def findings(label, values):
             for value in values[3:]: st.text(value)
 
 
-def footer():
+def footer(baseline=False):
     st.divider()
-    st.caption('Funded by the European Union under Grant Agreement No 101271620. Views and opinions expressed are those of the author(s) only and do not necessarily reflect those of the European Union or the granting authority. Neither the European Union nor the granting authority can be held responsible for them.')
+    st.write('Funded by the European Union under Grant Agreement No 101271620. Views and opinions expressed are those of the author(s) only and do not necessarily reflect those of the European Union or the granting authority. Neither the European Union nor the granting authority can be held responsible for them.')
     with st.expander('Privacy and project information'):
         st.write('Your answers are held in this app session and sent to the configured model service, localhost by default. Downloads include your answers and the assessment audit. Start over clears the app session but cannot remove files you already downloaded.')
-        st.write('IAM-SRA2 is the overall tool. This internal demo implements its citizen component: proposal views and partial evidence relevant to Citizen Readiness Levels (CRL). Societal Readiness (SRL) is broader and draws on technical (TRL), organisational (ORL) and citizen readiness; this interview is not a city SRL.')
-        st.write('Five interview dimensions do not cover all nine CRL levels or all 15 topics. Numerical criteria await agreement.')
+        st.write('IAM-SRA2 is the overall tool. This interview asks about your understanding and experience. You can also choose to explore an illustrative proposal afterwards. It does not audit organisational or technical capability. Societal Readiness (SRL) is broader and draws on technical (TRL), organisational (ORL) and citizen readiness; this interview is not a city SRL.')
+        st.write('This interview captures part of your understanding and experience. It does not assign a readiness level.' if baseline else 'Five interview dimensions do not cover all nine CRL levels or all 15 topics. Numerical criteria await agreement.')
         st.write('Local screening can miss private information. Masked text is not necessarily anonymous.')
         st.write('Reset is not secure erasure. Downloads remain with their recipients.')
 

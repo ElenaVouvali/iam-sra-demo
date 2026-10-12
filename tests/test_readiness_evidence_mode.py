@@ -31,11 +31,11 @@ class Extractor:
 
 
 def confirmed(client=None, text='I oppose the route because repeated flights may interrupt rest.', **kwargs):
-    s=Session(**kwargs); s.submit(text,client or Extractor([record()])); s.confirm(True); return s
+    s=Session(assessment_mode="acceptance_and_readiness_evidence",**kwargs); s.submit(text,client or Extractor([record()])); s.confirm(True); return s
 
 
 def test_default_and_historical_modes_are_explicit_and_fixed():
-    s=Session(); assert s.assessment_mode=='acceptance_and_readiness_evidence'
+    s=Session(assessment_mode="acceptance_and_readiness_evidence"); assert s.assessment_mode=='acceptance_and_readiness_evidence'
     assert isinstance(Session(assessment_mode='legacy_fn_acceptance_demo'),LegacySession)
     with pytest.raises(AttributeError): s.assessment_mode='legacy_fn_acceptance_demo'
     with pytest.raises(ValueError): Session(assessment_mode='invalid')
@@ -120,7 +120,7 @@ def test_missing_and_invalid_citations_fail_without_historical_fallback():
     class Bad(Extractor):
         def extract_readiness(self,evidence,**kwargs):
             result=super().extract_readiness(evidence,**kwargs);result.records[0].evidence_ids=['invented'];return result
-    s=Session()
+    s=Session(assessment_mode="acceptance_and_readiness_evidence")
     with pytest.raises(AssessmentError):s.submit('An arbitrary answer about an unseen impact.',Bad([record()]))
     assert s.state=='answer' and s.draft_text and s.initial_readiness is None
     assert s.export()['numerical_srl'] is None
@@ -129,14 +129,14 @@ def test_missing_and_invalid_citations_fail_without_historical_fallback():
 def test_model_failure_retains_draft_and_does_not_confirm_or_score():
     class Broken:
         def extract_readiness(self,*args,**kwargs):raise AssessmentError('unavailable',code='transport')
-    s=Session()
+    s=Session(assessment_mode="acceptance_and_readiness_evidence")
     with pytest.raises(AssessmentError):s.submit('Unexpected response, still valid text.',Broken())
     assert s.draft_text=='Unexpected response, still valid text.' and not s.confirmations
     assert s.initial_readiness is None and s.final_readiness is None
 
 
 def test_empty_answer_is_retryable_skip_is_not_an_answer_or_capability():
-    s=Session()
+    s=Session(assessment_mode="acceptance_and_readiness_evidence")
     with pytest.raises(AssessmentError):s.submit('',Extractor())
     s=confirmed(Extractor());s.skip()
     assert s.current_profile['criterion_coverage']['understanding']['status']=='skipped'
@@ -287,7 +287,7 @@ def test_same_policy_source_for_ui_export_and_null_reason():
 
 
 def test_confirmation_required_and_pending_cannot_be_final():
-    s=Session();s.submit('I support the service.',Extractor(stance='supported'))
+    s=Session(assessment_mode="acceptance_and_readiness_evidence");s.submit('I support the service.',Extractor(stance='supported'))
     with pytest.raises(ValueError):s.confirm(False)
     with pytest.raises(ValueError):s.finish()
     assert not s.current_profile['records']

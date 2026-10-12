@@ -2,9 +2,11 @@
 
 # iam-sra-demo
 
-The default citizen demo separates **views of the proposal** from **readiness evidence**: understanding of possible impacts, information needs, participation, reported influence and opportunities or barriers to agency. Opposition can contain strong evidence; support alone does not establish readiness.
+New sessions start with **Phase 1: a scenario-free baseline** about perspective, stakeholder role, city, prior familiarity, understanding, experience and participation needs. Four core items and at most two evidence-driven probes lead to an editable, confirmed summary. No acceptance or numerical CRL/ORL/TRL/SRL is assigned. See [Phase-1 implementation, source mapping and walkthrough](docs/phase1-baseline.md).
 
-The five-question draft interview adapts to confirmed evidence already supplied, permits skipping and finishing, and asks about influence only after actual participation is reported. Confirming an interpretation does not verify events or approve the methodology. Initial confirmed evidence is preserved when later answers or corrections refine the assessment.
+The separate illustrative citizen-scenario demo separates **views of the proposal** from **readiness evidence**: understanding of possible impacts, information needs, participation, reported influence and opportunities or barriers to agency. Opposition can contain strong evidence; support alone does not establish readiness.
+
+The separate scenario interview (at most four questions) adapts to confirmed evidence already supplied, permits skipping and finishing, and asks about influence only after actual participation is reported. Confirming an interpretation does not verify events or approve the methodology. Initial confirmed evidence is preserved when later answers or corrections refine the assessment.
 
 **No numerical CRL or SRL is assigned in the default mode.** Numerical criteria and aggregation await methodological approval. The 15 areas remain topics; historical phase assignments are not CRL stages. The workbook is a partner-review draft.
 

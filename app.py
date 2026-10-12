@@ -16,12 +16,12 @@ from iam_sra.privacy import NOTICE, PrivacyError, check_contract, safe_message, 
 from iam_sra.privacy_ui import invoke, preview_control, download_button
 from iam_sra.ui_presentation import TITLE, header, restart_control, footer
 st.set_page_config(page_title=TITLE,layout='centered')
-header()
+header(baseline=getattr(st.session_state.get('session'),'assessment_mode',os.getenv('IAM_ASSESSMENT_MODE','general_baseline'))=='general_baseline')
 mock=os.getenv('IAM_MOCK','0')=='1'
 developer=os.getenv('IAM_DEVELOPER','0')=='1'
 # Mode is selected only when creating a session. Existing sessions retain their
 # original instrument, including historical sessions created before this update.
-selected_mode=os.getenv('IAM_ASSESSMENT_MODE','acceptance_and_readiness_evidence')
+selected_mode=os.getenv('IAM_ASSESSMENT_MODE','general_baseline')
 if developer and 'session' not in st.session_state:
     st.selectbox('Demo assessment mode',list(config('assessment_modes')['modes']),
         index=list(config('assessment_modes')['modes']).index(selected_mode),
@@ -39,6 +39,14 @@ if 'session' not in st.session_state:
 try: check_contract(st.session_state.session)
 except PrivacyError as exc:
     st.error(str(exc)); restart_control(); footer(); st.stop()
+if getattr(st.session_state.session,'assessment_mode',None)=='general_baseline':
+    from iam_sra.baseline_ui import render
+    from iam_sra.baseline_client import BaselineClient, MockBaselineClient
+    if '_baseline_client' not in st.session_state:
+        st.session_state._baseline_client=MockBaselineClient() if mock else BaselineClient()
+    if mock: st.warning('MOCK MODE — empty evidence fixture; not a semantic assessment.')
+    render(st.session_state.session,st.session_state._baseline_client,developer)
+    st.stop()
 if getattr(st.session_state.session,'assessment_mode','legacy_fn_acceptance_demo')=='acceptance_and_readiness_evidence':
     from iam_sra.readiness_ui import render
     from iam_sra.readiness_client import ReadinessClient

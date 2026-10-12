@@ -1,6 +1,6 @@
 """Existing regressions use a declared synthetic detector double, not live Presidio.
 
-The user-requested demo defaults to screening off; regressions explicitly enable it. Detector integration is tested separately when the
+Privacy screening is mandatory. Detector integration is tested separately when the
 pinned packages/model are installed. These doubles prove flow, not NLP coverage.
 """
 import re

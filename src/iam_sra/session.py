@@ -1001,8 +1001,11 @@ class LegacySession:
     def jsonl(self):return json.dumps(self.export(),ensure_ascii=False,separators=(',',':'))+'\n'
 
 
-def Session(*, assessment_mode="acceptance_and_readiness_evidence", **kwargs):
+def Session(*, assessment_mode="general_baseline", **kwargs):
     """Create an explicitly fixed-mode session; historical records are never migrated."""
+    if assessment_mode == "general_baseline":
+        from .baseline_session import BaselineSession
+        return BaselineSession(**kwargs)
     if assessment_mode == "acceptance_and_readiness_evidence":
         from .readiness_session import ReadinessSession
         return ReadinessSession(**kwargs)

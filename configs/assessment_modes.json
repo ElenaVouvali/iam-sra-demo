@@ -1,7 +1,12 @@
 {
-  "version": "1.0.0",
-  "default_mode": "acceptance_and_readiness_evidence",
+  "version": "2.0.0",
+  "default_mode": "general_baseline",
   "modes": {
+    "general_baseline": {
+      "label": "Phase 1 — general baseline",
+      "numerical_crl": null,
+      "numerical_srl": null
+    },
     "acceptance_and_readiness_evidence": {
       "label": "Proposal views and readiness evidence",
       "numerical_crl": null,

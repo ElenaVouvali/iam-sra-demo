@@ -1,0 +1,849 @@
+{
+  "schema_version": "iam-baseline-1.0.0",
+  "assessment_mode": "general_baseline",
+  "mode_version": "2.0.0",
+  "session_id": "66c4f17e-73ae-4f96-a6a8-c7240e6bf499",
+  "state": "complete",
+  "context": "general_baseline",
+  "scenario_id": null,
+  "privacy_contract": "privacy-1.0.0",
+  "respondent_context": {
+    "perspective": "personal",
+    "stakeholder_category": "citizen",
+    "city": "withheld",
+    "broad_place": null,
+    "function": null,
+    "language": "en"
+  },
+  "context_history": [
+    {
+      "version": 1,
+      "context": {
+        "perspective": "personal",
+        "stakeholder_category": "citizen",
+        "city": "withheld",
+        "broad_place": null,
+        "function": null,
+        "language": "en"
+      },
+      "confirmed": true
+    }
+  ],
+  "instrument": {
+    "version": "phase1-1.0.0",
+    "review_status": "draft_pending_FN",
+    "approved_by": null,
+    "locale": "en",
+    "context": "general_baseline",
+    "scenario_id": null,
+    "maximum_core_items": 4,
+    "maximum_adaptive_probes": 2,
+    "perspectives": {
+      "personal": "Personal view",
+      "organisation": "Representing an organisation",
+      "withheld": "Unsure or prefer not to say"
+    },
+    "stakeholders": {
+      "citizen": "Resident / citizen",
+      "authority": "Public authority",
+      "operator": "Drone / logistics operator",
+      "healthcare": "Healthcare provider / business",
+      "researcher": "Researcher / educator",
+      "community": "Community or civil society organisation",
+      "other": "Other",
+      "withheld": "Prefer not to say"
+    },
+    "cities": {
+      "madrid": "Madrid",
+      "milan": "Milan",
+      "coimbra": "Coimbra region",
+      "other": "Another city / region",
+      "withheld": "Prefer not to say"
+    },
+    "familiarity": {
+      "no": "No",
+      "little": "Yes, a little",
+      "lot": "Yes, quite a lot",
+      "unsure": "Unsure",
+      "withheld": "Prefer not to say"
+    },
+    "core_questions": [
+      {
+        "id": "familiarity",
+        "dimension": "familiarity",
+        "format": "selection",
+        "text": "Before today, had you heard about drones being used to transport goods or healthcare materials?",
+        "organisation_text": "Before today, had you personally heard about drones being used to transport goods or healthcare materials?",
+        "covers": [
+          "familiarity"
+        ],
+        "rule_id": "core_familiarity"
+      },
+      {
+        "id": "understanding",
+        "dimension": "understanding",
+        "format": "text",
+        "text": "In your own words, what do you currently know about these uses and their possible effects?",
+        "organisation_text": "In your own words, what do you currently know about these uses and their possible effects? Distinguish your own understanding from organisational activity you know about.",
+        "covers": [
+          "understanding"
+        ],
+        "rule_id": "core_understanding"
+      },
+      {
+        "id": "experience",
+        "dimension": "exposure",
+        "format": "text",
+        "text": "Before this session, have you had any direct experience, learning or involvement related to these uses? If yes, briefly describe what you did.",
+        "organisation_text": "Before this session, have you had any direct experience, learning or involvement related to these uses? Describe what you did, or an organisational activity you know about, and say which you mean.",
+        "covers": [
+          "exposure",
+          "participation"
+        ],
+        "rule_id": "core_experience",
+        "when_exposure_already_reported": "You mentioned an earlier activity. What did you do or contribute during it, if anything?"
+      },
+      {
+        "id": "needs",
+        "dimension": "information",
+        "format": "text",
+        "text": "What would you like to understand better, or what would help you take part in discussions or decisions about these uses?",
+        "organisation_text": "What would you like to understand better, or what support would help you or the organisation you represent take part in discussions or decisions about these uses? Say which you mean.",
+        "covers": [
+          "information",
+          "opportunity"
+        ],
+        "rule_id": "core_needs",
+        "when_information_already_reported": "What would help you take part in discussions or decisions about these uses, if anything?",
+        "when_opportunity_already_reported": "What would you like to understand better about these uses, if anything?"
+      }
+    ],
+    "probes": [
+      {
+        "id": "scope",
+        "dimension": null,
+        "text": "Are these statements about the same activity and period, or different experiences? You can say if you are unsure.",
+        "rule_id": "ambiguous_scope",
+        "priority": 1,
+        "eligibility": "positive_and_absence_scope_unresolved"
+      },
+      {
+        "id": "reasoning",
+        "dimension": "understanding",
+        "text": "Can you explain why that effect might occur?",
+        "rule_id": "understanding_detail",
+        "priority": 2,
+        "eligibility": "understanding_claim_without_reason"
+      },
+      {
+        "id": "contribution",
+        "dimension": "participation",
+        "text": "What did you do or contribute during that activity, if anything?",
+        "rule_id": "exposure_contribution_unknown",
+        "priority": 3,
+        "eligibility": "actual_exposure_without_contribution_evidence"
+      },
+      {
+        "id": "domain",
+        "dimension": "exposure",
+        "text": "Were those experiences about drones or another service?",
+        "rule_id": "actual_experience_domain_unknown",
+        "priority": 4,
+        "eligibility": "actual_experience_unknown_domain"
+      },
+      {
+        "id": "influence",
+        "dimension": "influence",
+        "text": "Do you know whether anything changed following your contribution?",
+        "rule_id": "contribution_outcome_unknown",
+        "priority": 5,
+        "eligibility": "actual_contribution_without_outcome"
+      }
+    ],
+    "dimensions": {
+      "familiarity": "Prior familiarity",
+      "understanding": "What you explained",
+      "information": "Information you would like",
+      "exposure": "Experience and learning",
+      "participation": "Participation and contributions",
+      "influence": "Reported influence",
+      "opportunity": "Opportunities and barriers"
+    },
+    "numerical_policy": {
+      "numerical_crl": null,
+      "numerical_orl": null,
+      "numerical_trl": null,
+      "numerical_srl": null,
+      "reason": "Numerical criteria and aggregation awaiting methodological approval."
+    },
+    "sources": [
+      "IAM-CC_Topic_experts.xlsx: Read me!D1:L13; SRA IAM indicators!D8/I8,D15/I15,D16/I16; Use case(s) per LL!A1:D2",
+      "GA: T3.2–T3.4; Part B pp.5,16"
+    ],
+    "wording_status": "Questions proposed for this prototype under latest meeting instructions; not FN-approved verbatim wording. No complete 135 × 3 bank supplied.",
+    "prompt_version": "baseline-1.0.0"
+  },
+  "prompt_version": "baseline-1.0.0",
+  "prompt_hashes": {
+    "evidence": "8f085414dc948664a05e6c5753970669ab010f1dc2a81825435a74b919d9ea86",
+    "grounding": "12998bcf16f19dbc857fcc135624ae725e32deb4bc32f4aa1c87f7994b71288e"
+  },
+  "source_provenance": [
+    {
+      "document": "IAM-CC_Topic_experts.xlsx",
+      "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+      "reviewed_sections": [
+        "Read me!A1",
+        "Read me!J1:L13",
+        "SRA IAM indicators!C2:D16",
+        "SRA IAM indicators!H2:I16",
+        "Use case(s) per LL!A1:D2"
+      ]
+    },
+    {
+      "document": "WP3_IAM-CC_Minutes_20261008.docx",
+      "sha256": "1b65188970fadabc8d58ebb36228cb92c5282670878548106fd66243d4899048",
+      "reviewed_sections": [
+        "Discussion and Decision",
+        "Action Points 1–3"
+      ]
+    },
+    {
+      "document": "IAM-CC_WP3_2026.09.10.pptx",
+      "sha256": "4bb274b029c752b392c5c1edca381f9481c9d64904a4c8408912a84e6079bb44",
+      "reviewed_sections": [
+        "slides 3–6"
+      ]
+    },
+    {
+      "document": "SRA_LLM_FN_concept.pdf",
+      "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+      "reviewed_sections": [
+        "pages 1–9; scenario p.5, historical example pp.6–7, gates pp.8–9"
+      ]
+    },
+    {
+      "document": "GA.pdf",
+      "sha256": "d2eb185831a9b3ca0c7f1c2f7ade571e1dc5dafe7b4daeb39a367b4d539dcf86",
+      "reviewed_sections": [
+        "T3.2–T3.4 (document printed p.9)",
+        "Part B p.5 (empowerment/agency)",
+        "Part B p.16 (IAM-SRA2)",
+        "Part B pp.5/16: IAM-SRA2 and TRL/ORL/CRL synthesis",
+        "Task 1.2, D1.2 and WP13 D13.1: planned data-management/ethics deliverables"
+      ]
+    },
+    {
+      "document": "IAM-CC_UI_guidelines_for_tools-2.pdf",
+      "sha256": "c062b1ff1c38a40848cd0a34dc600ca46f121add7d0e876db056083697618cc3",
+      "reviewed_sections": [
+        "All 19 pages; all rendered pages visually inspected",
+        "Foundations pp.5–9; components pp.11–15; hub and handover pp.17–18"
+      ]
+    }
+  ],
+  "numerical_crl": null,
+  "numerical_orl": null,
+  "numerical_trl": null,
+  "numerical_srl": null,
+  "model_provenance": {
+    "version": "1.0.0",
+    "model": "Qwen/Qwen3-8B",
+    "revision": "b968826d9c46dd6066d109eabc6255188de91218"
+  },
+  "events": [
+    {
+      "id": "B2_1",
+      "version": 2,
+      "question": {
+        "id": "familiarity",
+        "dimension": "familiarity",
+        "format": "selection",
+        "text": "Before today, had you heard about drones being used to transport goods or healthcare materials?",
+        "organisation_text": "Before today, had you personally heard about drones being used to transport goods or healthcare materials?",
+        "covers": [
+          "familiarity"
+        ],
+        "rule_id": "core_familiarity",
+        "selection_reason": "Core item; relevant evidence not yet clearly supplied.",
+        "is_probe": false,
+        "question_text": "Before today, had you heard about drones being used to transport goods or healthcare materials?"
+      },
+      "text": "no",
+      "control": "answer",
+      "interaction": "substantive",
+      "claims": [
+        {
+          "evidence_id": "B2_1.p001",
+          "dimension": "familiarity",
+          "kind": "self_report",
+          "interpretation": "Prior familiarity: No.",
+          "topic_ids": [],
+          "subject": "respondent",
+          "temporality": "before_session",
+          "domain": "IAM",
+          "activity_quote": "",
+          "time_quote": "",
+          "status": "explicit_absence",
+          "question_id": "familiarity",
+          "event_id": "B2_1",
+          "evidence_basis": "self_report",
+          "confirmation_status": "confirmed",
+          "version": 2,
+          "context": "general_baseline",
+          "scenario_id": null,
+          "source": "respondent_answer",
+          "elicitation_context": "baseline_core",
+          "information_context": "before_information",
+          "external_verification": false
+        }
+      ],
+      "confirmed": true,
+      "active": true,
+      "context": "general_baseline",
+      "scenario_id": null,
+      "information_context": "before_information",
+      "created_at": "2026-10-12T13:18:35.635182+00:00",
+      "replaces": null
+    },
+    {
+      "id": "B3_2",
+      "version": 3,
+      "question": {
+        "id": "understanding",
+        "dimension": "understanding",
+        "format": "text",
+        "text": "In your own words, what do you currently know about these uses and their possible effects?",
+        "organisation_text": "In your own words, what do you currently know about these uses and their possible effects? Distinguish your own understanding from organisational activity you know about.",
+        "covers": [
+          "understanding"
+        ],
+        "rule_id": "core_understanding",
+        "selection_reason": "Core item; relevant evidence not yet clearly supplied.",
+        "is_probe": false,
+        "question_text": "In your own words, what do you currently know about these uses and their possible effects?"
+      },
+      "text": "",
+      "control": "skip",
+      "interaction": "substantive",
+      "claims": [],
+      "confirmed": true,
+      "active": true,
+      "context": "general_baseline",
+      "scenario_id": null,
+      "information_context": "before_information",
+      "created_at": "2026-10-12T13:18:35.680126+00:00",
+      "replaces": null
+    },
+    {
+      "id": "B4_3",
+      "version": 4,
+      "question": {
+        "id": "experience",
+        "dimension": "exposure",
+        "format": "text",
+        "text": "Before this session, have you had any direct experience, learning or involvement related to these uses? If yes, briefly describe what you did.",
+        "organisation_text": "Before this session, have you had any direct experience, learning or involvement related to these uses? Describe what you did, or an organisational activity you know about, and say which you mean.",
+        "covers": [
+          "exposure",
+          "participation"
+        ],
+        "rule_id": "core_experience",
+        "when_exposure_already_reported": "You mentioned an earlier activity. What did you do or contribute during it, if anything?",
+        "selection_reason": "Core item; relevant evidence not yet clearly supplied.",
+        "is_probe": false,
+        "question_text": "Before this session, have you had any direct experience, learning or involvement related to these uses? If yes, briefly describe what you did."
+      },
+      "text": "",
+      "control": "skip",
+      "interaction": "substantive",
+      "claims": [],
+      "confirmed": true,
+      "active": true,
+      "context": "general_baseline",
+      "scenario_id": null,
+      "information_context": "before_information",
+      "created_at": "2026-10-12T13:18:35.706258+00:00",
+      "replaces": null
+    },
+    {
+      "id": "B5_4",
+      "version": 5,
+      "question": {
+        "id": "needs",
+        "dimension": "information",
+        "format": "text",
+        "text": "What would you like to understand better, or what would help you take part in discussions or decisions about these uses?",
+        "organisation_text": "What would you like to understand better, or what support would help you or the organisation you represent take part in discussions or decisions about these uses? Say which you mean.",
+        "covers": [
+          "information",
+          "opportunity"
+        ],
+        "rule_id": "core_needs",
+        "when_information_already_reported": "What would help you take part in discussions or decisions about these uses, if anything?",
+        "when_opportunity_already_reported": "What would you like to understand better about these uses, if anything?",
+        "selection_reason": "Core item; relevant evidence not yet clearly supplied.",
+        "is_probe": false,
+        "question_text": "What would you like to understand better, or what would help you take part in discussions or decisions about these uses?"
+      },
+      "text": "",
+      "control": "skip",
+      "interaction": "substantive",
+      "claims": [],
+      "confirmed": true,
+      "active": true,
+      "context": "general_baseline",
+      "scenario_id": null,
+      "information_context": "before_information",
+      "created_at": "2026-10-12T13:18:35.737225+00:00",
+      "replaces": null
+    }
+  ],
+  "evidence": {
+    "B2_1.p001": "no"
+  },
+  "confirmations": [
+    {
+      "event_id": "B2_1",
+      "version": 2,
+      "actor": "structured_selection",
+      "meaning": "Confirmation of intended meaning, not independent verification."
+    },
+    {
+      "event_id": "B3_2",
+      "version": 3,
+      "actor": "structured_selection",
+      "meaning": "Confirmation of intended meaning, not independent verification."
+    },
+    {
+      "event_id": "B4_3",
+      "version": 4,
+      "actor": "structured_selection",
+      "meaning": "Confirmation of intended meaning, not independent verification."
+    },
+    {
+      "event_id": "B5_4",
+      "version": 5,
+      "actor": "structured_selection",
+      "meaning": "Confirmation of intended meaning, not independent verification."
+    }
+  ],
+  "corrections": [],
+  "initial_baseline_snapshot": {
+    "claims": [
+      {
+        "evidence_id": "B2_1.p001",
+        "dimension": "familiarity",
+        "kind": "self_report",
+        "interpretation": "Prior familiarity: No.",
+        "topic_ids": [],
+        "subject": "respondent",
+        "temporality": "before_session",
+        "domain": "IAM",
+        "activity_quote": "",
+        "time_quote": "",
+        "status": "explicit_absence",
+        "question_id": "familiarity",
+        "event_id": "B2_1",
+        "evidence_basis": "self_report",
+        "confirmation_status": "confirmed",
+        "version": 2,
+        "context": "general_baseline",
+        "scenario_id": null,
+        "source": "respondent_answer",
+        "elicitation_context": "baseline_core",
+        "information_context": "before_information",
+        "external_verification": false
+      }
+    ],
+    "coverage": {
+      "familiarity": {
+        "status": "explicit_absence",
+        "asked": true,
+        "evidence_ids": [
+          "B2_1.p001"
+        ]
+      },
+      "understanding": {
+        "status": "not_asked",
+        "asked": false,
+        "evidence_ids": []
+      },
+      "information": {
+        "status": "not_asked",
+        "asked": false,
+        "evidence_ids": []
+      },
+      "exposure": {
+        "status": "not_asked",
+        "asked": false,
+        "evidence_ids": []
+      },
+      "participation": {
+        "status": "not_asked",
+        "asked": false,
+        "evidence_ids": []
+      },
+      "influence": {
+        "status": "not_asked",
+        "asked": false,
+        "evidence_ids": []
+      },
+      "opportunity": {
+        "status": "not_asked",
+        "asked": false,
+        "evidence_ids": []
+      }
+    },
+    "unresolved_scope": [],
+    "respondent_context": {
+      "perspective": "personal",
+      "stakeholder_category": "citizen",
+      "city": "withheld",
+      "broad_place": null,
+      "function": null,
+      "language": "en"
+    },
+    "version": 2
+  },
+  "completed_baseline_snapshot": {
+    "claims": [
+      {
+        "evidence_id": "B2_1.p001",
+        "dimension": "familiarity",
+        "kind": "self_report",
+        "interpretation": "Prior familiarity: No.",
+        "topic_ids": [],
+        "subject": "respondent",
+        "temporality": "before_session",
+        "domain": "IAM",
+        "activity_quote": "",
+        "time_quote": "",
+        "status": "explicit_absence",
+        "question_id": "familiarity",
+        "event_id": "B2_1",
+        "evidence_basis": "self_report",
+        "confirmation_status": "confirmed",
+        "version": 2,
+        "context": "general_baseline",
+        "scenario_id": null,
+        "source": "respondent_answer",
+        "elicitation_context": "baseline_core",
+        "information_context": "before_information",
+        "external_verification": false
+      }
+    ],
+    "coverage": {
+      "familiarity": {
+        "status": "explicit_absence",
+        "asked": true,
+        "evidence_ids": [
+          "B2_1.p001"
+        ]
+      },
+      "understanding": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      },
+      "information": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      },
+      "exposure": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      },
+      "participation": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      },
+      "influence": {
+        "status": "not_asked",
+        "asked": false,
+        "evidence_ids": []
+      },
+      "opportunity": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      }
+    },
+    "unresolved_scope": [],
+    "respondent_context": {
+      "perspective": "personal",
+      "stakeholder_category": "citizen",
+      "city": "withheld",
+      "broad_place": null,
+      "function": null,
+      "language": "en"
+    },
+    "version": 5
+  },
+  "completed_snapshot_history": [
+    {
+      "version": 5,
+      "profile": {
+        "claims": [
+          {
+            "evidence_id": "B2_1.p001",
+            "dimension": "familiarity",
+            "kind": "self_report",
+            "interpretation": "Prior familiarity: No.",
+            "topic_ids": [],
+            "subject": "respondent",
+            "temporality": "before_session",
+            "domain": "IAM",
+            "activity_quote": "",
+            "time_quote": "",
+            "status": "explicit_absence",
+            "question_id": "familiarity",
+            "event_id": "B2_1",
+            "evidence_basis": "self_report",
+            "confirmation_status": "confirmed",
+            "version": 2,
+            "context": "general_baseline",
+            "scenario_id": null,
+            "source": "respondent_answer",
+            "elicitation_context": "baseline_core",
+            "information_context": "before_information",
+            "external_verification": false
+          }
+        ],
+        "coverage": {
+          "familiarity": {
+            "status": "explicit_absence",
+            "asked": true,
+            "evidence_ids": [
+              "B2_1.p001"
+            ]
+          },
+          "understanding": {
+            "status": "skipped",
+            "asked": true,
+            "evidence_ids": []
+          },
+          "information": {
+            "status": "skipped",
+            "asked": true,
+            "evidence_ids": []
+          },
+          "exposure": {
+            "status": "skipped",
+            "asked": true,
+            "evidence_ids": []
+          },
+          "participation": {
+            "status": "skipped",
+            "asked": true,
+            "evidence_ids": []
+          },
+          "influence": {
+            "status": "not_asked",
+            "asked": false,
+            "evidence_ids": []
+          },
+          "opportunity": {
+            "status": "skipped",
+            "asked": true,
+            "evidence_ids": []
+          }
+        },
+        "unresolved_scope": [],
+        "respondent_context": {
+          "perspective": "personal",
+          "stakeholder_category": "citizen",
+          "city": "withheld",
+          "broad_place": null,
+          "function": null,
+          "language": "en"
+        },
+        "version": 5
+      },
+      "actor": "automation"
+    }
+  ],
+  "current_profile": {
+    "claims": [
+      {
+        "evidence_id": "B2_1.p001",
+        "dimension": "familiarity",
+        "kind": "self_report",
+        "interpretation": "Prior familiarity: No.",
+        "topic_ids": [],
+        "subject": "respondent",
+        "temporality": "before_session",
+        "domain": "IAM",
+        "activity_quote": "",
+        "time_quote": "",
+        "status": "explicit_absence",
+        "question_id": "familiarity",
+        "event_id": "B2_1",
+        "evidence_basis": "self_report",
+        "confirmation_status": "confirmed",
+        "version": 2,
+        "context": "general_baseline",
+        "scenario_id": null,
+        "source": "respondent_answer",
+        "elicitation_context": "baseline_core",
+        "information_context": "before_information",
+        "external_verification": false
+      }
+    ],
+    "coverage": {
+      "familiarity": {
+        "status": "explicit_absence",
+        "asked": true,
+        "evidence_ids": [
+          "B2_1.p001"
+        ]
+      },
+      "understanding": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      },
+      "information": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      },
+      "exposure": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      },
+      "participation": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      },
+      "influence": {
+        "status": "not_asked",
+        "asked": false,
+        "evidence_ids": []
+      },
+      "opportunity": {
+        "status": "skipped",
+        "asked": true,
+        "evidence_ids": []
+      }
+    },
+    "unresolved_scope": []
+  },
+  "selection_decisions": [
+    {
+      "version": 1,
+      "question_id": "familiarity",
+      "rule_id": "core_familiarity",
+      "reason": "Core item; relevant evidence not yet clearly supplied.",
+      "is_probe": false,
+      "based_on_event_ids": []
+    },
+    {
+      "version": 2,
+      "question_id": "understanding",
+      "rule_id": "core_understanding",
+      "reason": "Core item; relevant evidence not yet clearly supplied.",
+      "is_probe": false,
+      "based_on_event_ids": [
+        "B2_1"
+      ]
+    },
+    {
+      "version": 3,
+      "question_id": "experience",
+      "rule_id": "core_experience",
+      "reason": "Core item; relevant evidence not yet clearly supplied.",
+      "is_probe": false,
+      "based_on_event_ids": [
+        "B2_1",
+        "B3_2"
+      ]
+    },
+    {
+      "version": 4,
+      "question_id": "needs",
+      "rule_id": "core_needs",
+      "reason": "Core item; relevant evidence not yet clearly supplied.",
+      "is_probe": false,
+      "based_on_event_ids": [
+        "B2_1",
+        "B3_2",
+        "B4_3"
+      ]
+    }
+  ],
+  "information_exposures": [],
+  "inference": [],
+  "stop_reason": "completed",
+  "handoff": {
+    "version": "baseline-handoff-1.0.0",
+    "baseline_session_id": "66c4f17e-73ae-4f96-a6a8-c7240e6bf499",
+    "baseline_version": 5,
+    "respondent_context": {
+      "perspective": "personal",
+      "stakeholder_category": "citizen",
+      "city": "withheld",
+      "broad_place": null,
+      "function": null,
+      "language": "en"
+    },
+    "language": "en",
+    "selected_scenario_id": null,
+    "confirmed_topic_ids": [],
+    "gaps": {
+      "familiarity": "explicit_absence",
+      "understanding": "skipped",
+      "information": "skipped",
+      "exposure": "skipped",
+      "participation": "skipped",
+      "influence": "not_asked",
+      "opportunity": "skipped"
+    },
+    "experience_context": [],
+    "claims": [
+      {
+        "evidence_id": "B2_1.p001",
+        "dimension": "familiarity",
+        "kind": "self_report",
+        "interpretation": "Prior familiarity: No.",
+        "topic_ids": [],
+        "subject": "respondent",
+        "temporality": "before_session",
+        "domain": "IAM",
+        "activity_quote": "",
+        "time_quote": "",
+        "status": "explicit_absence",
+        "question_id": "familiarity",
+        "event_id": "B2_1",
+        "evidence_basis": "self_report",
+        "confirmation_status": "confirmed",
+        "version": 2,
+        "context": "general_baseline",
+        "scenario_id": null,
+        "source": "respondent_answer",
+        "elicitation_context": "baseline_core",
+        "information_context": "before_information",
+        "external_verification": false
+      }
+    ],
+    "interpretation_limit": "General baseline evidence; not a response to any scenario."
+  },
+  "numerical_results": {
+    "numerical_crl": null,
+    "numerical_orl": null,
+    "numerical_trl": null,
+    "numerical_srl": null,
+    "reason": "Numerical criteria and aggregation awaiting methodological approval."
+  },
+  "privacy_screening_enabled": true,
+  "fixture_metadata": {
+    "origin": "Synthetic baseline export; structured familiarity and skipped open items.",
+    "live_model_used": false,
+    "confirmation": "Automation, not actual citizen validation."
+  }
+}

@@ -354,7 +354,8 @@ class ReadinessSession:
     def export(self):
         from .readiness_score import current_score
         final = self.final_readiness
-        return {'schema_version': '6.4.0', 'privacy_contract': self.privacy_contract, 'assessment_mode': self.assessment_mode, 'mode_version': self.mode_version,
+        return {**({'baseline_provenance':deepcopy(self.baseline_provenance), 'baseline_handoff':deepcopy(self.baseline_handoff)} if hasattr(self,'baseline_provenance') else {}),
+            'schema_version': '6.5.0' if hasattr(self,'baseline_provenance') else '6.4.0', 'privacy_contract': self.privacy_contract, 'assessment_mode': self.assessment_mode, 'mode_version': self.mode_version,
             'instrument': deepcopy(self.instrument), 'session_id': self.session_id, 'state': self.state,
             'scenario': deepcopy(self.scenario), 'acceptance_profile': self.acceptance,
             'initial_readiness_profile': self.initial_readiness, 'initial_readiness_snapshots': deepcopy(self._initial_snapshots),

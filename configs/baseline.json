@@ -1,0 +1,154 @@
+{
+  "version": "baseline-1.1.0",
+  "review_status": "draft_pending_FN",
+  "approved_by": null,
+  "locale": "en",
+  "context": "general_baseline",
+  "scenario_id": null,
+  "maximum_core_items": 4,
+  "maximum_adaptive_probes": 2,
+  "perspectives": {
+    "personal": "Personal view",
+    "organisation": "Representing an organisation",
+    "withheld": "Unsure or prefer not to say"
+  },
+  "stakeholders": {
+    "citizen": "Resident / citizen",
+    "authority": "Public authority",
+    "operator": "Drone / logistics operator",
+    "healthcare": "Healthcare provider / business",
+    "researcher": "Researcher / educator",
+    "community": "Community or civil society organisation",
+    "other": "Other",
+    "withheld": "Prefer not to say"
+  },
+  "cities": {
+    "madrid": "Madrid",
+    "milan": "Milan",
+    "coimbra": "Coimbra region",
+    "other": "Another city / region",
+    "withheld": "Prefer not to say"
+  },
+  "familiarity": {
+    "no": "No",
+    "little": "Yes, a little",
+    "lot": "Yes, quite a lot",
+    "unsure": "Unsure",
+    "withheld": "Prefer not to say"
+  },
+  "core_questions": [
+    {
+      "id": "familiarity",
+      "dimension": "familiarity",
+      "format": "selection",
+      "text": "Before today, had you heard about drones being used to transport goods or healthcare materials?",
+      "organisation_text": "Before today, had you personally heard about drones being used to transport goods or healthcare materials?",
+      "covers": [
+        "familiarity"
+      ],
+      "rule_id": "core_familiarity"
+    },
+    {
+      "id": "understanding",
+      "dimension": "understanding",
+      "format": "text",
+      "text": "In your own words, what do you currently know about these uses and their possible effects?",
+      "organisation_text": "In your own words, what do you currently know about these uses and their possible effects? Distinguish your own understanding from organisational activity you know about.",
+      "covers": [
+        "understanding"
+      ],
+      "rule_id": "core_understanding"
+    },
+    {
+      "id": "experience",
+      "dimension": "exposure",
+      "format": "text",
+      "text": "Before this session, have you had any direct experience, learning or involvement related to these uses? If yes, briefly describe what you did.",
+      "organisation_text": "Before this session, have you had any direct experience, learning or involvement related to these uses? Describe what you did, or an organisational activity you know about, and say which you mean.",
+      "covers": [
+        "exposure",
+        "participation"
+      ],
+      "rule_id": "core_experience",
+      "when_exposure_already_reported": "You mentioned an earlier activity. What did you do or contribute during it, if anything?"
+    },
+    {
+      "id": "needs",
+      "dimension": "information",
+      "format": "text",
+      "text": "What would you like to understand better, or what would help you take part in discussions or decisions about these uses?",
+      "organisation_text": "What would you like to understand better, or what support would help you or the organisation you represent take part in discussions or decisions about these uses? Say which you mean.",
+      "covers": [
+        "information",
+        "opportunity"
+      ],
+      "rule_id": "core_needs",
+      "when_information_already_reported": "What would help you take part in discussions or decisions about these uses, if anything?",
+      "when_opportunity_already_reported": "What would you like to understand better about these uses, if anything?"
+    }
+  ],
+  "probes": [
+    {
+      "id": "scope",
+      "dimension": null,
+      "text": "Are these statements about the same activity and period, or different experiences? You can say if you are unsure.",
+      "rule_id": "ambiguous_scope",
+      "priority": 1,
+      "eligibility": "positive_and_absence_scope_unresolved"
+    },
+    {
+      "id": "reasoning",
+      "dimension": "understanding",
+      "text": "Can you explain why that effect might occur?",
+      "rule_id": "understanding_detail",
+      "priority": 2,
+      "eligibility": "understanding_claim_without_reason"
+    },
+    {
+      "id": "contribution",
+      "dimension": "participation",
+      "text": "What did you do or contribute during that activity, if anything?",
+      "rule_id": "exposure_contribution_unknown",
+      "priority": 3,
+      "eligibility": "actual_exposure_without_contribution_evidence"
+    },
+    {
+      "id": "domain",
+      "dimension": "exposure",
+      "text": "Were those experiences about drones or another service?",
+      "rule_id": "actual_experience_domain_unknown",
+      "priority": 4,
+      "eligibility": "actual_experience_unknown_domain"
+    },
+    {
+      "id": "influence",
+      "dimension": "influence",
+      "text": "Do you know whether anything changed following your contribution?",
+      "rule_id": "contribution_outcome_unknown",
+      "priority": 5,
+      "eligibility": "actual_contribution_without_outcome"
+    }
+  ],
+  "dimensions": {
+    "familiarity": "What you had heard before",
+    "understanding": "What you explained",
+    "information": "Information you would like",
+    "exposure": "Experience and learning",
+    "participation": "Discussions and activities you took part in",
+    "influence": "What changed after your contribution",
+    "opportunity": "Ways to take part and what makes it difficult"
+  },
+  "numerical_policy": {
+    "numerical_crl": null,
+    "numerical_orl": null,
+    "numerical_trl": null,
+    "numerical_srl": null,
+    "reason": "Numerical criteria and aggregation awaiting methodological approval."
+  },
+  "sources": [
+    "IAM-CC_Topic_experts.xlsx: Read me!D1:L13; SRA IAM indicators!D8/I8,D15/I15,D16/I16; Use case(s) per LL!A1:D2",
+    "GA: T3.2–T3.4; Part B pp.5,16"
+  ],
+  "wording_status": "Questions proposed for this prototype under latest meeting instructions; not FN-approved verbatim wording. No complete 135 × 3 bank supplied.",
+  "prompt_version": "baseline-1.1.0"
+}

@@ -59,7 +59,7 @@ def test_rejection_precedes_any_controller_mutation_or_call(path):
         s = LegacySession(); s.begin()
         if path != 'legacy': s.state=State.FOLLOWUPS if path=='legacy_followup' else State.INTERPRETATION
     else:
-        s = Session() if path=='initial' else confirmed()
+        s = Session(assessment_mode="acceptance_and_readiness_evidence") if path=='initial' else confirmed()
         if path in {'correction','mitigation'}: s.finish()
         if path=='correction': s.edit_answer(s.events[0]['id'])
     before=deepcopy(vars(s))
@@ -104,7 +104,7 @@ def test_generated_secret_withheld_before_trace_validator_and_cache():
 def test_detector_failure_is_closed_and_does_not_keep_unsafe_exception(monkeypatch):
     class Broken:
         def analyze(self,**kwargs):raise RuntimeError(SECRETS[0])
-    s=Session()
+    s=Session(assessment_mode="acceptance_and_readiness_evidence")
     monkeypatch.setattr('iam_sra.privacy.detector',lambda:Broken())
     with pytest.raises(PrivacyError,match='setup-privacy.sh') as error:s.submit('I support it.',Extractor())
     assert error.value.code=='privacy_unavailable'
@@ -130,7 +130,7 @@ def test_export_and_report_gate_withholds_tampered_or_older_records():
 
 
 def test_controller_resubmission_after_block_is_normal():
-    s=Session()
+    s=Session(assessment_mode="acceptance_and_readiness_evidence")
     with pytest.raises(PrivacyError):s.submit(SECRETS[0],Extractor())
     s.submit('I oppose the route.',Extractor());s.confirm(True)
     assert len(s.events)==1 and s.events[0]['text']=='I oppose the route.'

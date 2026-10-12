@@ -89,7 +89,7 @@ def screen(text):
     thematic_labels = {v['label'].casefold() for v in CONCERNS.values()}
     found = [f for f in found if 0 <= f.start < f.end <= len(text)
         and not (f.entity_type == 'PERSON' and (text[f.start:f.end].strip().casefold() in thematic_labels
-            or re.fullmatch(r'R\d+_\d+(?:\.p\d+)?', text[f.start:f.end].strip())))]
+            or re.fullmatch(r'(?:R|B)\d+_\d+(?:\.p\d+)?', text[f.start:f.end].strip())))]
     if any(f.entity_type in BLOCK for f in found):
         raise PrivacyError('Remove credentials, financial details or identifiable medical details and resubmit using general descriptions.', entity_types=[f.entity_type for f in found])
     if found:
@@ -131,7 +131,15 @@ def reviewed_bibliographic_values():
             for child in node.values(): schema_titles(child)
         elif isinstance(node, list):
             for child in node: schema_titles(child)
-    for model in (SourceExtraction, SourceReview): schema_titles(model.model_json_schema())
+    from .baseline import BaselineExtraction, BaselineReview
+    for model in (SourceExtraction, SourceReview, BaselineExtraction, BaselineReview): schema_titles(model.model_json_schema())
+    # Only exact controlled display values are reviewed metadata; custom city,
+    # function and answer strings still pass through the mandatory detector.
+    from .settings import config
+    from .llm_client import BACKEND
+    values += [BACKEND, 'iam-baseline-1.0.0','baseline-handoff-1.0.0'] + config('baseline')['sources']
+    for bank in ('perspectives','stakeholders','cities','familiarity','dimensions'):
+        values += list(config('baseline')[bank].values())
     return frozenset(values)
 
 
