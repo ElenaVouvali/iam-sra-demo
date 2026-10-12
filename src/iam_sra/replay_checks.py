@@ -85,6 +85,8 @@ def live_response_received(session,client):
     return any('prompt_tokens' in d and not d.get('cache_hit') and d.get('failure')!='transport' for d in diagnostics)
 
 def write_report(path,record):
+    from .privacy import screened_export
+    screened_export(record)
     """Keep previous replay artifacts even when the default path is reused."""
     import json
     from pathlib import Path

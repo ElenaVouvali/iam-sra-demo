@@ -53,7 +53,7 @@ def final_summary(session):
         'limitations':limitations,'selection_rule':'Independent default follow-ups → experimental bounded progression when assessable; combined-proposal assessment remains separate. Confirmed overall acceptance without reservations and no concern aggregate → direct overall 9; otherwise conditional aggregate available → conditional; else final-original available → original; else unavailable. Never select an initial score.'}
 
 
-def export_session(session):
+def _export_session_unchecked(session):
     if getattr(session, "assessment_mode", None) == "acceptance_and_readiness_evidence": return session.export()
     from .assessment_review import final_review
     review=final_review(session)
@@ -181,3 +181,9 @@ def citizen_summary(session):
             if fact.position in {'opposed','mixed'}:remaining.append(aspect_label(fact.facet))
             elif fact.position=='supported':resolved.append(aspect_label(fact.facet))
     return {'lines':lines,'remaining_objections':remaining,'resolved_aspects':resolved,'unresolved':clarification_needs(session)}
+
+
+def export_session(session):
+    from .privacy import check_contract, screened_export
+    check_contract(session)
+    return screened_export(_export_session_unchecked(session))

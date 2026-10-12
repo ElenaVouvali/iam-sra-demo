@@ -1,3 +1,5 @@
+> Privacy screening is mandatory for every case, including demo fixtures. There is no runtime bypass. Missing local detector resources block processing. Run `scripts/setup-privacy.sh` and `.venv-privacy/bin/python scripts/check-privacy.py`. Screening can miss private information; use synthetic examples.
+
 # iam-sra-demo
 
 The default citizen demo separates **views of the proposal** from **readiness evidence**: understanding of possible impacts, information needs, participation, reported influence and opportunities or barriers to agency. Opposition can contain strong evidence; support alone does not establish readiness.

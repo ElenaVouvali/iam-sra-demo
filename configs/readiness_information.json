@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "id": "medical_corridor_explanation_v1",
   "review_status": "draft_pending_FN",
   "approved_by": null,
@@ -10,8 +10,14 @@
     "Alternative routes, quieter operation, higher altitude or camera shielding are possible changes to discuss, not verified solutions. This example does not establish their feasibility or specify a local consultation process. You can ask for evidence and ways to contribute, and can remain opposed after considering the information."
   ],
   "source_references": [
-    {"document": "SRA_LLM_FN_concept.pdf", "location": "p.5 scenario; pp.8–9 hypothetical modifications"},
-    {"document": "IAM-CC_Topic_experts.xlsx", "location": "SRA IAM indicators!I8,I15,I16"}
+    {
+      "document": "SRA_LLM_FN_concept.pdf",
+      "location": "p.5 scenario; pp.8–9 hypothetical modifications"
+    },
+    {
+      "document": "IAM-CC_Topic_experts.xlsx",
+      "location": "SRA IAM indicators!I8,I15,I16"
+    }
   ],
   "understanding_check": {
     "id": "readiness_understanding_after_information",
@@ -20,5 +26,66 @@
     "question_text": "In your own words, how could this service affect daily life, and what would still need checking? You can keep your original view, say you are unsure, or skip.",
     "clarification": false,
     "elicitation_context": "after_information_exposure"
-  }
+  },
+  "faqs": [
+    {
+      "id": "purpose",
+      "question": "What would the drones carry, and where?",
+      "answer": "In this example, autonomous aircraft would carry urgent laboratory specimens, blood components and transplant organs from a central hospital to a regional clinic. No city, operator or exact endpoints are specified.",
+      "passage_ids": [
+        "MC-SCENARIO"
+      ]
+    },
+    {
+      "id": "operation",
+      "question": "How would the drones fly and navigate?",
+      "answer": "The example describes autonomous aircraft flying at 60 metres, with navigation cameras scanning downward for unexpected ground obstacles. It does not specify the aircraft model, detailed navigation system, human supervision or failure procedures.",
+      "passage_ids": [
+        "MC-SCENARIO"
+      ]
+    },
+    {
+      "id": "schedule",
+      "question": "How many flights would there be, and how are they scheduled?",
+      "answer": "The example specifies up to 15 flights per day, including early morning and late evening. It does not provide a timetable, scheduling rules, emergency priorities or weather cancellation procedures. These details would need to be supplied for a real proposal.",
+      "passage_ids": [
+        "MC-SCENARIO"
+      ]
+    },
+    {
+      "id": "noise",
+      "question": "How noisy would the flights be?",
+      "answer": "A steady, low-frequency electric hum is described. There are no measured sound levels at homes or verified noise reductions in the supplied example. Claims that a different altitude or quieter equipment would solve disturbance require evidence.",
+      "passage_ids": [
+        "MC-SCENARIO",
+        "MC-NOISE-UNKNOWN"
+      ]
+    },
+    {
+      "id": "cameras",
+      "question": "Would the cameras record or store images of people?",
+      "answer": "The cameras are described as navigation cameras that scan downward. The material does not establish whether images are recorded, retained, shared or accessed by people. Their navigation purpose alone does not answer these privacy questions.",
+      "passage_ids": [
+        "MC-PRIVACY-UNKNOWN"
+      ]
+    },
+    {
+      "id": "alternatives",
+      "question": "Could the route, altitude or operating hours change?",
+      "answer": "Alternative routing, altitude changes, quieter operation and quiet periods are hypothetical options to discuss. Their feasibility and effectiveness have not been established for this example; accepting an option does not prove it will work.",
+      "passage_ids": [
+        "MC-MITIGATION",
+        "MC-NOISE-UNKNOWN"
+      ]
+    },
+    {
+      "id": "feedback",
+      "question": "How could residents give feedback?",
+      "answer": "No local consultation channel is specified. Asking for a way to contribute is different from having participated, and attending a consultation is different from influencing its outcome. You may keep your original view after reading this information.",
+      "passage_ids": [
+        "MC-PARTICIPATION",
+        "MC-OPPORTUNITY"
+      ]
+    }
+  ]
 }

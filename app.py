@@ -12,6 +12,8 @@ from iam_sra.reporting import final_summary, citizen_summary, aspect_label, clar
 from iam_sra.assessment_review import final_review
 from iam_sra.ui_errors import user_error
 
+from iam_sra.privacy import NOTICE, PrivacyError, check_contract, safe_message, safe_diagnostics
+from iam_sra.privacy_ui import invoke, preview_control, download_button
 from iam_sra.ui_presentation import TITLE, header, restart_control, footer
 st.set_page_config(page_title=TITLE,layout='centered')
 header()
@@ -25,11 +27,18 @@ if developer and 'session' not in st.session_state:
         index=list(config('assessment_modes')['modes']).index(selected_mode),
         format_func=lambda m:config('assessment_modes')['modes'][m]['label'],key='assessment_mode_choice')
     def start_selected_demo():
-        st.session_state.session=Session(assessment_mode=st.session_state.assessment_mode_choice)
+        try: st.session_state.session=Session(assessment_mode=st.session_state.assessment_mode_choice)
+        except PrivacyError as exc: st.session_state.privacy_start_error=str(exc)
     st.button('Start selected demo',on_click=start_selected_demo)
+    if st.session_state.get('privacy_start_error'): st.error(st.session_state.privacy_start_error)
     st.stop()
 if 'session' not in st.session_state:
-    st.session_state.session=Session(assessment_mode=selected_mode)
+    try: st.session_state.session=Session(assessment_mode=selected_mode)
+    except PrivacyError as exc:
+        st.info(NOTICE); st.error(str(exc)); footer(); st.stop()
+try: check_contract(st.session_state.session)
+except PrivacyError as exc:
+    st.error(str(exc)); restart_control(); footer(); st.stop()
 if getattr(st.session_state.session,'assessment_mode','legacy_fn_acceptance_demo')=='acceptance_and_readiness_evidence':
     from iam_sra.readiness_ui import render
     from iam_sra.readiness_client import ReadinessClient
@@ -74,13 +83,13 @@ def perform(action,*args):
     progress=st.empty()
     client.progress=lambda stage:progress.caption({'mapping':'Understanding your answer…','coverage_review':'Checking for missed points…','scope_review':'Checking the supporting passages…','facets':'Checking your views with these changes…','scoring':'Preparing your assessment…','discovery':'Understanding what matters to you…'}.get(stage,'Working on your answer…'))
     try:
-        with st.spinner('Working on your answer…'):action(*args)
+        with st.spinner('Working on your answer…'):invoke(action,*args)
     except (AssessmentError,ValueError) as exc:
-        st.session_state.developer_error=str(exc)
-        st.session_state.action_error=user_error(exc)
+        st.session_state.developer_error=safe_message(exc)
+        st.session_state.action_error=str(exc) if isinstance(exc,PrivacyError) else user_error(exc)
         frames=traceback.extract_tb(exc.__traceback__)
-        st.session_state.failure_details={
-            'message':str(exc),
+        detail={
+            'message':safe_message(exc),
             'exception_type':type(exc).__name__,
             'action':getattr(action,'__qualname__',type(action).__name__),
             'session_state':s.state.value,
@@ -89,10 +98,13 @@ def perform(action,*args):
             'prompt_version':config('prompts')['version'],
             'request':getattr(client,'last_request_context',{}),
             'diagnostics':getattr(client,'last_diagnostics',[]) if getattr(client,'last_request_context',{}) else []}
+        st.session_state.failure_details=safe_diagnostics(detail)
     finally:
         client.progress=None
         progress.empty()
 
+
+preview_control(perform)
 
 def summary(nested=False):
     view=citizen_summary(s)
@@ -269,6 +281,7 @@ elif s.state==State.ANSWER:
     with st.expander('The proposal'):st.write(SCENARIO['text'])
     with st.form('answer',clear_on_submit=False):
         st.text_area('How do you feel about this proposal? What would make it acceptable?',key='citizen_answer')
+        st.info(NOTICE)
         def submit():perform(s.submit,st.session_state.citizen_answer,client)
         st.form_submit_button('Continue',on_click=submit)
 elif s.state==State.INTERPRETATION and not s.discovery_finished and s.initial is not None:
@@ -356,8 +369,13 @@ else:
         st.write('Coverage: '+str(result['coverage'] or 'Insufficient evidence'))
         for limitation in result['limitations']:st.caption(limitation)
         for issue in s.unmapped_issues:st.write('Recorded issue: '+issue['wording'])
-        st.download_button('Download assessment JSONL',s.jsonl(),file_name='iam-assessment.jsonl',mime='application/x-ndjson')
-        st.download_button('Download readable JSON',s.json(),file_name='iam-assessment.json',mime='application/json')
+        try:
+            data_jsonl, data_json = s.jsonl(), s.json()
+        except PrivacyError as exc:
+            st.warning(str(exc))
+        else:
+            download_button('Download assessment JSONL',data_jsonl,file_name='iam-assessment.jsonl',mime='application/x-ndjson')
+            download_button('Download readable JSON',data_json,file_name='iam-assessment.json',mime='application/json')
 if developer:
     with st.expander('Developer diagnostics'):
         st.json({'state':s.state.value,'last_error':st.session_state.get('developer_error'),'model':config('model'),'policy':config('updates'),'inference':s.inference})

@@ -40,6 +40,8 @@ class ConversationClient(LLMTransport):
             self._request_cache={};self._token_count_cache={};self._cache_scope=scope
 
     def _request(self,client,stage,system,user,schema,validator):
+        from .privacy import require_safe_data
+        require_safe_data({'system':system,'user':user,'schema':schema})
         from .interpretation import digest
         started=time.monotonic()
         from uuid import uuid4
@@ -59,6 +61,10 @@ class ConversationClient(LLMTransport):
         if time.monotonic()>=self._deadline:
             raise AssessmentError("Assessment time limit reached; retry with your saved confirmation.",code="timeout")
         if key in cache:
+            try: require_safe_data(cache[key])
+            except AssessmentError:
+                cache.clear(); self._token_count_cache={}; self._accepted_wire=None
+                raise
             result=validator(cache[key])
             self.last_metrics['cache_hits']+=1
             self.last_diagnostics.append({'stage':stage,'attempt':0,'cache_hit':True,'schema_pass':True,'evidence_pass':True,'thinking_detected':False,'latency_seconds':round(time.monotonic()-started,4)})
@@ -73,7 +79,9 @@ class ConversationClient(LLMTransport):
             # transformed model, so cache hits can run the same validator.
             if hasattr(self,'_cache_scope') and len(self.last_trace)>trace_offset:
                 if len(cache)>=128:cache.pop(next(iter(cache)))
-                cache[key]=self.last_trace[-1]['raw_output']
+                cache[key]=self._accepted_wire
+                self._accepted_wire=None
+            self._accepted_wire=None
             return result
         except httpx.HTTPError as exc:
             self.last_diagnostics.append({'stage':stage,'failure':'transport','http_status':getattr(getattr(exc,'response',None),'status_code',None),'latency_seconds':round(time.monotonic()-started,4)})

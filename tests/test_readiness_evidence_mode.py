@@ -346,3 +346,23 @@ def test_topic_coverage_preserves_uncertainty_and_unasked_topics():
 def test_confirmed_interpretation_mutation_cannot_silently_change_final_profile():
     s=confirmed();s.events[0]['records'][0]['interpretation']='Altered after confirmation'
     with pytest.raises(ValueError,match='confirm'):s.finish()
+
+
+def test_unknown_scope_retains_passages_and_requests_neutral_clarification():
+    a=record('participation',kind='action',temporality='past_current',status='supported',confirmation_status='confirmed',evidence_ids=['a'])
+    b=record('participation',kind='action',temporality='past_current',status='explicit_absence',confirmation_status='confirmed',evidence_ids=['b'])
+    profile=build_profile([a,b])
+    assert profile['criterion_coverage']['participation']['status']=='scope_clarification_required'
+    assert profile['criterion_coverage']['participation']['evidence_ids']==['a','b']
+    from iam_sra.settings import config
+    registry=deepcopy(config('readiness'))
+    registry['indicators']=[i for i in registry['indicators'] if i['criterion_id']=='participation']
+    question=next_question(profile,[],registry=registry)
+    assert 'different activities or times' in question['question_text']
+    assert profile['numerical_crl'] is None
+
+
+def test_distinct_known_events_or_times_do_not_request_scope_clarification():
+    a=record('participation',kind='action',temporality='past_current',status='supported',confirmation_status='confirmed',claim_subject='bus consultation',time_scope='last year')
+    b=record('participation',kind='action',temporality='past_current',status='explicit_absence',confirmation_status='confirmed',claim_subject='drone consultation',time_scope='this year')
+    assert build_profile([a,b])['criterion_coverage']['participation']['status']=='evidence_recorded'

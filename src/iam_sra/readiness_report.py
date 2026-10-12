@@ -3,6 +3,10 @@ from copy import deepcopy
 
 
 def evidence_report(data):
+    from .privacy import VERSION, PrivacyError, require_safe_data
+    if data.get('privacy_contract') != VERSION:
+        raise PrivacyError('This older export predates local privacy screening. Start a new synthetic session; the original file is unchanged.')
+    require_safe_data(data)
     if data.get('assessment_mode') != 'acceptance_and_readiness_evidence':
         raise ValueError('Historical acceptance sessions are not readiness evidence.')
     citations = data['evidence']; rows = []
@@ -24,9 +28,11 @@ def evidence_report(data):
                 'elicitation_context':r['elicitation_context'], 'evidence_basis':r['evidence_basis'],
                 'confirmation':r['confirmation_status'], 'external_truth_verified':False,
                 'uncertainty':r.get('unresolved_contradictions', []),
+                'scope_clarification_required':profile['criterion_coverage'][r['criterion_id']]['status']=='scope_clarification_required',
+                'claim_subject':r.get('claim_subject',''), 'time_scope':r.get('time_scope',''),
                 'information_relation': ('exact_repetition_detected' if any(' '.join(citations[eid]['text'].split()) == ' '.join(text.split()) for eid in r['evidence_ids'] if eid in citations for text in displayed_text) else 'post_information_independence_not_established') if r['elicitation_context']=='after_information_exposure' else 'no_exposure_recorded_before_answer',
                 'caution':'Reported experience/belief or answer-demonstrated reasoning; not independently verified fact.'})
-    return {'report_version':'1.0.0', 'session_id':data['session_id'], 'instrument_version':data['instrument']['version'],
+    return {'report_version':'1.1.0', 'privacy_contract':data['privacy_contract'], 'session_id':data['session_id'], 'instrument_version':data['instrument']['version'],
         'rows':rows, 'changes':deepcopy(data.get('readiness_changes')),
         'conditional_proposal_views':deepcopy(data['acceptance_profile']['optional_hypothetical_findings']),
         'coverage':deepcopy((data.get('final_readiness_profile') or data.get('initial_readiness_profile') or {}).get('criterion_coverage', {})),
@@ -52,7 +58,10 @@ def markdown_report(data):
     changes = report.get('changes') or {}
     lines += ['', '## Changes', '', f"New records: {len(changes.get('newly_recorded_evidence', []))}; superseded initial interpretations: {len(changes.get('clarified_or_corrected_interpretations', []))}; post-information records: {len(changes.get('after_information_evidence', []))}.", '',
               f"Corrections: {len(report['corrections'])}; information displays: {len(report['information_exposures'])}; reading acknowledgements: {len(report['information_acknowledgements'])}."]
-    return '\n'.join(lines) + '\n'
+    result = '\n'.join(lines) + '\n'
+    from .privacy import require_clean
+    require_clean(result)
+    return result
 
 
 def fn_reference():

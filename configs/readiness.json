@@ -1,10 +1,10 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.3",
   "locale": "en",
   "use_case_id": "urban_medical_corridor",
   "review_status": "draft_pending_FN",
   "approved_by": null,
-  "maximum_questions": 5,
+  "maximum_questions": 4,
   "numerical_policy": {
     "label": "Proposal views and readiness evidence",
     "numerical_crl": null,
@@ -123,7 +123,8 @@
       "approved_by": null,
       "version": "1.2.1",
       "locale": "en",
-      "use_case_id": "urban_medical_corridor"
+      "use_case_id": "urban_medical_corridor",
+      "scope_clarification_text": "You described experience or access, and also its absence. Were these about different activities or times? You can say if you are unsure."
     },
     {
       "indicator_id": "citizen_influence",
@@ -153,7 +154,8 @@
       "approved_by": null,
       "version": "1.2.1",
       "locale": "en",
-      "use_case_id": "urban_medical_corridor"
+      "use_case_id": "urban_medical_corridor",
+      "scope_clarification_text": "You described experience or access, and also its absence. Were these about different activities or times? You can say if you are unsure."
     },
     {
       "indicator_id": "citizen_opportunity",
@@ -183,7 +185,8 @@
       "approved_by": null,
       "version": "1.2.1",
       "locale": "en",
-      "use_case_id": "urban_medical_corridor"
+      "use_case_id": "urban_medical_corridor",
+      "scope_clarification_text": "You described experience or access, and also its absence. Were these about different activities or times? You can say if you are unsure."
     }
   ],
   "initial_invitation": "What do you think about this proposal? What matters most to you?",
@@ -195,5 +198,20 @@
   "optional_information_revision": {
     "version": "1.0.0",
     "reason": "Explicit logged display and bounded local retrieval; existing question texts and eligibility unchanged."
+  },
+  "scope": {
+    "tool": "IAM-SRA2",
+    "component": "citizen",
+    "coverage": "Five interview dimensions provide partial CRL evidence coverage, not all nine CRL levels or all 15 topics.",
+    "societal_readiness": "SRL is the broader societal assessment informed by TRL, ORL and CRL; one citizen interview is not a city SRL.",
+    "sources": [
+      "GA Part B pp.5,16",
+      "IAM-CC_Topic_experts.xlsx Read me!A1,J1:L13"
+    ]
+  },
+  "privacy_contract": "privacy-1.0.0",
+  "instrument_revision": {
+    "previous_version": "1.4.2",
+    "reason": "Limit new interviews to four follow-up questions, including clarifications and optional reflection, at user request. Existing versioned sessions retain their original budget."
   }
 }

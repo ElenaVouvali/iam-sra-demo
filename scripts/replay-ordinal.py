@@ -1,6 +1,7 @@
 """Bounded serial interpretation + confirmed numerical contrasts. Never use mocks."""
 import argparse,json,time
 from pathlib import Path
+from iam_sra.privacy import require_safe_data, screened_export, safe_message
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.interpretation import EvidenceItem,freeze
 from iam_sra.settings import SCENARIO
@@ -11,6 +12,7 @@ def main():
     p.add_argument('--output',default='.runtime/ordinal-replay.json');p.add_argument('--no-live',action='store_true')
     args=p.parse_args();fixture=json.loads(Path('eval/ordinal_cases.json').read_text())
     selected=[c for c in fixture['cases'] if not args.cases or c['id'] in args.cases]
+    require_safe_data(selected)
     results=[];deadline=time.monotonic()+max(1,min(args.budget_seconds,600))
     for case in selected:
         if args.no_live or time.monotonic()>=deadline:break
@@ -31,7 +33,7 @@ def main():
             row.update(dialogue_completed=True,structural_evidence_checks_passed=mapping_ok and all(values[cid] is None for cid in case.get('exclude_scores',[])),
                 rubric_checks_passed=rubric_ok,scores=values,decisions=ds,attribution=c.last_candidate_projections)
             if not row['structural_evidence_checks_passed'] or not rubric_ok:row['failure_stage']='mandatory correctness checks'
-        except Exception as exc:row.update(failure_stage=stage,error_type=type(exc).__name__,error=str(exc));stages.extend(c.last_settings.get('request_metrics',[]))
+        except Exception as exc:row.update(failure_stage=stage,error_type=type(exc).__name__,error=safe_message(exc));stages.extend(c.last_settings.get('request_metrics',[]))
         row.update(latency_seconds=round(time.monotonic()-start,3),request_metrics=stages,last_diagnostics=c.last_diagnostics,last_raw_trace=c.last_trace)
         responses.extend(c.last_diagnostics)
         row['live_model_used']=any('prompt_tokens' in d and not d.get('cache_hit') and d.get('failure')!='transport' for d in responses)

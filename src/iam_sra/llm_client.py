@@ -10,6 +10,7 @@ from .assessment import AssessmentError
 _LOCK=threading.Lock()
 STAGE_LIMITS={"readiness_evidence":1200,"initial_interpretation":1400,"mapping":1400,"coverage_review":700,"scope_review":300,"discovery":500,"facets":1200,"scoring":500}
 BACKEND="xgrammar:no-fallback,disable-any-whitespace"
+STAGE_LIMITS['workbook_score'] = 500
 STAGE_LIMITS['readiness_grounding'] = 1400
 STAGE_LIMITS['readiness_evidence'] = 1600
 
@@ -35,6 +36,9 @@ class LLMTransport:
     def __init__(self,base_url=BASE_URL):self.base_url=base_url.rstrip('/')
 
     def _request(self,client,stage,system,user,schema,validator):
+        from .privacy import require_safe_data, safe_message, PrivacyError
+        require_safe_data({'system':system,'user':user,'schema':schema})
+        self._accepted_wire = None
         messages=[{"role":"system","content":system},{"role":"user","content":json.dumps(user,ensure_ascii=False,separators=(',',':'))}]
         limit=STAGE_LIMITS[stage]
         for attempt in range(2):
@@ -52,8 +56,11 @@ class LLMTransport:
                 if hasattr(self,'last_metrics'):self.last_metrics['tokenize_cache_hits']+=1
             else:
                 if hasattr(self,'last_metrics'):self.last_metrics['tokenize_calls']+=1
-                tokenized=client.post(self.base_url+'/tokenize',json=tokenize_payload,timeout=timeout)
-                tokenized.raise_for_status();count=tokenized.json()['count']
+                try:
+                    tokenized=client.post(self.base_url+'/tokenize',json=tokenize_payload,timeout=timeout)
+                    tokenized.raise_for_status();count=tokenized.json()['count']
+                except Exception:
+                    raise AssessmentError('Local model tokenization could not complete safely.',code='transport') from None
                 if type(count) is not int or count<0:raise AssessmentError("Invalid token count; no assessment saved.",code="transport")
                 if hasattr(self,'_cache_scope'):
                     if len(token_cache)>=128:token_cache.pop(next(iter(token_cache)))
@@ -65,10 +72,23 @@ class LLMTransport:
             remaining=self._deadline-time.monotonic()
             if remaining<=0:raise AssessmentError('Assessment time limit reached; no result saved.',code='timeout')
             if hasattr(self,'last_metrics'):self.last_metrics['generation_calls']+=1
-            response=client.post(self.base_url+'/v1/chat/completions',json=payload,timeout=min(120,remaining))
-            response.raise_for_status();body=response.json();choice=body['choices'][0];message=choice['message'];content=message.get('content') or ''
+            try:
+                response=client.post(self.base_url+'/v1/chat/completions',json=payload,timeout=min(120,remaining))
+                response.raise_for_status();body=response.json()
+            except Exception:
+                raise AssessmentError('Local model generation could not complete safely.',code='transport') from None
+            # Screen the entire body, including reasoning, before any trace or validator.
+            try:
+                require_safe_data(body)
+            except PrivacyError as exc:
+                self.last_diagnostics.append({'stage':stage,'attempt':attempt,'failure':'privacy',
+                    'privacy_boundary':'model_output','entity_types':list(exc.entity_types),
+                    'latency_seconds':round(time.monotonic()-attempt_start,4)})
+                raise PrivacyError('The generated interpretation could not be displayed safely. Retry this step with the same answer; rejected output was not saved.',
+                    unavailable=exc.code=='privacy_unavailable', entity_types=exc.entity_types) from None
+            choice=body['choices'][0];message=choice['message'];content=message.get('content') or ''
             thinking=bool(message.get('reasoning_content')) or '<think>' in content or '</think>' in content
-            trace={"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"finish_reason":choice['finish_reason'],"retry_feedback":messages[0]['content'][len(system):],"thinking_detected":thinking,"raw_output":None if thinking else content}
+            trace={"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"finish_reason":choice['finish_reason'],"retry_feedback":messages[0]['content'][len(system):],"thinking_detected":thinking,"raw_output":None, "output_retention":"structural_metadata_only"}
             self.last_trace.append(trace)
             if choice['finish_reason']!='stop' or thinking:
                 error=AssessmentError("Truncated output or visible thinking rejected; no result saved.",code="thinking" if thinking else "truncated")
@@ -76,11 +96,13 @@ class LLMTransport:
                 try:
                     result=validator(content)
                     self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"usage":body.get('usage'),"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":True,"evidence_pass":True,"eligibility_pass":True,"thinking_detected":False})
+                    self._accepted_wire = content
                     return result
                 except ValidationError as exc:error=schema_error(exc)
-                except AssessmentError as exc:error=exc
+                except PrivacyError: raise
+                except AssessmentError as exc:error=AssessmentError(safe_message(exc),code=exc.code)
             self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"failure":error.code,"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":error.code in {'evidence','eligibility'},"evidence_pass":False if error.code=='evidence' else None,"eligibility_pass":False if error.code=='eligibility' else None,"thinking_detected":thinking})
             if attempt==1:raise error
             # No previous citizen/model output is copied into feedback. Recount
             # the whole message before every retry; do not truncate evidence.
-            messages[0]['content']=system+'\nRetry: previous output failed '+error.code+' checks: '+str(error)+' Use every required field, allowed facet and listed passage ID. Unassessed dimensions need empty excerpts. Keep rationales short. Return fresh JSON.'
+            messages[0]['content']=system+'\nRetry: previous output failed '+error.code+' checks: '+safe_message(error)+' Use every required field, allowed facet and listed passage ID. Unassessed dimensions need empty excerpts. Keep rationales short. Return fresh JSON.'

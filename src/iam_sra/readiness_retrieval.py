@@ -13,6 +13,7 @@ from .settings import ROOT, config
 from .conversation_client import ConversationClient
 from .llm_client import _LOCK, STAGE_LIMITS
 from .assessment import AssessmentError
+from .privacy import require_clean, require_safe_data
 
 EXPLANATION_PROMPT_VERSION = 'retrieval-extractive-1.0.0'
 STAGE_LIMITS['readiness_explanation'] = 600
@@ -27,7 +28,9 @@ def tokens(text):
 
 
 def corpus():
-    return json.loads((ROOT / 'configs/readiness_corpus.json').read_text())
+    collection = json.loads((ROOT / 'configs/readiness_corpus.json').read_text())
+    require_safe_data(collection)
+    return collection
 
 
 def corpus_hash(collection):
@@ -35,7 +38,9 @@ def corpus_hash(collection):
 
 
 def retrieve(question, purpose='citizen_explanation', collection=None):
+    require_clean(question)
     c = collection or corpus()
+    require_safe_data(c)
     if purpose not in {'citizen_explanation', 'researcher_reference'}:
         raise ValueError('Unknown retrieval purpose.')
     if not question.strip() or len(question) > c['maximum_question_characters']:
@@ -70,6 +75,7 @@ class Composition(Strict):
 
 
 def validate_composition(raw, passages):
+    require_safe_data(raw)
     value = Composition.model_validate_json(raw)
     supplied = {p['id']: p for p in passages}
     for item in value.excerpts:

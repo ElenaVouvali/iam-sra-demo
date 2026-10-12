@@ -4,12 +4,12 @@ from .conversation_client import ConversationClient
 from .llm_client import _LOCK
 from .settings import ROOT, CONCERNS, config
 from .readiness import validate_extraction
-from .readiness_grounding import (SourceExtraction, SourceReview, validate_source_selection, assemble_reviewed)
+from .readiness_grounding import (SourceExtraction, SourceReview, validate_source_selection, assemble_reviewed, claim_accepted)
 from .assessment import AssessmentError
 
 
 class ReadinessClient(ConversationClient):
-    prompt_version = 'readiness-1.3.1'
+    prompt_version = 'readiness-1.3.4'
 
     def extract_readiness(self, evidence, *, elicitation='initial_answer', context='original', version=1, question=None, existing=()):
         with _LOCK:
@@ -67,11 +67,10 @@ class ReadinessClient(ConversationClient):
                         'protocol_version':'3.1.0', 'interaction':source.interaction,
                         'quotation_source':'application_retrieved_citizen_passage',
                         'source_claims':[c.model_dump() for c in source.claims],
-                        'decisions':[dict(d.model_dump(), accepted=d.meaning_supported and
-                            d.evidence_type == source.claims[d.candidate].kind and
-                            d.evidence_type not in {'recognition_only','unsupported'}) for d in review.decisions]}
+                        'decisions':[dict(d.model_dump(), accepted=claim_accepted(source.claims[d.candidate],d),
+                            classification_agrees=d.evidence_type == source.claims[d.candidate].kind) for d in review.decisions]}
                     return validate_extraction(result.model_dump(), evidence, elicitation, context, version)
             except httpx.HTTPError as exc:
                 self.last_settings['transport_error'] = {'exception_type':type(exc).__name__,
-                    'http_status':getattr(getattr(exc,'response',None),'status_code',None), 'detail':str(exc)}
-                raise AssessmentError('Readiness evidence could not be extracted. Your draft is retained; retry or skip the question.',code='transport') from exc
+                    'http_status':getattr(getattr(exc,'response',None),'status_code',None), 'detail':'Model service request failed.'}
+                raise AssessmentError('Readiness evidence could not be extracted. Your draft is retained; retry or skip the question.',code='transport') from None

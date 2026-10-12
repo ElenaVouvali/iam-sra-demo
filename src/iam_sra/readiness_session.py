@@ -2,6 +2,7 @@
 import json
 from copy import deepcopy
 from uuid import uuid4
+from .privacy import VERSION as PRIVACY_VERSION, guarded, export_guard, require_safe_data
 from .assessment import check_input
 from .evidence import passages
 from .interpretation import EvidenceItem, digest
@@ -11,6 +12,7 @@ from .readiness import DEFAULT_MODE, build_profile, next_question, profile_chang
 
 class ReadinessSession:
     def __init__(self, *, question_budget=None):
+        self.privacy_contract = PRIVACY_VERSION
         self.session_id = str(uuid4())
         self.instrument = deepcopy(config('readiness'))
         self.numerical_policy = mode_policy()
@@ -53,6 +55,7 @@ class ReadinessSession:
     @property
     def assessment_mode(self): return DEFAULT_MODE
 
+    @guarded()
     def record_information_exposure(self):
         # Preserve the old public method, with explicit display/ack events for
         # new calls. Previously saved exposure dictionaries are never rewritten.
@@ -61,8 +64,10 @@ class ReadinessSession:
         exposure = displays[-1] if displays else self.display_information()
         self.acknowledge_information(exposure['exposure_id'])
 
+    @guarded('content')
     def _log_display(self, content, source):
         from datetime import datetime, timezone
+        require_safe_data(content)
         if not self._current_initial_confirmed or self.pending is not None:
             raise ValueError('Confirm your interpretation before displaying information.')
         if not hasattr(self, 'pre_information_snapshot') or self.pre_information_snapshot is None:
@@ -76,10 +81,25 @@ class ReadinessSession:
         self.information_exposures.append(exposure)
         return deepcopy(exposure)
 
+    @guarded()
+    def display_faq(self, faq_id):
+        module = config('readiness_information')
+        entry = next((f for f in module.get('faqs', []) if f['id'] == faq_id), None)
+        if entry is None: raise ValueError('Select an available frequently asked question.')
+        passages = {p['id']:p for p in self.retrieval_corpus['passages']}
+        if any(pid not in passages for pid in entry['passage_ids']):
+            raise ValueError('FAQ sources are unavailable; no answer was displayed.')
+        return self._log_display({'id':entry['id'],'question':entry['question'],
+            'answer':entry['answer'],'module_version':module['version'],
+            'review_status':module['review_status'],'approved_by':module['approved_by'],
+            'sources':[deepcopy(passages[pid]) for pid in entry['passage_ids']]}, 'controlled_faq_display')
+
+    @guarded()
     def display_information(self):
         return self._log_display(getattr(self, 'information_module', config('readiness_information')),
                                  'controlled_demo_explanation_display')
 
+    @guarded('question')
     def ask_information(self, question, client=None):
         from .readiness_retrieval import corpus, explain
         if not self._current_initial_confirmed or self.pending is not None:
@@ -91,6 +111,7 @@ class ReadinessSession:
         answer = explain(question, client, collection=collection)
         return self._log_display(answer, 'local_retrieval_display')
 
+    @guarded()
     def acknowledge_information(self, exposure_id):
         from datetime import datetime, timezone
         if not any(e.get('exposure_id') == exposure_id for e in self.information_exposures):
@@ -101,10 +122,14 @@ class ReadinessSession:
                 'acknowledged_at': datetime.now(timezone.utc).isoformat(), 'meaning': 'citizen_clicked_read',
                 'understanding_verified': False})
 
-    def start_learning(self):
+    @guarded()
+    def start_learning(self, exposure_id=None):
         if not self._current_initial_confirmed or self.pending is not None:
             raise ValueError('Confirm your first interpretation before the optional explanation.')
-        self.record_information_exposure()
+        if exposure_id is None:
+            self.record_information_exposure()
+        else:
+            self.acknowledge_information(exposure_id)
         # Information alone adds no semantic evidence and never rewrites a score.
         check_id = getattr(self, 'information_module', config('readiness_information'))['understanding_check']['id']
         if len(self.answers) < self.question_budget and not any(a['question']['id'] == check_id for a in self.answers):
@@ -170,6 +195,7 @@ class ReadinessSession:
             return deepcopy(getattr(self, 'information_module', config('readiness_information'))['understanding_check'])
         return next_question(self.current_profile, self.answers, self.question_budget, self.instrument)
 
+    @guarded('text')
     def _extract(self, text, client, *, kind, criterion=None, question=None, context='original', control='answer'):
         check_input(text)
         self.draft_text = text  # Retained even if model or validation fails.
@@ -183,9 +209,11 @@ class ReadinessSession:
         try:
             result = client.extract_readiness(evidence, elicitation=elicitation, context=context, version=self.version + 1,
                 question=question['question_text'] if question else None, existing=self.current_profile['records'])
+            require_safe_data(result)
             # Doubles and alternative clients pass through the same checks.
             result = validate_extraction(result.model_dump(), evidence, elicitation, context, self.version + 1)
         finally:
+            require_safe_data({'diagnostics':getattr(client, 'last_diagnostics', []), 'settings':getattr(client, 'last_settings', {}), 'trace':getattr(client, 'last_trace', [])})
             self.inference.append({'stage': 'readiness_evidence', 'version': self.version + 1,
                 'diagnostics': deepcopy(getattr(client, 'last_diagnostics', [])),
                 'settings': deepcopy(getattr(client, 'last_settings', {})),
@@ -200,15 +228,27 @@ class ReadinessSession:
             self.pending['control'] = 'decline'
         self.state = 'review'
 
+    @guarded()
+    def retry_interpretation(self, client):
+        if self.state != 'review' or not self.pending:
+            raise ValueError('Re-read an answer only while reviewing its interpretation.')
+        pending = deepcopy(self.pending)
+        self._extract(pending['text'], client, kind=pending['kind'],
+            criterion=pending['criterion_id'], question=pending['question'],
+            context=pending['context'], control=pending['control'])
+
+    @guarded('text')
     def submit(self, text, client):
         if self.state != 'answer': raise ValueError('Submit a first answer only on the answer page.')
         self._extract(text, client, kind='initial')
 
+    @guarded('text')
     def respond(self, text, client):
         q = self.current_question
         if q is None: raise ValueError('No readiness question is pending.')
         self._extract(text, client, kind='readiness_followup', criterion=q['criterion_id'], question=q)
 
+    @guarded()
     def confirm(self, agreed):
         if not agreed or self.pending is None: raise ValueError('Confirm the interpretation before continuing.')
         event = deepcopy(self.pending)
@@ -232,6 +272,7 @@ class ReadinessSession:
         if self.current_question is None:
             self.finish('question_budget' if len(self.answers) >= self.question_budget else 'sufficient_evidence_or_no_eligible_questions')
 
+    @guarded()
     def skip(self, unsure=False):
         q = self.current_question
         if q is None: raise ValueError('No readiness question is pending.')
@@ -245,6 +286,7 @@ class ReadinessSession:
         self._final_readiness = None
         if self.current_question is None: self.finish('question_budget' if len(self.answers) >= self.question_budget else 'sufficient_evidence_or_no_eligible_questions')
 
+    @guarded()
     def finish(self, reason='user_finish'):
         if not self._current_initial_confirmed or self.pending is not None:
             raise ValueError('Confirm the current first answer and pending interpretation before finishing.')
@@ -255,6 +297,7 @@ class ReadinessSession:
         self._final_readiness = deepcopy(self.current_profile)
         self.state = 'final'
 
+    @guarded()
     def edit_answer(self, event_id):
         event = next((e for e in self.events if e['id'] == event_id and e['active']), None)
         if event is None: raise ValueError('Choose an active answer to correct.')
@@ -273,6 +316,7 @@ class ReadinessSession:
             self._current_initial_confirmed = False; self.state = 'answer'
         else: self.state = 'correction'
 
+    @guarded('text')
     def correct(self, text, client):
         if self.state == 'answer': return self.submit(text, client)
         if self.state not in {'correction', 'review'}: raise ValueError('Select an answer to correct first.')
@@ -280,6 +324,7 @@ class ReadinessSession:
         self._extract(text, client, kind=event['kind'], criterion=event['criterion_id'],
             question=event['question'], context=event['context'])
 
+    @guarded('text')
     def explore_acceptance(self, facet, choice, text, client):
         if self.state != 'final': raise ValueError('Complete the readiness interview first.')
         if sum(e['active'] and e['kind'] == 'optional_acceptance' for e in self.events) >= 2:
@@ -305,9 +350,11 @@ class ReadinessSession:
             self.confirmations.append({'event_id': key, 'version': self.version, 'scope': 'explicit_choice_only', 'active': True, 'sha256': digest(base)})
             self._final_readiness = deepcopy(self.current_profile)
 
+    @export_guard
     def export(self):
+        from .readiness_score import current_score
         final = self.final_readiness
-        return {'schema_version': '6.3.0', 'assessment_mode': self.assessment_mode, 'mode_version': self.mode_version,
+        return {'schema_version': '6.4.0', 'privacy_contract': self.privacy_contract, 'assessment_mode': self.assessment_mode, 'mode_version': self.mode_version,
             'instrument': deepcopy(self.instrument), 'session_id': self.session_id, 'state': self.state,
             'scenario': deepcopy(self.scenario), 'acceptance_profile': self.acceptance,
             'initial_readiness_profile': self.initial_readiness, 'initial_readiness_snapshots': deepcopy(self._initial_snapshots),
@@ -316,6 +363,7 @@ class ReadinessSession:
             'readiness_score_status': {'status': 'unavailable_pending_methodological_approval', 'numerical_crl': None,
                 'numerical_srl': None, 'reason': self.numerical_policy['unavailable_reason']},
             'numerical_crl': None, 'numerical_srl': None,
+            'provisional_workbook_score': current_score(self),
             'question_budget': self.question_budget, 'stop_reason': self.stop_reason,
             'questions_and_answers': deepcopy(self.events), 'pending_interpretation': deepcopy(self.pending),
             'information_exposures': deepcopy(getattr(self, 'information_exposures', [])),

@@ -14,7 +14,8 @@
 .stApp p, .stApp textarea {font-size:15px; line-height:1.6;}
 .stApp label p {font-size:14px; font-weight:500; line-height:1.4;}
 .stApp [data-testid="stCaptionContainer"] p {color:var(--iam-slate); font-size:13px; line-height:1.5;}
-.stApp [data-testid="stMainBlockContainer"] {max-width:1312px; padding:24px 64px 48px;}
+/* Clear Streamlit’s fixed top toolbar on desktop and mobile. */
+.stApp [data-testid="stMainBlockContainer"] {max-width:1312px; padding:88px 64px 48px;}
 .iam-header {display:flex; align-items:center; flex-wrap:wrap; gap:16px; min-height:64px;
   border-bottom:1px solid var(--iam-divider); margin-bottom:24px; font-size:18px;}
 .iam-header a {margin-left:auto; color:var(--iam-azure); font-size:14px; text-decoration:underline;}
@@ -45,7 +46,7 @@
  .stApp [data-testid="stMainBlockContainer"] {padding-left:40px; padding-right:40px;}
 }
 @media (max-width:767px) {
- .stApp [data-testid="stMainBlockContainer"] {padding:24px 20px 32px;}
+ .stApp [data-testid="stMainBlockContainer"] {padding:88px 20px 32px;}
  .stApp [data-testid="stForm"] {padding:16px;}
  .iam-header {gap:8px;}
 }

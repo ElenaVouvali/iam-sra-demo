@@ -115,6 +115,7 @@ def build_profile(records, asked=(), registry=None):
         conflict = any(r['unresolved_contradictions'] for r in rows) or 'conflicting' in states
         # Claims of current experience/opportunity and explicit absence coexist as
         # unresolved evidence; never select the more positive assertion by default.
+        scope_unclear = False
         scopes = {(r['experience_domain'], r['proposal_context'], r['kind'],
                    r.get('claim_subject','').casefold().strip(), r.get('time_scope','').casefold().strip()) for r in rows}
         for scope in scopes:
@@ -125,7 +126,17 @@ def build_profile(records, asked=(), registry=None):
                 r.get('claim_subject','').casefold().strip(), r.get('time_scope','').casefold().strip()) == scope]
             if {'supported', 'explicit_absence'} <= {r['status'] for r in scoped}: conflict = True
             if any(r['kind'] == 'opportunity' and r['status'] == 'supported' for r in scoped) and any(r['kind'] == 'opportunity' and r['status'] == 'opportunity_barrier' for r in scoped): conflict = True
+        for positive in rows:
+            for absent in rows:
+                if positive['status'] != 'supported' or absent['status'] != 'explicit_absence': continue
+                if positive['kind'] != absent['kind'] or positive['kind'] not in {'action','influence','opportunity'}: continue
+                if positive['proposal_context'] != absent['proposal_context']: continue
+                domains = {positive['experience_domain'], absent['experience_domain']}
+                if len(domains) > 1 and 'not_established' not in domains: continue
+                if not all(r.get(k, '').strip() for r in (positive, absent) for k in ('claim_subject','time_scope')):
+                    scope_unclear = True
         if conflict: status = 'conflicting'
+        elif scope_unclear: status = 'scope_clarification_required'
         elif 'unclear' in states: status = 'unclear'
         elif 'opportunity_barrier' in states: status = 'opportunity_barrier'
         elif rows and cid == 'participation' and all(r['kind'] == 'intention' for r in rows): status = 'unclear'
@@ -137,7 +148,7 @@ def build_profile(records, asked=(), registry=None):
         rows = [r for r in confirmed if topic_id in r['topic_ids']]
         criteria = sorted({r['criterion_id'] for r in rows})
         states = {coverage[c]['status'] for c in criteria}
-        status = ('conflicting' if 'conflicting' in states else 'unclear' if 'unclear' in states
+        status = ('conflicting' if 'conflicting' in states else 'scope_clarification_required' if 'scope_clarification_required' in states else 'unclear' if 'unclear' in states
                   else 'opportunity_barrier' if 'opportunity_barrier' in states
                   else 'evidence_recorded' if rows else 'not_asked')
         topics[topic_id] = {'status': status, 'criterion_ids': criteria,
@@ -166,8 +177,8 @@ def next_question(profile, answers, budget=None, registry=None):
             if not participation: continue
         question = deepcopy(definition)
         clarification = bool(previous)
-        question['question_text'] = definition['clarification_text'] if clarification else definition['question_text']
-        question['clarification'] = clarification
+        question['question_text'] = definition.get('scope_clarification_text', definition['clarification_text']) if status == 'scope_clarification_required' else definition['clarification_text'] if clarification else definition['question_text']
+        question['clarification'] = clarification or status == 'scope_clarification_required'
         question['id'] = definition['question_id'] + ('_clarify' if previous else '')
         return question
     return None
@@ -183,7 +194,8 @@ def profile_changes(initial, final):
             'after_information_evidence': [r for r in b if signature(r) not in old and r['elicitation_context'] == 'after_information_exposure'],
             'clarified_or_corrected_interpretations': [r for r in a if signature(r) not in new],
             'unresolved_contradictions': [cid for cid, c in final['criterion_coverage'].items() if c['status'] == 'conflicting'],
-            'remaining_gaps': [cid for cid, c in final['criterion_coverage'].items() if c['status'] in {'not_asked', 'unsupported', 'unclear'}],
+            'remaining_gaps': [cid for cid, c in final['criterion_coverage'].items() if c['status'] in {'not_asked', 'unsupported', 'unclear', 'scope_clarification_required'}],
+            'scope_clarifications_needed': [cid for cid,c in final['criterion_coverage'].items() if c['status']=='scope_clarification_required'],
             'opportunity_barriers': [r for r in b if r['status'] == 'opportunity_barrier'],
             'interpretation': 'Assessment refinement from elicited evidence; no personal improvement or change over time is inferred.'}
 

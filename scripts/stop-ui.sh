@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IAM_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-exec "$IAM_ROOT/.venv/bin/python" "$IAM_ROOT/scripts/ops.py" stop ui
+IAM_UI_PYTHON="$IAM_ROOT/.venv/bin/python"
+if [[ -x "$IAM_ROOT/.venv-privacy/bin/python" ]] && "$IAM_ROOT/.venv-privacy/bin/python" -c "import streamlit, presidio_analyzer, en_core_web_sm" 2>/dev/null; then
+  IAM_UI_PYTHON="$IAM_ROOT/.venv-privacy/bin/python"
+fi
+exec "$IAM_UI_PYTHON" "$IAM_ROOT/scripts/ops.py" stop ui

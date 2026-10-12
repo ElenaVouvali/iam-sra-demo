@@ -7,6 +7,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
+from iam_sra.privacy import require_safe_data, screened_export, safe_message
 from iam_sra.session import LegacySession as Session
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.settings import config
@@ -17,6 +18,7 @@ CASES=[
  ('uncertainty','I am not sure about this proposal.','cost_roi_business','I need to know who pays for the service and whether public funding is required; I have not decided.'),
  ('mixed','I accept some parts, but other parts would need changes.','welfare_equity','I support lifesaving medical deliveries, but I am unsure whether the service would reach underserved neighborhoods fairly.')]
 p=argparse.ArgumentParser();p.add_argument('--output',default='.runtime/discovery-smoke.json');p.add_argument('--ids',default=','.join(x[0] for x in CASES));args=p.parse_args()
+require_safe_data(CASES)
 results=[]
 for name,text,topic,clarification in CASES:
  if name not in args.ids.split(','):continue
@@ -49,7 +51,7 @@ for name,text,topic,clarification in CASES:
   result['selected_fn_question_ids']=[q['id'] for q in s.questions]
   result.update(success=True,initial_scores={c['concern_id']:c['score'] for c in initial['assessment']['concerns'] if c['score'] is not None},aggregate=initial['aggregate'],score_free_until_confirmation=True)
  except Exception as exc:
-  record(stage+' failure');result.update(error=str(exc),error_type=type(exc).__name__,failure_stage=stage,discovery={'questions':s.discovery_questions,'responses':s.discovery_responses,'blockers':s.blockers},consolidated_meaning=s.draft.model_dump() if s.draft else None)
+  record(stage+' failure');result.update(error=safe_message(exc),error_type=type(exc).__name__,failure_stage=stage,discovery={'questions':s.discovery_questions,'responses':s.discovery_responses,'blockers':s.blockers},consolidated_meaning=s.draft.model_dump() if s.draft else None)
  if s.draft:
   mapped={c.concern_id:c for c in s.draft.concerns}
   expected_stance={'acceptance':'supported','rejection':'opposed','uncertainty':'uncertain','mixed':'mixed'}[name]
@@ -65,5 +67,5 @@ for name,text,topic,clarification in CASES:
  result['gpu_after_sample']=sample.stdout.strip().splitlines()
  result['session_inference']=s.inference
  results.append(result)
- path=Path(args.output);path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps({'notice':'All attempted synthetic engineering cases, not scientific validation. Topic selection and blocker choices do not establish numeric severity.','attempts':results},indent=2)+'\n')
+ path=Path(args.output);path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(screened_export({'notice':'All attempted synthetic engineering cases, not scientific validation. Topic selection and blocker choices do not establish numeric severity.','attempts':results}),indent=2)+'\n')
  print(json.dumps({k:result[k] for k in ['case','success','latency_seconds','error','failure_stage','initial_scores'] if k in result}),flush=True)

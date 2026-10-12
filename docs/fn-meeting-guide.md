@@ -1,3 +1,5 @@
+> Current candidate: instrument 1.4.0 / privacy-1.0.0. See [current handover](fn-meeting-candidate-privacy.md) and [privacy setup](privacy.md). The historical verification below predates mandatory screening and does not establish current live readiness.
+
 # FN meeting demonstration — instrument 1.3.0
 
 **Meeting-ready means a working, traceable demonstration with accurately reported

@@ -189,3 +189,8 @@ Meeting increment verification: full suite **1,137 passed in 56.82s**, including
 explicit-display logging, developer-reference isolation and retained citizen downloads.
 Compileall and diff checks pass. Live cases are blocked by localhost permissions;
 no screenshots or browser/mobile/keyboard checks have been claimed as completed.
+
+
+## Privacy meeting candidate — 12 October 2026
+
+Existing guide-derived layout is retained. A synthetic-demo/privacy notice, cleaned-text confirmation and safe export withholding are added; they are usability/privacy decisions, not new requirements attributed to the PDF. Header spacing and removal of the extra scenario caption preserve prior user edits. Rendered desktop/390px/360px, 200% zoom, keyboard focus and downloads require manual host verification; no browser was available for this revision. Approved marks/fonts, privacy ownership/URL and hub integration remain unresolved. See [current handover](fn-meeting-candidate-privacy.md).

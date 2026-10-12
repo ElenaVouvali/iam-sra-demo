@@ -3,6 +3,7 @@ import argparse,json,time
 from pathlib import Path
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"src"))
+from iam_sra.privacy import require_safe_data, screened_export, safe_message
 from iam_sra.session import LegacySession as Session,State
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.updates import facet_state
@@ -14,6 +15,7 @@ def replay(client):
          'live_model_used':False,'scripted_citizen_confirmations':True,'scientific_validation':False}
     try:
         text=json.loads(Path('eval/fn_reference.json').read_text())['citizen_text']
+        require_safe_data(text)
         s.begin();s.submit(text,client)
         assert s.initial is None and not any(i.get('kind','').endswith('scoring') for i in s.inference)
         s.finish_discovery();stage='initial confirmed scoring';s.continue_initial(True,client)
@@ -38,7 +40,7 @@ def replay(client):
         row['revision_check']={'passed':stale_ok,'revision_history':s.revision_history}
         if not row['structural_evidence_checks_passed'] or not row['rubric_checks_passed']:row['failure_stage']='mandatory correctness checks'
     except Exception as exc:
-        row.update(failure_stage=stage,error_type=type(exc).__name__,error=str(exc))
+        row.update(failure_stage=stage,error_type=type(exc).__name__,error=safe_message(exc))
     metrics=stage_metrics(s,client)
     row.update(latency_seconds=round(time.monotonic()-start,3),stage_metrics=metrics,inference=s.inference,
         last_diagnostics=getattr(client,'last_diagnostics',[]),last_settings=getattr(client,'last_settings',{}),
@@ -54,7 +56,15 @@ def main():
     row=({'dialogue_completed':False,'structural_evidence_checks_passed':False,'rubric_checks_passed':False,'live_model_used':False,
           'success':False,'failure_stage':'not_attempted','reason':'Live testing explicitly disabled; no inference attempted.','stage_metrics':{}}
          if args.no_live else replay(ConversationClient()))
-    write_report(args.output,row)
+    if args.no_live:
+        # Fixed structural status only: no citizen/model text or inference to screen.
+        path=Path(args.output);path.parent.mkdir(parents=True,exist_ok=True)
+        if path.exists():
+            from uuid import uuid4
+            path=path.with_name(path.stem+'-'+uuid4().hex[:8]+path.suffix)
+        path.write_text(json.dumps(row,indent=2)+'\n')
+    else:
+        write_report(args.output,row)
     print(json.dumps({k:v for k,v in row.items() if k not in {'session','inference','last_raw_trace','last_settings','last_diagnostics','revision_check'}}),flush=True)
     return 0 if row['success'] else 1
 if __name__=='__main__':raise SystemExit(main())

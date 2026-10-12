@@ -4,6 +4,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 from uuid import uuid4
+from .privacy import VERSION as PRIVACY_VERSION, guarded, export_guard, require_safe_data
 from .assessment import AssessmentError, check_input
 from .schemas import MappingAssessment, SCHEMA_VERSION
 from .evidence import passages
@@ -26,6 +27,7 @@ class State(str, Enum):
 
 @dataclass
 class LegacySession:
+    privacy_contract: str = field(default_factory=lambda:PRIVACY_VERSION)
     session_id: str = field(default_factory=lambda:str(uuid4()))
     state: State = State.SCENARIO
     text: str = ''
@@ -85,6 +87,8 @@ class LegacySession:
     def mode_version(self): return config("assessment_modes")["version"]
 
     def _require(self,*states):
+        from .privacy import check_contract
+        check_contract(self)
         if self.state not in states:raise ValueError('Invalid session transition')
 
     def _checkpoint(self,key):
@@ -127,7 +131,9 @@ class LegacySession:
         if hasattr(client,'bind_session'):client.bind_session(self.session_id,(len(self.corrections),len(self.revision_history)))
         return client
 
+    @guarded()
     def _record(self,client,stage):
+        require_safe_data({name:getattr(client,name,None) for name in ('last_trace','last_settings','last_diagnostics','last_raw_scores','last_candidate_projections','last_metrics')})
         if stage=='discovery metadata':
             self.boundary_nominations.extend(deepcopy(p) for p in getattr(client,'last_candidate_projections',[]) if p.get('kind')=='boundary_review' and (not p.get('supported_facets') or not p.get('decisiveness_supported')))
         self.inference.append({'stage':stage,'version':self.version,'diagnostics':deepcopy(getattr(client,'last_diagnostics',[])),
@@ -140,6 +146,7 @@ class LegacySession:
             'conditional_meaning':self.conditional_draft.model_dump() if self.conditional_draft else None,
             'original_facet_meanings':[f.model_dump() for f in self.original_facets.values()]})
 
+    @guarded('text')
     def submit(self,text,client):
         self._require(State.ANSWER);check_input(text)
         self._checkpoint('initial_answer')
@@ -206,6 +213,7 @@ class LegacySession:
         self.evidence[key]=EvidenceItem(id=key,text='Discovery ended: '+reason+'. Unanswered topics remain unknown.',context='original',source='citizen_control' if reason=='user_finish' else 'application_control')
         self.discovery_events.append({'id':key,'evidence_id':key,'action':'finish','reason':reason,'context':'original','policy_version':config('discovery')['version'],'after_answers':len(self.discovery_responses),'citizen_control':reason=='user_finish'})
 
+    @guarded('text')
     def respond_discovery(self,selections,text,client,facets=None,skip=False):
         self._require(State.INTERPRETATION)
         q=self.discovery_question
@@ -319,6 +327,7 @@ class LegacySession:
         self.version+=1
         self.state=State.UPDATED if self._initial else State.INTERPRETATION
 
+    @guarded('text', 'reason')
     def correct(self,target,text,reason,client):
         self._require(State.INTERPRETATION,State.CONFIRMED,State.UPDATED,State.UPDATE_CONFIRMED,State.FINAL)
         if target not in CONCERNS and target not in ['current_route_stance','medical_public_benefit_support','awareness_understanding']:
@@ -355,6 +364,7 @@ class LegacySession:
             'before':before,'after':self.draft.model_dump()})
         self._invalidate();self._remember('correction');self._record(client,'correction interpretation')
 
+    @guarded('text')
     def correct_blocker(self,cid,status,text=''):
         self._require(State.INTERPRETATION,State.CONFIRMED,State.UPDATED,State.UPDATE_CONFIRMED,State.FINAL)
         if cid not in self.blockers or status not in {'yes','no','unsure'}:raise ValueError('Select an existing boundary and Yes, No or Unsure.')
@@ -398,6 +408,7 @@ class LegacySession:
                 history[c['concern_id']]=list(dict.fromkeys(history.get(c['concern_id'],[])+refs))
         return {cid:refs for cid,refs in history.items() if refs}
 
+    @guarded('text', 'reason')
     def correct_modified(self,target,text,reason,client):
         self._require(State.UPDATED,State.UPDATE_CONFIRMED,State.FINAL)
         if self.conditional_draft is None or target not in list(CONCERNS)+['current_route_stance','medical_public_benefit_support','awareness_understanding']:raise ValueError('Select a meaning for the modified proposal.')
@@ -571,6 +582,7 @@ class LegacySession:
                     'question':'Clarify what you mean about '+name.replace('_',' ')+' in the original proposal.'}
             else:setattr(self.draft,name,new.model_copy(deep=True))
 
+    @guarded('clarification')
     def respond(self,choice,clarification,client,clarification_context='hypothetical'):
         self._require(State.FOLLOWUPS)
         if clarification_context not in {'original','hypothetical'}:raise ValueError('Choose a clarification context')
@@ -650,6 +662,7 @@ class LegacySession:
         changes=[config('reassessment')['combined_changes'].get(q['id'],q['contract']['modification']) for q in self.presented_followups if q.get('apply_to_joint')]
         return SCENARIO['text']+'\n\nApply ALL these hypothetical changes together (all other scenario details stay as stated):\n'+'\n'.join(changes)
 
+    @guarded('text')
     def resolve_conflict(self,key,text,client):
         self._require(State.UPDATED)
         if key not in self.conflicts:raise ValueError('Unknown clarification request')
@@ -688,6 +701,7 @@ class LegacySession:
             statement+=' Your conditions were: '+'; '.join(self.evidence[r].text for r in fact.condition_ids)
         return statement+' Would you still '+position+' '+aspect+' if the service operated with the changes listed above?'
 
+    @guarded('text', 'unchanged_confirmed')
     def record_joint(self,choice,remaining,text,client,unchanged_confirmed=None):
         self._require(State.UPDATED,State.UPDATE_CONFIRMED)
         if not self.joint_required:raise ValueError('No modified proposal has been presented')
@@ -956,10 +970,11 @@ class LegacySession:
         self.facet_scores=scores;self._record(client,'conditional aspect scoring')
         return snapshot
 
+    @export_guard
     def legacy_export(self):
         self._require(State.FINAL)
         from .discovery import report
-        return deepcopy({'experimental':True,'schema_version':'4.1.0','discovery':report(self),'versions':{'assessment_schema':SCHEMA_VERSION,'registry':REGISTRY['version'],
+        return deepcopy({'experimental':True,'schema_version':'4.1.0','privacy_contract':self.privacy_contract,'discovery':report(self),'versions':{'assessment_schema':SCHEMA_VERSION,'registry':REGISTRY['version'],
             'scenario':SCENARIO['version'],'rubric':POLICY['rubric_version'],'scoring':POLICY['version'],
             'discovery':config('discovery'),'reassessment':config('reassessment'),'model':config('model'),'prompts':config('prompts')},
             'citizen_text':self.text,'evidence':{k:v.model_dump() for k,v in self.evidence.items()},
@@ -970,10 +985,12 @@ class LegacySession:
             'update_reasons':self._final['update_reasons'],'comparison':comparison(self._initial,self._final,self._conditional,self._final['update_reasons']),
             'inference':self.inference,'confirmation_limit':'Agreement about meaning, not scientific validity.'})
 
+    @export_guard
     def export(self):
         self._require(State.FINAL)
         from .reporting import export_session
         result = export_session(self)
+        result["privacy_contract"] = self.privacy_contract
         result["assessment_mode"] = self.assessment_mode
         result["mode_version"] = self.mode_version
         result["methodological_label"] = "Historical experimental acceptance index"

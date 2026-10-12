@@ -5,7 +5,9 @@ import streamlit as st
 from .readiness import citizen_result
 from .settings import config
 from .assessment import AssessmentError
-from .ui_presentation import navigation, restart_control, findings, footer
+from .privacy import NOTICE, PrivacyError, check_contract, safe_message, safe_diagnostics
+from .privacy_ui import invoke, preview_control, download_button
+from .ui_presentation import navigation, restart_control, findings, footer, proposal_summary
 
 
 def render(session, client, developer=False):
@@ -14,6 +16,9 @@ def render(session, client, developer=False):
         footer()
         return
     navigation(s.state)
+    try: check_contract(s)
+    except PrivacyError as exc:
+        st.error(str(exc)); footer(); return
     if s.instrument['version'] != config('readiness')['version']:
         st.warning('This session uses an earlier draft instrument. Its saved evidence is retained. Use Start over to test the revised interview.')
 
@@ -21,11 +26,11 @@ def render(session, client, developer=False):
         st.session_state.pop('readiness_error', None)
         st.session_state.pop('readiness_failure_details', None)
         try:
-            with st.spinner('Reading your answer…'): action(*args)
+            with st.spinner('Reading your answer…'): invoke(action, *args)
         except (AssessmentError, ValueError) as exc:
             code = getattr(exc, 'code', 'validation')
-            detail = {'error_code': code, 'message': str(exc), 'exception_type': type(exc).__name__,
-                'cause': str(exc.__cause__) if exc.__cause__ else None,
+            detail = {'error_code': code, 'message': safe_message(exc), 'exception_type': type(exc).__name__,
+                'cause': None,
                 'action': getattr(action, '__qualname__', str(action)), 'state': s.state,
                 'request': deepcopy(getattr(client, 'last_request_context', {})),
                 'diagnostics': deepcopy(getattr(client, 'last_diagnostics', [])),
@@ -37,9 +42,9 @@ def render(session, client, developer=False):
                 'budget': 'This answer is too long for this step. Please shorten it and try again.',
                 'truncated': 'We could not finish reading your answer.'}
             guidance = 'Your answer is retained. Select Continue to retry.' if s.state in {'answer', 'correction'} else 'Your answer is retained. Retry, correct it, or skip this question.'
-            st.session_state.readiness_error = messages.get(code, 'We could not complete this step.') + ' ' + guidance
-            st.session_state.readiness_diagnostic = str(exc)
-            st.session_state.readiness_failure_details = detail
+            st.session_state.readiness_error = str(exc) if isinstance(exc, PrivacyError) else messages.get(code, 'We could not complete this step.') + ' ' + guidance
+            st.session_state.readiness_diagnostic = safe_message(exc)
+            st.session_state.readiness_failure_details = safe_diagnostics(detail)
 
     if st.session_state.get('readiness_error'):
         with st.container(key='iam_error'):
@@ -48,7 +53,9 @@ def render(session, client, developer=False):
             details = st.session_state.get('readiness_failure_details', {'message': st.session_state.get('readiness_diagnostic')})
             with st.expander('Technical details for this failed attempt'):
                 st.json(details)
-                st.download_button('Download failure details', json.dumps(details, indent=2), file_name='iam-readiness-failure.json', mime='application/json')
+                download_button('Download failure details', json.dumps(details, indent=2), file_name='iam-readiness-failure.json', mime='application/json')
+
+    preview_control(perform)
 
     def edit_answers():
         with st.expander('Edit an earlier answer'):
@@ -62,7 +69,22 @@ def render(session, client, developer=False):
 
     def learning_option():
         from .readiness_retrieval import corpus, ExplanationClient
-        with st.expander('Optional: learn more about this example'):
+        with st.expander('Frequently asked questions about this example'):
+            faqs = config('readiness_information').get('faqs', [])
+            st.caption('Optional answers from the supplied material. Draft explanations awaiting review.')
+            if faqs:
+                selected = st.selectbox('Choose a question', [f['id'] for f in faqs],
+                    format_func=lambda key: next(f['question'] for f in faqs if f['id'] == key), key='faq_question')
+                st.button('Show FAQ answer', on_click=perform, args=(s.display_faq, selected))
+            faq_displays = [e for e in s.information_exposures if e['source'] == 'controlled_faq_display']
+            if faq_displays:
+                exposure = faq_displays[-1]; entry = exposure['content']
+                st.write('**' + entry['question'] + '**'); st.text(entry['answer'])
+                for source in entry['sources']:
+                    st.caption(source['document_title'] + ' · ' + source['location'])
+                if len(s.answers) < s.question_budget:
+                    st.button('Reflect on this answer (optional)', on_click=perform, args=(s.start_learning, exposure['exposure_id']))
+        with st.expander('More background or ask another question'):
             module = getattr(s, 'information_module', config('readiness_information'))
             collection = getattr(s, 'retrieval_corpus', corpus())
             st.caption('Draft demo explanations, awaiting FN review. Optional; your view can stay the same.')
@@ -99,9 +121,9 @@ def render(session, client, developer=False):
                 st.button('Acknowledge answer', on_click=perform, args=(s.acknowledge_information, exposure['exposure_id']))
 
     if s.state == 'answer':
+        st.info(NOTICE)
         st.subheader('The proposal')
         st.write(s.scenario['text'])
-        st.write('An illustrative scenario, not a confirmed plan in a named city.')
         with st.container(key='iam_accent'):
             with st.form('readiness_initial'):
                 st.text_area(s.instrument.get('initial_invitation', 'How do you feel about this proposal? What would make it acceptable?'), key='readiness_answer', height=180)
@@ -110,21 +132,23 @@ def render(session, client, developer=False):
         st.subheader('Have we understood you correctly?')
         pending = s.pending
         view = pending['acceptance']
-        if view['stance'] != 'not_stated':
-            st.write('Your view of the proposal: ' + {'supported': 'support', 'opposed': 'opposition', 'mixed': 'mixed views', 'uncertain': 'uncertain'}[view['stance']])
-        findings('What matters to you', view['concerns'])
-        findings('Changes you asked for', view['conditions'])
-        if view.get('medical_public_benefit_support') == 'supported': st.write('You support the medical purpose of the service.')
-        findings('What we heard', [r['interpretation'] for r in pending['records']])
+        st.text(proposal_summary(view))
+        if pending['records']:
+            with st.expander('Understanding and experience mentioned in your answer'):
+                for interpretation in dict.fromkeys(r['interpretation'] for r in pending['records']):
+                    st.text(interpretation)
+        if pending['kind'] == 'initial' and not view['concerns'] and not view['conditions'] and not pending['records']:
+            st.info('If something important is missing, select Re-read my answer or correct the interpretation below.')
         interaction = pending.get('interaction', 'substantive')
         if interaction == 'confused': st.write('The question was unclear to you. This does not change the evidence you already shared.')
         elif interaction in {'declined', 'already_answered'}: st.write('You do not want to repeat this answer. We will move on.')
-        elif not pending['records']: st.write('This answer adds no further details about understanding or participation.')
+        elif not pending['records'] and pending['kind'] != 'initial': st.write('No additional understanding or participation evidence was recorded from this answer.')
         st.caption('Confirm whether we understood you. This does not independently verify events you described.')
         key = 'readiness_confirm_' + str(pending['version'])
         st.checkbox('This reflects what I meant', key=key)
         with st.container(key='iam_accent'):
             st.button('Confirm and continue', type='primary', on_click=perform, args=(s.confirm, st.session_state.get(key, False)), disabled=not st.session_state.get(key, False))
+        st.button('Re-read my answer', on_click=perform, args=(s.retry_interpretation, client))
         with st.expander('Correct this interpretation'):
             with st.form('correct_pending'):
                 correction_key = 'readiness_correction_' + str(pending['version'])
@@ -154,6 +178,37 @@ def render(session, client, developer=False):
         learning_option()
         edit_answers()
     else:
+        from .readiness_score import current_score, assign_score, WorkbookScoreClient
+        def show_score():
+            st.session_state['workbook_score_page'] = s.session_id
+        def back_to_summary():
+            st.session_state.pop('workbook_score_page', None)
+        if st.session_state.get('workbook_score_page') == s.session_id:
+            st.subheader('Readiness score')
+            score = current_score(s)
+            if score:
+                st.metric('Citizen readiness (CRL)', str(score['crl']) + ' / 9' if score['crl'] is not None else 'Not enough evidence')
+                st.write(score['explanation'])
+                st.caption('SRL: not assessed — technical and organisational evidence is also needed.')
+                st.caption('Draft workbook · provisional model estimate')
+                download_button('Download score', json.dumps(score, ensure_ascii=False, indent=2), file_name='iam-readiness-score.json', mime='application/json')
+            else:
+                st.caption('Model estimate from your confirmed answers and the topic-experts workbook.')
+                def generate_score():
+                    try:
+                        with st.spinner('Assessing readiness…'):
+                            assign_score(s, WorkbookScoreClient())
+                    except Exception:
+                        st.session_state['workbook_score_error'] = 'Could not assess readiness. Please retry.'
+                    else:
+                        st.session_state.pop('workbook_score_error', None)
+                if st.session_state.get('workbook_score_error'):
+                    st.error(st.session_state['workbook_score_error'])
+                st.button('Calculate readiness score', type='primary', on_click=generate_score)
+            st.button('Back to summary', on_click=back_to_summary)
+            footer()
+            return
+        st.button('View readiness score', type='primary', on_click=show_score)
         result = citizen_result(s)
         st.subheader('Your views of this proposal')
         original = result['acceptance']['original_proposal']
@@ -169,6 +224,7 @@ def render(session, client, developer=False):
                  'participation': 'Participation and contributions', 'influence': 'Influence on decisions', 'opportunity': 'Ways to participate and barriers'}
         gaps = {'not_asked': 'We did not ask about this, or you have not described it.',
                 'unsupported': 'You have not described this in enough detail to summarise it.', 'unclear': 'This remains unclear. You can edit an answer if you wish.',
+                'scope_clarification_required': 'You described both experience and no experience. It is unclear whether these refer to different activities or times; neither statement is treated as false.',
                 'conflicting': 'Some statements differ. You can edit an earlier answer to clarify.', 'skipped': 'You chose to skip this question.'}
         for item in result['readiness']:
             st.write('**' + names[item['criterion_id']] + '**')
@@ -191,19 +247,27 @@ def render(session, client, developer=False):
             else: st.write('No further concern changes are selected for this interview.')
         st.subheader('Save your summary')
         st.caption('Downloads include your answers, interpretations and the complete assessment audit.')
-        with st.container(key='iam_accent'):
-            st.download_button('Download JSON', s.json(), file_name='iam-evidence.json', mime='application/json', type='primary')
-        st.download_button('Download JSONL', s.jsonl(), file_name='iam-evidence.jsonl', mime='application/x-ndjson')
+        try:
+            data_json, data_jsonl = s.json(), s.jsonl()
+        except PrivacyError as exc:
+            st.warning(str(exc))
+        else:
+            with st.container(key='iam_accent'):
+                download_button('Download JSON', data_json, file_name='iam-evidence.json', mime='application/json', type='primary')
+            download_button('Download JSONL', data_jsonl, file_name='iam-evidence.jsonl', mime='application/x-ndjson')
         with st.expander('About this summary'):
             st.write(s.assessment_participation['note'])
             st.write('Thematic areas are topics, not CRL maturity stages.')
     if developer:
         from .readiness_report import evidence_report, markdown_report, fn_reference
         with st.expander('Researcher evidence report'):
-            report = evidence_report(s.export())
-            st.caption(report['note'])
-            st.json(report)
-            st.download_button('Download evidence report', markdown_report(s.export()), file_name='iam-researcher-report.md')
+            try:
+                report = evidence_report(s.export())
+                st.caption(report['note'])
+                st.json(report)
+                download_button('Download evidence report', markdown_report(s.export()), file_name='iam-researcher-report.md')
+            except PrivacyError as exc:
+                st.warning(str(exc))
         with st.expander('FN historical reference comparison'):
             reference = fn_reference()
             st.write(reference['label']); st.caption('SRA_LLM_FN_concept.pdf · pp.6–7 · source checked, not an approved instrument')

@@ -127,3 +127,19 @@ In the controlled initial-to-final trace, `R1_1.p001` identifies the original pa
 | `tests/test_attribution_confirmation.py`, `tests/test_confirmation.py`, `tests/test_direct_interpretation.py`, `tests/test_discovery.py`, `tests/test_evidence_repair.py`, `tests/test_followup_manual_pack.py`, `tests/test_passage_mapping.py`, `tests/test_single_followup_flow.py`, `tests/test_updates.py` | Existing historical tests now explicitly import the historical session; arithmetic expectations unchanged. |
 | `tests/test_ui.py` | Existing historical UI helper explicitly selects historical mode. |
 | `tests/test_final_assessment_review.py`, `tests/test_live_ui_flow.py` | Historical headline-label assertions updated; numerical assertions unchanged. |
+
+### Provisional workbook score screen
+
+After finishing the interview, choose **View readiness score**, then **Calculate
+readiness score**. The local model assigns a provisional CRL (1–9 or insufficient
+evidence), with a short explanation and supporting answer IDs. The rubric in
+`configs/readiness_levels.json` transcribes `IAM-CC_Topic_experts.xlsx`, Read me
+K5:L13 and B5:C13, and records the workbook hash. SRL remains unassessed because
+the workbook requires synthesis of TRL, ORL and CRL; a citizen interview cannot
+supply this broader evidence. The provisional judgement is separate from approved
+numerical fields, included as `provisional_workbook_score` in session exports,
+and invalidated by changed answers/profile/rubric. Failed requests allow retry
+without changing answers. Existing privacy gates apply when enabled.
+
+This screen is a local change, not a GitHub publication. Live model judgement
+requires host verification; automated tests check boundaries, not scoring accuracy.

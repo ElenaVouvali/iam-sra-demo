@@ -111,6 +111,18 @@ RECORD_TYPES = {
         for cid in ['understanding', 'information', 'participation', 'opportunity']}}
 
 
+def claim_accepted(claim, decision):
+    if not decision.meaning_supported or claim.kind in {'recognition_only','unsupported'}:
+        return False
+    if decision.evidence_type == claim.kind:
+        return True
+    # A proposal concern may also explain an impact; a requested change may
+    # also reveal an information need. Preserve its supported proposal meaning
+    # without awarding a different readiness criterion from a label mismatch.
+    return (claim.kind in {'concern','condition'} and
+            decision.evidence_type in {'concern','condition','explained_impact','information_need'})
+
+
 def assemble_reviewed(source, review, elicitation, context, version):
     """Keep only independently classified claims; audit rejected claims upstream."""
     if sorted(d.candidate for d in review.decisions) != list(range(len(source.claims))):
@@ -121,7 +133,7 @@ def assemble_reviewed(source, review, elicitation, context, version):
         if not set(decision.facet_ids) <= {f for topic in decision.topic_ids for f in CONCERNS[topic]['facets']}:
             raise AssessmentError('Reviewed facets must belong to the reviewed topics.', code='evidence')
         claim = source.claims[decision.candidate]
-        if not decision.meaning_supported or decision.evidence_type != claim.kind or claim.kind in {'recognition_only', 'unsupported'}:
+        if not claim_accepted(claim, decision):
             continue
         if claim.kind in RECORD_TYPES:
             cid, kind, status = RECORD_TYPES[claim.kind]

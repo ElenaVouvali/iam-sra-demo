@@ -218,3 +218,18 @@ def test_unverified_prediction_review_rejects_factual_endorsement(monkeypatch):
     install(monkeypatch,{'interaction':'substantive','claims':[row]},[verdict(kind='unsupported',supported=False)])
     result=ReadinessClient().extract_readiness(evidence(text))
     assert not result.records
+
+
+def test_supported_proposal_findings_survive_overlapping_reviewer_labels(monkeypatch):
+    text='The hum would interrupt my rest. Cameras over my garden make me uncomfortable. Use another route or fly higher.'
+    rows=[claim('concern',quotation=text,interpretation='You object to noise interrupting rest.'),
+          claim('concern',quotation=text,interpretation='You object to cameras viewing your garden.'),
+          claim('condition',quotation=text,interpretation='You ask for another route or higher flights.')]
+    install(monkeypatch,{'interaction':'substantive','claims':rows},[
+        verdict(0,'explained_impact',topics=['noise']),
+        verdict(1,'explained_impact',topics=['perceived_safety_privacy']),
+        verdict(2,'information_need')])
+    client=ReadinessClient();result=client.extract_readiness(evidence(text))
+    assert len(result.acceptance.concerns)==2 and len(result.acceptance.conditions)==1
+    assert result.records==[]  # Label disagreement never awards readiness.
+    assert all(d['accepted'] and not d['classification_agrees'] for d in client.last_settings['readiness_grounding']['decisions'])

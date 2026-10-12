@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "id": "synthetic_private_address",
+  "origin": "Authored synthetic privacy demonstration; not a real address or citizen record",
+  "initial_answer": "I live at 42 Example Street. Repeated early flights could interrupt my rest, so I would want noise measurements before deciding.",
+  "expected_behavior": [
+    "Detect the synthetic private address locally before tokenization, generation or assessment retention.",
+    "Show a masked preview and require explicit confirmation before processing cleaned text.",
+    "Keep the concern about rest and the request for noise measurements.",
+    "Do not retain the raw address in assessment history, audits or downloads."
+  ],
+  "must_not_infer": [
+    "That a synthetic address is a verified location",
+    "That masking guarantees anonymity",
+    "That privacy screening is disabled for the other meeting cases"
+  ]
+}

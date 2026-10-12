@@ -79,7 +79,7 @@ def test_exposure_does_not_create_readiness_and_ack_is_separate():
     s.respond('I want sound measurements.',Extractor([record('information')],stance='not_stated'));s.confirm(True)
     assert s.events[-1]['records'][0]['elicitation_context']=='after_information_exposure'
     s.finish(); exported=s.export()
-    assert exported['schema_version']=='6.3.0'
+    assert exported['schema_version']=='6.4.0'
     assert exported['numerical_crl'] is None and exported['numerical_srl'] is None
     assert 'camera images recorded' not in [e['text'] for e in s.events]
     assert exported['information_exposures'][0]['content']['passages']
@@ -181,3 +181,16 @@ def test_default_export_does_not_include_researcher_only_corpus():
     s=confirmed();data=s.export()
     assert all('citizen_explanation' in p['permitted_use'] for p in data['retrieval_corpus']['passages'])
     assert not any(p['id'] in {'FN-HISTORICAL','WP3-REVIEW'} for p in data['retrieval_corpus']['passages'])
+
+
+def test_faq_display_logs_exact_content_and_reflection_without_hidden_exposure():
+    s=confirmed();initial=s.initial_readiness
+    assert not s.information_exposures
+    e=s.display_faq('schedule')
+    assert '15 flights' in e['content']['answer'] and 'does not provide a timetable' in e['content']['answer']
+    assert e['content']['sources'] and e['source']=='controlled_faq_display'
+    assert s.pre_information_snapshot==initial
+    s.start_learning(e['exposure_id'])
+    assert len(s.information_exposures)==1
+    assert s.current_question['id']=='readiness_understanding_after_information'
+    assert s.initial_readiness==initial and s.current_profile['numerical_crl'] is None

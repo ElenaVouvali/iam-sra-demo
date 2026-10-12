@@ -53,4 +53,20 @@ def footer():
     st.caption('Funded by the European Union under Grant Agreement No 101271620. Views and opinions expressed are those of the author(s) only and do not necessarily reflect those of the European Union or the granting authority. Neither the European Union nor the granting authority can be held responsible for them.')
     with st.expander('Privacy and project information'):
         st.write('Your answers are held in this app session and sent to the configured model service, localhost by default. Downloads include your answers and the assessment audit. Start over clears the app session but cannot remove files you already downloaded.')
-        st.write('This local demo is not a confirmed deployment plan or an approved numerical citizen-readiness assessment.')
+        st.write('IAM-SRA2 is the overall tool. This internal demo implements its citizen component: proposal views and partial evidence relevant to Citizen Readiness Levels (CRL). Societal Readiness (SRL) is broader and draws on technical (TRL), organisational (ORL) and citizen readiness; this interview is not a city SRL.')
+        st.write('Five interview dimensions do not cover all nine CRL levels or all 15 topics. Numerical criteria await agreement.')
+        st.write('Local screening can miss private information. Masked text is not necessarily anonymous.')
+        st.write('Reset is not secure erasure. Downloads remain with their recipients.')
+
+
+def proposal_summary(view):
+    statements = [{'supported':'You support the proposed route.', 'opposed':'You oppose the proposed route.',
+        'mixed':'You have mixed views about the proposed route.', 'uncertain':'You are unsure about the proposed route.',
+        'not_stated':'Your overall position on the route is not yet stated.'}[view['stance']]]
+    if view.get('medical_public_benefit_support') == 'supported':
+        statements.append('You support its medical purpose.')
+    if view.get('concerns'):
+        statements.append('What matters to you: ' + '; '.join(dict.fromkeys(view['concerns'])))
+    if view.get('conditions'):
+        statements.append('The changes you asked for: ' + '; '.join(dict.fromkeys(view['conditions'])))
+    return '\n\n'.join(statements)

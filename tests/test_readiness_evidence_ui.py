@@ -262,3 +262,15 @@ def test_developer_reference_and_report_do_not_change_citizen_session(monkeypatc
     assert reference['confirmation'].startswith('Unconfirmed')
     assert reference['pending_interpretation']['text'].startswith('Look, I get')
     assert app.session_state.session.export()==before
+
+
+def test_initial_review_does_not_describe_proposal_views_as_no_further_details(monkeypatch):
+    app=start(monkeypatch,Extractor(stance='opposed',concerns=['Noise interrupts rest','Cameras view private spaces'],conditions=['Use a different route']))
+    app.text_area(key='readiness_answer').set_value('I oppose noise and cameras over my home; use another route.')
+    click(app,'Continue')
+    text=' '.join(e.value for e in list(app.markdown)+list(app.text))
+    assert 'adds no further details' not in text
+    assert 'Noise interrupts rest' in text and 'Cameras view private spaces' in text
+    click(app,'Re-read my answer')
+    assert app.session_state.session.state=='review'
+    assert not app.session_state.session.answers and not app.session_state.session.events

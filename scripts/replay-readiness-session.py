@@ -10,6 +10,7 @@ import httpx
 from iam_sra.readiness_session import ReadinessSession
 from iam_sra.readiness_client import ReadinessClient
 from iam_sra.settings import BASE_URL
+from iam_sra.privacy import VERSION, PrivacyError, require_safe_data, screened_export, safe_message
 
 
 def main():
@@ -22,6 +23,9 @@ def main():
     raw = Path(args.input).read_text()
     try: original = json.loads(raw)
     except json.JSONDecodeError: original = json.loads(next(line for line in raw.splitlines() if line.strip()))
+    if original.get('privacy_contract') != VERSION:
+        raise PrivacyError('Older session: start a new synthetic session. Existing files remain unchanged.')
+    require_safe_data(original)
     if args.report_only:
         from iam_sra.readiness_report import markdown_report
         output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True)
@@ -61,11 +65,11 @@ def main():
         session.finish('user_finish')
         report.update(status='completed', actual_output=session.export())
     except Exception as exc:
-        report.update(status='failed' if session.inference else 'blocked', error=str(exc))
+        report.update(status='failed' if session.inference else 'blocked', error=safe_message(exc))
     report['live_model_used'] = any(i.get('raw_model_trace') for i in session.inference)
     report['latency_seconds'] = round(time.monotonic() - started, 3)
     if 'actual_output' not in report: report['partial_output'] = session.export()
-    output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n')
+    output.write_text(json.dumps(screened_export(report), indent=2, ensure_ascii=False) + '\n')
     print(json.dumps({k:report.get(k) for k in ['status','live_model_used','replayed','not_replayed','next_question','error']}, ensure_ascii=False))
     return 0 if report['status'] == 'completed' else 2
 

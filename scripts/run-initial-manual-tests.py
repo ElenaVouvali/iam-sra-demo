@@ -15,6 +15,7 @@ import httpx
 from iam_sra.conversation_client import ConversationClient
 from iam_sra.session import LegacySession as Session
 from iam_sra.settings import config, CONCERNS, BASE_URL
+from iam_sra.privacy import require_safe_data, screened_export, safe_message
 
 
 def compare(case,snapshot):
@@ -84,12 +85,13 @@ def main():
             'prompts':config('prompts'),'selected_ids':[c['id'] for c in cases],
             'scripted_confirmation':True,'case_file':str(args.case_file),'base_url':args.base_url,'live_model_used':False,'attempts':[]}
     output=Path(args.output);output.parent.mkdir(parents=True,exist_ok=True)
-    def save():output.write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
+    require_safe_data(cases)
+    def save():output.write_text(json.dumps(screened_export(report),indent=2,ensure_ascii=False)+'\n')
     try:
         response=httpx.get(args.base_url.rstrip('/')+'/v1/models',timeout=10,trust_env=False)
         response.raise_for_status();report['server_models']=response.json()
     except Exception as exc:
-        report.update(blocked=True,error=str(exc),error_type=type(exc).__name__,cases_not_run=[c['id'] for c in cases]);save()
+        report.update(blocked=True,error=safe_message(exc),error_type=type(exc).__name__,cases_not_run=[c['id'] for c in cases]);save()
         print('Live model unavailable: '+str(exc)+'\nReport: '+str(output),flush=True);return 2
     for case in cases:
         s=Session();client=ConversationClient(base_url=args.base_url);started=time.monotonic()
@@ -125,7 +127,7 @@ def main():
                     row['comparison']['followups_match_expected']=set(actual)==set(expected)
                     row['comparison']['matches_expected']=row['comparison']['matches_expected'] and row['comparison']['followups_match_expected']
         except Exception as exc:
-            row.update(failure_stage=stage,error=str(exc),error_type=type(exc).__name__)
+            row.update(failure_stage=stage,error=safe_message(exc),error_type=type(exc).__name__)
         row.update(latency_seconds=round(time.monotonic()-started,3),inference=s.inference,
                    last_diagnostics=client.last_diagnostics,last_settings=client.last_settings,
                    last_trace=client.last_trace)
