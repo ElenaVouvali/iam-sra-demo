@@ -11,7 +11,7 @@ def render(s,client,developer=False):
     def perform(action,*args):
         st.session_state.pop('baseline_error',None)
         try:
-            with st.spinner('Reading your answer…'):invoke(action,*args)
+            with st.spinner('Reading your answer…'):return invoke(action,*args)
         except (AssessmentError,ValueError) as exc:
             from .ui_errors import user_error
             st.session_state.baseline_error=(safe_message(exc) if isinstance(exc,PrivacyError) else user_error(exc)+' You can also choose Unsure or Skip.' if isinstance(exc,AssessmentError) else safe_message(exc))
@@ -39,23 +39,25 @@ def render(s,client,developer=False):
         st.text(c['broad_place'] or s.instrument['cities'][c['city']])
         if c['function']:st.text(c['function'])
         p=s.current_profile
+        gaps=[]
         for dim,label in s.instrument['dimensions'].items():
-            st.write('**'+{'familiarity':'What you had heard before','understanding':'What you know so far','information':'What you would like to know','exposure':'Your experience and learning','participation':'Activities and contributions','influence':'What changed after your contribution','opportunity':'Ways to take part and what makes it difficult'}.get(dim,label)+'**')
             rows=[r for r in p['claims'] if r['dimension']==dim]
-            if rows:
-                for text in dict.fromkeys(r['interpretation'] for r in rows):st.text(text)
-            else:
+            if not rows:
                 status=p['coverage'][dim]['status']
-                st.text({'not_asked':'We did not ask about this.','skipped':'You skipped this item.',
+                description={'not_asked':'We did not ask about this.','skipped':'You skipped this question.',
                     'declined':'You preferred not to answer.','unknown':'You were unsure.',
-                    'unclear':'We have not captured this clearly yet.'}.get(status,'We have not discussed this yet.'))
+                    'unclear':'We have not captured this clearly yet.'}.get(status,'We have not discussed this yet.')
+                gaps.append((label,description));continue
+            st.write('**'+label+'**')
+            for text in dict.fromkeys(r['interpretation'] for r in rows):st.text(text)
             if p['coverage'][dim]['status']=='scope_unclear':
-                st.text('You described both having and not having experience. We still need to clarify whether you meant different activities or times.')
+                st.write('We still need to clarify whether these reports refer to different activities or times.')
+        if gaps:
+            with st.expander('What we have not discussed'):
+                for label,description in gaps:st.write(label+': '+description)
 
     if s.state in {'welcome','context'}:
         st.subheader('Before we begin')
-        st.write('Tell us what you already know or have experienced about drones transporting goods or healthcare materials. No particular proposal is being assessed.')
-        st.info(NOTICE)
         current=s.respondent or {}
         with st.container():
             values={}
@@ -68,9 +70,14 @@ def render(s,client,developer=False):
                 st.text_input('Broad city or region name (optional)',value=current.get('broad_place') or '',key='baseline_place_text',max_chars=80)
             if values['perspective']=='organisation':
                 st.text_input('Function or responsibility (optional)',value=current.get('function') or '',key='baseline_function_text',max_chars=240)
+            if 'sectors' in s.instrument:
+                st.selectbox('Sector (optional)',list(s.instrument['sectors']),
+                    format_func=lambda key:s.instrument['sectors'][key],key='baseline_sector',
+                    index=list(s.instrument['sectors']).index(current.get('sector','none')))
+            if values['city']=='other' or values['perspective']=='organisation':st.info(NOTICE)
             def save_context():
                 perform(s.set_context,st.session_state.baseline_perspective,st.session_state.baseline_stakeholder_category,
-                    st.session_state.baseline_city,st.session_state.get('baseline_place_text','') if st.session_state.baseline_city=='other' else '',st.session_state.get('baseline_function_text','') if st.session_state.baseline_perspective=='organisation' else '')
+                    st.session_state.baseline_city,st.session_state.get('baseline_place_text','') if st.session_state.baseline_city=='other' else '',st.session_state.get('baseline_function_text','') if st.session_state.baseline_perspective=='organisation' else '',st.session_state.get('baseline_sector','none'))
             st.button('Begin',type='primary',on_click=save_context)
     elif s.state=='interview':
         q=s.current_question
@@ -84,6 +91,7 @@ def render(s,client,developer=False):
             st.button('Continue',type='primary',on_click=select)
         else:
             with st.form('baseline_response'):
+                st.info(NOTICE)
                 st.text_area('Your answer',key='baseline_answer_text',height=140,max_chars=6000)
                 def submit():
                     before=s.state;perform(s.answer,st.session_state.get('baseline_answer_text',''),client)
@@ -95,6 +103,13 @@ def render(s,client,developer=False):
                 perform(s.answer,'',client,ctrl);st.session_state.baseline_answer_text=''
             col.button(label,on_click=skip)
         st.button('Finish now',on_click=perform,args=(s.finish,))
+        if 'definition' in s.instrument and (q['id']=='concept' or any(e['active'] and e['question']['id']=='concept' and (e['control'] in {'unsure','skip'} or e.get('interaction') in {'unsure','confused'} or any(c['kind'] in {'unknown','absence'} for c in e['claims'])) for e in s.events)):
+            with st.expander('What does “drone” mean? (optional)'):
+                st.write('You can keep going without an explanation, or ask for a short definition. We record when it is shown.')
+                st.button('Show definition',on_click=perform,args=(s.show_definition,))
+        if s.information_exposures:
+            st.text(s.information_exposures[-1]['text'])
+            st.write('Draft explanation — awaiting review.')
         edit_controls()
     elif s.state=='review':
         st.subheader('Have we understood you correctly?')
@@ -103,8 +118,9 @@ def render(s,client,developer=False):
         else:st.write('We have not captured a clear summary of this answer. Please correct it if we missed something.')
         st.button('Confirm and continue',type='primary',on_click=perform,args=(s.confirm,True))
         with st.expander('Correct this answer'):
-            st.text_area('Corrected answer',value=s.pending['text'],key='baseline_correction_text')
-            def correct():perform(s.correct_pending,st.session_state.get('baseline_correction_text',''),client)
+            st.info(NOTICE)
+            st.text_area('Corrected answer',value=s.pending['text'],key='baseline_correction_text_'+s.pending['id'])
+            def correct():perform(s.correct_pending,st.session_state.get('baseline_correction_text_'+s.pending['id'],''),client)
             st.button('Review correction',on_click=correct)
         edit_controls()
     elif s.state=='baseline_review':
@@ -130,4 +146,12 @@ def render(s,client,developer=False):
                 except (PrivacyError,ValueError) as exc:st.session_state.baseline_error=safe_message(exc)
             st.button('Explore a hospital drone route',type='primary',on_click=continuation)
         else:st.write('Thank you. You can download your answers below.')
+    if s.state in {'interview','review','baseline_review','complete'}:
+        def back():
+            text=perform(s.back)
+            if text is not None:
+                st.session_state.baseline_answer_text=text
+                if s.current_question and s.current_question['id']=='familiarity':
+                    st.session_state.baseline_familiarity=text or None
+        st.button('Back',on_click=back)
     footer(baseline=True)

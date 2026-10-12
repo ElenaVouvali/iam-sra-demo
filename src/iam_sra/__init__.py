@@ -1,1 +1,1 @@
-"""Experimental scenario assessment, independent of Streamlit."""
+"""Citizen baseline and scenario readiness interviews."""

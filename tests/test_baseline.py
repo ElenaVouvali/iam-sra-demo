@@ -20,8 +20,14 @@ class Extractor:
         return BaselineExtraction(interaction=self.interaction,claims=[BaselineClaim.model_validate({**r,'evidence_id':r['evidence_id'] or next((k for k,v in evidence.items() if r.get('activity_quote') and r['activity_quote'] in v),next(iter(evidence)))}) for r in self.rows])
 
 
-def start(**context):
-    s=BaselineSession();s.set_context(context.get('perspective','personal'),context.get('stakeholder','citizen'),context.get('city','madrid'),context.get('place',''),context.get('function',''))
+def start(current=False,**context):
+    s=BaselineSession()
+    if not current:
+        # Frozen 1.x fixture verifies previous sessions keep their original flow/taxonomy.
+        from iam_sra.settings import ROOT
+        s.instrument=deepcopy(json.loads((ROOT/'eval/baseline_sample.json').read_text())['instrument'])
+        s.prompt_version=s.instrument['prompt_version']
+    s.set_context(context.get('perspective','personal'),context.get('stakeholder','citizen'),context.get('city','madrid'),context.get('place',''),context.get('function',''))
     return s
 
 
@@ -268,11 +274,11 @@ def test_real_screening_on_baseline_transport_requests(monkeypatch):
 
 
 def test_factory_defaults_to_baseline_but_explicit_modes_remain_compatible():
-    from iam_sra.session import Session,LegacySession
+    from iam_sra.session import Session
     from iam_sra.readiness_session import ReadinessSession
     assert isinstance(Session(),BaselineSession)
     assert isinstance(Session(assessment_mode='acceptance_and_readiness_evidence'),ReadinessSession)
-    assert isinstance(Session(assessment_mode='legacy_fn_acceptance_demo'),LegacySession)
+    with pytest.raises(ValueError): Session(assessment_mode='legacy_fn_acceptance_demo')
 
 
 def test_positive_and_negative_experience_in_explicitly_different_domains():

@@ -39,7 +39,19 @@ PATTERNS = {
     'CONTEXTUAL_PIN': r'\bPIN\s*(?:(?:is|[:=])\s*)?\d{4,8}\b',
     'AUTH_SECRET_BLOCK': r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\b(?:ghp_|github_pat_|sk-proj-)[A-Za-z0-9_\-]{12,}|\bBearer\s+[A-Za-z0-9_.\-]{12,}',
     'FINANCIAL_DETAIL': r'\b(?:bank account|account number|card number|credit card|debit card|IBAN|routing number|sort code|CVV|CVC)\s*["\']?\s*(?:is\b|[:=])\s*["\']?(?:\d[\d .-]{2,}|[A-Z]{2}\d{2}[A-Z0-9 .-]{8,})',
-    'PRIVATE_ADDRESS': r'\b\d{1,5}\s+(?:[A-Z][a-z]+\s+){1,4}(?:Street|Road|Avenue|Lane|Drive|Close|Way|Boulevard|St\.?|Rd\.?)\b|\b(?:my|home|private) address\s*(?:is|[:=])\s*[^\n.;]+',
+    # Street markers + house numbers; bounded local supplements, not a language model.
+    'PRIVATE_ADDRESS': (
+        r"\b\d{1,5}\s+(?:[^\W\d_]+(?:[.'-][^\W\d_]+)*\s+){1,4}(?:street|road|avenue|lane|drive|close|way|boulevard|st\.?|rd\.?)\b"
+        r"|\b(?:[^\W\d_]+(?:[.'-][^\W\d_]+)*\s+){1,4}(?:street|road|avenue|lane|drive|boulevard|st\.?|rd\.?)\s*,?\s*\d{1,5}\b"
+        r"|\b\d{1,5}\s+(?:calle|rua|via|οδός|οδος)\s+(?:[^\W\d_]+[ .'-]*){1,4}\b"
+        r"|\b(?:calle|carrer|avenida|avda\.?|paseo|rua|travessa|estrada|praça|praca|via|viale|piazza|corso|vicolo|οδός|οδος|λεωφόρος|λεωφορος)"
+        r"\s+(?:[^\W\d_]+[ .'-]*){1,5},?\s*\d{1,5}\b"
+        r"|\b[Α-Ωα-ωΆ-ώ]+(?:ίων|ιων|ους|ού|ου|ας|ης)\s+\d{1,4}\b"
+        r"|\b(?:my|home|private) address\s*(?:is|[:=])\s*[^\n.;]+"
+    ),
+    'PRIVATE_ADDRESS_UNIT': r"\b(?:apartment|apt\.?|flat|unit|piso|puerta|andar|interno|διαμέρισμα)\s*[:#-]?\s*\d{1,4}[a-z]?\b",
+    'PRIVATE_ADDRESS_POSTCODE': r"\b(?:postcode|postal code|código postal|codigo postal|codice postale|código-postal|ταχυδρομικός κώδικας|τκ|cap)\s*[:=]?\s*\d{3,5}(?:[ -]\d{2,4})?\b",
+
     'IDENTIFIABLE_MEDICAL': r'\b(?:patient (?:ID|number|name)|medical record (?:ID|number)|NHS number|diagnosed patient)\s*(?:is\b|[:=])\s*[^\n.;]+',
     'CONTACT_PHONE': r'\b(?:call|phone|telephone|mobile|tel)\s*(?:me\s*)?(?:at\s*)?(?:(?:is|[:=])\s*)?\+?\d(?:[ ().-]*\d){9,14}\b',
     'CONTACT_EMAIL': r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',
@@ -50,8 +62,17 @@ ENTITIES = ['PERSON', 'EMAIL_ADDRESS', 'PHONE_NUMBER', 'CREDIT_CARD', 'IBAN_CODE
 
 
 def contextual_findings(text):
-    return [Finding(kind, m.start(), m.end()) for kind, pattern in PATTERNS.items()
-            for m in re.finditer(pattern, text, re.I if kind != 'PRIVATE_ADDRESS' else 0)]
+    found=[]
+    for kind,pattern in PATTERNS.items():
+        for m in re.finditer(pattern,text,re.I):
+            end=m.end()
+            if kind=='PRIVATE_ADDRESS':
+                # Mask adjacent unit/postcode details only after a detected street
+                # address. Bare years/flight counts elsewhere remain untouched.
+                tail=re.match(r"(?:\s*,?\s*(?:(?:apartment|apt\.?|flat|unit|piso|puerta|andar|interno|διαμέρισμα)\s*[:#-]?\s*\d{1,4}[a-z]?|\d{4,5}(?:[- ]\d{2,3})?)){0,3}",text[end:],re.I)
+                if tail:end+=tail.end()
+            found.append(Finding(kind,m.start(),end))
+    return found
 
 
 @lru_cache(maxsize=1)
@@ -89,7 +110,8 @@ def screen(text):
     thematic_labels = {v['label'].casefold() for v in CONCERNS.values()}
     found = [f for f in found if 0 <= f.start < f.end <= len(text)
         and not (f.entity_type == 'PERSON' and (text[f.start:f.end].strip().casefold() in thematic_labels
-            or re.fullmatch(r'(?:R|B)\d+_\d+(?:\.p\d+)?', text[f.start:f.end].strip())))]
+            or re.fullmatch(r'(?:R|B)\d+_\d+(?:\.p\d+)?', text[f.start:f.end].strip())
+            or re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}',text[f.start:f.end].strip(' \t\r\n.'),re.I)))]
     if any(f.entity_type in BLOCK for f in found):
         raise PrivacyError('Remove credentials, financial details or identifiable medical details and resubmit using general descriptions.', entity_types=[f.entity_type for f in found])
     if found:
@@ -137,9 +159,13 @@ def reviewed_bibliographic_values():
     # function and answer strings still pass through the mandatory detector.
     from .settings import config
     from .llm_client import BACKEND
-    values += [BACKEND, 'iam-baseline-1.0.0','baseline-handoff-1.0.0'] + config('baseline')['sources']
-    for bank in ('perspectives','stakeholders','cities','familiarity','dimensions'):
-        values += list(config('baseline')[bank].values())
+    values += [BACKEND, 'iam-baseline-1.0.0','iam-baseline-2.0.0','baseline-handoff-1.0.0'] + config('baseline')['sources']
+    for bank in ('perspectives','stakeholders','cities','familiarity','dimensions','sectors'):
+        values += list(config('baseline').get(bank,{}).values())
+    taxonomy=config('baseline').get('stakeholder_taxonomy',{})
+    for row in taxonomy.get('categories',[]):
+        values += [row['canonical_wording'],row['source_section']]
+    if taxonomy:values.append(taxonomy['source_reference'])
     return frozenset(values)
 
 

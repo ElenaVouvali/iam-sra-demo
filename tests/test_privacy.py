@@ -6,7 +6,7 @@ import httpx
 import pytest
 from iam_sra.privacy import (PrivacyError, VERSION, require_clean, require_safe_data,
                             contextual_findings, screened_export, safe_message)
-from iam_sra.session import Session, LegacySession, State
+from iam_sra.session import Session
 from iam_sra.readiness_client import ReadinessClient
 from iam_sra.readiness_retrieval import retrieve, corpus, ExplanationClient
 from iam_sra.readiness_report import evidence_report
@@ -49,19 +49,15 @@ def test_general_context_and_numbers_survive(text):
     assert require_clean(text) == text
 
 
-@pytest.mark.parametrize('path', ['initial','followup','correction','rag','mitigation','legacy','legacy_correction','legacy_followup'])
+@pytest.mark.parametrize('path', ['initial','followup','correction','rag','mitigation'])
 def test_rejection_precedes_any_controller_mutation_or_call(path):
     class Never:
         def __getattr__(self, name):
             raise AssertionError('No client access before screening: ' + name)
     text = SECRETS[0]
-    if path.startswith('legacy'):
-        s = LegacySession(); s.begin()
-        if path != 'legacy': s.state=State.FOLLOWUPS if path=='legacy_followup' else State.INTERPRETATION
-    else:
-        s = Session(assessment_mode="acceptance_and_readiness_evidence") if path=='initial' else confirmed()
-        if path in {'correction','mitigation'}: s.finish()
-        if path=='correction': s.edit_answer(s.events[0]['id'])
+    s = Session(assessment_mode="acceptance_and_readiness_evidence") if path=='initial' else confirmed()
+    if path in {'correction','mitigation'}: s.finish()
+    if path=='correction': s.edit_answer(s.events[0]['id'])
     before=deepcopy(vars(s))
     with pytest.raises(PrivacyError):
         if path=='initial': s.submit(text,Never())
@@ -69,9 +65,6 @@ def test_rejection_precedes_any_controller_mutation_or_call(path):
         elif path=='correction': s.correct(text,Never())
         elif path=='rag': s.ask_information(text,Never())
         elif path=='mitigation': s.explore_acceptance('acoustic_impact','Unsure',text,Never())
-        elif path=='legacy': s.submit(text,Never())
-        elif path=='legacy_correction': s.correct('noise',text,'Correction',Never())
-        else: s.respond('Unsure',text,Never())
     assert vars(s)==before
     assert text not in repr(vars(s))
 
@@ -202,12 +195,6 @@ def test_new_bad_submission_discards_an_earlier_cleaned_preview(monkeypatch):
     assert app.session_state.session.state=='answer'
 
 
-def test_legacy_nested_joint_clarification_is_checked_before_checkpoint():
-    s=LegacySession();s.state=State.UPDATED
-    before=deepcopy(vars(s))
-    with pytest.raises(PrivacyError):
-        s.record_joint('accept',[],'',None,{'synthetic_aspect':{'response':'changed','clarification':SECRETS[0]}})
-    assert vars(s)==before
 
 
 def test_repetition_after_information_is_not_new_readiness_without_reasoning():
@@ -245,7 +232,7 @@ def test_real_detector_allows_complete_fn_extraction_request(monkeypatch):
         calls.append(req.url.path)
         return httpx.Response(503,json={'error':'Synthetic unavailable model'})
     monkeypatch.setattr('iam_sra.readiness_client.httpx.Client',lambda **kw:real(transport=httpx.MockTransport(endpoint)))
-    text=json.loads(__import__('pathlib').Path('eval/fn_reference.json').read_text())['citizen_text']
+    text=json.loads(__import__('pathlib').Path('eval/privacy_sample.json').read_text())['citizen_text']
     client=ReadinessClient()
     with pytest.raises(AssessmentError) as error:
         client.extract_readiness({'x':EvidenceItem(id='x',text=text,context='original',source='citizen_original')})
@@ -258,7 +245,7 @@ def test_real_detector_allows_fn_extraction_and_grounding_envelopes(monkeypatch)
     pytest.importorskip('presidio_analyzer')
     pytest.importorskip('en_core_web_sm')
     from test_readiness_evidence_client import install, claim, verdict, evidence
-    text=json.loads(__import__('pathlib').Path('eval/fn_reference.json').read_text())['citizen_text']
+    text=json.loads(__import__('pathlib').Path('eval/privacy_sample.json').read_text())['citizen_text']
     calls=install(monkeypatch,{'interaction':'substantive','claims':[claim(quotation=text)]},[verdict()])
     result=ReadinessClient().extract_readiness(evidence(text))
     assert result.acceptance.stance=='opposed'

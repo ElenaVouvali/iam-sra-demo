@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import pytest
 from iam_sra.readiness_retrieval import (corpus, retrieve, explain, Composition, Excerpt, validate_composition)
-from iam_sra.readiness_report import evidence_report, fn_reference, markdown_report
+from iam_sra.readiness_report import evidence_report, markdown_report
 from iam_sra.assessment import AssessmentError
 from iam_sra.settings import ROOT
 from test_readiness_evidence_mode import confirmed, Extractor, record
@@ -108,9 +108,6 @@ def test_reports_keep_belief_verification_context_and_nulls():
     assert all(not row['external_truth_verified'] for row in report['rows'])
     assert all(row['quotations'] and row['confirmation']=='confirmed' for row in report['rows'])
     assert 'not independently verified' in markdown_report(data)
-    reference=fn_reference()
-    assert reference['source_scores']==dict(welfare_equity=8,noise=3,visual_pollution=4,perceived_safety_privacy=2)
-    assert reference['current_model_output'] is None
     assert data==s.export() # Research views cannot mutate/inject scores.
 
 

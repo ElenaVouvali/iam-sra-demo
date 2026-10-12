@@ -1,5 +1,6 @@
 """Streamlit privacy handling: transient input is received, rejected input is cleared."""
 import inspect
+import re
 import streamlit as st
 from .privacy import PrivacyError, require_clean, screened_export, safe_message, safe_diagnostics
 
@@ -12,10 +13,35 @@ def clear_text_widgets():
             if isinstance(st.session_state.get(key), str): st.session_state[key] = ''
 
 
+def preview_identity(action):
+    """Structural action context only; never retain raw text or hashes of it."""
+    owner=getattr(action,'__self__',None)
+    question=getattr(owner,'current_question',None)
+    question_id=question.get('id') if isinstance(question,dict) else None
+    pending=getattr(owner,'pending',None)
+    return (id(owner),getattr(owner,'session_id',None),getattr(owner,'state',None),
+            getattr(owner,'version',None),len(getattr(owner,'information_exposures',[])),question_id,
+            pending.get('id',pending.get('version')) if isinstance(pending,dict) else None,
+            tuple(st.session_state.get(k) for k in ('baseline_perspective','baseline_stakeholder_category','baseline_city','baseline_sector')),
+            tuple(sorted(k for k in st.session_state if isinstance(st.session_state.get(k),str) and st.session_state[k] and any(tag in k for tag in ('answer','text','clarification','information_custom','readiness_correction_')))))
+
+
+def discard_preview():
+    for key in ('privacy_prepared','privacy_preview','privacy_preview_identity'):
+        st.session_state.pop(key,None)
+
+
+def only_private_detail_fragment(text):
+    """Narrow English UI check, not a general relevance or privacy classifier."""
+    if '[private detail removed]' not in text:return False
+    remaining=text.replace('[private detail removed]','')
+    words=re.findall(r"[\w]+",remaining.casefold())
+    return not words or set(words)<=set('my home address is at i live the'.split())
+
+
 def invoke(action, *args):
     """Prepare a cleaned preview before invoking any controller with private text."""
-    st.session_state.pop('privacy_prepared', None)
-    st.session_state.pop('privacy_preview', None)
+    discard_preview()
     bound = inspect.signature(action).bind(*args)
     changed = False
     try:
@@ -29,10 +55,15 @@ def invoke(action, *args):
             # Check every replaced field again. Only the cleaned action is kept.
             for key in getattr(action, '_privacy_fields', ()):
                 if key in bound.arguments and isinstance(bound.arguments[key], str): require_clean(bound.arguments[key])
+            # Do not offer an address-only fragment as an assessment answer.
+            # Context fields retain their existing explicit preview workflow.
+            if 'text' in bound.arguments and only_private_detail_fragment(bound.arguments['text']):
+                raise PrivacyError('We removed private details, leaving no answer to assess. Write a new answer without an address or other identifying details, or choose Unsure or Skip.')
             st.session_state.privacy_preview = '\n\n'.join(bound.arguments[k] for k in getattr(action, '_privacy_fields', ()) if k in bound.arguments and isinstance(bound.arguments[k], str))
             st.session_state.privacy_prepared = (action, bound.args, bound.kwargs)
             clear_text_widgets()
-            raise PrivacyError('Review the cleaned version below before it is processed.')
+            st.session_state.privacy_preview_identity=preview_identity(action)
+            raise PrivacyError('Private details were removed. Check the preview above, or write a new answer without those details.')
         return action(*args)
     except PrivacyError:
         clear_text_widgets()
@@ -48,17 +79,26 @@ def invoke(action, *args):
 
 def preview_control(perform):
     if 'privacy_prepared' not in st.session_state: return
-    st.write('Cleaned version — check that the meaning is still correct')
+    action=st.session_state.privacy_prepared[0]
+    if st.session_state.get('privacy_preview_identity')!=preview_identity(action):
+        discard_preview();return
+    st.info('Private details have been replaced with [private detail removed]. This preview has not been submitted for assessment. Confirm only if it still says what you meant; otherwise write a general description instead.')
+    st.write('Your answer with private details removed')
     st.text(st.session_state.privacy_preview)
     def confirm_cleaned():
-        action, args, kwargs = st.session_state.pop('privacy_prepared')
+        action, args, kwargs = st.session_state.privacy_prepared
+        if st.session_state.get('privacy_preview_identity')!=preview_identity(action):
+            discard_preview();raise PrivacyError('This preview is no longer current. Submit your answer again.')
+        discard_preview()
         st.session_state.pop('privacy_preview', None)
         # UI calls currently use positional controller arguments only.
         if kwargs: raise PrivacyError('Please resubmit the cleaned text directly.')
         perform(action, *args)
     st.button('Confirm cleaned text', on_click=confirm_cleaned)
     def discard():
-        st.session_state.pop('privacy_prepared', None); st.session_state.pop('privacy_preview', None)
+        discard_preview()
+        for key in ('baseline_error','readiness_error'):
+            st.session_state.pop(key,None)
     st.button('Write a general description instead', on_click=discard)
 
 

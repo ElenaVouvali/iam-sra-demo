@@ -62,23 +62,3 @@ def markdown_report(data):
     from .privacy import require_clean
     require_clean(result)
     return result
-
-
-def fn_reference():
-    """Fixed source reference, kept out of citizen profiles and inference prompts."""
-    import json
-    from .settings import ROOT
-    reference = json.loads((ROOT/'eval/fn_reference.json').read_text())
-    return {'label':'FN concept example — historical illustrative scoring',
-        'source_scores':reference['scores'], 'source_pages':reference['source_pages'],
-        'source_sha256':reference['source_sha256'], 'reference_version':reference['reference_version'],
-        'arithmetic':'(8 + 3 + 4 + 2) / 4 = 4.25; privacy cap = 2 + 2 = 4; min(4.25, 4) = 4',
-        'source_citizen_text':reference['citizen_text'],
-        'differences':[
-            'Medical-purpose support does not establish equity knowledge.',
-            'Low altitude and camera concerns alone do not necessarily establish visual pollution.',
-            'Rerouting preferences do not establish participation or infrastructure expertise.',
-            'Follow-up outcomes describe directions/ranges, not a universal executable update formula.',
-            'The PDF later mentions an average of 6.0, inconsistent with its initial 4.25; preserved as a source limitation.',
-            'Psychological/archetype labels in the concept are not used as citizen diagnoses.'],
-        'current_model_output':None, 'current_model_output_status':'Not run; reference numbers are not actual model outputs.'}

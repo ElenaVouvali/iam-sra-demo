@@ -1,11 +1,11 @@
 {
-  "version": "baseline-1.1.0",
+  "version": "baseline-2.0.0",
   "review_status": "draft_pending_FN",
   "approved_by": null,
   "locale": "en",
   "context": "general_baseline",
   "scenario_id": null,
-  "maximum_core_items": 4,
+  "maximum_core_items": 7,
   "maximum_adaptive_probes": 2,
   "perspectives": {
     "personal": "Personal view",
@@ -13,12 +13,14 @@
     "withheld": "Unsure or prefer not to say"
   },
   "stakeholders": {
-    "citizen": "Resident / citizen",
-    "authority": "Public authority",
-    "operator": "Drone / logistics operator",
-    "healthcare": "Healthcare provider / business",
-    "researcher": "Researcher / educator",
-    "community": "Community or civil society organisation",
+    "authority": "National, regional or local authority",
+    "planning": "Urban planning, architecture or engineering",
+    "logistics": "Logistics or delivery service provider",
+    "citizen": "Citizen / resident or civil-society organisation",
+    "researcher": "Research or academia",
+    "regulator": "Aviation regulator or policymaker",
+    "aviation": "Aircraft operator, airport or airspace-service provider",
+    "technology": "Supporting technology provider",
     "other": "Other",
     "withheld": "Prefer not to say"
   },
@@ -30,9 +32,10 @@
     "withheld": "Prefer not to say"
   },
   "familiarity": {
-    "no": "No",
-    "little": "Yes, a little",
-    "lot": "Yes, quite a lot",
+    "no": "I had never heard of drones",
+    "term": "I had heard the term but was unsure what it meant",
+    "little": "I had some familiarity",
+    "lot": "I had substantial familiarity",
     "unsure": "Unsure",
     "withheld": "Prefer not to say"
   },
@@ -41,30 +44,53 @@
       "id": "familiarity",
       "dimension": "familiarity",
       "format": "selection",
-      "text": "Before today, had you heard about drones being used to transport goods or healthcare materials?",
-      "organisation_text": "Before today, had you personally heard about drones being used to transport goods or healthcare materials?",
+      "text": "Before today, how familiar were you with drones?",
+      "organisation_text": "Before today, how familiar were you with drones?",
       "covers": [
         "familiarity"
       ],
       "rule_id": "core_familiarity"
     },
     {
+      "id": "concept",
+      "dimension": "concept",
+      "format": "text",
+      "text": "In your own words, what is a drone?",
+      "organisation_text": "In your own words, what is a drone?",
+      "covers": [
+        "concept"
+      ],
+      "rule_id": "core_concept"
+    },
+    {
+      "id": "delivery",
+      "dimension": "delivery",
+      "format": "text",
+      "text": "What have you heard about drones carrying goods, if anything?",
+      "organisation_text": "What have you heard about drones carrying goods, if anything?",
+      "covers": [
+        "delivery"
+      ],
+      "rule_id": "core_delivery"
+    },
+    {
       "id": "understanding",
       "dimension": "understanding",
       "format": "text",
-      "text": "In your own words, what do you currently know about these uses and their possible effects?",
-      "organisation_text": "In your own words, what do you currently know about these uses and their possible effects? Distinguish your own understanding from organisational activity you know about.",
+      "text": "What difference, if any, could these deliveries make to people or local services?",
+      "organisation_text": "What difference, if any, could these deliveries make to people or local services?",
       "covers": [
         "understanding"
       ],
-      "rule_id": "core_understanding"
+      "rule_id": "core_understanding",
+      "optional_clarification": "You can mention helpful changes, difficulties, or no change."
     },
     {
       "id": "experience",
       "dimension": "exposure",
       "format": "text",
-      "text": "Before this session, have you had any direct experience, learning or involvement related to these uses? If yes, briefly describe what you did.",
-      "organisation_text": "Before this session, have you had any direct experience, learning or involvement related to these uses? Describe what you did, or an organisational activity you know about, and say which you mean.",
+      "text": "Before this session, have you had any direct experience, learning or involvement related to delivery drones? If yes, briefly describe what you did.",
+      "organisation_text": "Before this session, what experience or involvement have you had with delivery drones? Describe what you did, or an activity of the organisation you represent, and say which you mean.",
       "covers": [
         "exposure",
         "participation"
@@ -76,15 +102,23 @@
       "id": "needs",
       "dimension": "information",
       "format": "text",
-      "text": "What would you like to understand better, or what would help you take part in discussions or decisions about these uses?",
-      "organisation_text": "What would you like to understand better, or what support would help you or the organisation you represent take part in discussions or decisions about these uses? Say which you mean.",
+      "text": "What would you like to know more about?",
+      "organisation_text": "What would you like to know more about?",
       "covers": [
-        "information",
+        "information"
+      ],
+      "rule_id": "core_needs"
+    },
+    {
+      "id": "opportunity",
+      "dimension": "opportunity",
+      "format": "text",
+      "text": "What would help you take part in discussions or decisions about delivery drones?",
+      "organisation_text": "What would help you or the organisation you represent take part in discussions or decisions about delivery drones? Say which you mean.",
+      "covers": [
         "opportunity"
       ],
-      "rule_id": "core_needs",
-      "when_information_already_reported": "What would help you take part in discussions or decisions about these uses, if anything?",
-      "when_opportunity_already_reported": "What would you like to understand better about these uses, if anything?"
+      "rule_id": "core_opportunity"
     }
   ],
   "probes": [
@@ -131,6 +165,8 @@
   ],
   "dimensions": {
     "familiarity": "What you had heard before",
+    "concept": "What a drone is",
+    "delivery": "What you know about deliveries",
     "understanding": "What you explained",
     "information": "Information you would like",
     "exposure": "Experience and learning",
@@ -150,5 +186,88 @@
     "GA: T3.2–T3.4; Part B pp.5,16"
   ],
   "wording_status": "Questions proposed for this prototype under latest meeting instructions; not FN-approved verbatim wording. No complete 135 × 3 bank supplied.",
-  "prompt_version": "baseline-1.1.0"
+  "prompt_version": "baseline-2.0.0",
+  "schema_version": "iam-baseline-2.0.0",
+  "maximum_questions": 8,
+  "stakeholder_taxonomy": {
+    "version": "ga-target-groups-1.0.0",
+    "source_reference": "GA Part B §2.2.1, p.30 (PDF p.67)",
+    "categories": [
+      {
+        "id": "authority",
+        "display_label": "National, regional or local authority",
+        "canonical_wording": "National, Regional and Local Authorities",
+        "source_section": "GA Part B §2.2.1, p.30",
+        "source_group": "key"
+      },
+      {
+        "id": "planning",
+        "display_label": "Urban planning, architecture or engineering",
+        "canonical_wording": "Urban Planners, Architects, and Engineers",
+        "source_section": "GA Part B §2.2.1, p.30",
+        "source_group": "key"
+      },
+      {
+        "id": "logistics",
+        "display_label": "Logistics or delivery service provider",
+        "canonical_wording": "Logistics Operators and Service Providers",
+        "source_section": "GA Part B §2.2.1, p.30",
+        "source_group": "key"
+      },
+      {
+        "id": "citizen",
+        "display_label": "Citizen / resident or civil-society organisation",
+        "canonical_wording": "General Public and Civil Society Organisations",
+        "source_section": "GA Part B §2.2.1, p.30",
+        "source_group": "key"
+      },
+      {
+        "id": "researcher",
+        "display_label": "Research or academia",
+        "canonical_wording": "Research and Academia",
+        "source_section": "GA Part B §2.2.1, p.30",
+        "source_group": "key"
+      },
+      {
+        "id": "regulator",
+        "display_label": "Aviation regulator or policymaker",
+        "canonical_wording": "Civil Aviation Authorities (CAA) and Policy Makers",
+        "source_section": "GA Part B §2.2.1, p.30",
+        "source_group": "secondary"
+      },
+      {
+        "id": "aviation",
+        "display_label": "Aircraft operator, airport or airspace-service provider",
+        "canonical_wording": "Aircraft Operators, Airports, and Developers (ANSPs, USSPs, CISPs)",
+        "source_section": "GA Part B §2.2.1, p.30",
+        "source_group": "secondary"
+      },
+      {
+        "id": "technology",
+        "display_label": "Supporting technology provider",
+        "canonical_wording": "Providers of supporting technology",
+        "source_section": "GA Part B §2.2.1, p.30",
+        "source_group": "secondary"
+      }
+    ],
+    "interface_responses": [
+      "other",
+      "withheld"
+    ],
+    "historical_mapping": "No automatic mapping of historical categories."
+  },
+  "sectors": {
+    "none": "Not specified",
+    "healthcare": "Healthcare / pharmacy",
+    "other": "Other sector"
+  },
+  "definition": {
+    "id": "drone_definition",
+    "version": "1.0.0",
+    "text": "A drone is an aircraft without a person on board to pilot it. It may be controlled remotely or fly using automated systems.",
+    "source_reference": "Authored neutral prototype definition under current interview direction; not an approved FN quotation.",
+    "review_status": "draft_pending_FN",
+    "approved_by": null,
+    "permitted_use": "Optional baseline explanation, explicitly requested and exposure logged."
+  }
 }

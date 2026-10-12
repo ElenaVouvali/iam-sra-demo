@@ -259,7 +259,7 @@ def render(session, client, developer=False):
             st.write(s.assessment_participation['note'])
             st.write('Thematic areas are topics, not CRL maturity stages.')
     if developer:
-        from .readiness_report import evidence_report, markdown_report, fn_reference
+        from .readiness_report import evidence_report, markdown_report
         with st.expander('Researcher evidence report'):
             try:
                 report = evidence_report(s.export())
@@ -268,24 +268,6 @@ def render(session, client, developer=False):
                 download_button('Download evidence report', markdown_report(s.export()), file_name='iam-researcher-report.md')
             except PrivacyError as exc:
                 st.warning(str(exc))
-        with st.expander('FN historical reference comparison'):
-            reference = fn_reference()
-            st.write(reference['label']); st.caption('SRA_LLM_FN_concept.pdf · pp.6–7 · source checked, not an approved instrument')
-            st.json(reference['source_scores']); st.write(reference['arithmetic'])
-            for difference in reference['differences']: st.write(difference)
-            st.caption('Separate reference session; values above never enter the citizen assessment. Model interpretation remains unconfirmed.')
-            def run_reference():
-                from .readiness_session import ReadinessSession
-                from .readiness_client import ReadinessClient
-                comparison = ReadinessSession()
-                comparison.submit(reference['source_citizen_text'], ReadinessClient())
-                st.session_state.fn_reference_interpretation = {'pending_interpretation':comparison.pending,
-                    'instrument_version':comparison.instrument['version'], 'provenance':comparison.export()['provenance'],
-                    'confirmation':'Unconfirmed model interpretation; not citizen validation'}
-            st.button('Interpret reference answer', on_click=perform, args=(run_reference,))
-            if st.session_state.get('fn_reference_interpretation'):
-                st.json(st.session_state.fn_reference_interpretation)
-            else: st.caption(reference['current_model_output_status'])
         with st.expander('Developer diagnostics'):
             st.json({'assessment_mode': s.assessment_mode, 'inference': s.inference, 'last_error': st.session_state.get('readiness_diagnostic')})
             if s.final_readiness:

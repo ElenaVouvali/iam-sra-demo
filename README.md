@@ -1,156 +1,85 @@
-> Privacy screening is mandatory for every case, including demo fixtures. There is no runtime bypass. Missing local detector resources block processing. Run `scripts/setup-privacy.sh` and `.venv-privacy/bin/python scripts/check-privacy.py`. Screening can miss private information; use synthetic examples.
+# IAM-SRA2 citizen interviews
 
-# iam-sra-demo
+Main contains the updated citizen app: a scenario-free baseline interview, an
+optional medical-drone scenario interview, source-grounded information, privacy
+screening and a provisional workbook-based CRL score screen after the scenario
+interview. Baseline answers remain separate from scenario scoring. SRL also
+requires technical and organisational evidence and is not inferred from one
+citizen interview.
 
-New sessions start with **Phase 1: a scenario-free baseline** about perspective, stakeholder role, city, prior familiarity, understanding, experience and participation needs. Four core items and at most two evidence-driven probes lead to an editable, confirmed summary. No acceptance or numerical CRL/ORL/TRL/SRL is assigned. See [Phase-1 implementation, source mapping and walkthrough](docs/phase1-baseline.md).
+The original IAM-SRA acceptance demo is preserved on
+[`legacy/iam-sra-demo-2026-10-08`](https://github.com/ElenaVouvali/iam-sra-demo/tree/legacy/iam-sra-demo-2026-10-08),
+commit `708024817f31b48c7a9009a8ba5103cbf10b93f8`. Its numerical acceptance
+policies, calibration runners and manual packs belong to that branch.
 
-The separate illustrative citizen-scenario demo separates **views of the proposal** from **readiness evidence**: understanding of possible impacts, information needs, participation, reported influence and opportunities or barriers to agency. Opposition can contain strong evidence; support alone does not establish readiness.
+## Run
 
-The separate scenario interview (at most four questions) adapts to confirmed evidence already supplied, permits skipping and finishing, and asks about influence only after actual participation is reported. Confirming an interpretation does not verify events or approve the methodology. Initial confirmed evidence is preserved when later answers or corrections refine the assessment.
-
-**No numerical CRL or SRL is assigned in the default mode.** Numerical criteria and aggregation await methodological approval. The 15 areas remain topics; historical phase assignments are not CRL stages. The workbook is a partner-review draft.
-
-The older arithmetic remains available explicitly as **Historical experimental acceptance index**, a legacy application policy, not an approved FN formula. Existing acceptance calibration scripts now explicitly select historical sessions; their outputs must not be treated as CRL evidence.
-
-Read [the evidence-mode implementation and validation notes](docs/readiness-evidence-mode.md) and [curated source references](references/source-register.json). Partner source documents remain local and Git-ignored under `references/private/`.
-
-Default demo (with the existing vLLM service running):
-
-```bash
-scripts/start-ui.sh
-```
-
-Historical demo (restart the UI when changing mode):
+Use Python 3.10–3.12. Keep existing environments and downloaded weights.
+For a fresh GPU-free installation:
 
 ```bash
-scripts/stop-ui.sh
-IAM_ASSESSMENT_MODE=legacy_fn_acceptance_demo scripts/start-ui.sh
-```
-
-`IAM_DEVELOPER=1` also enables a mode selector before session creation. The chosen mode remains fixed for that session. Start over to create a session in another mode. `IAM_MOCK=1` in evidence mode is an explicitly empty UI fixture, not a model evaluation.
-
-## Run the application
-
-The local checkout has an isolated `.venv` and revision-pinned model weights under the ignored `.runtime/` directory. From this repository:
-
-```bash
-scripts/health-check.sh
-# If this project's services are not already running:
-scripts/preflight.sh
-scripts/start-vllm.sh
-# Wait for the model server to become healthy:
-scripts/health-check.sh
-scripts/start-ui.sh
-scripts/health-check.sh
-```
-
-Default ports are 8000 for vLLM and 8501 for Streamlit, bound to localhost. Set `IAM_GPU_UUID` to the intended GPU on the current host before launch; `.env.example` documents environment settings, but `.env` is not automatically sourced. The launch scripts preserve the pinned V100-compatible configuration and check process identity before stopping services.
-
-For a remote host, forward the ports from your laptop:
-
-```bash
-ssh -N -L 8501:127.0.0.1:8501 -L 8000:127.0.0.1:8000 USER@HOST
-```
-
-Open `http://localhost:8501`. Stop only this project's services with:
-
-```bash
-scripts/stop-ui.sh
-scripts/stop-vllm.sh
-```
-
-For direct local UI development with an existing model endpoint:
-
-```bash
-.venv/bin/python -m streamlit run app.py
-```
-
-Explicit GPU-free UI plumbing mode:
-
-```bash
-IAM_MOCK=1 .venv/bin/python -m streamlit run app.py
-```
-
-Mock mode is visibly labelled and does not evaluate citizen views. Live errors never switch to mock mode. `IAM_DEVELOPER=1` exposes additional diagnostics and the preserved FN reference-question mode; the default end-to-end tests use reference mode off.
-
-## Installation
-
-Use Python 3.10–3.12. For GPU-free development in a new checkout:
-
-```bash
-python3.10 -m venv .venv
+python3 -m venv .venv
 .venv/bin/pip install -r requirements-app.txt
+scripts/setup-privacy.sh
 ```
 
-For the full pinned Linux GPU stack, `scripts/install.sh` creates a new environment, installs `requirements-lock.txt` and downloads the pinned model. It refuses to overwrite an existing `.venv`; set `IAM_PYTHON` if needed. `requirements-vllm.txt` records the principal server pins. See [deployment](docs/deployment.md) for GPU and runtime requirements.
-
-## Automated checks
+With the existing local model service running:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m pytest -q
-PYTHONPATH=src .venv/bin/python eval/run.py --mock --repeats 1
+scripts/start-ui.sh
+scripts/health-check.sh
 ```
 
-`eval/run.py` now uses the same interpretation → confirmation → initial scoring path as the application. Its scripted confirmations and synthetic examples do not establish citizen agreement or semantic accuracy. Without `--mock`, it requires a live model server:
+Open **http://localhost:8501**. New sessions start with the baseline. Its summary
+can open the illustrative scenario. To start directly with the scenario:
 
 ```bash
-PYTHONPATH=src .venv/bin/python eval/run.py --repeats 2 --output .runtime/evaluation-live.json
-PYTHONPATH=src .venv/bin/python eval/run.py --held-out --repeats 2 --output .runtime/heldout-live.json
+IAM_ASSESSMENT_MODE=acceptance_and_readiness_evidence scripts/start-ui.sh
 ```
 
-Focused diagnostic runners remain available: `scripts/replay-attribution.py`, `scripts/replay-ordinal.py`, `scripts/replay-fn-evidence.py`, and `scripts/smoke-discovery.py`. They retain failures and distinguish execution completion from semantic correctness. The ordinal runner's filename is retained; its current scorer uses LLM-assigned numbers. Live runners are not part of offline CI.
+Restart a running UI before changing its environment. `IAM_DEVELOPER=1` enables
+mode selection and diagnostics. `IAM_MOCK=1` uses empty UI fixtures rather than
+live assessment. Services bind to localhost; set `IAM_GPU_UUID` for this host
+before starting the model. See [deployment](docs/deployment.md).
 
-## End-to-end manual tests
+## Privacy
 
-Start with [the manual walkthrough](manual-tests/end-to-end-manual-tests.md). [The T01–T32 case guide](manual-tests/followup-assessment-manual-tests.md) provides **155 scripted baseline runs** with expected questions, exact choices, concern gains and final mean/cap/rounding calculations. Nine extension experiments cover policy invariance, reservations, new clarifications, early finish, combined assessment and editing. Record actual outcomes in [the blank results sheet](manual-tests/end-to-end-results-template.csv).
-
-T01–T24 are development cases; T25–T32 retain the fresh-validation split. Fixed final-score targets assume the initial assessment matches the authored baseline. Otherwise record the initial mismatch and independently check follow-up arithmetic from the actual validated-original scores. Authored expectations are not live results or scientifically validated ground truth.
-
-For live initial-stage comparisons:
+Local screening runs before model calls and session retention, screens responses
+and downloads, and requires confirmation of cleaned text. Missing detector
+resources block processing. Run the real detector preflight:
 
 ```bash
-.venv/bin/python scripts/run-initial-manual-tests.py --mapping-only
-.venv/bin/python scripts/run-initial-manual-tests.py
-.venv/bin/python scripts/run-initial-manual-tests.py --split fresh_validation
+.venv-privacy/bin/python scripts/check-privacy.py
 ```
 
-The defaults select the 24 development cases; `--ids` and `--split` control selection. This runner stops after the initial assessment. For the full UI flow use the end-to-end walkthrough. Regenerate the follow-up guide without inference or rewriting its fixtures:
+Detection can miss private information. Use synthetic examples; see
+[privacy and retention](docs/privacy.md). Private source documents, environments,
+model weights, logs and exports stay outside Git.
+
+## Verification
 
 ```bash
-.venv/bin/python scripts/build-followup-manual-guide.py
+.venv/bin/python -m pytest -q
+PYTHONPATH=src .venv-privacy/bin/python scripts/smoke-baseline.py --help
+PYTHONPATH=src .venv-privacy/bin/python scripts/smoke-readiness-evidence.py --help
 ```
 
-## Repository layout
+Live smoke runners require the model host. Offline tests validate flow and
+boundaries, not model accuracy. [Baseline design](docs/phase1-baseline.md),
+[benchmark seed](docs/baseline-benchmark-seed.md),
+[scenario and score design](docs/readiness-evidence-mode.md) and
+[cleanup details](docs/repository-cleanup.md) describe the retained components.
 
-| Location | Purpose |
-|---|---|
-| `app.py` | Current Streamlit interface |
-| `src/iam_sra/` | Evidence interpretation, session flow, scoring, updates and reporting |
-| `configs/` | Versioned scenario, concern registry, model and experimental policies |
-| `prompts/` | Prompts used by current interpretation and confirmed scoring |
-| `manual-tests/` | Authored stage-1 and end-to-end experiments, guides and blank results sheet |
-| `tests/` | Offline contract, arithmetic and UI regression checks |
-| `eval/` | Synthetic fixtures and current-path initial evaluation runner |
-| `scripts/` | Service operations, current diagnostics and manual-test tooling |
-| `docs/` | Current methodology, update policy, deployment and verification |
-| `.runtime/` | Ignored model cache, service state, logs and newly generated reports |
+## Run both versions
 
-The old pre-confirmation session, one-shot scorer, obsolete smoke scripts and historical reports have been removed from the active repository. Recoverable historical material is in an external archive; see [cleanup notes](docs/repository-cleanup.md). Current export/audit compatibility remains where the application and diagnostic tools use it.
-
-Current readiness interview (1.2.2): [understanding, optional learning and evidence review](docs/readiness-v120-fn-review.md). The historical acceptance index remains separate. See the [UI guide checklist, source pages and verification limits](docs/readiness-ui-guidelines-review.md) for the current interface and missing partner-kit assets.
-
-### FN meeting increment (instrument 1.3.0)
-
-See [the meeting guide](docs/fn-meeting-guide.md) for the three cases, grounded
-optional information, researcher audit, source limitations, exact commands and four
-FN decisions. Default CRL/SRL remain null. The small local lexical RAG prototype
-uses only a versioned allowlist; model-selected exact excerpts have validated
-citations and sourced fallbacks. It is not a comprehensive knowledge service.
+The existing local legacy checkout is `~/iam-sra-demo-2026-10-08`:
 
 ```bash
-.venv/bin/python scripts/smoke-readiness-evidence.py --meeting --output .runtime/fn-meeting-live.json
+cd ~/iam-sra-demo-2026-10-08
+IAM_UI_PORT=8502 scripts/start-ui.sh
 ```
 
-Scripted confirmations are automation, not citizen validation. Structural passes
-are not semantic approval; inspect real outputs. Live execution was blocked in the
-editing environment by localhost `Operation not permitted`; no live accuracy claim.
+Open **http://localhost:8502** alongside the updated app on 8501. Both can share
+the model server on 8000, with separate UI sessions and logs. Forward both UI
+ports if connecting remotely. The legacy app does not have the newer privacy
+controls.

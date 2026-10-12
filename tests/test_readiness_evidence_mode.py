@@ -3,7 +3,7 @@ import json
 from copy import deepcopy
 from pathlib import Path
 import pytest
-from iam_sra.session import Session, LegacySession
+from iam_sra.session import Session
 from iam_sra.readiness import (ReadinessRecord, ProposalView, EvidenceExtraction, build_profile,
     validate_extraction, next_question, mode_policy, citizen_result)
 from iam_sra.assessment import AssessmentError
@@ -36,7 +36,7 @@ def confirmed(client=None, text='I oppose the route because repeated flights may
 
 def test_default_and_historical_modes_are_explicit_and_fixed():
     s=Session(assessment_mode="acceptance_and_readiness_evidence"); assert s.assessment_mode=='acceptance_and_readiness_evidence'
-    assert isinstance(Session(assessment_mode='legacy_fn_acceptance_demo'),LegacySession)
+    with pytest.raises(ValueError): Session(assessment_mode='legacy_fn_acceptance_demo')
     with pytest.raises(AttributeError): s.assessment_mode='legacy_fn_acceptance_demo'
     with pytest.raises(ValueError): Session(assessment_mode='invalid')
 
@@ -313,10 +313,6 @@ def test_registry_draft_sources_and_candidate_revision_separation():
     assert all(q['source_reference'] and q['approved_by'] is None for q in r['indicators'])
 
 
-def test_default_assessment_review_never_runs_progression():
-    from iam_sra.assessment_review import progression,final_review
-    s=confirmed();s.finish();assert progression(s) is None
-    assert final_review(s)==citizen_result(s)
 
 
 def test_transferable_experience_and_no_iam_experience_do_not_conflict():

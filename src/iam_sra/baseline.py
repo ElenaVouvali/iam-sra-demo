@@ -6,10 +6,12 @@ from .schemas import Strict, ConcernID
 from .assessment import AssessmentError
 from .evidence import original_quote
 
-Dimension = Literal['understanding','information','exposure','participation','influence','opportunity']
-Kind = Literal['explained_impact','claim_without_detail','recognition','information_need','learning_exposure',
+Dimension = Literal['concept','delivery','understanding','information','exposure','participation','influence','opportunity']
+Kind = Literal['concept_explanation','use_knowledge','explained_impact','claim_without_detail','recognition','information_need','learning_exposure',
                'contribution','influence','opportunity','barrier','intention','absence','unknown']
-KINDS = {'understanding':{'explained_impact','claim_without_detail','recognition','absence','unknown'},
+KINDS = {'concept':{'concept_explanation','absence','unknown'},
+         'delivery':{'use_knowledge','absence','unknown'},
+         'understanding':{'explained_impact','claim_without_detail','recognition','absence','unknown'},
          'information':{'information_need','absence','unknown'},
          'exposure':{'learning_exposure','absence','unknown'},
          'participation':{'contribution','intention','absence','unknown'},
@@ -101,7 +103,7 @@ def profile(events, instrument):
     return {'claims':claims,'coverage':coverage,'unresolved_scope':[d for d,v in coverage.items() if v['status']=='scope_unclear']}
 
 
-def select_question(events, instrument, respondent):
+def _legacy_select_question(events, instrument, respondent):
     active=[e for e in events if e['active'] and e['confirmed']]
     current=profile(active,instrument);claims=current['claims']
     done={e['question']['id'] for e in active}
@@ -142,3 +144,45 @@ def select_question(events, instrument, respondent):
         result.update(question_text=q['text'],is_probe=True,covers=[result['dimension']],selection_reason=q['eligibility'])
         return result
     return None
+
+
+def selection_plan(events, instrument, respondent):
+    """Pure deterministic routing, including auditable omissions; no score or stance."""
+    if 'maximum_questions' not in instrument:
+        return _legacy_select_question(events,instrument,respondent), []
+    active=[e for e in events if e['active'] and e['confirmed']]
+    done={e['question']['id'] for e in active}
+    claims=profile(active,instrument)['claims']
+    omitted=[];available=[]
+    for q in instrument['core_questions']:
+        if q['id'] in done: continue
+        covered={d for d in q['covers'] if any(c['dimension']==d for c in claims)}
+        contribution=any(c['kind']=='contribution' and c['temporality']=='actual' for c in claims)
+        absent=any(c['dimension']=='exposure' and c['kind']=='absence' for c in claims)
+        supplied=covered==set(q['covers']) or q['id']=='experience' and (contribution or absent)
+        if supplied:
+            omitted.append({'question_id':q['id'],'rule_id':'confirmed_evidence_covers_item',
+                'reason':'Earlier confirmed evidence already addresses this item.'})
+            continue
+        r=deepcopy(q);r.update(question_text=q['organisation_text'] if respondent['perspective']=='organisation' else q['text'],
+            is_probe=False,selection_reason='Relevant evidence has not yet been discussed.')
+        if q['id']=='experience' and 'exposure' in covered:
+            r['question_text']=q['when_exposure_already_reported']
+            r['selection_reason']='Exposure reported; ask only about contribution.'
+        available.append(r)
+    if len(active)>=instrument['maximum_questions']:
+        remaining=available
+        probe=_legacy_select_question(events,{**instrument,'core_questions':[]},respondent)
+        if probe:remaining=remaining+[probe]
+        omitted += [{'question_id':q['id'],'rule_id':'total_question_budget',
+                     'reason':'Total interview question budget reached.'} for q in remaining]
+        return None,omitted
+    if available:return available[0],omitted
+    # Reuse the established probe eligibility with no core items. This preserves
+    # actual/intention, unknown scope and skip suppression rules.
+    probe_instrument={**instrument,'core_questions':[]}
+    return _legacy_select_question(events,probe_instrument,respondent),omitted
+
+
+def select_question(events, instrument, respondent):
+    return selection_plan(events,instrument,respondent)[0]

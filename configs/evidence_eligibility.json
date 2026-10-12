@@ -1,7 +1,0 @@
-{
-  "version": "2.1.0-experimental",
-  "mode": "semantic_evidence",
-  "description": "No lexical veto or substring stance detection. Qwen interprets evidence under versioned scopes; Python validates IDs, facet membership, status/null/range/evidence and exact passage references. Semantic mapping is provisional, not guaranteed. Ambiguous mappings remain null/needs clarification.",
-  "duplicate_policy": "One score per canonical concern. Shared evidence across concerns requires distinct facets/meanings and an explicit mapping note; simple residential routing is recorded as a condition, not a second infrastructure/visual score.",
-  "candidate_projection": "An explicit supported/opposed/mixed medical-public-benefit dimension can nominate a missing welfare_equity medical_public_benefit facet for independent model review; it never assigns a numerical score or infers distributive equity."
-}

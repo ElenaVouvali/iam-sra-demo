@@ -71,11 +71,11 @@ def test_developer_mode_choice_precedes_session_creation(monkeypatch):
     monkeypatch.delenv('IAM_ASSESSMENT_MODE',raising=False)
     app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
     assert 'session' not in app.session_state
-    app.selectbox(key='assessment_mode_choice').select('legacy_fn_acceptance_demo').run()
+    assert len(app.selectbox(key='assessment_mode_choice').options) == 2
+    app.selectbox(key='assessment_mode_choice').select('acceptance_and_readiness_evidence').run()
     assert 'session' not in app.session_state
     click(app,'Start selected demo')
-    assert app.session_state.session.assessment_mode=='legacy_fn_acceptance_demo'
-    assert any(w.value=='Historical experimental acceptance index' for w in app.warning)
+    assert app.session_state.session.assessment_mode=='acceptance_and_readiness_evidence'
 
 
 def test_failure_diagnostics_hidden_without_developer_mode(monkeypatch):
@@ -254,13 +254,8 @@ def test_developer_reference_and_report_do_not_change_citizen_session(monkeypatc
     before=app.session_state.session.export()
     monkeypatch.setenv('IAM_DEVELOPER','1');app.run()
     assert not app.exception
-    assert any(e.label=='FN historical reference comparison' for e in app.expander)
+    assert not any(e.label=='FN historical reference comparison' for e in app.expander)
     assert any(e.label=='Researcher evidence report' for e in app.expander)
-    assert app.session_state.session.export()==before
-    click(app,'Interpret reference answer')
-    reference=app.session_state.fn_reference_interpretation
-    assert reference['confirmation'].startswith('Unconfirmed')
-    assert reference['pending_interpretation']['text'].startswith('Look, I get')
     assert app.session_state.session.export()==before
 
 

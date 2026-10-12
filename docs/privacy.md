@@ -2,7 +2,7 @@
 
 # Internal synthetic demonstration: privacy and data handling
 
-IAM-SRA2 currently demonstrates its citizen component: proposal views and partial evidence relevant to CRL. This is **an internal demo for synthetic examples**, not a production service, an anonymisation guarantee or a GDPR certification. Do not enter names, private addresses, contact details, credentials, bank details or identifiable medical information. Use general descriptions.
+IAM-SRA2 starts with a scenario-free general interview and offers a separate optional citizen proposal example. Neither the general interview nor a role selection assigns readiness. This is **an internal demo for synthetic examples**, not a production service, an anonymisation guarantee or a GDPR certification. Do not enter names, private addresses, contact details, credentials, bank details or identifiable medical information. Use general descriptions.
 
 ## Implemented flow — privacy-1.0.0
 
@@ -23,7 +23,7 @@ Credentials, contextual PINs, financial details and identifiable medical identif
 
 All model responses are screened before validation traces, history or display. Routine inference traces retain structural metadata, not raw model output. Unsafe output is withheld. Curated retrieval passages are screened before use; exact source-register bibliographic titles, local source filenames and hashes are separately allowlisted metadata, not a general exemption for draft or approved content. Citizen sessions and stakeholder lists are never indexed. Evidence and citation checks remain required after privacy screening.
 
-Every download is screened again. Unsafe or older records without the current privacy contract are withheld rather than silently rewritten. Start a new synthetic session; existing files are not deleted. Readiness exports use schema **6.4.0**, researcher evidence reports **1.1.0**, with `privacy_contract=privacy-1.0.0`. Historical arithmetic and export structures remain explicitly historical, with an added privacy contract. Confirmed snapshots remain versioned and unchanged by later answers.
+Every download is screened again. Unsafe or older records without the current privacy contract are withheld rather than silently rewritten. Start a new synthetic session; existing files are not deleted. New general-interview exports use **iam-baseline-2.0.0** (old frozen sessions retain **iam-baseline-1.0.0**); scenario exports use **6.4.0** or **6.5.0** when carrying separate baseline provenance, and researcher evidence reports use **1.1.0**, with `privacy_contract=privacy-1.0.0`. Historical acceptance code and exports are isolated on the legacy branch. Confirmed snapshots remain versioned and unchanged by later answers.
 
 ## Dependencies and detector limits
 
@@ -31,7 +31,7 @@ The implementation uses **Presidio Analyzer**, spaCy and local contextual recogn
 
 The selected versions satisfy the published package constraints ([Presidio package metadata](https://raw.githubusercontent.com/microsoft/presidio/2.2.360/presidio-analyzer/pyproject.toml), [English model metadata](https://raw.githubusercontent.com/explosion/spacy-models/master/meta/en_core_web_sm-3.8.0.json)). Actual installation resolution must still pass `pip check` on the host. Only English screening is configured. Pattern and statistical detection can miss names, addresses, indirect identifiers, unusual secrets and medical descriptions, and can over-mask ordinary words. General caring responsibilities, public place names, altitude and flight counts are not intentionally treated as secrets. Context recognisers supplement Presidio; no universal detection claim is made. Masked text is not necessarily anonymous.
 
-The current execution environment could not install these dependencies because external DNS/network access failed. Real detector coverage and false-positive rates are therefore **unverified**. Regression tests use an explicitly synthetic detector double to exercise policy and state boundaries; they do not demonstrate Presidio accuracy. `scripts/check-privacy.py` must pass using the real detector before the meeting.
+Pinned detector resources are available in `.venv-privacy`. Focused tests run the actual detector separately from synthetic detector doubles. Passing these bounded fixtures does not establish a population-wide detection or false-positive rate. Run `scripts/check-privacy.py` on the intended host before the meeting.
 
 ## Retention and infrastructure boundary
 
@@ -57,3 +57,45 @@ Structured audits now distinguish lowercase machine field keys and generated `R<
 ### Generated-JSON boundary correction
 
 Model response envelopes contain structured JSON inside `content`. Valid JSON object/list strings are now parsed and recursively screened as fields, rather than treating field names and punctuation as prose. Invalid JSON remains screened as text; parsing never bypasses semantic strings or contextual credential key/value checks. Regression tests assert that JSON-wrapped credentials and contact details are still rejected. Output rejections retain only safe structural stage/entity-type metadata and no rejected response. They tell the user to retry the same answer, rather than incorrectly requiring a new session. The exact trigger in the reported live screenshot was not available; this fixes a reproducible architectural source of false positives, not a claim that the unseen live response was inspected. Five real-detector tests passed, including six controlled meeting paths; 88 focused regression tests passed with five detector-dependent tests skipped in the original environment. Live Qwen outputs remain unverified here.
+
+
+### General interview 2.0.0 — bounded address and preview hardening
+
+The local street recogniser now uses case-insensitive, word-separated street
+markers with a house number. It covers number-first/street-first English forms,
+selected Spanish/Italian/Portuguese street prefixes, selected Greek street forms,
+and adjacent unit/postcode details. A regression prevents substring matches such
+as `most 100` being treated as `St 100`. Explicit address context remains supported.
+Unlabelled adjacent postcodes are masked only following a detected street address;
+bare years, altitude, flight counts, broad city names and `near my home` are controls.
+The NLP resource is still English: these bounded patterns are not comprehensive
+multilingual detection. Accents, transliteration, unconventional addresses, indirect
+identifiers, and unlabeled medical details can still be missed; names can be
+misclassified. No arbitrary user-string exemption or privacy switch was added.
+
+Masked previews are bound to the session/action, step, version, pending answer,
+question, information-exposure sequence and controlled context selections.
+Navigation, editing, reset, changed context or new typed input invalidates stale
+previews; no raw text or secret hash is used for this binding. Only the confirmed
+cleaned action reaches a controller. New context free text, answers, corrections,
+model/tokenisation envelopes, pending and confirmed exports are screened.
+Controlled sector/category metadata is not evidence of capability. Exact reviewed
+GA taxonomy wording is bibliographic/configuration metadata, not an exemption
+for surrounding citizen text. Existing credential/financial blocking remains.
+
+Optional definition displays record exact content/version/time and a pre-display
+profile. They are not answers; later evidence is marked after information and
+cannot establish independent prior knowledge by repeating that text. Baseline
+answers are never indexed in RAG. Browser/server transient receipt, retention,
+rights, lawful basis, controller/contact and access/security obligations remain
+as described above and require institutional review before real citizen use.
+
+
+Actual-detector export tests exposed intermittent PERSON classifications of random
+session UUIDs. The existing machine-identifier PERSON filter now recognises the
+strict canonical version-4 UUID syntax, alongside generated evidence IDs. This
+excludes only the mistaken PERSON finding: contextual credentials and all other
+entity checks still run, including a password whose value is such a UUID. It is
+not a general user-string exemption or a claim that session identifiers are anonymous.
+
+Privacy notices at baseline free-text entries use information boxes. Cleaned previews explain the replacement marker and require explicit confirmation before assessment. A narrow English UI check rejects answer fragments containing only the privacy marker and address-introduction words (for example, “My [private detail removed]”); it requests a new answer, Unsure or Skip without a model call or consumed question. This is not a general relevance classifier or multilingual completeness check. Useful remaining answer text and context fields retain the existing screened-preview confirmation workflow.

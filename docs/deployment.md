@@ -6,7 +6,7 @@ The application uses an isolated Python 3.10–3.12 environment and a separate l
 
 `configs/model.json` pins `Qwen/Qwen3-8B` to revision `b968826d9c46dd6066d109eabc6255188de91218`. `scripts/download-model.py` stores the snapshot under `.runtime/huggingface/`. Keep this cache; deleting it requires downloading the model again.
 
-Set `IAM_GPU_UUID` to the intended GPU for the host. The operational launcher verifies the UUID and selects its numeric physical index, because this pinned vLLM NVML path requires numeric device IDs. The V100-compatible launch uses `half`, V0 engine and XFormers. The selected device appears as logical GPU 0 to the worker. `scripts/start-davinci.sh` retains the existing host-specific convenience setup; use it only on the host matching its configured UUID.
+Set `IAM_GPU_UUID` to the intended GPU for the host. The operational launcher verifies the UUID and selects its numeric physical index, because this pinned vLLM NVML path requires numeric device IDs. The V100-compatible launch uses `half`, V0 engine and XFormers. The selected device appears as logical GPU 0 to the worker.
 
 ## Service lifecycle
 
@@ -32,7 +32,8 @@ Launch arguments include the pinned snapshot and served model name, `--dtype hal
 
 The client disables Qwen thinking and uses `guided_json` with `xgrammar:no-fallback,disable-any-whitespace`, the transport supported by the pinned server. Transport schemas retain structure, types, enums and required fields. Full strict Pydantic validation enforces local numeric, string and array bounds even where XGrammar cannot.
 
-Requests tokenize the complete system/user chat before generation. The 4096-token budget includes reserved output; no citizen evidence is silently truncated. Sampling is temperature 0.2/top-p 0.8. Current output limits are mapping 1400, scope review 300, discovery 500, modified-facet mapping 1200 and scoring 500 tokens. Each request retries at most once within its stage deadline. See [implementation contract](implementation-contract.md).
+Requests tokenize the complete system/user chat before generation. The 4096-token budget includes reserved output; no citizen evidence is silently truncated. Sampling is temperature 0.2/top-p 0.8. Current output limits are extraction 1600, grounding review 1400 and workbook scoring 500 tokens. Retrieval sets its own bounded output limit. Each request retries at most once within its stage deadline.
+
 
 ## Fresh setup
 

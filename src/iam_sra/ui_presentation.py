@@ -12,8 +12,8 @@ def header(baseline=False):
     st.html('<header class="iam-header"><span>IAM-CC</span><span aria-hidden="true">|</span>'
             '<strong>IAM-SRA2</strong><a href="https://hub.iamcc.eu" target="_blank" '
             'rel="noopener noreferrer">IAM-CC hub</a></header>')
-    st.title('IAM-SRA2 · Your starting point' if baseline else SUBTITLE)
-    st.write('Tell us what you know about delivery drones and any experience you have had.' if baseline else 'Share your views on this illustrative hospital delivery route. There are no right or wrong answers.')
+    st.title('Drones in your community' if baseline else SUBTITLE)
+    st.write('Share what you know and any experience you have with drones carrying goods. No technical knowledge is needed, and you can skip any question.' if baseline else 'Share your views on this illustrative hospital delivery route. There are no right or wrong answers.')
 
 
 def navigation(state):
