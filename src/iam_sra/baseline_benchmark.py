@@ -12,12 +12,13 @@ import platform
 import re
 import subprocess
 import time
+from importlib.metadata import PackageNotFoundError, version as package_version
 from uuid import UUID, uuid4
 from .baseline_session import BaselineSession
 from .privacy import VERSION, PrivacyError, require_clean, safe_message, screened_export
 from .settings import ROOT, config
 
-RUNNER_VERSION = 'baseline-benchmark-2.0.0'
+RUNNER_VERSION = 'baseline-benchmark-2.1.0'
 HISTORICAL_SHA256 = 'b35c306764ede2b67f276b68f43addabf564f44dcb2849b3683819cdb415dbcb'
 
 
@@ -68,6 +69,20 @@ def resolve_answer(case, question, corrected=False):
     return ref, deepcopy(case['answer_sets'][ref])
 
 
+def checked_fixture_answer(case, answer_ref, answer):
+    """Only confirm a cleaned preview when the benchmark explicitly expects it."""
+    try:
+        require_clean(answer['text'])
+        return deepcopy(answer), False
+    except PrivacyError as exc:
+        expected=case.get('privacy_preview_confirmations',{}).get(answer_ref)
+        if not expected or not exc.preview or exc.preview!=expected:
+            raise
+        require_clean(expected)
+        cleaned=deepcopy(answer);cleaned['text']=expected
+        return cleaned, True
+
+
 def provenance(bank, path, mock):
     def git(*args):
         return subprocess.check_output(['git',*args], cwd=ROOT, stderr=subprocess.DEVNULL)
@@ -80,6 +95,9 @@ def provenance(bank, path, mock):
         dirty=bool(git('status','--porcelain'))
     except subprocess.CalledProcessError:
         head=None;dirty=None
+    def installed(name):
+        try:return package_version(name)
+        except PackageNotFoundError:return None
     return {'code_commit':head,'working_tree_dirty':dirty,'file_sha256':hashes,
             'code_snapshot_sha256':sha256(json.dumps(hashes,sort_keys=True).encode()).hexdigest(),
             'python':platform.python_version(),'model':config('model'),
@@ -91,7 +109,13 @@ def provenance(bank, path, mock):
             'routing_policy':deepcopy(config('baseline')['routing']),
             'prompt_version':config('baseline')['prompt_version'],
             'prompt_sha256':{k:file_hash(ROOT/f'prompts/baseline-{k}.txt') for k in ['evidence','grounding']},
-            'privacy_contract':VERSION,'runner_version':RUNNER_VERSION}
+            'privacy_contract':VERSION,'runner_version':RUNNER_VERSION,
+            'inference_settings':{'temperature':0.2,'top_p':0.8,'enable_thinking':False,
+                'context_tokens':4096,'stage_output_limits':{'readiness_evidence':1600,'readiness_grounding':1400},
+                'guided_decoding_backend':'xgrammar:no-fallback,disable-any-whitespace',
+                'attempts_per_stage':2,'stage_deadline_seconds':180},
+            'privacy_dependencies':{'presidio_analyzer':installed('presidio-analyzer'),
+                'spacy':installed('spacy'),'en_core_web_sm':installed('en-core-web-sm')}}
 
 
 def check_versions(bank):
@@ -156,6 +180,8 @@ def core_justification(q, previous, respondent):
 def same_scope(a,b):
     if a['subject']!=b['subject']:return False
     if a['domain'] in {'IAM','transferable'} and b['domain'] in {'IAM','transferable'} and a['domain']!=b['domain']:return False
+    aa=(a.get('activity_quote') or '').strip().casefold();bb=(b.get('activity_quote') or '').strip().casefold()
+    if not aa or not bb or aa!=bb:return False
     if a.get('time_quote') and b.get('time_quote') and a['time_quote'].casefold()!=b['time_quote'].casefold():return False
     return True
 
@@ -285,14 +311,21 @@ def run_case(case, client, versions, session_factory=BaselineSession):
             q=s.current_question
             row['presented_questions'].append({'phase':phase,'question':deepcopy(q),'presented_at':datetime.now(timezone.utc).isoformat()})
             ref,answer=resolve_answer(case,q,corrected=phase=='corrected')
-            # Reject sensitive fixture content before writing it to the turn log.
-            require_clean(answer['text'])
+            # Apply the same cleaned-preview confirmation flow as the UI. A
+            # fixture must explicitly declare the exact expected safe preview.
+            row['_active_stage']='answer_input_screening'
+            answer,confirmed_preview=checked_fixture_answer(case,ref,answer)
+            if confirmed_preview:
+                row['actions'].append({'action':'confirm_cleaned_preview','phase':phase,'question_id':q['id'],
+                    'answer_ref':ref,'actor':'automation','meaning_review':'not_citizen_validation',
+                    'preview_sha256':sha256(answer['text'].encode()).hexdigest()})
             turn={'sequence':len(turns)+1,'phase':phase,'question':deepcopy(q),
                   'answer_ref':ref,'answer':answer['text'],'control':answer['control'],
                   'editing':bool(s._editing),'prior_events':deepcopy(s.events),
                   'presented_at':datetime.now(timezone.utc).isoformat(),'submitted':False}
             turns.append(turn);tick=time.monotonic()
             try:
+                row['_active_stage']='interpretation_and_grounding'
                 turn['submitted']=True
                 s.answer(answer['text'],client,control=answer['control']);turn['processing_completed']=True
                 turn['pending_interpretation']=deepcopy(s.pending)
@@ -300,11 +333,15 @@ def run_case(case, client, versions, session_factory=BaselineSession):
                 event=s.events[-1];turn['event_id']=event['id'];turn['actual_event']=deepcopy(event)
                 turn['confirmation']=deepcopy(s.confirmations[-1])
                 turn['model_diagnostics']=deepcopy(getattr(client,'last_diagnostics',[]))
+                turn['model_settings']=deepcopy(getattr(client,'last_settings',{}))
+                turn['model_metrics']=deepcopy(getattr(client,'last_metrics',{}))
             finally:
                 turn['model_diagnostics']=deepcopy(getattr(client,'last_diagnostics',[]))
+                turn.setdefault('model_metrics',deepcopy(getattr(client,'last_metrics',{})))
                 turn['latency_seconds']=round(time.monotonic()-tick,4)
             count+=1
         if s.state!='baseline_review':raise UnsupportedBranch('Unexpected session state: '+s.state)
+        row['_active_stage']='session_export'
         s.complete(actor='automation');s.handoff()
         snapshot=s.export()
         phase_turns=[t for t in turns if t['phase']==phase]
@@ -330,6 +367,15 @@ def run_case(case, client, versions, session_factory=BaselineSession):
         row['execution_status']='unsupported_benchmark_branch' if isinstance(exc,UnsupportedBranch) else 'failed'
         row['error']={'code':getattr(exc,'code','unsupported_branch' if isinstance(exc,UnsupportedBranch) else 'execution'),
                       'exception_type':type(exc).__name__,'message':safe_message(exc)}
+        diagnostics=deepcopy(getattr(client,'last_diagnostics',[]))
+        privacy_diag=next((d for d in reversed(diagnostics) if d.get('failure')=='privacy'),None)
+        if isinstance(exc,PrivacyError):
+            row['failure_stage']=privacy_diag.get('stage') if privacy_diag else row.get('_active_stage','input_or_export_screening')
+            row['privacy_boundary']=privacy_diag.get('privacy_boundary') if privacy_diag else row.get('_active_stage','input_or_export_screening')
+            if privacy_diag:row['privacy_findings']=list(exc.findings) or list(privacy_diag.get('privacy_findings',[]))
+            elif row.get('_active_stage')=='answer_input_screening':
+                row['privacy_findings']=[{'field_path':'answer.text',**finding} for finding in exc.findings]
+            else:row['privacy_findings']=list(exc.findings)
         if s.respondent is not None:
             name='corrected' if any(a['action']=='edit_answer' for a in row['actions']) else 'initial'
             try:
@@ -348,6 +394,13 @@ def run_case(case, client, versions, session_factory=BaselineSession):
                 if not phases or phases[-1]['name']!=name:
                     phases.append(phase_result(case,name,[t for t in turns if t['phase']==name],snapshot,versions))
     row['latency_seconds']=round(time.monotonic()-started,3)
+    metrics=[t.get('model_metrics',{}) for t in turns]
+    row['model_calls']=sum(m.get('generation_calls',0) for m in metrics)
+    row['tokenize_calls']=sum(m.get('tokenize_calls',0) for m in metrics)
+    row['cache_hits']=sum(m.get('cache_hits',0) for m in metrics)
+    row['model_retries']=sum(request.get('retries',0) for t in turns
+        for request in t.get('model_settings',{}).get('request_metrics',[]))
+    row.pop('_active_stage',None)
     routing_values=[e['result'] for p in phases for e in p['routing']]
     row['routing_pass']=False if 'fail' in routing_values else True if routing_values and all(v=='pass' for v in routing_values) else None
     row['invariants_pass']=all(e['result']!='fail' for p in phases for e in p['invariants']) if phases else None
@@ -384,6 +437,14 @@ def write_report(data, output):
         if not re.fullmatch(r'[a-z][a-z0-9_]*',row['case_id']):raise ValueError('Unsafe report case ID.')
         artifact={'run_id':data['run_id'],'benchmark_sha256':data['provenance']['benchmark_sha256'],
                   'provenance':deepcopy(data['provenance']),**deepcopy(row)}
+        # Authored expectation prose is kept in the versioned benchmark file
+        # and joined by stable expectation ID. Do not duplicate it into a
+        # session artifact: the NLP privacy detector can mistake common noun
+        # phrases there for PERSON, and the benchmark text is not respondent
+        # evidence. Actual outputs and per-expectation outcomes remain here.
+        for phase in artifact.get('phases',[]):
+            for expectation in phase.get('extraction',[]):
+                expectation.pop('meaning',None)
         try:
             screened_export(artifact)
         except PrivacyError as exc:
@@ -393,6 +454,22 @@ def write_report(data, output):
                      'artifact_status':'withheld','export_error_code':getattr(exc,'code','export'),
                      'routing_pass':row['routing_pass'],'invariants_pass':row['invariants_pass'],
                      'semantic_pass':None}
+            failure={'schema_version':'baseline-safe-failure-1.0.0','run_id':data['run_id'],
+                'case_id':row['case_id'],'execution_status':row['execution_status'],
+                'error_code':row.get('error',{}).get('code','export'),
+                'failure_stage':row.get('failure_stage','export_screening'),
+                'privacy_boundary':row.get('privacy_boundary','export_screening'),
+                'privacy_findings':list(exc.findings) or row.get('privacy_findings',[]),
+                'latency_seconds':row.get('latency_seconds'),
+                'semantic_review_status':'pending','semantic_pass':None}
+            try:
+                screened_export(failure)
+                failure_path=case_directory/(row['case_id']+'.failure.json')
+                failure_path.write_text(json.dumps(failure,ensure_ascii=False,indent=2)+'\n')
+                summary['failure_record_status']='written'
+                summary['failure_record_sha256']=file_hash(failure_path)
+            except PrivacyError:
+                summary['failure_record_status']='withheld'
             index['cases'].append(summary)
             continue
         target=case_directory/(row['case_id']+'.json')

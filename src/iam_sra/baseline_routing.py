@@ -57,11 +57,24 @@ def references(rows):return sorted({c['evidence_id'] for c in rows})
 
 
 def compatible_context(a,b):
-    """Do not use a different subject/domain/period to close this evidence gap."""
+    """Only link claims when their cited words identify the same activity.
+
+    Matching actor/domain and absent dates do not establish activity identity.
+    """
     if a['subject']!=b['subject']:return False
     if a['domain'] in {'IAM','transferable'} and b['domain'] in {'IAM','transferable'} and a['domain']!=b['domain']:return False
+    aa=(a.get('activity_quote') or '').strip().casefold()
+    ba=(b.get('activity_quote') or '').strip().casefold()
+    if not aa or not ba or aa!=ba:return False
     if a.get('time_quote') and b.get('time_quote') and a['time_quote'].casefold()!=b['time_quote'].casefold():return False
     return True
+
+
+def same_effect_scope(assertion, explanation):
+    """Conservatively pair effect claims only when their exact spans overlap."""
+    a=(assertion.get('span_quote') or '').strip().casefold()
+    b=(explanation.get('span_quote') or '').strip().casefold()
+    return bool(a and b and (a in b or b in a))
 
 
 def scope_issues(claims):
@@ -212,7 +225,9 @@ def adaptive_plan(events,instrument,respondent):
     issues=[i for i in current['ambiguities'] if i['dimension'] not in suppressed]
     candidates={
       'material_ambiguity':issues[0]['evidence_ids'] if issues else [],
-      'understanding_claim_without_reason':references([c for c in scoped_claims if positive(c) and c['kind']=='claim_without_detail']) if not any(positive(c) and c['kind']=='explained_impact' for c in scoped_claims) else [],
+      'understanding_claim_without_reason':references([c for c in scoped_claims if positive(c) and c['kind']=='claim_without_detail'
+          and not any(positive(explained) and explained['kind']=='explained_impact' and same_effect_scope(c,explained)
+                      for explained in scoped_claims)]) ,
       'actual_exposure_without_contribution_evidence':references([a for a in rows('learning_exposure') if not any(c['dimension']=='participation' and c['kind']!='intention' and compatible_context(a,c) for c in scoped_claims)]),
       'actual_experience_unknown_domain':references([c for c in rows('learning_exposure')+rows('contribution') if c['domain']=='unknown']),
       'actual_contribution_without_outcome':references([a for a in rows('contribution') if not any(

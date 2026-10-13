@@ -99,9 +99,10 @@ class LLMTransport:
             except PrivacyError as exc:
                 self.last_diagnostics.append({'stage':stage,'attempt':attempt,'failure':'privacy',
                     'privacy_boundary':'model_output','entity_types':list(exc.entity_types),
+                    'privacy_findings':list(exc.findings),
                     'latency_seconds':round(time.monotonic()-attempt_start,4)})
                 raise PrivacyError('The generated interpretation could not be displayed safely. Retry this step with the same answer; rejected output was not saved.',
-                    unavailable=exc.code=='privacy_unavailable', entity_types=exc.entity_types) from None
+                    unavailable=exc.code=='privacy_unavailable', entity_types=exc.entity_types,findings=exc.findings) from None
             try:
                 choice=body['choices'][0];message=choice['message'];content=message.get('content') or ''
                 if not isinstance(content,str) or not isinstance(choice['finish_reason'],str):raise TypeError()

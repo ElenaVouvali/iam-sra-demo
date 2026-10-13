@@ -83,8 +83,8 @@ def test_pending_correction_uses_same_prompt_and_does_not_confirm_automatically(
     app.radio(key='baseline_familiarity').set_value('little');click(app,'Continue')
     app.text_area(key='baseline_answer_text').set_value('I am unsure.');click(app,'Continue')
     before=app.session_state.session.prompt_hashes.copy()
-    app.text_area(key='baseline_correction_text_'+app.session_state.session.pending['id']).set_value('I have not formed an understanding yet.')
-    click(app,'Review revised interpretation')
+    app.text_area(key=f"baseline_interpretation_{app.session_state.session.pending['id']}_0").set_value('I have not formed an understanding yet.')
+    click(app,'Apply my correction')
     assert app.session_state.session.state=='review' and app.session_state.session.prompt_hashes==before
     click(app,'Confirm and continue')
     assert app.session_state.session.events[-1]['text']=='I am unsure.'

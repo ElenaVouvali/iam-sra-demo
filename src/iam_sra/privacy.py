@@ -19,10 +19,12 @@ UNAVAILABLE = ('Local privacy screening is unavailable. Run scripts/setup-privac
 
 
 class PrivacyError(AssessmentError):
-    def __init__(self, message, *, preview=None, unavailable=False, entity_types=()):
+    def __init__(self, message, *, preview=None, unavailable=False, entity_types=(), findings=()):
         super().__init__(message, code='privacy_unavailable' if unavailable else 'privacy')
         self.entity_types = tuple(sorted(set(entity_types)))
         self.preview = preview  # Cleaned text only; never the original or an offset mapping.
+        # Safe detector metadata only; never include the detected text or offsets.
+        self.findings = tuple({k:v for k,v in row.items() if k in {'field_path','entity_type','recognizer','confidence'}} for row in findings)
 
 
 @dataclass(frozen=True)
@@ -31,6 +33,7 @@ class Finding:
     start: int
     end: int
     score: float = 1.0
+    recognizer: str = 'local_context_pattern'
 
 
 # Context is required: plain four-digit numbers, altitude and flight counts are safe.
@@ -102,18 +105,27 @@ def screen(text):
     if not isinstance(text, str): raise PrivacyError('Use a plain text answer.')
     try:
         # Presidio is required even when the contextual layer finds nothing.
-        found = detector().analyze(text=text, language='en', entities=ENTITIES + list(PATTERNS), score_threshold=0.55)
+        presidio = detector().analyze(text=text, language='en', entities=ENTITIES + list(PATTERNS), score_threshold=0.55)
+        found = [Finding(x.entity_type,x.start,x.end,float(getattr(x,'score',0.0)),
+            str((getattr(x,'recognition_metadata',None) or {}).get('recognizer_name') or 'Presidio')) for x in presidio]
         found = list(found) + contextual_findings(text)
     except PrivacyError: raise
     except Exception: raise PrivacyError(UNAVAILABLE, unavailable=True) from None
     from .settings import CONCERNS
     thematic_labels = {v['label'].casefold() for v in CONCERNS.values()}
+    # Presidio mislabels the transport noun in common phrases such as “van
+    # trips” as a PERSON. Keep the exemption local to that exact noun/context;
+    # names and other surrounding text remain screened normally.
+    def benign_person(f):
+        if f.entity_type!='PERSON':return False
+        context=text[max(0,f.start-32):min(len(text),f.end+16)]
+        return bool(re.search(r'\b(?:replace|avoid|reduce|substitute)\s+(?:the\s+)?van\s+(?:trips?|journeys?)\b',context,re.I))
     found = [f for f in found if 0 <= f.start < f.end <= len(text)
         and not (f.entity_type == 'PERSON' and (text[f.start:f.end].strip().casefold() in thematic_labels
             or re.fullmatch(r'(?:R|B)\d+_\d+(?:\.p\d+)?', text[f.start:f.end].strip())
-            or re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}',text[f.start:f.end].strip(' \t\r\n.'),re.I)))]
+            or re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}',text[f.start:f.end].strip(' \t\r\n.'),re.I)) or benign_person(f))]
     if any(f.entity_type in BLOCK for f in found):
-        raise PrivacyError('Remove credentials, financial details or identifiable medical details and resubmit using general descriptions.', entity_types=[f.entity_type for f in found])
+        raise PrivacyError('Remove credentials, financial details or identifiable medical details and resubmit using general descriptions.', entity_types=[f.entity_type for f in found], findings=[{'entity_type':f.entity_type,'recognizer':f.recognizer,'confidence':round(float(f.score),3)} for f in found])
     if found:
         # Merge overlapping findings. No raw-to-masked map survives this call.
         spans = []
@@ -127,7 +139,7 @@ def screen(text):
             require_clean(cleaned)
         except PrivacyError:
             raise PrivacyError('Remove names, private addresses and contact details, then resubmit using general descriptions.') from None
-        raise PrivacyError('Private details were detected. Confirm the cleaned version or write a general description.', preview=cleaned, entity_types=[f.entity_type for f in found])
+        raise PrivacyError('Private details were detected. Confirm the cleaned version or write a general description.', preview=cleaned, entity_types=[f.entity_type for f in found], findings=[{'entity_type':f.entity_type,'recognizer':f.recognizer,'confidence':round(float(f.score),3)} for f in found])
     return text
 
 
@@ -146,6 +158,13 @@ def reviewed_bibliographic_values():
     values += registry.get('privacy_reviewed_citation_locations', [])
     values += registry.get('privacy_reviewed_presentation_labels', [])
     values += [section for row in registry['sources'] for section in row.get('reviewed_sections', [])]
+    # These version strings are fixed bibliographic metadata for the curated
+    # local corpus, not respondent prose; whitelist the exact registered values.
+    try:
+        corpus=json.loads((ROOT/'configs/readiness_corpus.json').read_text())
+        values += [row['source_version'] for row in corpus.get('passages',[]) if isinstance(row.get('source_version'),str)]
+    except (OSError,ValueError,TypeError):
+        pass
     values += [topic['label'] for topic in CONCERNS.values()]
     def schema_titles(node):
         if isinstance(node, dict):
@@ -153,13 +172,13 @@ def reviewed_bibliographic_values():
             for child in node.values(): schema_titles(child)
         elif isinstance(node, list):
             for child in node: schema_titles(child)
-    from .baseline import BaselineExtraction, BaselineReview
-    for model in (SourceExtraction, SourceReview, BaselineExtraction, BaselineReview): schema_titles(model.model_json_schema())
+    from .baseline import BaselineExtraction, BaselineReview, CanonicalExtraction, CanonicalReview
+    for model in (SourceExtraction, SourceReview, BaselineExtraction, BaselineReview, CanonicalExtraction, CanonicalReview): schema_titles(model.model_json_schema())
     # Only exact controlled display values are reviewed metadata; custom city,
     # function and answer strings still pass through the mandatory detector.
     from .settings import config
     from .llm_client import BACKEND
-    values += [BACKEND, 'iam-baseline-1.0.0','iam-baseline-2.0.0','iam-baseline-2.1.0','iam-baseline-2.2.0','baseline-handoff-1.0.0'] + config('baseline')['sources']
+    values += [BACKEND, 'iam-baseline-1.0.0','iam-baseline-2.0.0','iam-baseline-2.1.0','iam-baseline-2.2.0','iam-baseline-2.3.0','baseline-handoff-1.0.0'] + config('baseline')['sources']
     for bank in ('perspectives','stakeholders','cities','familiarity','dimensions','sectors'):
         values += list(config('baseline').get(bank,{}).values())
     taxonomy=config('baseline').get('stakeholder_taxonomy',{})
@@ -172,7 +191,7 @@ def reviewed_bibliographic_values():
 def require_safe_data(value):
     """Batch strings through the local NLP engine; no content-result cache."""
     strings = []
-    def collect(item):
+    def collect(item,path='root'):
         if hasattr(item, 'model_dump'): item = item.model_dump()
         if isinstance(item, str):
             # Model envelopes carry JSON as a string. Screen its semantic fields,
@@ -181,26 +200,50 @@ def require_safe_data(value):
                 try: decoded = json.loads(item)
                 except (ValueError, RecursionError): decoded = None
                 if isinstance(decoded, (dict, list)):
-                    collect(decoded)
+                    collect(decoded,path)
                     return
-            if item not in reviewed_bibliographic_values(): strings.append(item)
+            # Source/code SHA-256 values in the application-generated
+            # provenance map are opaque integrity metadata. NLP models can
+            # misread long hex strings as names; only this exact structural
+            # location and encoding is exempt. User/model text and hashes in
+            # every other field are still screened.
+            generated_digest = (
+                (path.startswith('root.provenance.file_sha256.')
+                 or path == 'root.provenance.code_snapshot_sha256')
+                and re.fullmatch(r'[a-f0-9]{64}', item) is not None
+            )
+            if item not in reviewed_bibliographic_values() and not generated_digest:
+                strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():
+                # JSON schemas are generated only from trusted application
+                # models; their short structural labels are not respondent
+                # content. Dynamic evidence-ID enums contain only controller
+                # IDs. Screen the system/user payloads and all records instead.
+                if key=='schema': continue
                 # Standard JSON-schema vocabulary is structure, not a person's name.
-                if not re.fullmatch(r'[a-z][a-z0-9_]*', str(key)) and key not in {'$defs','$ref','properties','required','type','title','description','items','enum','anyOf','allOf','oneOf','additionalProperties','default','minLength','maxLength','minimum','maximum','minItems','maxItems'}:
-                    strings.append(str(key))
+                generated_source_path = (
+                    path == 'root.provenance.file_sha256'
+                    and re.fullmatch(r'(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+', str(key)) is not None
+                )
+                if (not generated_source_path
+                    and not re.fullmatch(r'[a-z][a-z0-9_]*', str(key))
+                    and key not in {'$defs','$ref','properties','required','type','title','description','items','enum','anyOf','allOf','oneOf','additionalProperties','default','minLength','maxLength','minimum','maximum','minItems','maxItems'}):
+                    strings.append((str(key),path+'.<key>'))
                 if isinstance(val, (str, int)) and re.search(r'password|pin|token|secret|iban|card.number|account.number', str(key), re.I):
-                    strings.append(str(key) + ': ' + str(val))
-                collect(val)
+                    strings.append((str(key) + ': ' + str(val),path+'.'+str(key)))
+                collect(val,path+'.'+str(key))
         elif isinstance(item, (list, tuple)):
-            for val in item: collect(val)
+            for i,val in enumerate(item): collect(val,path+f'[{i}]')
     collect(value)
-    try: require_clean('\n.\n'.join(strings))
-    except PrivacyError as exc:
-        # An output/export/request preview cannot replace an audited structure.
-        raise PrivacyError(UNAVAILABLE if exc.code == 'privacy_unavailable' else
-            'Sensitive content was withheld. Use a new session with general descriptions; no unsafe output or download is available.',
-            unavailable=exc.code == 'privacy_unavailable', entity_types=exc.entity_types) from None
+    for text,path in strings:
+        try: require_clean(text)
+        except PrivacyError as exc:
+            # An output/export/request preview cannot replace an audited structure.
+            findings=[{'field_path':path,**row} for row in exc.findings]
+            raise PrivacyError(UNAVAILABLE if exc.code == 'privacy_unavailable' else
+                'Sensitive content was withheld. Use a new session with general descriptions; no unsafe output or download is available.',
+                unavailable=exc.code == 'privacy_unavailable', entity_types=exc.entity_types, findings=findings) from None
     return value
 
 

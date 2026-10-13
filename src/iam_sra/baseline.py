@@ -1,7 +1,7 @@
 """Phase-1 evidence only: no scenario, acceptance or level assignment."""
 from copy import deepcopy
 from typing import Literal
-from pydantic import Field, model_validator, ValidationError
+from pydantic import Field, model_validator, field_validator, ValidationError
 from .schemas import Strict, ConcernID
 from .assessment import AssessmentError
 from .evidence import original_quote
@@ -23,6 +23,9 @@ class BaselineClaim(Strict):
     dimension: Dimension
     kind: Kind
     interpretation: str = Field(min_length=1,max_length=240)
+    # Exact answer span. Required by the 2.3 contract; optional only so frozen
+    # 2.0–2.2 exports and validators remain readable.
+    span_quote: str = Field(default='',max_length=240)
     topic_ids: list[ConcernID] = Field(default_factory=list,max_length=3)
     subject: Literal['respondent','organisation','other','unknown']
     temporality: Literal['actual','intention','not_applicable','unknown']
@@ -59,18 +62,139 @@ class BaselineDecision(Strict):
     subject: Literal['respondent','organisation','other','unknown'] | None = None
     temporality: Literal['actual','intention','not_applicable','unknown'] | None = None
     domain: Literal['IAM','transferable','unknown','not_applicable'] | None = None
+    span_quote: str | None = Field(default=None,min_length=1,max_length=240)
 
 class BaselineReview(Strict):
     decisions: list[BaselineDecision] = Field(max_length=6)
+
+
+# The live 2.3 model contract uses one tagged value for the three labels that
+# previously caused cross-field failures (dimension, kind and temporality).
+# The server maps this finite vocabulary to the established internal record.
+CLAIM_TYPES = (
+    'concept_explanation','concept_absence','concept_unknown',
+    'delivery_use_knowledge','delivery_absence','delivery_unknown',
+    'understanding_explained_impact','understanding_claim_without_detail','understanding_recognition','understanding_absence','understanding_unknown',
+    'information_need','information_absence','information_unknown',
+    'exposure_learning','exposure_absence','exposure_unknown',
+    'participation_contribution','participation_intention','participation_absence','participation_unknown',
+    'influence_reported','influence_absence','influence_unknown',
+    'opportunity_access','opportunity_barrier','opportunity_intention','opportunity_absence','opportunity_unknown',
+)
+CLAIM_TYPE_MAP = {
+    'concept_explanation':('concept','concept_explanation','not_applicable'), 'concept_absence':('concept','absence','not_applicable'), 'concept_unknown':('concept','unknown','unknown'),
+    'delivery_use_knowledge':('delivery','use_knowledge','not_applicable'), 'delivery_absence':('delivery','absence','not_applicable'), 'delivery_unknown':('delivery','unknown','unknown'),
+    'understanding_explained_impact':('understanding','explained_impact','not_applicable'), 'understanding_claim_without_detail':('understanding','claim_without_detail','not_applicable'), 'understanding_recognition':('understanding','recognition','not_applicable'), 'understanding_absence':('understanding','absence','not_applicable'), 'understanding_unknown':('understanding','unknown','unknown'),
+    'information_need':('information','information_need','not_applicable'), 'information_absence':('information','absence','not_applicable'), 'information_unknown':('information','unknown','unknown'),
+    'exposure_learning':('exposure','learning_exposure','actual'), 'exposure_absence':('exposure','absence','not_applicable'), 'exposure_unknown':('exposure','unknown','unknown'),
+    'participation_contribution':('participation','contribution','actual'), 'participation_intention':('participation','intention','intention'), 'participation_absence':('participation','absence','not_applicable'), 'participation_unknown':('participation','unknown','unknown'),
+    'influence_reported':('influence','influence','actual'), 'influence_absence':('influence','absence','not_applicable'), 'influence_unknown':('influence','unknown','unknown'),
+    'opportunity_access':('opportunity','opportunity','not_applicable'), 'opportunity_barrier':('opportunity','barrier','not_applicable'), 'opportunity_intention':('opportunity','intention','intention'), 'opportunity_absence':('opportunity','absence','not_applicable'), 'opportunity_unknown':('opportunity','unknown','unknown'),
+}
+
+class CanonicalClaim(Strict):
+    evidence_id: str
+    claim_type: str
+    span_quote: str = Field(min_length=1,max_length=240)
+    interpretation: str = Field(min_length=1,max_length=240)
+    topic_ids: list[ConcernID] = Field(default_factory=list,max_length=3)
+    subject: Literal['respondent','organisation','other','unknown']
+    domain: Literal['IAM','transferable','unknown','not_applicable']
+    activity_quote: str = Field(default='',max_length=160)
+    time_quote: str = Field(default='',max_length=100)
+    ambiguities: list[Literal['subject','activity','time','meaning','contradiction']] = Field(default_factory=list,max_length=3)
+    outcome_relation: Literal['unknown','reported_link','sequence_only'] = 'unknown'
+
+    @field_validator('claim_type')
+    @classmethod
+    def known_claim_type(cls,value):
+        if value not in CLAIM_TYPE_MAP: raise ValueError('Unknown canonical claim type.')
+        return value
+
+class CanonicalExtraction(Strict):
+    interaction: Literal['substantive','unsure','declined','confused','already_answered','off_topic']
+    claims: list[CanonicalClaim] = Field(max_length=6)
+
+class CanonicalDecision(Strict):
+    candidate: int
+    supported: bool
+    claim_type: str
+    topic_ids: list[ConcernID] = Field(default_factory=list,max_length=3)
+    reason: str = Field(default='',max_length=100)
+    span_quote: str | None = Field(default=None,min_length=1,max_length=240)
+    interpretation: str | None = Field(default=None,min_length=1,max_length=240)
+    ambiguities: list[Literal['subject','activity','time','meaning','contradiction']] | None = Field(default=None,max_length=3)
+    outcome_relation: Literal['unknown','reported_link','sequence_only'] | None = None
+    subject: Literal['respondent','organisation','other','unknown'] | None = None
+    domain: Literal['IAM','transferable','unknown','not_applicable'] | None = None
+
+    @field_validator('claim_type')
+    @classmethod
+    def known_claim_type(cls,value):
+        if value not in CLAIM_TYPE_MAP: raise ValueError('Unknown canonical claim type.')
+        return value
+
+class CanonicalReview(Strict):
+    decisions: list[CanonicalDecision] = Field(max_length=6)
+    additional_claims: list[CanonicalClaim] = Field(default_factory=list,max_length=3)
+
+
+def canonical_claim(value, evidence):
+    c=CanonicalClaim.model_validate(value) if not isinstance(value,CanonicalClaim) else value
+    if c.evidence_id not in evidence: raise AssessmentError('Unknown baseline passage ID.',code='evidence')
+    for quote in (c.span_quote,c.activity_quote,c.time_quote):
+        if quote and original_quote(evidence[c.evidence_id],quote) is None:
+            raise AssessmentError('Claim support must be an exact span from the cited answer passage.',code='evidence')
+    dimension,kind,temporality=CLAIM_TYPE_MAP[c.claim_type]
+    return BaselineClaim(evidence_id=c.evidence_id,dimension=dimension,kind=kind,interpretation=c.interpretation,
+        span_quote=c.span_quote,topic_ids=c.topic_ids,subject=c.subject,temporality=temporality,domain=c.domain,
+        activity_quote=c.activity_quote,time_quote=c.time_quote,ambiguities=c.ambiguities,outcome_relation=c.outcome_relation)
+
+
+def validate_canonical_source(raw, evidence):
+    value=CanonicalExtraction.model_validate_json(raw) if isinstance(raw,str) else CanonicalExtraction.model_validate(raw)
+    claims=[canonical_claim(c,evidence) for c in value.claims]
+    return BaselineExtraction(interaction=value.interaction,claims=claims)
+
+
+def reviewed_canonical(source, review, evidence):
+    if sorted(d.candidate for d in review.decisions) != list(range(len(source.claims))):
+        raise AssessmentError('Every baseline claim requires one review.',code='evidence')
+    decisions=[]
+    for d in review.decisions:
+        dim,kind,temp=CLAIM_TYPE_MAP[d.claim_type]
+        old=source.claims[d.candidate]
+        if d.span_quote and original_quote(evidence[old.evidence_id],d.span_quote) is None:
+            raise AssessmentError('Reviewer support must be an exact span from the cited answer passage.',code='evidence')
+        old_is_actual=old.temporality=='actual';new_is_actual=temp=='actual'
+        old_is_intention=old.temporality=='intention';new_is_intention=temp=='intention'
+        if d.supported and ((old_is_intention and new_is_actual) or (old_is_actual and new_is_intention)):
+            if not d.span_quote or d.span_quote.strip().casefold()==old.span_quote.strip().casefold():
+                raise AssessmentError('A reviewed change between intention and actual activity needs a distinct supporting answer span.',code='evidence')
+        decisions.append(BaselineDecision(candidate=d.candidate,supported=d.supported,dimension=dim,kind=kind,
+            topic_ids=d.topic_ids,reason=d.reason,interpretation=d.interpretation,ambiguities=d.ambiguities,
+            outcome_relation=d.outcome_relation,subject=d.subject,temporality=temp,domain=d.domain,span_quote=d.span_quote))
+    accepted=reviewed(source,BaselineReview(decisions=decisions))
+    # Invalid reclassifications raise in reviewed(); they cannot disappear
+    # silently from an otherwise complete interpretation.
+    additions=[]
+    for c in review.additional_claims:
+        additions.append(canonical_claim(c,evidence))
+    claims=list(accepted.claims)+additions
+    unique={}
+    for c in claims:
+        key=(c.evidence_id,c.dimension,c.kind,c.subject,c.temporality,c.domain,c.span_quote.casefold())
+        unique.setdefault(key,c)
+    return BaselineExtraction(interaction='substantive' if unique else source.interaction,claims=list(unique.values()))
 
 
 def validate_source(raw, evidence):
     value = BaselineExtraction.model_validate_json(raw) if isinstance(raw,str) else BaselineExtraction.model_validate(raw)
     for c in value.claims:
         if c.evidence_id not in evidence: raise AssessmentError('Unknown baseline passage ID.',code='evidence')
-        for scope in (c.activity_quote,c.time_quote):
+        for scope in (c.span_quote,c.activity_quote,c.time_quote):
             if scope and original_quote(evidence[c.evidence_id],scope) is None:
-                raise AssessmentError('Activity and time scope must use exact supporting words or be empty.',code='evidence')
+                raise AssessmentError('Claim support and activity/time scope must use exact words from the cited answer or be empty.',code='evidence')
     return value
 
 
@@ -88,16 +212,18 @@ def reviewed(source, review):
         data.update(dimension=d.dimension,kind=d.kind,
                     interpretation=d.interpretation or c.interpretation,
                     topic_ids=sorted(set(c.topic_ids)&set(d.topic_ids)))
+        if d.span_quote is not None:data['span_quote']=d.span_quote
         for field in ('subject','temporality','domain'):
             if getattr(d,field) is not None:data[field]=getattr(d,field)
         if d.ambiguities is not None:data['ambiguities']=d.ambiguities
         if d.outcome_relation is not None:data['outcome_relation']=d.outcome_relation
         try: accepted.append(BaselineClaim.model_validate(data))
-        except ValidationError: continue  # Never turn reasoning into actual experience.
+        except ValidationError:
+            raise AssessmentError('A reviewed interpretation remained inconsistent. Correct it, retry, skip or finish.',code='evidence') from None
 
     unique={}
     for c in accepted:
-        key=(c.evidence_id,c.dimension,c.kind,c.subject,c.temporality,c.domain)
+        key=(c.evidence_id,c.dimension,c.kind,c.subject,c.temporality,c.domain,c.span_quote.casefold())
         unique.setdefault(key,c)
     return BaselineExtraction(interaction='substantive' if unique else source.interaction,claims=list(unique.values()))
 

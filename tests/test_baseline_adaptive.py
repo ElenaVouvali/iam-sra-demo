@@ -231,7 +231,7 @@ def test_frozen_20_and_1x_keep_original_selector_and_export_shape():
 
 def test_completed_export_has_dispositions_requirements_provenance_no_scores():
     s=new();familiarity(s);s.finish();s.complete(actor='automation');d=s.export()
-    assert d['schema_version']=='iam-baseline-2.2.0'
+    assert d['schema_version']=='iam-baseline-2.3.0'
     assert d['routing_version']=='baseline-routing-1.0.0'
     assert d['routing_stop_reason']=='user_finish'
     assert d['role_mapping']['answering_perspective']=='personal'
@@ -302,15 +302,20 @@ def test_real_detector_adaptive_registry_request_and_export(monkeypatch):
     def transport(self,http,stage,system,user,schema,validator):
         calls.append(stage)
         if stage=='readiness_evidence':
-            raw={'interaction':'substantive','claims':[claim('concept','concept_explanation',evidence_id=next(iter(user['passages'])),topic_ids=[],interpretation='You describe an aircraft without a pilot on board.')]}
+            text=next(iter(user['passages'].values()))
+            raw={'interaction':'substantive','claims':[{'evidence_id':next(iter(user['passages'])),'claim_type':'concept_explanation',
+                'span_quote':text,'interpretation':'You describe an aircraft without a pilot on board.',
+                'topic_ids':[],'subject':'respondent','domain':'not_applicable','activity_quote':'','time_quote':'',
+                'ambiguities':[],'outcome_relation':'unknown'}]}
         else:
-            raw={'decisions':[dict(candidate=0,supported=True,dimension='concept',kind='concept_explanation',topic_ids=[],reason='A supplied definition.') ]}
+            raw={'decisions':[dict(candidate=0,supported=True,claim_type='concept_explanation',topic_ids=[],reason='A supplied definition.')],
+                 'additional_claims':[]}
         return validator(json.dumps(raw))
     monkeypatch.setattr(LLMTransport,'_request',transport)
     s=new(stakeholder='researcher');familiarity(s);s.answer('An aircraft without a pilot on board.',BaselineClient());s.confirm(True)
     complete(s)
     assert calls==['readiness_evidence','readiness_grounding']
-    assert s.export()['schema_version']=='iam-baseline-2.2.0'
+    assert s.export()['schema_version']=='iam-baseline-2.3.0'
     assert s.export()['privacy_screening_enabled'] is True
 
 

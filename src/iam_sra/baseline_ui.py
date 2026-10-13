@@ -107,22 +107,23 @@ def render(s,client,developer=False):
         with st.expander('Your answer'):
             st.text(s.pending['text'])
         current_interpretation='\n'.join(dict.fromkeys(c['interpretation'] for c in s.pending['claims']))
+        revision=s.pending.get('interpretation_revision',0)
+        edit_key=f"baseline_interpretation_{s.pending['id']}_{revision}"
         if current_interpretation:
-            revision=s.pending.get('interpretation_revision',0)
-            edit_key=f"baseline_interpretation_{s.pending['id']}_{revision}"
             st.text_area('Edit our interpretation',value=current_interpretation,
                          key=edit_key,max_chars=1500,height=120)
             st.write('Your edit guides a fresh reading; your original answer stays unchanged.')
         else:
-            st.write('We could not summarize this answer yet.')
+            st.write('We could not summarize this answer yet. You can tell us what we missed, or ask us to re-read it.')
+            st.text_area('What did we miss?',value='',key=edit_key,max_chars=1500,height=120)
         st.button('Confirm and continue',type='primary',on_click=perform,args=(s.confirm,True))
         st.button('Re-read my answer',on_click=perform,
                   args=(s.correct_interpretation,
                         'Re-read the original answer. Revise your interpretation only where the answer supports it; do not add facts.',client))
-        if current_interpretation:
-            def correct():
-                perform(s.correct_interpretation,st.session_state.get(edit_key,current_interpretation),client)
-            st.button('Apply my correction',on_click=correct)
+        def correct():
+            feedback=st.session_state.get(edit_key,current_interpretation)
+            if feedback.strip():perform(s.correct_interpretation,feedback,client)
+        st.button('Apply my correction',on_click=correct,disabled=not bool(current_interpretation) and not bool(st.session_state.get(edit_key,'')))
     elif s.state=='baseline_review':
         st.subheader('Check your summary')
         summary()

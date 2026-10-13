@@ -209,6 +209,9 @@ def test_artifacts_are_separately_screened_versioned_and_hash_linked(tmp_path):
     path=Path(index['case_reports_directory'])/'novice_early_stop.json'
     artifact=json.loads(path.read_text())
     assert artifact['run_id']==data['run_id'] and artifact['phases']
+    # Stable expectation IDs join the versioned bank; author-written expected
+    # prose is not duplicated as respondent/session content.
+    assert all('meaning' not in e for p in artifact['phases'] for e in p.get('extraction',[]))
     assert index['cases'][0]['artifact_sha256']==file_hash(path)
     next_data=report(b,BANK,[case('novice_early_stop')],MockBaselineClient,True)
     next_index=write_report(next_data,output)
@@ -223,7 +226,10 @@ def test_unsafe_case_artifact_is_withheld_and_cannot_claim_export_success(tmp_pa
     assert index['artifact_status']=='incomplete'
     assert index['cases'][0]['artifact_status']=='withheld'
     assert '1234' not in json.dumps(index)
-    assert not list(Path(index['case_reports_directory']).glob('*.json'))
+    assert index['cases'][0]['failure_record_status']=='written'
+    failure=next(Path(index['case_reports_directory']).glob('*.failure.json'))
+    assert '1234' not in failure.read_text()
+    assert not list(Path(index['case_reports_directory']).glob('novice_early_stop.json'))
 
 
 def test_probe_cannot_override_an_explicit_topic_skip():

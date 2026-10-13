@@ -253,6 +253,14 @@ def test_real_detector_allows_fn_extraction_and_grounding_envelopes(monkeypatch)
 
 
 @pytest.mark.presidio_live
+def test_real_detector_does_not_treat_van_trip_phrase_as_a_person():
+    pytest.importorskip('presidio_analyzer');pytest.importorskip('en_core_web_sm')
+    from iam_sra.privacy import require_clean
+    text='Deliveries could replace van trips and reduce the time needed for urgent transport.'
+    assert require_clean(text)==text
+
+
+@pytest.mark.presidio_live
 def test_all_meeting_cases_real_privacy_end_to_end_with_controlled_extractor():
     pytest.importorskip('presidio_analyzer')
     pytest.importorskip('en_core_web_sm')
@@ -274,6 +282,17 @@ def test_all_meeting_cases_real_privacy_end_to_end_with_controlled_extractor():
 def test_json_wrapping_cannot_hide_secret_or_contact():
     with pytest.raises(PrivacyError):require_safe_data({'content':json.dumps({'password':'synthetic-secret-xyz'})})
     with pytest.raises(PrivacyError):require_safe_data({'content':json.dumps({'interpretation':'Contact alice@example.com'})})
+
+
+@pytest.mark.presidio_live
+def test_only_generated_source_hashes_are_exempt_from_name_recognition():
+    pytest.importorskip('presidio_analyzer');pytest.importorskip('en_core_web_sm')
+    # This safe synthetic source hash is currently misread as PERSON by the
+    # installed spaCy detector when it appears outside trusted provenance.
+    digest='e9e634898af7df7576dcde7e4fac7b7c5d2ac7f3e6c45e94306341861481f13a'
+    require_safe_data({'provenance':{'file_sha256':{'src/iam_sra/baseline_benchmark.py':digest},
+                                     'code_snapshot_sha256':digest}})
+    with pytest.raises(PrivacyError):require_safe_data({'answer':digest})
 
 
 @pytest.mark.presidio_live

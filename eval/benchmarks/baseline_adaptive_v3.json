@@ -1,15 +1,15 @@
 {
   "schema_version": "adaptive-benchmark-2.0.0",
-  "benchmark_version": "baseline-adaptive-3.0.0",
+  "benchmark_version": "baseline-adaptive-3.1.0",
   "historical_baseline": {
     "path": "eval/benchmarks/baseline_seed_v1.json",
     "sha256": "b35c306764ede2b67f276b68f43addabf564f44dcb2849b3683819cdb415dbcb"
   },
   "supersedes": "baseline-adaptive-2.0.0",
-  "target_instrument": "baseline-2.2.0",
-  "target_schema": "iam-baseline-2.2.0",
+  "target_instrument": "baseline-2.3.0",
+  "target_schema": "iam-baseline-2.3.0",
   "target_routing": "baseline-routing-1.0.0",
-  "target_config_sha256": "d933d98294740e94dc0db8dc59e2e4ce7945c73a91cea2ad85d636eb5e661785",
+  "target_config_sha256": "83d231817f08acd961dece26ad2054308da96d3850c43720700bda520c4ef490",
   "status": "synthetic authored expectations; semantic review pending",
   "evaluation_protocol": {
     "confirmations": "automation; not citizen validation",

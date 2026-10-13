@@ -21,7 +21,8 @@ class BaselineSession:
         if 'routing' in self.instrument:
             from .baseline_routing import validate_registry
             validate_registry(self.instrument)
-        self.prompts={k:(ROOT/f'prompts/baseline-{k}.txt').read_text() for k in ['evidence','grounding']}
+        suffix='' if self.instrument.get('canonical_claim_contract') else '-v2.2'
+        self.prompts={k:(ROOT/f'prompts/baseline-{k}{suffix}.txt').read_text() for k in ['evidence','grounding']}
         self.prompt_version=self.instrument['prompt_version']
         self.prompt_hashes={k:sha256(v.encode()).hexdigest() for k,v in self.prompts.items()}
         self.respondent=None;self.context_history=[];self.events=[];self.evidence={};self.pending=None
@@ -132,6 +133,8 @@ class BaselineSession:
                'control':control,'interaction':interaction,'claims':claims,'confirmed':False,'active':True,
                'context':'general_baseline','scenario_id':None,'information_context':information_context,
                'created_at':datetime.now(timezone.utc).isoformat(),'replaces':self._editing}
+        if self.instrument.get('canonical_claim_contract') and control=='answer' and q['id']!='familiarity':
+            event['interpretation_status']='reviewed_claims' if claims else 'no_supported_claims_after_independent_review'
         if 'routing' in self.instrument:
             event.update(relevance_status='current',answering_perspective=self.respondent['perspective'])
             from .baseline_routing import evidence_status
@@ -166,6 +169,8 @@ class BaselineSession:
             if c.dimension not in self.instrument['dimensions']:
                 raise AssessmentError('The interpretation used a category outside this session version.',code='evidence')
             row=c.model_dump()
+            if not self.instrument.get('canonical_claim_contract'):
+                row.pop('span_quote',None)
             row['status']='explicit_absence' if c.kind=='absence' else 'unknown' if c.kind=='unknown' else 'supported'
             if 'routing' in self.instrument:
                 from .baseline_routing import evidence_status

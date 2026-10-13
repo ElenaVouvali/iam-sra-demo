@@ -1,8 +1,10 @@
 # Adaptive baseline benchmark
 
 The current executable bank is `eval/benchmarks/baseline_adaptive_v3.json`
-(`baseline-adaptive-3.0.0`), targeting instrument `baseline-2.2.0`, export
-`iam-baseline-2.2.0` and routing `baseline-routing-1.0.0`. Its recorded configuration
+(`baseline-adaptive-3.1.0`), targeting instrument `baseline-2.3.0`, export
+`iam-baseline-2.3.0` and routing `baseline-routing-1.0.0`. Version 3.1 changes only
+the target instrument/schema/configuration hash; the authored cases and expectations
+are unchanged. Its recorded configuration
 hash must match the current instrument; a mismatch produces
 `incompatible_benchmark`, not a run against silently changed criteria.
 
@@ -169,3 +171,9 @@ respondent answers were not changed by that metadata fix.
   model host and review each phase before publishing benchmark performance.
 
 The v1/v2 banks remain historical and unchanged. The current instrument and review changes are described in [dynamic interview review](dynamic-interview-review.md).
+
+## Reliability update (instrument 2.3)
+
+The extraction/review contract uses one constrained `claim_type` enum instead of asking the model for independent dimension/kind/time labels. The server maps these types to the existing internal labels and checks every `span_quote`, activity quote and time quote against its cited answer passage. The grounding pass also checks up to three omitted substantive claims, including when the first extraction is empty. These are bounded model-assisted checks, not independent semantic proof; citizen confirmation and human benchmark review remain necessary.
+
+Each benchmark turn stores safe inference settings and request diagnostics. Privacy failures can retain field path, entity type, recognizer and confidence without matched text or offsets. If a case export is withheld, the runner may write a separately screened `.failure.json` with status metadata only; it never writes the prohibited case export or rejected raw output.

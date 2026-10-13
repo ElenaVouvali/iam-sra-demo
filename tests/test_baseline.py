@@ -6,6 +6,7 @@ from iam_sra.baseline import BaselineExtraction, BaselineClaim, BaselineReview, 
 from iam_sra.baseline_session import BaselineSession
 from iam_sra.baseline_client import BaselineClient
 from iam_sra.privacy import PrivacyError
+from iam_sra.assessment import AssessmentError
 
 
 def claim(dimension='understanding',kind='explained_impact',**updates):
@@ -320,7 +321,8 @@ def test_review_cannot_turn_reasoning_into_actual_contribution():
     source=BaselineExtraction(interaction='substantive',claims=[BaselineClaim.model_validate(claim(evidence_id='B1.p001'))])
     review=BaselineReview.model_validate({'decisions':[dict(candidate=0,supported=True,
         dimension='participation',kind='contribution',topic_ids=[],interpretation='You contributed.',reason='Incorrect classification.')]})
-    assert not reviewed(source,review).claims
+    with pytest.raises(AssessmentError,match='remained inconsistent'):
+        reviewed(source,review)
 
 
 def test_free_text_unsure_remains_visible_in_coverage():
