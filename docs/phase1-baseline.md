@@ -1,4 +1,12 @@
-# General interview: baseline-2.0.0
+# Current general interview: baseline-2.1.0
+
+New sessions now use the [role-aware adaptive interview](baseline-adaptive-interview.md),
+with explicit evidence requirements and interleaved clarifications. See that document
+for the current registry, routing rules, source mapping, tests and commands.
+The 2.0 implementation notes below describe the preserved earlier instrument;
+its core-first routing is **not** the policy for new 2.1 sessions.
+
+# Previous instrument: baseline-2.0.0
 
 This replaces the current 1.x instrument for **new sessions only**. Work started
 from local commit `fa0262f`; the working tree was clean, and no AGENTS.md was found

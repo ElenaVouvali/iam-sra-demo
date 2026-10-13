@@ -196,7 +196,7 @@ class ReadinessSession:
         return next_question(self.current_profile, self.answers, self.question_budget, self.instrument)
 
     @guarded('text')
-    def _extract(self, text, client, *, kind, criterion=None, question=None, context='original', control='answer'):
+    def _extract(self, text, client, *, kind, criterion=None, question=None, context='original', control='answer', feedback=None):
         check_input(text)
         self.draft_text = text  # Retained even if model or validation fails.
         event_id = 'R' + str(self.version + 1) + '_' + str(len(self.events) + 1)
@@ -208,7 +208,8 @@ class ReadinessSession:
         if getattr(self, 'information_exposures', []): elicitation = 'after_information_exposure'
         try:
             result = client.extract_readiness(evidence, elicitation=elicitation, context=context, version=self.version + 1,
-                question=question['question_text'] if question else None, existing=self.current_profile['records'])
+                question=question['question_text'] if question else None, existing=self.current_profile['records'],
+                **({'interpretation_feedback':feedback} if feedback is not None else {}))
             require_safe_data(result)
             # Doubles and alternative clients pass through the same checks.
             result = validate_extraction(result.model_dump(), evidence, elicitation, context, self.version + 1)
@@ -238,6 +239,36 @@ class ReadinessSession:
             context=pending['context'], control=pending['control'])
 
     @guarded('text')
+    def correct_interpretation(self,text,client):
+        if self.state!='review' or not self.pending:raise ValueError('Review an interpretation first.')
+        if not text.strip() or len(text)>1500:raise ValueError('Describe what was misunderstood in at most 1,500 characters.')
+        previous=deepcopy(self.pending)
+        try:
+            self._extract(previous['text'],client,kind=previous['kind'],criterion=previous['criterion_id'],
+                question=previous['question'],context=previous['context'],control=previous['control'],feedback=text)
+            self.pending['interpretation_revision']=previous.get('interpretation_revision',0)+1
+            audit={'event_id':self.pending['id'],'revision':self.pending['interpretation_revision'],'confirmed':False,'feedback':text,'original_answer_unchanged':True,
+                'previous_records':previous['records'],'revised_records':deepcopy(self.pending['records'])}
+            require_safe_data(audit)
+        except Exception:
+            self.pending=previous;self.state='review'
+            raise
+        if not hasattr(self,'interpretation_reviews'):self.interpretation_reviews=[]
+        self.interpretation_reviews.append(audit)
+
+    @guarded()
+    def back(self):
+        if self.state=='review' and self.pending:
+            event=deepcopy(self.pending);self.pending=None;self._editing=event;self.draft_text=event['text']
+            self.state='answer' if event['kind']=='initial' else 'correction'
+            return event['text']
+        if self.state not in {'interview','correction','final'}:raise ValueError('No previous answer is available.')
+        event=next((e for e in reversed(self.events) if e['active'] and e['context']=='original'),None)
+        if event is None:raise ValueError('No previous answer is available.')
+        self.edit_answer(event['id'])
+        return event['text']
+
+    @guarded('text')
     def submit(self, text, client):
         if self.state != 'answer': raise ValueError('Submit a first answer only on the answer page.')
         self._extract(text, client, kind='initial')
@@ -252,6 +283,8 @@ class ReadinessSession:
     def confirm(self, agreed):
         if not agreed or self.pending is None: raise ValueError('Confirm the interpretation before continuing.')
         event = deepcopy(self.pending)
+        for review in getattr(self,'interpretation_reviews',[]):
+            if review['event_id']==event['id']:review['confirmed']=review['revision']==event.get('interpretation_revision')
         if (event.get('question') or {}).get('id') == getattr(self, 'information_module', config('readiness_information'))['understanding_check']['id']:
             self.learning_pending = False
         for record in event['records']: record['confirmation_status'] = 'confirmed'
@@ -365,6 +398,7 @@ class ReadinessSession:
                 'numerical_srl': None, 'reason': self.numerical_policy['unavailable_reason']},
             'numerical_crl': None, 'numerical_srl': None,
             'provisional_workbook_score': current_score(self),
+            **({'interpretation_reviews':deepcopy(self.interpretation_reviews)} if getattr(self,'interpretation_reviews',[]) else {}),
             'question_budget': self.question_budget, 'stop_reason': self.stop_reason,
             'questions_and_answers': deepcopy(self.events), 'pending_interpretation': deepcopy(self.pending),
             'information_exposures': deepcopy(getattr(self, 'information_exposures', [])),

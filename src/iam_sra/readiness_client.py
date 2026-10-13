@@ -11,7 +11,7 @@ from .assessment import AssessmentError
 class ReadinessClient(ConversationClient):
     prompt_version = 'readiness-1.3.4'
 
-    def extract_readiness(self, evidence, *, elicitation='initial_answer', context='original', version=1, question=None, existing=()):
+    def extract_readiness(self, evidence, *, elicitation='initial_answer', context='original', version=1, question=None, existing=(), interpretation_feedback=None):
         with _LOCK:
             self._start()
             self.last_settings['readiness_protocol_version'] = '3.1.0'
@@ -32,6 +32,7 @@ class ReadinessClient(ConversationClient):
             payload = {'question':question, 'context':context, 'elicitation':elicitation,
                        'citizen_passages':{k:v.text for k,v in evidence.items()},
                        'instrument_version':config('readiness')['version']}
+            if interpretation_feedback is not None:payload['interpretation_feedback']=interpretation_feedback
             try:
                 with httpx.Client(timeout=180, trust_env=False) as http:
                     source = self._request(http, 'readiness_evidence', (ROOT/'prompts/readiness-evidence.txt').read_text(),

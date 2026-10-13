@@ -13,12 +13,14 @@ def user_error(exc):
     if code=='interpretation':
         return 'The model could not complete your interpretation. Your answer is retained. Please retry the same answer; you do not need to rewrite it.'
     reasons={
-        'transport':'The model service could not be reached or did not complete the request.',
-        'timeout':'The model exceeded the time limit for this step.',
-        'schema':'The model response did not match the required answer format.',
-        'truncated':'The model response stopped before it was complete.',
-        'thinking':'The model returned reasoning text instead of the required answer format.',
+        'transport':'The model service is unavailable. Please try again after it restarts.',
+        'timeout':'The model took too long to reply. Please try again.',
+        'schema':'We could not finish interpreting your answer. Please try again.',
+        'truncated':'The interpretation was incomplete. Please try again.',
+        'thinking':'We could not finish interpreting your answer. Please try again.',
     }
+    reasons['service_busy']='The model is busy. Please try again shortly.'
+    reasons['service_request']='The model service could not process this request. Your answer does not need reformatting.'
     if code in reasons:
-        return reasons[code]+' Your answers and any saved confirmation are retained. Please retry this step.'
+        return reasons[code]+' Your text and saved answers are unchanged.'
     return 'We could not complete this step. Your draft and saved answers are retained. Please retry; if this persists, check the developer diagnostics.'

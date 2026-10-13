@@ -26,7 +26,7 @@ def render(session, client, developer=False):
         st.session_state.pop('readiness_error', None)
         st.session_state.pop('readiness_failure_details', None)
         try:
-            with st.spinner('Reading your answer…'): invoke(action, *args)
+            with st.spinner('Reading your answer…'): return invoke(action, *args)
         except (AssessmentError, ValueError) as exc:
             code = getattr(exc, 'code', 'validation')
             detail = {'error_code': code, 'message': safe_message(exc), 'exception_type': type(exc).__name__,
@@ -56,16 +56,6 @@ def render(session, client, developer=False):
                 download_button('Download failure details', json.dumps(details, indent=2), file_name='iam-readiness-failure.json', mime='application/json')
 
     preview_control(perform)
-
-    def edit_answers():
-        with st.expander('Edit an earlier answer'):
-            for e in s.events:
-                if e['active']:
-                    def edit(event=e):
-                        perform(s.edit_answer, event['id'])
-                        st.session_state['readiness_answer'] = event['text']
-                    label = 'Your first answer' if e['kind'] == 'initial' else e['question']['question_text']
-                    st.button(label, key='edit_' + e['id'], on_click=edit)
 
     def learning_option():
         from .readiness_retrieval import corpus, ExplanationClient
@@ -153,8 +143,7 @@ def render(session, client, developer=False):
             with st.form('correct_pending'):
                 correction_key = 'readiness_correction_' + str(pending['version'])
                 st.text_area('Tell us what to correct', key=correction_key)
-                st.form_submit_button('Save correction', on_click=lambda: perform(s.correct, st.session_state.get(correction_key, ''), client))
-        edit_answers()
+                st.form_submit_button('Save correction', on_click=lambda: perform(s.correct_interpretation, st.session_state.get(correction_key, ''), client))
     elif s.state == 'correction':
         st.subheader('Correct your earlier answer')
         with st.container(key='iam_accent'):
@@ -166,7 +155,7 @@ def render(session, client, developer=False):
         if q is None:
             s.finish('sufficient_evidence_or_no_eligible_questions'); st.rerun()
         st.subheader('A few questions about your experience')
-        st.caption(f'Question {len(s.answers) + 1} of at most {s.question_budget} · Interview progress, not a readiness rating')
+        st.caption(f'Question {len(s.answers) + 1}')
         st.write(q['question_text'])
         with st.container(key='iam_accent'):
             with st.form('readiness_' + q['id']):
@@ -176,7 +165,6 @@ def render(session, client, developer=False):
         st.button('Skip', on_click=perform, args=(s.skip,))
         st.button('Finish questions', on_click=perform, args=(s.finish,))
         learning_option()
-        edit_answers()
     else:
         from .readiness_score import current_score, assign_score, WorkbookScoreClient
         def show_score():
@@ -232,7 +220,6 @@ def render(session, client, developer=False):
             if item['status'] in gaps: st.write(gaps[item['status']])
         st.info(result['note'])
         learning_option()
-        edit_answers()
         with st.expander('Optional: explore changes to the proposal'):
             st.caption('Hypothetical changes; feasibility is unverified. These choices do not establish readiness or acceptance of all changes together.')
             facets = [f for f in original.get('concern_facets', []) if f in config('updates')['mitigations']]
@@ -272,4 +259,9 @@ def render(session, client, developer=False):
             st.json({'assessment_mode': s.assessment_mode, 'inference': s.inference, 'last_error': st.session_state.get('readiness_diagnostic')})
             if s.final_readiness:
                 st.json({'coverage': s.final_readiness['criterion_coverage'], 'changes': s.export()['readiness_changes'], 'stop_reason': s.stop_reason})
+    if s.state in {'review','interview','correction','final'}:
+        def back():
+            text=perform(s.back)
+            if text is not None:st.session_state.readiness_answer=text
+        st.button('Back',on_click=back)
     footer()

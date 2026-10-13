@@ -8,7 +8,13 @@ from iam_sra.privacy import PrivacyError, require_clean
 from test_baseline import Extractor, claim, answer, familiarity, complete, start
 
 
-def new(**kw):return start(current=True,**kw)
+def new(**kw):
+    # Keep the frozen 2.0 selector under regression after introducing 2.1.
+    from iam_sra.settings import ROOT
+    s=start(current=True,**kw)
+    s.instrument=deepcopy(json.loads((ROOT/'eval/baseline_v2_sample.json').read_text())['instrument'])
+    s.prompt_version=s.instrument['prompt_version']
+    return s
 
 
 def until(s,target):

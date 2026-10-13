@@ -23,12 +23,14 @@ class BaselineClaim(Strict):
     dimension: Dimension
     kind: Kind
     interpretation: str = Field(min_length=1,max_length=240)
-    topic_ids: list[ConcernID] = Field(max_length=3)
+    topic_ids: list[ConcernID] = Field(default_factory=list,max_length=3)
     subject: Literal['respondent','organisation','other','unknown']
     temporality: Literal['actual','intention','not_applicable','unknown']
     domain: Literal['IAM','transferable','unknown','not_applicable']
-    activity_quote: str = Field(max_length=160)
-    time_quote: str = Field(max_length=100)
+    activity_quote: str = Field(default='',max_length=160)
+    time_quote: str = Field(default='',max_length=100)
+    ambiguities: list[Literal['subject','activity','time','meaning','contradiction']] = Field(default_factory=list,max_length=3)
+    outcome_relation: Literal['unknown','reported_link','sequence_only'] = 'unknown'
 
     @model_validator(mode='after')
     def compatible(self):
@@ -48,9 +50,15 @@ class BaselineDecision(Strict):
     supported: bool
     dimension: Dimension
     kind: Kind
-    topic_ids: list[ConcernID] = Field(max_length=3)
-    reason: str = Field(max_length=100)
+    topic_ids: list[ConcernID] = Field(default_factory=list,max_length=3)
+    reason: str = Field(default='',max_length=160)
     interpretation: str | None = Field(default=None,min_length=1,max_length=240)
+    ambiguities: list[Literal['subject','activity','time','meaning','contradiction']] | None = Field(default=None,max_length=3)
+    outcome_relation: Literal['unknown','reported_link','sequence_only'] | None = None
+
+    subject: Literal['respondent','organisation','other','unknown'] | None = None
+    temporality: Literal['actual','intention','not_applicable','unknown'] | None = None
+    domain: Literal['IAM','transferable','unknown','not_applicable'] | None = None
 
 class BaselineReview(Strict):
     decisions: list[BaselineDecision] = Field(max_length=6)
@@ -73,20 +81,28 @@ def reviewed(source, review):
     for d in review.decisions:
         c=source.claims[d.candidate]
         if not d.supported: continue
-        same = d.dimension == c.dimension and d.kind == c.kind
+        same = d.dimension == c.dimension and d.kind == c.kind and all(getattr(d,f) is None or getattr(d,f)==getattr(c,f) for f in ('subject','temporality','domain'))
         # A reviewer may correct classification only with an explicit reviewed meaning.
         if not same and not d.interpretation: continue
         data=c.model_dump()
         data.update(dimension=d.dimension,kind=d.kind,
                     interpretation=d.interpretation or c.interpretation,
                     topic_ids=sorted(set(c.topic_ids)&set(d.topic_ids)))
+        for field in ('subject','temporality','domain'):
+            if getattr(d,field) is not None:data[field]=getattr(d,field)
+        if d.ambiguities is not None:data['ambiguities']=d.ambiguities
+        if d.outcome_relation is not None:data['outcome_relation']=d.outcome_relation
         try: accepted.append(BaselineClaim.model_validate(data))
         except ValidationError: continue  # Never turn reasoning into actual experience.
 
-    return BaselineExtraction(interaction='substantive' if accepted else source.interaction,claims=accepted)
+    unique={}
+    for c in accepted:
+        key=(c.evidence_id,c.dimension,c.kind,c.subject,c.temporality,c.domain)
+        unique.setdefault(key,c)
+    return BaselineExtraction(interaction='substantive' if unique else source.interaction,claims=list(unique.values()))
 
 
-def profile(events, instrument):
+def profile(events, instrument, respondent=None):
     claims=[deepcopy(c) for e in events if e['active'] and e['confirmed'] for c in e['claims']]
     coverage={}
     for dim in instrument['dimensions']:
@@ -100,7 +116,11 @@ def profile(events, instrument):
                 'explicit_absence' if neg else 'unknown' if any(c['status']=='unknown' for c in rows) or 'unsure' in controls else
                 'declined' if 'decline' in controls else 'skipped' if 'skip' in controls else 'unclear' if asked else 'not_asked')
         coverage[dim]={'status':status,'asked':asked,'evidence_ids':[c['evidence_id'] for c in rows]}
-    return {'claims':claims,'coverage':coverage,'unresolved_scope':[d for d,v in coverage.items() if v['status']=='scope_unclear']}
+    result={'claims':claims,'coverage':coverage,'unresolved_scope':[d for d,v in coverage.items() if v['status']=='scope_unclear']}
+    if 'routing' in instrument:
+        from .baseline_routing import enrich_profile
+        enrich_profile(result,events,instrument,respondent)
+    return result
 
 
 def _legacy_select_question(events, instrument, respondent):
@@ -148,6 +168,9 @@ def _legacy_select_question(events, instrument, respondent):
 
 def selection_plan(events, instrument, respondent):
     """Pure deterministic routing, including auditable omissions; no score or stance."""
+    if 'routing' in instrument:
+        from .baseline_routing import adaptive_plan
+        return adaptive_plan(events,instrument,respondent)
     if 'maximum_questions' not in instrument:
         return _legacy_select_question(events,instrument,respondent), []
     active=[e for e in events if e['active'] and e['confirmed']]

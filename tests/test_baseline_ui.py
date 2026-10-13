@@ -51,7 +51,7 @@ def test_org_optional_fields_edit_and_pending_specialised_route(monkeypatch):
     app.text_input(key='baseline_function_text').set_value('Service planning')
     click(app,'Begin');click(app,'Finish now');click(app,'Confirm summary')
     assert not any(b.label=='Explore a hospital drone route' for b in app.button)
-    click(app,'Edit perspective or city')
+    click(app,'Back');click(app,'Back')
     assert app.session_state.session.state=='context'
     assert app.session_state.session.completed_baseline is None
 
@@ -84,10 +84,11 @@ def test_pending_correction_uses_same_prompt_and_does_not_confirm_automatically(
     app.text_area(key='baseline_answer_text').set_value('I am unsure.');click(app,'Continue')
     before=app.session_state.session.prompt_hashes.copy()
     app.text_area(key='baseline_correction_text_'+app.session_state.session.pending['id']).set_value('I have not formed an understanding yet.')
-    click(app,'Review correction')
+    click(app,'Review revised interpretation')
     assert app.session_state.session.state=='review' and app.session_state.session.prompt_hashes==before
     click(app,'Confirm and continue')
-    assert app.session_state.session.events[-1]['text']=='I have not formed an understanding yet.'
+    assert app.session_state.session.events[-1]['text']=='I am unsure.'
+    assert app.session_state.session.interpretation_reviews[-1]['feedback']=='I have not formed an understanding yet.'
 
 
 def test_no_small_notes_supporting_words_or_phase_labels(monkeypatch):
@@ -108,7 +109,7 @@ def test_welcome_title_eight_budget_and_explicit_definition_display(monkeypatch)
     assert app.title[0].value=='Drones in your community'
     assert any('No technical knowledge is needed' in x.value for x in app.markdown)
     click(app,'Begin');app.radio(key='baseline_familiarity').set_value('no');click(app,'Continue')
-    assert any('at most 8' in x.value for x in app.markdown)
+    assert not any('up to 8' in x.value for x in app.markdown)
     assert not app.session_state.session.information_exposures
     assert not any('without a person on board' in x.value for x in app.text)
     click(app,'Show definition')
@@ -178,3 +179,26 @@ def test_address_only_answer_requests_resubmission_without_consuming_question(mo
     assert app.text_area(key='baseline_answer_text').value==''
     app.text_area(key='baseline_answer_text').set_value('An aircraft without a pilot on board.');click(app,'Continue')
     assert app.session_state.session.state=='review'
+
+
+def test_organisational_role_variant_and_interleaved_outcome_journey(monkeypatch):
+    client=Extractor([claim('participation','contribution',subject='organisation',temporality='actual',domain='IAM',topic_ids=[],interpretation='Your team submitted consultation comments.')])
+    app=start(monkeypatch,client)
+    app.selectbox(key='baseline_perspective').select('organisation').run()
+    app.selectbox(key='baseline_stakeholder_category').select('authority').run()
+    click(app,'Begin')
+    app.radio(key='baseline_familiarity').set_value('little');click(app,'Continue')
+    while app.session_state.session.current_question['id']!='experience':click(app,'Skip')
+    assert any('Has your authority considered' in e.value for e in app.markdown)
+    app.text_area(key='baseline_answer_text').set_value('Our team submitted consultation comments.');click(app,'Continue')
+    assert app.session_state.session.state=='review'
+    click(app,'Confirm and continue')
+    assert app.session_state.session.current_question['id']=='influence'
+    click(app,'Unsure')
+    assert app.session_state.session.current_question['id']=='needs'
+    click(app,'Skip');click(app,'Skip');click(app,'Confirm summary')
+    data=app.session_state.session.export()
+    assert data['role_mapping']['mapped_role']=='authority'
+    assert data['current_profile']['coverage']['influence']['status']=='unknown'
+    assert data['numerical_orl'] is None
+    assert len(app.get('download_button'))==2

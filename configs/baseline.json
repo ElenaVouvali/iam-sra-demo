@@ -1,5 +1,5 @@
 {
-  "version": "baseline-2.0.0",
+  "version": "baseline-2.2.0",
   "review_status": "draft_pending_FN",
   "approved_by": null,
   "locale": "en",
@@ -49,7 +49,39 @@
       "covers": [
         "familiarity"
       ],
-      "rule_id": "core_familiarity"
+      "rule_id": "core_familiarity",
+      "target_requirement": "familiarity_self_report",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "none",
+      "priority": 10,
+      "source_reference": "Workbook SRA IAM indicators!D15/I15",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "selection",
+      "variants": {
+        "personal": "Before today, how familiar were you with drones?",
+        "organisation": "Before today, how familiar were you with drones?"
+      }
     },
     {
       "id": "concept",
@@ -60,7 +92,39 @@
       "covers": [
         "concept"
       ],
-      "rule_id": "core_concept"
+      "rule_id": "core_concept",
+      "target_requirement": "concept_definition",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "none",
+      "priority": 20,
+      "source_reference": "Workbook SRA IAM indicators!D16/I16",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "In your own words, what is a drone?",
+        "organisation": "In your own words, what is a drone?"
+      }
     },
     {
       "id": "delivery",
@@ -71,7 +135,39 @@
       "covers": [
         "delivery"
       ],
-      "rule_id": "core_delivery"
+      "rule_id": "core_delivery",
+      "target_requirement": "delivery_use",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "none",
+      "priority": 30,
+      "source_reference": "Workbook SRA IAM indicators!D15/I15,D16/I16",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "What have you heard about drones carrying goods, if anything?",
+        "organisation": "What have you heard about drones carrying goods, if anything?"
+      }
     },
     {
       "id": "understanding",
@@ -83,7 +179,39 @@
         "understanding"
       ],
       "rule_id": "core_understanding",
-      "optional_clarification": "You can mention helpful changes, difficulties, or no change."
+      "optional_clarification": "You can mention helpful changes, difficulties, or no change.",
+      "target_requirement": "effect_reasoning",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "none",
+      "priority": 40,
+      "source_reference": "Workbook SRA IAM indicators!D8/I8,D16/I16",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "What difference, if any, could these deliveries make to people or local services?",
+        "organisation": "What difference, if any, could these deliveries make to people or local services?"
+      }
     },
     {
       "id": "experience",
@@ -96,7 +224,46 @@
         "participation"
       ],
       "rule_id": "core_experience",
-      "when_exposure_already_reported": "You mentioned an earlier activity. What did you do or contribute during it, if anything?"
+      "when_exposure_already_reported": "You mentioned an earlier activity. What did you do or contribute during it, if anything?",
+      "target_requirement": "experience_context",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "none",
+      "priority": 50,
+      "source_reference": "Workbook Read me!L8:L13; SRA IAM indicators!D16/I16",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "Before this session, have you had any direct experience, learning or involvement related to delivery drones? If yes, briefly describe what you did.",
+        "organisation": "Before this session, what experience or involvement have you had with delivery drones? Describe what you did, or an activity of the organisation you represent, and say which you mean.",
+        "organisation_authority": "Has your authority considered delivery drones in its planning? If so, what actions have been taken, and what did you do?",
+        "organisation_planning": "Has your organisation considered delivery drones in planning or design work? If so, what was done, and what did you do?",
+        "organisation_research": "Has your organisation researched or evaluated delivery drones? If so, what was done, and what did you do?",
+        "organisation_operations": "Has your organisation tested, operated, developed or evaluated drone deliveries? If so, what was done, and what did you do?",
+        "organisation_regulatory": "Has your organisation reviewed delivery drones or taken part in a related regulatory consultation? If so, what was done, and what did you do?",
+        "organisation_community": "Has your organisation discussed delivery drones or contributed community views? If so, what was done, and what did you do?",
+        "organisation_neutral": "Before this session, what experience or involvement have you had with delivery drones? Describe what you did, or an activity of the organisation you represent, and say which you mean."
+      }
     },
     {
       "id": "needs",
@@ -107,7 +274,39 @@
       "covers": [
         "information"
       ],
-      "rule_id": "core_needs"
+      "rule_id": "core_needs",
+      "target_requirement": "information_need",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "none",
+      "priority": 60,
+      "source_reference": "Workbook SRA IAM indicators!D15/I15,D16/I16",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "What would you like to know more about?",
+        "organisation": "What would you like to know more about?"
+      }
     },
     {
       "id": "opportunity",
@@ -118,7 +317,39 @@
       "covers": [
         "opportunity"
       ],
-      "rule_id": "core_opportunity"
+      "rule_id": "core_opportunity",
+      "target_requirement": "participation_access",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "none",
+      "priority": 70,
+      "source_reference": "Workbook SRA IAM indicators!D15/I15",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "What would help you take part in discussions or decisions about delivery drones?",
+        "organisation": "What would help you or the organisation you represent take part in discussions or decisions about delivery drones? Say which you mean."
+      }
     }
   ],
   "probes": [
@@ -128,7 +359,45 @@
       "text": "Are these statements about the same activity and period, or different experiences? You can say if you are unsure.",
       "rule_id": "ambiguous_scope",
       "priority": 1,
-      "eligibility": "positive_and_absence_scope_unresolved"
+      "eligibility": "material_ambiguity",
+      "target_requirement": "scope_resolution",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [
+        "confirmed_active_evidence"
+      ],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "material_ambiguity",
+      "source_reference": "User meeting direction; authored clarification",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "Are these statements about the same activity and period, or different experiences? You can say if you are unsure.",
+        "organisation": "Are these statements about the same activity and period, or different experiences? You can say if you are unsure.",
+        "subject": "Are you describing something you did, something your organisation did, or someone else’s experience?",
+        "activity": "Which activity are you referring to, and what did you do?",
+        "time": "When did this happen? Are you referring to the same period or different experiences?",
+        "meaning": "Could you clarify what you mean, or say if you are unsure?",
+        "contradiction": "Are these statements about the same activity and period, or different experiences? You can say if you are unsure."
+      }
     },
     {
       "id": "reasoning",
@@ -136,7 +405,40 @@
       "text": "Can you explain why that effect might occur?",
       "rule_id": "understanding_detail",
       "priority": 2,
-      "eligibility": "understanding_claim_without_reason"
+      "eligibility": "understanding_claim_without_reason",
+      "target_requirement": "effect_reasoning",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [
+        "confirmed_active_evidence"
+      ],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "understanding_claim_without_reason",
+      "source_reference": "Workbook SRA IAM indicators!I8,I16",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "Can you explain why that effect might occur?",
+        "organisation": "Can you explain why that effect might occur?"
+      }
     },
     {
       "id": "contribution",
@@ -144,7 +446,40 @@
       "text": "What did you do or contribute during that activity, if anything?",
       "rule_id": "exposure_contribution_unknown",
       "priority": 3,
-      "eligibility": "actual_exposure_without_contribution_evidence"
+      "eligibility": "actual_exposure_without_contribution_evidence",
+      "target_requirement": "actual_contribution",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [
+        "confirmed_active_evidence"
+      ],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "actual_exposure_without_contribution_evidence",
+      "source_reference": "Workbook SRA IAM indicators!I16",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "What did you do or contribute during that activity, if anything?",
+        "organisation": "What did you do or contribute during that activity, if anything?"
+      }
     },
     {
       "id": "domain",
@@ -152,7 +487,40 @@
       "text": "Were those experiences about drones or another service?",
       "rule_id": "actual_experience_domain_unknown",
       "priority": 4,
-      "eligibility": "actual_experience_unknown_domain"
+      "eligibility": "actual_experience_unknown_domain",
+      "target_requirement": "experience_domain",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [
+        "confirmed_active_evidence"
+      ],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "actual_experience_unknown_domain",
+      "source_reference": "User meeting direction; authored clarification",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "Were those experiences about drones or another service?",
+        "organisation": "Were those experiences about drones or another service?"
+      }
     },
     {
       "id": "influence",
@@ -160,7 +528,40 @@
       "text": "Do you know whether anything changed following your contribution?",
       "rule_id": "contribution_outcome_unknown",
       "priority": 5,
-      "eligibility": "actual_contribution_without_outcome"
+      "eligibility": "actual_contribution_without_outcome",
+      "target_requirement": "reported_outcome",
+      "applicable_perspectives": [
+        "personal",
+        "organisation",
+        "withheld"
+      ],
+      "applicable_roles": [
+        "authority",
+        "planning",
+        "logistics",
+        "citizen",
+        "researcher",
+        "regulator",
+        "aviation",
+        "technology",
+        "other",
+        "withheld"
+      ],
+      "prerequisites": [
+        "confirmed_active_evidence"
+      ],
+      "completion_rule": "answered_or_addressed",
+      "probe_condition": "actual_contribution_without_outcome",
+      "source_reference": "Workbook Read me!L8:L13; SRA IAM indicators!D15/I15",
+      "review_status": "draft_pending_FN",
+      "approved_by": null,
+      "version": "2.1.0",
+      "locale": "en",
+      "response_format": "text",
+      "variants": {
+        "personal": "Do you know whether anything changed following your contribution?",
+        "organisation": "Do you know whether anything changed following your contribution?"
+      }
     }
   ],
   "dimensions": {
@@ -186,8 +587,8 @@
     "GA: T3.2–T3.4; Part B pp.5,16"
   ],
   "wording_status": "Questions proposed for this prototype under latest meeting instructions; not FN-approved verbatim wording. No complete 135 × 3 bank supplied.",
-  "prompt_version": "baseline-2.0.0",
-  "schema_version": "iam-baseline-2.0.0",
+  "prompt_version": "baseline-2.2.0",
+  "schema_version": "iam-baseline-2.2.0",
   "maximum_questions": 8,
   "stakeholder_taxonomy": {
     "version": "ga-target-groups-1.0.0",
@@ -269,5 +670,31 @@
     "review_status": "draft_pending_FN",
     "approved_by": null,
     "permitted_use": "Optional baseline explanation, explicitly requested and exposure logged."
+  },
+  "routing": {
+    "version": "baseline-routing-1.0.0",
+    "maximum_questions": 8,
+    "maximum_probes": 2,
+    "reserve_remaining_core_slots": true,
+    "maximum_consecutive_probes": 1,
+    "role_mapping": {
+      "authority": "authority",
+      "planning": "planning",
+      "logistics": "operations",
+      "citizen": "community",
+      "researcher": "research",
+      "regulator": "regulatory",
+      "aviation": "operations",
+      "technology": "operations",
+      "other": "neutral",
+      "withheld": "neutral"
+    },
+    "default_role": "neutral",
+    "scope_policy": "Personal objectives for personal/withheld perspective; organisational variants only for organisation perspective. Role is relevance, never readiness."
+  },
+  "interpretation_review_policy": {
+    "version": "interpretation-review-1.0.0",
+    "original_answer_immutable": true,
+    "feedback_is_evidence": false
   }
 }

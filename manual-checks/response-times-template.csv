@@ -1,0 +1,1 @@
+run_id,case_id,date_utc,instrument_version,model_revision,browser_device,connection,cold_or_warm,concurrent_model_use,turn_number,question_text,question_id,question_variant,action,spinner_delay_seconds,response_seconds,session_total_seconds,execution_status,interpretation_result,routing_result,privacy_result,initial_error,correction_outcome,notes,export_file

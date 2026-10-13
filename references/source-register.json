@@ -111,10 +111,21 @@
     "p.5; p.8 hypothetical privacy gate",
     "p.5; pp.8–9 hypothetical examples",
     "pp.6–7",
-    "pp.8–9"
+    "pp.8–9",
+    "Workbook SRA IAM indicators!D15/I15",
+    "Workbook SRA IAM indicators!D16/I16",
+    "Workbook SRA IAM indicators!D15/I15,D16/I16",
+    "Workbook SRA IAM indicators!D8/I8,D16/I16",
+    "Workbook Read me!L8:L13; SRA IAM indicators!D16/I16",
+    "User meeting direction; authored clarification",
+    "Workbook SRA IAM indicators!I8,I16",
+    "Workbook SRA IAM indicators!I16",
+    "Workbook Read me!L8:L13; SRA IAM indicators!D15/I15"
   ],
   "privacy_reviewed_presentation_labels": [
-    "Draft demo explanation · awaiting FN review"
+    "Draft demo explanation · awaiting FN review",
+    "eval/benchmarks/baseline_adaptive_v2.json",
+    "eval/benchmarks/baseline_adaptive_v3.json"
   ],
   "phase1_baseline_review": {
     "date": "2026-10-12",
@@ -153,5 +164,28 @@
       "Completed DMP D1.2 and WP13 D13.1",
       "Approved UI asset/font kit and hub/privacy ownership decisions"
     ]
+  },
+  "baseline_adaptive_review": {
+    "date": "2026-10-12",
+    "instrument": "baseline-2.1.0",
+    "routing_version": "baseline-routing-1.0.0",
+    "review_status": "draft_pending_FN",
+    "approved_by": null,
+    "source_sections": [
+      "GA Part B p.16 / PDF p.53: individual and organisational reporting scope",
+      "GA Part B §2.2.1 p.30 / PDF p.67: stakeholder groups",
+      "Workbook Read me; SRA IAM indicators!D/H/I8,D/H/I15,D/H/I16 and relevant comments",
+      "SRA_LLM_FN_concept.pdf pp.1–9: historical scenario concept, not baseline routing approval"
+    ],
+    "implementation_choices": [
+      "Role-specific proposed wording replaces equivalent experience item only for organisational perspective.",
+      "Typed evidence requirements, deterministic interleaving and reservation of remaining shared-objective slots.",
+      "Eight-item/two-probe defaults are prototype budget choices, not approved CRL rules."
+    ],
+    "missing": [
+      "Approved role-specific evidence anchors, sufficiency and comparable reporting rules",
+      "Complete approved FN question bank and numerical synthesis rules"
+    ],
+    "privacy_review_note": "Exact reviewed workbook citation labels added to existing bibliographic registry after installed Presidio misclassified cell IDs I15/L13 as PERSON. No citizen-text exemption."
   }
 }

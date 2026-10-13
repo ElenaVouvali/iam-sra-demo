@@ -11,15 +11,18 @@ import subprocess
 import sys
 ROOT=Path(__file__).resolve().parents[1]
 RUNTIME=ROOT/".runtime"
-UUID=os.getenv("IAM_GPU_UUID","GPU-cea3d9e4-d189-a5b9-cf2e-9bd77b8218fb")
+UUID=os.getenv("IAM_GPU_UUID", "")
 VPORT=int(os.getenv("IAM_VLLM_PORT","8000"))
 UPORT=int(os.getenv("IAM_UI_PORT","8501"))
+BASE_URL=os.getenv("IAM_BASE_URL",f"http://127.0.0.1:{VPORT}").rstrip("/")
 def gpu():
     output=subprocess.check_output(["nvidia-smi","--query-gpu=index,uuid,name,compute_cap,memory.total,memory.used,driver_version","--format=csv,noheader,nounits"],text=True)
     rows=[list(map(str.strip,r.split(","))) for r in output.strip().splitlines()]
-    selected=[r for r in rows if r[1]==UUID]
+    selected=[r for r in rows if r[1]==UUID] if UUID else [r for r in rows
+        if (("V100" in r[2] and r[3]=="7.0") or ("A30" in r[2] and r[3]=="8.0")) and float(r[5])<=2048]
     if len(selected)!=1:
-        raise RuntimeError("Selected GPU UUID was not found uniquely; refusing launch")
+        raise RuntimeError("Configured IAM_GPU_UUID is absent from this host; run scripts/diagnose-model.py" if UUID else
+            "No unique idle supported GPU is available. Existing workloads are retained. Run scripts/diagnose-model.py; set IAM_GPU_UUID only for an available GPU.")
     row=selected[0]
     if not (("V100" in row[2] and row[3]=="7.0") or ("A30" in row[2] and row[3]=="8.0")):
         raise RuntimeError("Selected GPU must be a V100 (7.0) or A30 (8.0); refusing launch")
@@ -76,7 +79,7 @@ def start(kind):
             if identity(old['pid'])==old['start_time']: raise RuntimeError("Project process already running")
         except FileNotFoundError: pass
     env=os.environ.copy()
-    env.update({"PYTHONPATH":str(ROOT/"src"),"OMP_NUM_THREADS":"2","MKL_NUM_THREADS":"2","OPENBLAS_NUM_THREADS":"2","NUMEXPR_NUM_THREADS":"2","RAYON_NUM_THREADS":"2","TOKENIZERS_PARALLELISM":"false","HF_HOME":str(RUNTIME/"huggingface"),"TMPDIR":str(RUNTIME/"tmp"),"IAM_BASE_URL":f"http://127.0.0.1:{VPORT}","VLLM_NO_USAGE_STATS":"1","DO_NOT_TRACK":"1"})
+    env.update({"PYTHONPATH":str(ROOT/"src"),"OMP_NUM_THREADS":"2","MKL_NUM_THREADS":"2","OPENBLAS_NUM_THREADS":"2","NUMEXPR_NUM_THREADS":"2","RAYON_NUM_THREADS":"2","TOKENIZERS_PARALLELISM":"false","HF_HOME":str(RUNTIME/"huggingface"),"TMPDIR":str(RUNTIME/"tmp"),"IAM_BASE_URL":BASE_URL,"VLLM_NO_USAGE_STATS":"1","DO_NOT_TRACK":"1"})
     (RUNTIME/"tmp").mkdir(exist_ok=True)
     if kind=="vllm":
         preflight(check_ui_port=False)
@@ -115,7 +118,7 @@ def health():
     import httpx
     failures=[]
     with httpx.Client(timeout=10,trust_env=False) as c:
-        for name,url in [("vllm",f"http://127.0.0.1:{VPORT}/health"),("streamlit",f"http://127.0.0.1:{UPORT}/_stcore/health")]:
+        for name,url in [("vllm",f"{BASE_URL}/health"),("streamlit",f"http://127.0.0.1:{UPORT}/_stcore/health")]:
             try:
                 r=c.get(url);r.raise_for_status();print(name,"healthy")
             except httpx.HTTPError as exc:

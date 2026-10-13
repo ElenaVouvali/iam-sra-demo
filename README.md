@@ -30,7 +30,7 @@ scripts/start-ui.sh
 scripts/health-check.sh
 ```
 
-Open **http://localhost:8501**. New sessions start with the baseline. Its summary
+Open **http://localhost:8501**. New sessions start with the role-aware, scenario-free [baseline 2.1 interview](docs/baseline-adaptive-interview.md). Its summary
 can open the illustrative scenario. To start directly with the scenario:
 
 ```bash
@@ -66,7 +66,9 @@ PYTHONPATH=src .venv-privacy/bin/python scripts/smoke-readiness-evidence.py --he
 
 Live smoke runners require the model host. Offline tests validate flow and
 boundaries, not model accuracy. [Baseline design](docs/phase1-baseline.md),
-[benchmark seed](docs/baseline-benchmark-seed.md),
+[adaptive benchmark and exact run commands](docs/baseline-adaptive-benchmark.md),
+[CPU-only automatic benchmark](docs/cpu-benchmark.md),
+[historical benchmark seed](docs/baseline-benchmark-seed.md),
 [scenario and score design](docs/readiness-evidence-mode.md) and
 [cleanup details](docs/repository-cleanup.md) describe the retained components.
 
@@ -83,3 +85,5 @@ Open **http://localhost:8502** alongside the updated app on 8501. Both can share
 the model server on 8000, with separate UI sessions and logs. Forward both UI
 ports if connecting remotely. The legacy app does not have the newer privacy
 controls.
+
+Current interface and saved-session review: [dynamic interview improvements](docs/dynamic-interview-review.md). New sessions use baseline 2.2.0; restart the UI to load the changes. The current benchmark bank is `eval/benchmarks/baseline_adaptive_v3.json`.

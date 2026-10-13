@@ -130,7 +130,7 @@ def test_correction_from_summary_invalidates_results_and_retains_initial(monkeyp
     app.text_area(key='readiness_answer').set_value('Repeated sound could disturb rest.')
     click(app,'Continue');confirm(app);click(app,'Finish questions')
     initial=app.session_state.session.initial_readiness
-    click(app,'Your first answer')
+    click(app,'Back')
     assert app.session_state.session.final_readiness is None
     assert app.session_state.session.initial_readiness==initial
     assert not app.get('download_button')

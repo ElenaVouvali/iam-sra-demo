@@ -159,7 +159,7 @@ def reviewed_bibliographic_values():
     # function and answer strings still pass through the mandatory detector.
     from .settings import config
     from .llm_client import BACKEND
-    values += [BACKEND, 'iam-baseline-1.0.0','iam-baseline-2.0.0','baseline-handoff-1.0.0'] + config('baseline')['sources']
+    values += [BACKEND, 'iam-baseline-1.0.0','iam-baseline-2.0.0','iam-baseline-2.1.0','iam-baseline-2.2.0','baseline-handoff-1.0.0'] + config('baseline')['sources']
     for bank in ('perspectives','stakeholders','cities','familiarity','dimensions','sectors'):
         values += list(config('baseline').get(bank,{}).values())
     taxonomy=config('baseline').get('stakeholder_taxonomy',{})

@@ -10,27 +10,17 @@ def render(s,client,developer=False):
     restart_control()
     def perform(action,*args):
         st.session_state.pop('baseline_error',None)
+        st.session_state.pop('baseline_diagnostics',None)
         try:
             with st.spinner('Reading your answer…'):return invoke(action,*args)
         except (AssessmentError,ValueError) as exc:
             from .ui_errors import user_error
-            st.session_state.baseline_error=(safe_message(exc) if isinstance(exc,PrivacyError) else user_error(exc)+' You can also choose Unsure or Skip.' if isinstance(exc,AssessmentError) else safe_message(exc))
-            if developer:st.session_state.baseline_diagnostics=safe_diagnostics({'code':getattr(exc,'code','validation'),'message':safe_message(exc)})
+            st.session_state.baseline_error=(safe_message(exc) if isinstance(exc,PrivacyError) else user_error(exc) if isinstance(exc,AssessmentError) else safe_message(exc))
+            if developer:st.session_state.baseline_diagnostics=safe_diagnostics({'code':getattr(exc,'code','validation'),'diagnostics':getattr(client,'last_diagnostics',[]),'message':safe_message(exc)})
     preview_control(perform)
     if st.session_state.get('baseline_error'):st.warning(st.session_state.baseline_error)
     if developer and st.session_state.get('baseline_diagnostics'):
         with st.expander('Developer diagnostics'):st.json(st.session_state.baseline_diagnostics)
-
-    def edit_controls():
-        with st.expander('Edit your details or an earlier answer'):
-            st.button('Edit perspective or city',on_click=perform,args=(s.edit_context,))
-            for e in s.events:
-                if e['active'] and e['confirmed']:
-                    def edit(event=e):
-                        perform(s.edit_answer,event['id'])
-                        st.session_state.baseline_answer_text=event['text']
-                        if event['question']['id']=='familiarity':st.session_state.baseline_familiarity=event['text']
-                    st.button(e['question']['question_text'],key='baseline_edit_'+e['id'],on_click=edit)
 
     def summary():
         c=s.respondent
@@ -41,7 +31,7 @@ def render(s,client,developer=False):
         p=s.current_profile
         gaps=[]
         for dim,label in s.instrument['dimensions'].items():
-            rows=[r for r in p['claims'] if r['dimension']==dim]
+            rows=[r for r in p['claims'] if r['dimension']==dim and not r.get('clarified_by_evidence_ids')]
             if not rows:
                 status=p['coverage'][dim]['status']
                 description={'not_asked':'We did not ask about this.','skipped':'You skipped this question.',
@@ -70,20 +60,16 @@ def render(s,client,developer=False):
                 st.text_input('Broad city or region name (optional)',value=current.get('broad_place') or '',key='baseline_place_text',max_chars=80)
             if values['perspective']=='organisation':
                 st.text_input('Function or responsibility (optional)',value=current.get('function') or '',key='baseline_function_text',max_chars=240)
-            if 'sectors' in s.instrument:
-                st.selectbox('Sector (optional)',list(s.instrument['sectors']),
-                    format_func=lambda key:s.instrument['sectors'][key],key='baseline_sector',
-                    index=list(s.instrument['sectors']).index(current.get('sector','none')))
             if values['city']=='other' or values['perspective']=='organisation':st.info(NOTICE)
             def save_context():
                 perform(s.set_context,st.session_state.baseline_perspective,st.session_state.baseline_stakeholder_category,
-                    st.session_state.baseline_city,st.session_state.get('baseline_place_text','') if st.session_state.baseline_city=='other' else '',st.session_state.get('baseline_function_text','') if st.session_state.baseline_perspective=='organisation' else '',st.session_state.get('baseline_sector','none'))
+                    st.session_state.baseline_city,st.session_state.get('baseline_place_text','') if st.session_state.baseline_city=='other' else '',st.session_state.get('baseline_function_text','') if st.session_state.baseline_perspective=='organisation' else '')
             st.button('Begin',type='primary',on_click=save_context)
     elif s.state=='interview':
         q=s.current_question
         count=sum(e['active'] and e['confirmed'] for e in s.events)
         st.subheader('A few questions')
-        st.write(f'Question {count+1} of at most {s.maximum_questions}')
+        st.write(f'Question {count+1}')
         st.write(q['question_text'])
         if q['id']=='familiarity':
             st.radio('Your answer',list(s.instrument['familiarity']),format_func=lambda key:s.instrument['familiarity'][key],key='baseline_familiarity',index=None)
@@ -97,6 +83,11 @@ def render(s,client,developer=False):
                     before=s.state;perform(s.answer,st.session_state.get('baseline_answer_text',''),client)
                     if s.state!=before:st.session_state.baseline_answer_text=''
                 st.form_submit_button('Continue',type='primary',on_click=submit)
+        if st.session_state.get('baseline_error') and q['id']!='familiarity':
+            def retry():
+                before=s.state;perform(s.answer,st.session_state.get('baseline_answer_text',''),client)
+                if s.state!=before:st.session_state.baseline_answer_text=''
+            st.button('Try reading my answer again',on_click=retry)
         controls=st.columns(3)
         for col,label,control in zip(controls,['Unsure','Skip','Prefer not to answer'],['unsure','skip','decline']):
             def skip(ctrl=control):
@@ -110,29 +101,42 @@ def render(s,client,developer=False):
         if s.information_exposures:
             st.text(s.information_exposures[-1]['text'])
             st.write('Draft explanation — awaiting review.')
-        edit_controls()
     elif s.state=='review':
-        st.subheader('Have we understood you correctly?')
-        if s.pending['claims']:
-            for text in dict.fromkeys(c['interpretation'] for c in s.pending['claims']):st.text(text)
-        else:st.write('We have not captured a clear summary of this answer. Please correct it if we missed something.')
+        st.subheader('Check our interpretation')
+        st.write(s.pending['question']['question_text'])
+        with st.expander('Your answer'):
+            st.text(s.pending['text'])
+        current_interpretation='\n'.join(dict.fromkeys(c['interpretation'] for c in s.pending['claims']))
+        if current_interpretation:
+            revision=s.pending.get('interpretation_revision',0)
+            edit_key=f"baseline_interpretation_{s.pending['id']}_{revision}"
+            st.text_area('Edit our interpretation',value=current_interpretation,
+                         key=edit_key,max_chars=1500,height=120)
+            st.write('Your edit guides a fresh reading; your original answer stays unchanged.')
+        else:
+            st.write('We could not summarize this answer yet.')
         st.button('Confirm and continue',type='primary',on_click=perform,args=(s.confirm,True))
-        with st.expander('Correct this answer'):
-            st.info(NOTICE)
-            st.text_area('Corrected answer',value=s.pending['text'],key='baseline_correction_text_'+s.pending['id'])
-            def correct():perform(s.correct_pending,st.session_state.get('baseline_correction_text_'+s.pending['id'],''),client)
-            st.button('Review correction',on_click=correct)
-        edit_controls()
+        st.button('Re-read my answer',on_click=perform,
+                  args=(s.correct_interpretation,
+                        'Re-read the original answer. Revise your interpretation only where the answer supports it; do not add facts.',client))
+        if current_interpretation:
+            def correct():
+                perform(s.correct_interpretation,st.session_state.get(edit_key,current_interpretation),client)
+            st.button('Apply my correction',on_click=correct)
     elif s.state=='baseline_review':
         st.subheader('Check your summary')
         summary()
         st.button('Confirm summary',type='primary',on_click=perform,args=(s.complete,))
-        edit_controls()
+        interpretations=[e for e in s.events if e['active'] and e['confirmed'] and e['claims'] and e['question']['id']!='familiarity']
+        if interpretations:
+            with st.expander('Correct an interpretation in this summary'):
+                selected=st.selectbox('Which interpretation?', [e['id'] for e in interpretations],
+                    format_func=lambda key:next(e['claims'][0]['interpretation'] for e in interpretations if e['id']==key))
+                st.button('Review this interpretation',on_click=perform,args=(s.review_interpretation,selected))
     elif s.state=='complete':
         st.subheader('Your summary')
         summary()
         st.info('This summary describes what you told us. It does not assign a readiness score.')
-        edit_controls()
         try:
             data=s.json();download_button('Download answers and record (JSON)',data,file_name='iam-baseline.json',mime='application/json')
             download_button('Download answers and record (JSONL)',s.jsonl(),file_name='iam-baseline.jsonl',mime='application/x-ndjson')

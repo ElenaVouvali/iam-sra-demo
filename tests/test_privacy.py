@@ -237,7 +237,7 @@ def test_real_detector_allows_complete_fn_extraction_request(monkeypatch):
     with pytest.raises(AssessmentError) as error:
         client.extract_readiness({'x':EvidenceItem(id='x',text=text,context='original',source='citizen_original')})
     assert error.value.code=='transport', 'Privacy screening must allow the complete synthetic FN request'
-    assert calls==['/tokenize']
+    assert calls==['/tokenize','/tokenize']
 
 
 @pytest.mark.presidio_live

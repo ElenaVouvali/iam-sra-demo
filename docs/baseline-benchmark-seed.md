@@ -1,18 +1,8 @@
-# Three baseline benchmark seed cases
+> Historical bank: `baseline_seed_v1.json` remains unchanged. For the adaptive successor and executable runner, see [adaptive benchmark](baseline-adaptive-benchmark.md).
 
-Synthetic, proposed evaluation cases for the current **local baseline-2.0.0** implementation. These are expectations, not live-model results. The local working tree is newer than its committed HEAD `fa0262f`; verify the instrument version before comparing runs. No numerical target is appropriate.
+# Benchmark use cases
 
-## Manual protocol
-
-Start a fresh session for each case. Enter the structured context, then paste **only the answer for the question shown**. Question IDs below match `configs/baseline.json`; adaptive routing may omit items already covered. Confirm only interpretations that preserve the meaning. Record an incorrect interpretation before using correction; otherwise you hide the original failure. Never supply the influence answer if no influence question is asked.
-
-Run the baseline without information first. Run optional definition/correction variants separately. Record model revision, instrument/prompt/config versions, timestamp, latency/errors, actual question order, confirmations, corrections and final export. Manual confirmation and scripted automation must be labelled separately. Store actual exports under ignored `.runtime/benchmark-baseline/`, never commit real respondent data.
-
-Expected results are semantic: a claim can be paraphrased, split or merged. Unknown, absence, not asked and skipped must remain distinguishable. Inspect both the summary and exported claims, source passages, context and active flags. A valid JSON response alone is not a semantic pass.
-
-The current smoke runner has its own three cases and does **not** read this bank; no automatic benchmark execution is claimed. This JSON is a versioned seed for extending that runner later.
-
-## novice_enthusiastic_personal
+## (1) novice_enthusiastic_personal
 
 Separate support, familiarity, uncertainty and barriers; optionally test information exposure.
 
@@ -126,7 +116,7 @@ From the definition you just showed me, a drone is an aircraft with no pilot on 
 - Record exact definition/version/time; later evidence is after_information.
 - The repeated definition must not establish independent prior knowledge or an automatic learning/readiness gain.
 
-## reasoned_opponent_transferable
+## (2) reasoned_opponent_transferable
 
 Capture causal reasoning and transferable contribution without inventing drone attendance or influence.
 
@@ -244,7 +234,7 @@ Last year I listened to a public bus-route consultation. I did not speak or subm
 - Recompute selection and handoff; do not retain dependent influence answers as current evidence.
 - Confirm the correction and any newly asked answers, then confirm the summary again.
 
-## authority_seminar_no_contribution
+## (3) authority_seminar_no_contribution
 
 Distinguish organisational activity, personal learning, attendance and influence; do not infer organisational capability.
 
