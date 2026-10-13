@@ -1,17 +1,20 @@
 # Manual UI checks — current dynamic IAM-SRA
 
-Instrument: `baseline-2.2.0`. Benchmark: `baseline-adaptive-3.0.0`.
-Source bank SHA-256: `ebb36e716e8dd9bc852fa073bd992126402edc6e482c74a4a891dcf3fff253a2`.
+Instrument: `baseline-2.3.0`. Benchmark: `baseline-adaptive-3.1.0`.
+Source bank SHA-256: `858480f9f7965bda9220e6cb2761dec6eddbbcda042cd9541eb114cafcd5d414`.
 
-Generated from the current versioned bank; answers below are synthetic. Regenerate this guide if the bank changes.
+The 19 case scripts below come from `eval/benchmarks/baseline_adaptive_v3.json`; answers are synthetic. Version 3.1.0 retains the authored answers and expectations. The review checks below target instrument 2.3.0. Recheck this guide whenever the bank or instrument changes. This guide evaluates the general baseline interview; it does not validate the optional scenario scoring or establish a CRL/SRL rubric.
 
 ## Prepare
 
-Run the model and UI on davinci, open http://localhost:8501, and select Start over for every case. Use the current app on 8501; 8502 is the historical app. If connected remotely, forward 8501. Restart the UI after code changes and use a new session to load baseline-2.2.0. Ensure there is no MOCK MODE banner; mock mode cannot measure real model response time. The first screen should not ask for sector; the interview should show the current question number without a fixed total.
+Run the model and UI on davinci, open http://localhost:8501, and select Start over for every case. Use the current app on 8501; 8502 is the historical app. If connected remotely, forward 8501. Restart the UI after code changes and use a new session to load baseline-2.3.0. Ensure there is no MOCK MODE banner; mock mode cannot measure real model response time. The first screen should not ask for sector; the interview should show the current question number without a fixed total.
 
 ```bash
-cd ~/iam-sra-demo
+cd ~/IAM_CC/iam-sra-demo
+# On a model host with a different checkout location, use that repository root.
 scripts/health-check.sh
+# Check the real privacy detector using the installed privacy environment:
+.venv-privacy/bin/python scripts/check-privacy.py
 # If the model is unavailable:
 scripts/recover-model.sh
 # After model loading finishes, restart the UI:
@@ -36,7 +39,33 @@ For each case, repeat a fresh session at least three times if comparing response
 
 ## Useful order
 
-Start with novice_enthusiastic_personal, reasoned_opponent_transferable and authority_seminar_no_contribution. Then test personal_possible_benefit_without_reason and organisation_discussion_without_deployment. Finish with novice_early_stop, novice_definition_exposure, novice_skip_and_decline and opponent_corrected_to_listener, before expanding to other roles. The original authority case can trigger a known detector false positive on “van trips”; record it as a privacy/UX failure rather than silently changing the fixture.
+Start with authority_actual_contribution, seminar_organisation_regulator and personal_possible_benefit_without_reason: these exposed prior live interpretation errors. Then run authority_seminar_no_contribution to check the narrow “van trips” detector fix. Continue with novice_enthusiastic_personal, reasoned_opponent_transferable and organisation_discussion_without_deployment, then the early-stop, definition, skip/decline and corrected-listener journeys. Complete all 19 cases for full bank coverage. A short priority run must be reported as partial coverage.
+
+## Review checks for instrument 2.3.0
+
+Inspect the initial interpretation before correcting it, then inspect the confirmed profile, final summary and downloaded record. Use only answers actually submitted. In the JSON, inspect claim quotations (`span_quote`, and `activity_quote`/`time_quote` where supplied) against the cited answer. A matching quotation alone does not prove that the claim follows from it.
+
+| Check | Where to exercise it | Expected result |
+| --- | --- | --- |
+| Actual contribution versus future intention | authority_actual_contribution | Preserve the reported planning review and drafted comments, with outcome unknown. A later suggestion to consult or improve access must not become an actual contribution or justify an influence probe by itself. |
+| Listening versus contribution | seminar_organisation_regulator; authority_seminar_no_contribution | Preserve attendance/listening and explicit non-contribution separately. A definition-only answer must not imply non-attendance or lack of need. |
+| Omitted meaning, including empty interpretation | All cases, especially the first three priority cases | Retain material supported facts; an empty interpretation of an informative answer is an omission failure. If encountered, exercise correction and check that the original answer is preserved and the revised interpretation requires confirmation. |
+| Possible effect versus explained effect | personal_possible_benefit_without_reason | “Deliveries might arrive sooner” is a possible effect without an explanation. Preserve missing comment channels and evening-meeting access barriers separately from information needs. |
+| Activity-specific outcome and contribution | Cases with multiple activities, including authority_actual_contribution and opponent_corrected_to_listener | One activity's contribution or outcome must not resolve another activity's gap without matching evidence. Unknown outcomes remain unknown; listening must not acquire the earlier contributor's influence. |
+| Separate effects | Any supplied answer containing multiple effects | An explanation for one effect must not silently explain a different effect. Mark not_exercised if the submitted answers do not expose this branch. |
+| Exact supporting evidence | Every extracted claim | Quoted text occurs in the cited answer and supports the meaning, subject, time and activity. Record unsupported claims and omissions separately. |
+| Privacy regression and export | authority_seminar_no_contribution; separate synthetic privacy journey | The generic transport phrase “van trips” should no longer cause the known name false positive. Keep the fixture unchanged. Sensitive synthetic details must still trigger screening/cleaned confirmation or blocking as applicable. Record withheld exports as failures to export; do not infer the detector cause from a generic message. |
+| Safe unresolved errors | Any encountered schema, grounding or privacy error | The UI reports an error without silently accepting an invalid interpretation. Record the initial failure and any retry separately. |
+
+Do not invent extra answers to force these checks into the versioned cases. Record checks that were not reached as not_exercised; separately authored exploratory sessions must be labelled exploratory.
+
+## Semantic review record and reporting
+
+Use `manual-checks/semantic-review-template.csv` for one row per authored expectation and phase (initial, corrected or answer_edit), plus separate rows for additional omissions or unsupported claims. Read each case's `expectations` in the source bank and copy its expectation ID. Keep downloaded artifacts unchanged and store review copies under `.runtime/`. Use pending until reviewed; pass means faithful, partial means some supported meaning was lost or misstated, fail means the criterion was not met, and not_exercised means its required answer or interaction was not supplied. Record a short source quotation only from synthetic fixtures.
+
+Record the Git commit and dirty-tree status (`git rev-parse HEAD` and `git status --short`), bank hash, instrument/schema versions, configured model revision, reviewer and date. Verify exported instrument/schema versions against 2.3.0; record discrepancies rather than relabelling old runs. A configured model name is not proof of loaded weights.
+
+Report execution, semantic fidelity, routing, privacy/export and usability separately. For semantic results, show pass/partial/fail counts over reviewed, exercised expectations, alongside pending and not_exercised counts. Report initial results separately from corrections. Show cases attempted/completed out of 19 and all unsupported branches, failures and withheld exports. An unjustifiably omitted question remains a routing failure even if its semantic expectation was not_exercised. A completed session, valid JSON or fast response does not establish semantic success. These synthetic cases support regression evaluation; they do not establish population accuracy or validate readiness scoring.
 
 For a deliberate interpretation correction, first log the incorrect interpretation and its latency, then describe the misunderstanding without adding new factual testimony. Verify that Your answer and the exported event text remain unchanged. For a deliberate answer edit, use Back and record the new answer; dependent results should be recomputed and superseded records retained.
 

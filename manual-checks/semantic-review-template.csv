@@ -1,0 +1,1 @@
+run_id,case_id,phase,expectation_id,check_group,result,source_turn,source_quote,observed_interpretation,reason,correction_outcome,reviewer,reviewed_at_utc,git_commit,working_tree_dirty,benchmark_version,bank_sha256,instrument_version,schema_version,model_revision,export_file

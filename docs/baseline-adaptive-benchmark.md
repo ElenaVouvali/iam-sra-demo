@@ -141,11 +141,13 @@ If no binding matches the presented branch, stop and record it as unsupported.
 
 ## Detector observations
 
-The original authority case retains its historical “van trips” answer. The
-installed detector can misclassify that phrase as a name and reject it. This is
-a recorded privacy false positive, not permission to bypass screening or replace
-the answer silently. Newly authored role variants use “road vehicle journeys”;
-the original case remains available to expose the detector limitation.
+The original authority case retains its historical “van trips” answer. Instrument
+2.3.0 includes a narrow context rule for the observed false PERSON finding on the
+generic transport noun before trips/journeys. The manual regression should verify
+that this answer is accepted while privacy screening remains active. Any remaining
+block must be recorded with available safe diagnostics; a generic message alone
+does not establish a false positive. Do not bypass screening or silently replace
+the fixture. Newly authored role variants retain “road vehicle journeys”.
 
 The exact relative filename `eval/benchmarks/baseline_adaptive_v2.json` is reviewed
 report metadata in the existing source register. It is not an exemption for any
@@ -177,3 +179,6 @@ The v1/v2 banks remain historical and unchanged. The current instrument and revi
 The extraction/review contract uses one constrained `claim_type` enum instead of asking the model for independent dimension/kind/time labels. The server maps these types to the existing internal labels and checks every `span_quote`, activity quote and time quote against its cited answer passage. The grounding pass also checks up to three omitted substantive claims, including when the first extraction is empty. These are bounded model-assisted checks, not independent semantic proof; citizen confirmation and human benchmark review remain necessary.
 
 Each benchmark turn stores safe inference settings and request diagnostics. Privacy failures can retain field path, entity type, recognizer and confidence without matched text or offsets. If a case export is withheld, the runner may write a separately screened `.failure.json` with status metadata only; it never writes the prohibited case export or rejected raw output.
+
+For current UI evaluation, use [the manual case guide](manual-ui-checks.md) and
+[semantic review template](../manual-checks/semantic-review-template.csv).
