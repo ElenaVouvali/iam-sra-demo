@@ -9,6 +9,7 @@ class ConversationClient(LLMTransport):
     def _start(self):
         self.last_diagnostics=[];self.last_trace=[]
         self.last_anchor_facts={};self.last_metrics={'generation_calls':0,'tokenize_calls':0,'cache_hits':0,'tokenize_cache_hits':0}
+        if not hasattr(self,'session_metrics'):self.session_metrics={'generation_calls':0,'tokenize_calls':0,'latency_seconds':0.0}
         self._deadline=min(time.monotonic()+180,getattr(self,'external_deadline',float('inf')))
         self.last_settings={'enable_thinking':False,'backend':BACKEND,'context_tokens':4096,
             'temperature':0.2,'top_p':0.8,'stage_deadline_seconds':180,'screened_requests':True,
@@ -68,5 +69,8 @@ class ConversationClient(LLMTransport):
             self.last_diagnostics.append({'stage':stage,'failure':'transport','http_status':getattr(getattr(exc,'response',None),'status_code',None),'latency_seconds':round(time.monotonic()-started,4)})
             raise
         finally:
+            self.session_metrics['generation_calls']+=self.last_metrics['generation_calls']-before
+            self.session_metrics['tokenize_calls']+=self.last_metrics['tokenize_calls']
+            self.session_metrics['latency_seconds']+=time.monotonic()-started
             self.last_settings.setdefault('request_metrics',[]).append({'request_id':request_id,'stage':stage,'model_calls':self.last_metrics['generation_calls']-before,
                 'retries':sum(d.get('attempt',0)>0 for d in self.last_diagnostics[offset:]),'cache_hit':False,'latency_seconds':round(time.monotonic()-started,4)})

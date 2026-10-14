@@ -2,6 +2,12 @@
 
 # Internal synthetic demonstration: privacy and data handling
 
+The v1.2 synthetic respondent evaluator writes only to ignored `.runtime/`
+paths, marks each generated session `SYNTHETIC_TEST_ONLY`, and passes the full
+record through the same privacy screening. If screening withholds an artifact,
+the run report retains a minimal screened status record; screening is never
+disabled for synthetic tests.
+
 IAM-SRA2 starts with a scenario-free general interview and offers a separate optional citizen proposal example. Neither the general interview nor a role selection assigns readiness. This is **an internal demo for synthetic examples**, not a production service, an anonymisation guarantee or a GDPR certification. Do not enter names, private addresses, contact details, credentials, bank details or identifiable medical information. Use general descriptions.
 
 ## Implemented flow — privacy-1.0.0

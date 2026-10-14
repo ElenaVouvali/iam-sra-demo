@@ -1,5 +1,9 @@
 # Conversational IAM-SRA2 meeting demonstration
 
+This document describes the earlier 1.1 implementation and its verification.
+New sessions on `feature/adaptive-conversation-v1.2` use the versioned objective
+planner described in [adaptive conversation v1.2](adaptive-conversation-v1.2.md).
+
 This is a working internal prototype, not a scientifically validated instrument,
 approved FN questionnaire or production service. It implements citizen evidence
 and an illustrative discussion for organisational respondents; it does not audit

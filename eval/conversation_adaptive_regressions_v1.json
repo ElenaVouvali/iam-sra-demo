@@ -1,0 +1,38 @@
+{
+  "schema_version": "iam-sra-conversation-regressions-1.0.0",
+  "benchmark_version": "adaptive-conversation-regressions-1.0.0",
+  "synthetic": true,
+  "reconstruction_status": "Reconstructed synthetic fixture from the interview details provided in the development brief; it is not the original complete export.",
+  "target_policy": "adaptive-conversation-1.2.0",
+  "cases": [
+    {
+      "case_id": "madrid_novice_noise_equity",
+      "context": {"perspective":"personal","stakeholder_role":"citizen","city":"madrid","scenario_id":"ga_madrid_1","scenario_title":"Hospital Carlos III – La Paz University Hospital"},
+      "turns": [
+        {"stage":"general","objective":"familiarity","answer":"I had heard the term but was unsure what it meant."},
+        {"stage":"general","objective":"delivery_knowledge","answer":"nothing"},
+        {"stage":"general","objective":"concept","answer":"i do not know as i said, i have only heard the term"},
+        {"stage":"general","objective":"information_need","answer":"How the drones work"},
+        {"stage":"general","objective":"participation_intention","answer":"now i haven't but i would like tto attend such a discussion/seminar"},
+        {"stage":"general","objective":"participation_access","answer":"If they were held in convenient times and close to my house"},
+        {"stage":"general","objective":"possible_effect","answer":"maybe fasten some transportations"},
+        {"stage":"scenario","objective":"proposal_view","answer":"what matters most to me is the noise that these drones will create"},
+        {"stage":"scenario","objective":"noise_reasoning","answer":"The drones' altitude and the frequency of flying drones"},
+        {"stage":"scenario","objective":"infrastructure_land_use","answer":"it may lead to more ugly environment"},
+        {"stage":"scenario","objective":"welfare_equity","answer":"the people that need those deliveries can benefit from them, while the neighbours will not benefit in their everyday life."}
+      ],
+      "expected_observations": [
+        {"id":"knowledge_absence","criterion":"delivery","expected":"Explicit absence of prior information; not positive use knowledge."},
+        {"id":"information_need","criterion":"information","expected":"Need to understand how drones work is retained."},
+        {"id":"participation_intention","criterion":"participation","expected":"Willingness to attend remains intention, not actual participation."},
+        {"id":"access_condition","criterion":"opportunity","expected":"Convenient time and proximity are access conditions."},
+        {"id":"tentative_benefit","criterion":"understanding","expected":"Possible faster transport is retained as tentative, incomplete reasoning."},
+        {"id":"noise_concern","criterion":"proposal","expected":"Noise concern is preserved; overall support/opposition remains unstated."},
+        {"id":"noise_factors","criterion":"understanding","expected":"Altitude and flight frequency are respondent-named factors; no measured acoustic effect is inferred."},
+        {"id":"visual_environment","criterion":"visual_pollution","expected":"Ugly environment concern is retained with its uncertainty."},
+        {"id":"distributional_effect","criterion":"welfare_equity","expected":"Potential beneficiaries and neighbours are distinguished; no equity outcome is established."}
+      ],
+      "prohibited_inferences": ["high or low CRL from stance or one response", "actual participation from willingness", "influence without a reported contribution and outcome", "measured noise or proven route effect", "overall SRL"]
+    }
+  ]
+}

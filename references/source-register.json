@@ -1,6 +1,6 @@
 {
-  "version": "1.5.0",
-  "review_date": "2026-10-13",
+  "version": "1.6.0",
+  "review_date": "2026-10-15",
   "private_sources_git_ignored": true,
   "sources": [
     {
@@ -236,5 +236,29 @@
     "scoring": "Nine independent anchor judgements with exact claim references, evidence-admission checks and separate model review of positive support. A selected draft CRL is optional; main numerical fields remain null.",
     "privacy_note": "Exact controlled GA identifiers and public route labels reviewed after real-detector false positives; arbitrary source descriptions, respondent/model text and exports remain screened.",
     "missing": "Current reviewed local operating details, approved FN questionnaire/evidence-to-level policy and agreed overall SRL synthesis remain unavailable."
+  },
+  "adaptive_conversation_20261015": {
+    "date": "2026-10-15",
+    "baseline_commit": "4934cfd9b45d51fe77e29d2ea11b52f542488eda",
+    "instrument": "conversation-1.2.0",
+    "schema": "iam-conversation-1.2.0",
+    "review_status": "draft_pending_FN",
+    "approved_by": null,
+    "original_sources_available_in_workspace": false,
+    "missing_at_implementation": [
+      "references/private/GA.pdf",
+      "references/private/IAM-CC_Topic_experts.xlsx",
+      "references/private/WP3_IAM-CC_Minutes_20261008.docx",
+      "references/private/IAM-CC_WP3_2026.09.10.pptx",
+      "references/private/SRA_LLM_FN_concept.pdf",
+      "references/private/IAM-CC_UI_guidelines_for_tools.pdf",
+      "references/private/conversation-source-notes.json",
+      "references/private/conversation-coverage.json"
+    ],
+    "source_handling": "Prior source review locators and limits were read from this register; original documents were not independently reopened. The missing originals and absent approvals were not reconstructed.",
+    "implementation": "Versioned compact objective planner output; controller-derived source/evidence metadata; exact-quote topic memory; qualitative evidence profile with no overall SRL; isolated synthetic evaluation runner.",
+    "methodological_boundary": "Authored engineering implementation pending partner review. No new CRL, ORL, TRL or SRL decision rules.",
+    "checkpoint_commit": "4934cfd9b45d51fe77e29d2ea11b52f542488eda",
+    "live_validation": "Not run: configured endpoint and private source corpus unavailable in the implementation workspace."
   }
 }

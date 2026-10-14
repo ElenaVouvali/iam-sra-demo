@@ -1,5 +1,9 @@
 # Conversational meeting candidate — actual verification, 13 October 2026
 
+This is a historical 1.1 verification report. It does not validate the v1.2
+planner; current v1.2 checks and limitations are recorded in
+[adaptive conversation v1.2](adaptive-conversation-v1.2.md).
+
 Historical verification for version 1.0. See [the 1.1 update](conversation-update-1.1.md) for the current implementation and new checks.
 
 ## Delivered scope

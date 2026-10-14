@@ -1,0 +1,1013 @@
+{
+  "schema_version": "iam-sra-synthetic-personas-1.0.0",
+  "benchmark_version": "adaptive-conversation-personas-1.0.0",
+  "purpose": "Internal synthetic testing only; never genuine stakeholder input or a population sample.",
+  "personas": [
+    {
+      "persona_id": "madrid_drone_novice",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "madrid",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Madrid resident with no drone experience.",
+      "knowledge_level": "heard_term_only",
+      "known_facts": [],
+      "unknown_facts": [
+        "what a drone is",
+        "how medical delivery works"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [],
+      "concerns": [],
+      "conditions": [],
+      "information_needs": [
+        "how drones work"
+      ],
+      "priorities": [
+        "basic explanation"
+      ],
+      "acceptance_position": "not_formed",
+      "trust_position": "unknown",
+      "communication_style": "short hesitant answers",
+      "response_length_preference": "short",
+      "uncertainty_tolerance": "low",
+      "behavioural_traits": [
+        "repeats unfamiliarity"
+      ],
+      "contradiction_policy": "correct accidental inconsistency",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "ignorance remains absence of knowledge"
+      ],
+      "prohibited_inferences": [
+        "positive use knowledge",
+        "low CRL from one answer"
+      ]
+    },
+    {
+      "persona_id": "milan_authority_costs",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "organisation",
+      "stakeholder_role": "authority",
+      "city": "milan",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Municipal policy staff member; authority role does not imply decision authority.",
+      "knowledge_level": "general_policy",
+      "known_facts": [
+        "public opinion matters to local decisions",
+        "the organisation published a general comment"
+      ],
+      "unknown_facts": [
+        "route cost",
+        "public support levels",
+        "authorisation status",
+        "whether the comment affected a decision"
+      ],
+      "actual_experiences": [
+        "organisation published a general comment"
+      ],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [
+        "third-party report of a published organisational comment"
+      ],
+      "benefits_perceived": [],
+      "concerns": [
+        "cost",
+        "political acceptability",
+        "public opinion"
+      ],
+      "conditions": [
+        "cost evidence",
+        "public consultation"
+      ],
+      "information_needs": [
+        "cost estimates",
+        "public views"
+      ],
+      "priorities": [
+        "accountability"
+      ],
+      "acceptance_position": "undecided",
+      "trust_position": "cautious",
+      "communication_style": "measured institutional language",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "separates personal view from institution"
+      ],
+      "contradiction_policy": "distinguish role from personal action",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "institutional concern attribution",
+        "organisational and third-party activity is not attributed to the respondent"
+      ],
+      "prohibited_inferences": [
+        "personal decision authority",
+        "organisational readiness",
+        "personal contribution from organisational report"
+      ]
+    },
+    {
+      "persona_id": "noise_researcher_external",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "researcher",
+      "city": "other",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Acoustics researcher outside pilot cities with no documented IAM project role.",
+      "knowledge_level": "acoustics",
+      "known_facts": [
+        "sound exposure depends on source and context"
+      ],
+      "unknown_facts": [
+        "route-specific measurements",
+        "aircraft sound levels"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [],
+      "concerns": [
+        "noise"
+      ],
+      "conditions": [
+        "measured local evidence"
+      ],
+      "information_needs": [
+        "route measurements"
+      ],
+      "priorities": [
+        "sound exposure evidence"
+      ],
+      "acceptance_position": "conditional",
+      "trust_position": "evidence_dependent",
+      "communication_style": "precise but accessible",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "marks unknown measurements"
+      ],
+      "contradiction_policy": "correct explicitly",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "expertise is not IAM participation",
+        "route-specific technical safety and acoustic claims remain unknown"
+      ],
+      "prohibited_inferences": [
+        "operational IAM experience",
+        "specific acoustic measurements"
+      ]
+    },
+    {
+      "persona_id": "coimbra_privacy_noise",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "coimbra",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Resident concerned about privacy and noise.",
+      "knowledge_level": "limited",
+      "known_facts": [],
+      "unknown_facts": [
+        "image collection",
+        "image retention",
+        "noise levels"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [],
+      "concerns": [
+        "privacy",
+        "noise"
+      ],
+      "conditions": [
+        "clear data policy",
+        "quiet operation"
+      ],
+      "information_needs": [
+        "whether images are captured or retained"
+      ],
+      "priorities": [
+        "privacy",
+        "quiet"
+      ],
+      "acceptance_position": "uncertain",
+      "trust_position": "cautious",
+      "communication_style": "direct",
+      "response_length_preference": "short",
+      "uncertainty_tolerance": "medium",
+      "behavioural_traits": [
+        "returns to concerns"
+      ],
+      "contradiction_policy": "distinguish concern from factual claim",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "both concerns retained"
+      ],
+      "prohibited_inferences": [
+        "camera use is established",
+        "measured noise"
+      ]
+    },
+    {
+      "persona_id": "enthusiast_low_knowledge",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "other",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Enthusiastic about medical access but technically unfamiliar.",
+      "knowledge_level": "low",
+      "known_facts": [],
+      "unknown_facts": [
+        "technical operation",
+        "environmental effects"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [
+        "possible faster access to medicine"
+      ],
+      "concerns": [],
+      "conditions": [],
+      "information_needs": [
+        "how the service would work"
+      ],
+      "priorities": [
+        "medical access"
+      ],
+      "acceptance_position": "supportive",
+      "trust_position": "positive_but_uninformed",
+      "communication_style": "warm brief answers",
+      "response_length_preference": "short",
+      "uncertainty_tolerance": "low",
+      "behavioural_traits": [
+        "volunteers benefit"
+      ],
+      "contradiction_policy": "does not invent facts",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "support does not imply knowledge"
+      ],
+      "prohibited_inferences": [
+        "high CRL from enthusiasm"
+      ]
+    },
+    {
+      "persona_id": "informed_opponent_route",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "madrid",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Informed resident opposing a particular route while recognising medical purpose.",
+      "knowledge_level": "moderate",
+      "known_facts": [
+        "route affects nearby residents"
+      ],
+      "unknown_facts": [
+        "measured local effects"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [
+        "medical purpose"
+      ],
+      "concerns": [
+        "route proximity"
+      ],
+      "conditions": [
+        "different route"
+      ],
+      "information_needs": [
+        "route-specific evidence"
+      ],
+      "priorities": [
+        "residential impacts"
+      ],
+      "acceptance_position": "opposed_to_route",
+      "trust_position": "cautious",
+      "communication_style": "reasoned",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "separates purpose from route"
+      ],
+      "contradiction_policy": "position can be conditional",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "opposition coexists with knowledge"
+      ],
+      "prohibited_inferences": [
+        "low CRL from opposition"
+      ]
+    },
+    {
+      "persona_id": "support_medical_reject_route",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "coimbra",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Supports medical deliveries generally but rejects one route due to local access concerns.",
+      "knowledge_level": "some",
+      "known_facts": [
+        "route and service purpose are distinct"
+      ],
+      "unknown_facts": [
+        "operational details"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [
+        "medical access"
+      ],
+      "concerns": [
+        "route impacts"
+      ],
+      "conditions": [
+        "route change"
+      ],
+      "information_needs": [
+        "alternatives"
+      ],
+      "priorities": [
+        "access and local impacts"
+      ],
+      "acceptance_position": "mixed",
+      "trust_position": "conditional",
+      "communication_style": "clear",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "medium",
+      "behavioural_traits": [
+        "qualifies support"
+      ],
+      "contradiction_policy": "preserve distinction",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "purpose support differs from route acceptance"
+      ],
+      "prohibited_inferences": [
+        "unqualified support"
+      ]
+    },
+    {
+      "persona_id": "information_before_view",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "milan",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Prefers to review evidence before forming an opinion.",
+      "knowledge_level": "limited",
+      "known_facts": [],
+      "unknown_facts": [
+        "most technical and local details"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [],
+      "concerns": [],
+      "conditions": [],
+      "information_needs": [
+        "safety",
+        "privacy",
+        "cost",
+        "noise"
+      ],
+      "priorities": [
+        "reliable information"
+      ],
+      "acceptance_position": "not_formed",
+      "trust_position": "undetermined",
+      "communication_style": "asks questions",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "withholds judgement pending evidence"
+      ],
+      "contradiction_policy": "does not guess",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "uncertainty preserved"
+      ],
+      "prohibited_inferences": [
+        "opposition",
+        "acceptance"
+      ]
+    },
+    {
+      "persona_id": "workshop_attendee",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "madrid",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Attended one general urban mobility workshop; no drone-specific session.",
+      "knowledge_level": "moderate",
+      "known_facts": [
+        "workshop covered urban mobility",
+        "the workshop was about transport, not drones, and took place last year"
+      ],
+      "unknown_facts": [
+        "drone operational details"
+      ],
+      "actual_experiences": [
+        "urban mobility workshop"
+      ],
+      "actual_participation": [
+        "attended workshop"
+      ],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [],
+      "concerns": [
+        "whether residents were heard"
+      ],
+      "conditions": [],
+      "information_needs": [],
+      "priorities": [
+        "consultation"
+      ],
+      "acceptance_position": "undecided",
+      "trust_position": "unknown",
+      "communication_style": "matter of fact",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "medium",
+      "behavioural_traits": [
+        "separates attendance from contribution"
+      ],
+      "contradiction_policy": "different domain is not contradiction",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "attendance not contribution",
+        "different topic and time do not establish contradiction"
+      ],
+      "prohibited_inferences": [
+        "drone consultation attendance"
+      ]
+    },
+    {
+      "persona_id": "iam_contributor_unknown_influence",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "milan",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Contributed written comments to a synthetic IAM consultation; outcome unknown.",
+      "knowledge_level": "some",
+      "known_facts": [
+        "submitted comments"
+      ],
+      "unknown_facts": [
+        "whether comments affected decisions"
+      ],
+      "actual_experiences": [
+        "IAM consultation"
+      ],
+      "actual_participation": [
+        "consultation"
+      ],
+      "actual_contributions": [
+        "written comments"
+      ],
+      "reported_outcomes": [
+        "unknown"
+      ],
+      "benefits_perceived": [],
+      "concerns": [
+        "noise"
+      ],
+      "conditions": [],
+      "information_needs": [],
+      "priorities": [
+        "being heard"
+      ],
+      "acceptance_position": "mixed",
+      "trust_position": "cautious",
+      "communication_style": "specific",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "distinguishes input from outcome"
+      ],
+      "contradiction_policy": "state when outcome unknown",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "actual contribution without known influence"
+      ],
+      "prohibited_inferences": [
+        "influence from contribution"
+      ]
+    },
+    {
+      "persona_id": "iam_contribution_influence_reported",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "coimbra",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Reports a contribution followed by a committee change; no independent verification.",
+      "knowledge_level": "some",
+      "known_facts": [
+        "submitted an access proposal",
+        "committee later changed meeting access"
+      ],
+      "unknown_facts": [
+        "whether the proposal caused the change"
+      ],
+      "actual_experiences": [
+        "local consultation"
+      ],
+      "actual_participation": [
+        "consultation"
+      ],
+      "actual_contributions": [
+        "access proposal"
+      ],
+      "reported_outcomes": [
+        "later meeting change, causal link uncertain"
+      ],
+      "benefits_perceived": [],
+      "concerns": [
+        "meeting access"
+      ],
+      "conditions": [],
+      "information_needs": [],
+      "priorities": [
+        "accessibility"
+      ],
+      "acceptance_position": "undecided",
+      "trust_position": "cautious",
+      "communication_style": "nuanced",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "reports sequence but qualifies causation"
+      ],
+      "contradiction_policy": "keep attribution uncertain",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "reported sequence is not verified influence"
+      ],
+      "prohibited_inferences": [
+        "causal attribution without evidence"
+      ]
+    },
+    {
+      "persona_id": "logistics_feasibility",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "organisation",
+      "stakeholder_role": "logistics",
+      "city": "milan",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Delivery-sector representative discussing general operational constraints.",
+      "knowledge_level": "operational_general",
+      "known_facts": [
+        "handoffs and reliable scheduling matter"
+      ],
+      "unknown_facts": [
+        "route-specific capacity and costs"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [
+        "possible access in some settings"
+      ],
+      "concerns": [
+        "feasibility",
+        "handoffs",
+        "cost"
+      ],
+      "conditions": [
+        "validated operational plan"
+      ],
+      "information_needs": [
+        "capacity and responsibility details"
+      ],
+      "priorities": [
+        "reliability"
+      ],
+      "acceptance_position": "conditional",
+      "trust_position": "evidence_dependent",
+      "communication_style": "operational",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "does not claim local deployment"
+      ],
+      "contradiction_policy": "distinguish general practice",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "general expertise separated from IAM activity"
+      ],
+      "prohibited_inferences": [
+        "actual deployment experience"
+      ]
+    },
+    {
+      "persona_id": "urban_planning_tradeoffs",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "organisation",
+      "stakeholder_role": "planning",
+      "city": "madrid",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Urban planning professional discussing land use and public space generally.",
+      "knowledge_level": "planning",
+      "known_facts": [
+        "infrastructure competes for urban space"
+      ],
+      "unknown_facts": [
+        "specific siting plans"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [],
+      "concerns": [
+        "infrastructure",
+        "land use",
+        "visual effects"
+      ],
+      "conditions": [
+        "local planning review"
+      ],
+      "information_needs": [
+        "site locations"
+      ],
+      "priorities": [
+        "public space"
+      ],
+      "acceptance_position": "undecided",
+      "trust_position": "unknown",
+      "communication_style": "analytical",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "marks hypothetical points"
+      ],
+      "contradiction_policy": "no invented site facts",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "professional knowledge not readiness"
+      ],
+      "prohibited_inferences": [
+        "personal planning authority"
+      ]
+    },
+    {
+      "persona_id": "healthcare_accessibility",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "other",
+      "city": "coimbra",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Healthcare worker prioritising timely access for people with limited mobility.",
+      "knowledge_level": "healthcare_context",
+      "known_facts": [
+        "some patients face access barriers"
+      ],
+      "unknown_facts": [
+        "service eligibility and delivery reliability"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [
+        "possible improved access"
+      ],
+      "concerns": [
+        "unequal access"
+      ],
+      "conditions": [
+        "clear eligibility and alternatives"
+      ],
+      "information_needs": [
+        "who can use service"
+      ],
+      "priorities": [
+        "accessibility"
+      ],
+      "acceptance_position": "conditional",
+      "trust_position": "unknown",
+      "communication_style": "empathetic",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "medium",
+      "behavioural_traits": [
+        "distinguishes needs from outcomes"
+      ],
+      "contradiction_policy": "avoid patient details",
+      "privacy_test_flags": [
+        "never disclose actual medical information"
+      ],
+      "expected_observations": [
+        "conditional accessibility benefit"
+      ],
+      "prohibited_inferences": [
+        "verified health outcome"
+      ]
+    },
+    {
+      "persona_id": "regulator_uncertainty",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "organisation",
+      "stakeholder_role": "regulator",
+      "city": "other",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Policy professional focused on evidence, responsibilities and unresolved questions.",
+      "knowledge_level": "regulatory_general",
+      "known_facts": [
+        "responsibilities need to be clear"
+      ],
+      "unknown_facts": [
+        "authorisation status",
+        "local operational rules"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [],
+      "concerns": [
+        "accountability",
+        "evidence"
+      ],
+      "conditions": [
+        "clear responsibilities"
+      ],
+      "information_needs": [
+        "authorisation and oversight"
+      ],
+      "priorities": [
+        "evidence quality"
+      ],
+      "acceptance_position": "not_formed",
+      "trust_position": "procedural",
+      "communication_style": "carefully qualified",
+      "response_length_preference": "medium",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "frequently identifies unknowns"
+      ],
+      "contradiction_policy": "does not infer legal status",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "unknown remains unknown"
+      ],
+      "prohibited_inferences": [
+        "legal approval claim"
+      ]
+    },
+    {
+      "persona_id": "vague_hesitant",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "other",
+      "language": "en",
+      "scenario_preference": "decline_if_pressured",
+      "background": "Hesitant respondent who often cannot say more.",
+      "knowledge_level": "low",
+      "known_facts": [],
+      "unknown_facts": [
+        "most topic details"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [],
+      "concerns": [
+        "not sure"
+      ],
+      "conditions": [],
+      "information_needs": [],
+      "priorities": [],
+      "acceptance_position": "uncertain",
+      "trust_position": "unknown",
+      "communication_style": "very brief",
+      "response_length_preference": "short",
+      "uncertainty_tolerance": "low",
+      "behavioural_traits": [
+        "often unsure",
+        "may skip"
+      ],
+      "contradiction_policy": "say unsure",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "disposition differs from model failure"
+      ],
+      "prohibited_inferences": [
+        "lack of capability from refusal"
+      ]
+    },
+    {
+      "persona_id": "detailed_multitopic",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "madrid",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Detailed respondent with several distinct views and evidence needs.",
+      "knowledge_level": "moderate",
+      "known_facts": [
+        "delivery purpose differs from route choice"
+      ],
+      "unknown_facts": [
+        "measured noise",
+        "privacy details"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [
+        "possible faster medical access"
+      ],
+      "concerns": [
+        "noise",
+        "equity",
+        "privacy"
+      ],
+      "conditions": [
+        "local evidence",
+        "accessible consultation"
+      ],
+      "information_needs": [
+        "flight frequency",
+        "image handling"
+      ],
+      "priorities": [
+        "neighbours and patients"
+      ],
+      "acceptance_position": "mixed",
+      "trust_position": "conditional",
+      "communication_style": "detailed but conversational",
+      "response_length_preference": "long",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "covers multiple topics",
+        "separates facts and preferences"
+      ],
+      "contradiction_policy": "clarify ambiguity",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "multiple claims preserved"
+      ],
+      "prohibited_inferences": [
+        "technical guarantee"
+      ]
+    },
+    {
+      "persona_id": "confused_declines",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "coimbra",
+      "language": "en",
+      "scenario_preference": "decline_if_confused",
+      "background": "Respondent who may misunderstand abstract questions and chooses to decline some.",
+      "knowledge_level": "low",
+      "known_facts": [],
+      "unknown_facts": [
+        "technical and planning details"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [],
+      "benefits_perceived": [],
+      "concerns": [
+        "question wording is confusing"
+      ],
+      "conditions": [],
+      "information_needs": [
+        "plain language"
+      ],
+      "priorities": [
+        "understanding the question"
+      ],
+      "acceptance_position": "not_formed",
+      "trust_position": "unknown",
+      "communication_style": "asks for clarification",
+      "response_length_preference": "short",
+      "uncertainty_tolerance": "low",
+      "behavioural_traits": [
+        "may request re-reading",
+        "may decline"
+      ],
+      "contradiction_policy": "clarify before changing answer",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "decline and confusion remain distinct"
+      ],
+      "prohibited_inferences": [
+        "assumed opposition"
+      ]
+    },
+    {
+      "persona_id": "third_party_report",
+      "persona_version": "1.0.0",
+      "synthetic": true,
+      "perspective": "personal",
+      "stakeholder_role": "citizen",
+      "city": "milan",
+      "language": "en",
+      "scenario_preference": "accept_if_offered",
+      "background": "Has heard that an organisation held a meeting but did not attend.",
+      "knowledge_level": "limited",
+      "known_facts": [
+        "a neighbour said a meeting occurred"
+      ],
+      "unknown_facts": [
+        "what was discussed",
+        "whether decisions changed"
+      ],
+      "actual_experiences": [],
+      "actual_participation": [],
+      "actual_contributions": [],
+      "reported_outcomes": [
+        "third-party report of meeting"
+      ],
+      "benefits_perceived": [],
+      "concerns": [
+        "whether residents were consulted"
+      ],
+      "conditions": [],
+      "information_needs": [],
+      "priorities": [
+        "community notice"
+      ],
+      "acceptance_position": "undecided",
+      "trust_position": "unknown",
+      "communication_style": "careful",
+      "response_length_preference": "short",
+      "uncertainty_tolerance": "high",
+      "behavioural_traits": [
+        "attributes hearsay"
+      ],
+      "contradiction_policy": "keep source attribution",
+      "privacy_test_flags": [],
+      "expected_observations": [
+        "third-party claim not personal evidence"
+      ],
+      "prohibited_inferences": [
+        "attendance or contribution"
+      ]
+    }
+  ]
+}

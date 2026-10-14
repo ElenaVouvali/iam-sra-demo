@@ -49,7 +49,9 @@ def runtime_provenance(collection):
     files=[ROOT/'app.py',*sorted((ROOT/'src/iam_sra').glob('*.py')),
         *sorted((ROOT/'configs').glob('*.json')),*sorted((ROOT/'prompts').glob('*.txt')),
         ROOT/'scripts/build-conversation-corpus.py',ROOT/'scripts/smoke-baseline.py',
-        ROOT/'eval/conversation_meeting_cases.json',ROOT/'eval/conversation_meeting_cases_v2.json',ROOT/'references/source-register.json']
+        ROOT/'scripts/evaluate-conversation.py',ROOT/'eval/conversation_meeting_cases.json',
+        ROOT/'eval/conversation_meeting_cases_v2.json',ROOT/'eval/conversation_adaptive_regressions_v1.json',
+        ROOT/'eval/synthetic_personas_v1.json',ROOT/'references/source-register.json']
     hashes={str(p.relative_to(ROOT)):sha256(p.read_bytes()).hexdigest() for p in files}
     hashes['conversation_collection_canonical.json']=sha256(json.dumps(collection,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     try:

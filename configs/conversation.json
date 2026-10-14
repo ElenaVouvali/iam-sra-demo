@@ -1,7 +1,8 @@
 {
-  "version": "conversation-1.1.0",
-  "schema_version": "iam-conversation-1.0.0",
-  "planner_version": "retrieved-planner-1.1.0",
+  "version": "conversation-1.2.0",
+  "schema_version": "iam-conversation-1.2.0",
+  "planner_version": "adaptive-conversation-1.2.0",
+  "planner_policy_version": "1.2",
   "locale": "en",
   "review_status": "draft_pending_FN",
   "approved_by": null,
@@ -36,8 +37,8 @@
     {
       "id": "scenario_view",
       "criterion": "proposal",
-      "personal": "What do you think about this example? What matters most to you?",
-      "organisation": "What stands out to you about this illustrative proposal from the perspective you chose?",
+      "personal": "What stands out to you about this example, if anything?",
+      "organisation": "From the perspective you chose, what stands out to you about this illustrative proposal?",
       "source_locator": "FN concept p.5; revised neutral invitation",
       "initial": true
     },

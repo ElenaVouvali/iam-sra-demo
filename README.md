@@ -16,6 +16,11 @@ and an evidence assessment against each workbook CRL anchor. See the
 [update and verification guide](docs/conversation-update-1.1.md).
 It remains a draft readiness instrument.
 
+The feature branch `feature/adaptive-conversation-v1.2` adds objective-level
+planning, grounded topic memory, and a synthetic respondent evaluation runner.
+Its source review status and operational limits are documented in
+[`Adaptive conversational assessment v1.2`](docs/adaptive-conversation-v1.2.md).
+
 ```bash
 cd ~/iam-sra-demo
 .venv-privacy/bin/python scripts/build-conversation-corpus.py
@@ -108,4 +113,4 @@ the model server on 8000, with separate UI sessions and logs. Forward both UI
 ports if connecting remotely. The legacy app does not have the newer privacy
 controls.
 
-Current interface and saved-session review: [dynamic interview improvements](docs/dynamic-interview-review.md). New sessions use baseline 2.2.0; restart the UI to load the changes. The current benchmark bank is `eval/benchmarks/baseline_adaptive_v3.json`.
+Current interface and saved-session review: [dynamic interview improvements](docs/dynamic-interview-review.md). The proposed adaptive conversational mode v1.2 is documented in [adaptive conversation v1.2](docs/adaptive-conversation-v1.2.md); it remains pending partner review and is available on branch `feature/adaptive-conversation-v1.2`. The synthetic interviewer evaluation is separate from real stakeholder data.

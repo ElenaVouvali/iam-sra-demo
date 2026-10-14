@@ -386,10 +386,9 @@ def test_real_detector_new_planner_and_scenario_transport_envelopes(monkeypatch)
         payload=json.loads(json.loads(req.content)['messages'][-1]['content'])
         if 'confirmed_evidence' in payload:
             c=payload['candidates'][0]
-            wire={'stage':payload['stage'],'action':'ask','target_criterion':c['criterion'],
-                'candidate_id':c['candidate_id'],'source_ids':c['source_ids'],
-                'triggering_evidence_ids':c['triggering_evidence_ids'],
-                'displayed_question':c['allowed_wording'][0],'rationale':'Address an eligible evidence gap.'}
+            wire={'objective_id':c['objective_id'],
+                'proposed_question':c['allowed_wording_examples'][0],
+                'strategy':'new_objective'}
         elif 'candidates' in payload:
             wire={'decisions':[{'candidate':0,'supported':True,'claim_type':'proposal_supported','effect_quote':''}],
                 'additional_claims':[]}

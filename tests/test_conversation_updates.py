@@ -74,11 +74,9 @@ def planned(monkeypatch,approved=True):
         calls.append(stage)
         if stage=='conversation_planner':
             c=user['candidates'][-1]
-            wire={'stage':'general','action':'ask','target_criterion':c['criterion'],
-                'candidate_id':c['candidate_id'],'source_ids':c['source_ids'],
-                'triggering_evidence_ids':c['triggering_evidence_ids'],
-                'displayed_question':'Thinking about what you have told us, '+c['allowed_wording'][0][0].lower()+c['allowed_wording'][0][1:],
-                'rationale':'Follow a relevant objective.'}
+            wire={'objective_id':c['objective_id'],
+                'proposed_question':'Thinking about what you have told us, '+c['allowed_wording_examples'][0][0].lower()+c['allowed_wording_examples'][0][1:],
+                'strategy':'clarify'}
         else:wire={'preserves_criterion':approved,'neutral_without_answer_cues':True,
             'grounded_in_supplied_context':True,'preserves_actor_and_uncertainty':True,'reason':'Controlled review.'}
         return validator(json.dumps(wire))

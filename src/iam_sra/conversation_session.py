@@ -11,6 +11,7 @@ from .privacy import VERSION,PrivacyError,guarded,export_guard,require_safe_data
 from .assessment import AssessmentError
 from .conversation_corpus import load_corpus,retrieve_questions,retrieve_scenario,retrieve_scenarios,explanation_collection,runtime_provenance
 from .conversation_planner import choose
+from .conversation_objectives import registry as objective_registry
 from .readiness_retrieval import explain
 
 
@@ -166,6 +167,7 @@ class ConversationSession:
         self.explanation_collection=explanation_collection(self.collection)
         self.corpus_sha256=sha256(json.dumps(self.collection,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
         self.planner_prompt=(ROOT/'prompts/conversation-planner.txt').read_text()
+        self.topic_memory=[]
         self._provisional=None
         self.rubric=deepcopy(config('readiness_levels'))
 
@@ -209,19 +211,103 @@ class ConversationSession:
         if phase.state!='interview':return
         if phase.current_question.get('format')=='selection':return
         p=self.profile();query=' '.join(c['interpretation'] for c in p['claims'][-4:]) or 'understanding experience information participation'
+        self.topic_memory=self._topic_memory()
+        recent=[e for e in phase.events if e['active'] and e['confirmed']][-3:]
         p['planning_context']={'respondent':self.respondent,
-            'recent_questions':[e['question']['question_text'] for e in phase.events if e['active'] and e['confirmed']][-4:],
+            'recent_turns':[{'question':e['question']['question_text'],'answer':e['text'],
+                'confirmed_claims':[{'evidence_id':c['evidence_id'],'meaning':c['interpretation'],
+                    'quotation':c.get('span_quote',''),'topic_ids':c.get('topic_ids',[])} for c in e['claims']]}
+                for e in recent],
+            'topic_memory':deepcopy(self.topic_memory),
             'scenario':{'text':self.card['text'],'unknowns':self.card['unknowns']} if self.stage=='scenario' else None}
         retrieved=retrieve_questions(self.collection,phase.eligible,self.respondent['perspective'],self.respondent['stakeholder_category'],query,self.stage,self.instrument['shortlist_size'])
         for r in retrieved:
+            r['objective_id']=f"{self.stage}:{r['question']['id']}"
             r['allowed_wording']=list(dict.fromkeys([r['question']['question_text']]+r['wording_options']))
             if r['question']['id'] in {'reasoning','scope'}:r['allowed_wording']=[r['question']['question_text']]
         if not retrieved:
             phase.finish('completed');self.stop_reason='no_suitable_retrieved_question';return
-        question,audit=choose(self.stage,retrieved,p,client)
+        question,audit=choose(self.stage,retrieved,p,client,self.instrument.get('planner_policy_version','1.1'))
+        audit['objective_id']=next((r['objective_id'] for r in retrieved if r['id']==audit['candidate_id']),None)
         phase._planned=question
         self.plans.append({**audit,'sequence':len(self.plans)+1,'selected_at':now(),'session_version':self.version,
             'corpus_version':self.collection['version']})
+
+    def _topic_memory(self):
+        """Compact, evidence-keyed topic state; only confirmed supported claims enter."""
+        grouped={}
+        for claim in self.profile()['claims']:
+            for topic in claim.get('topic_ids',[]):
+                row=grouped.setdefault(topic,{'topic_id':topic,'evidence_ids':[],'quotations':[],
+                    'interpretations':[],'respondent_expressed_topic':False,'question_or_scenario_topic':False,
+                    'status':'raised','remaining_gaps':[],'wishes_to_continue':'unknown'})
+                if claim['status']=='supported':
+                    if claim['evidence_id'] not in row['evidence_ids']:row['evidence_ids'].append(claim['evidence_id'])
+                    quote=claim.get('span_quote','')
+                    if quote and quote not in row['quotations']:row['quotations'].append(quote)
+                    if claim['interpretation'] not in row['interpretations']:row['interpretations'].append(claim['interpretation'])
+                    row['respondent_expressed_topic']=True
+        if self.card:
+            for topic in self.card.get('topic_ids',[]):
+                row=grouped.setdefault(topic,{'topic_id':topic,'evidence_ids':[],'quotations':[],
+                    'interpretations':[],'respondent_expressed_topic':False,'question_or_scenario_topic':False,
+                    'status':'unexplored','remaining_gaps':[],'wishes_to_continue':'unknown'})
+                row['question_or_scenario_topic']=True
+        phases=[self.general]+([self.scenario] if self.scenario else [])
+        for phase in phases:
+            for event in phase.events:
+                if not event['active'] or not event.get('confirmed'):continue
+                for topic in event['question'].get('topic_ids',[]):
+                    row=grouped.setdefault(topic,{'topic_id':topic,'evidence_ids':[],'quotations':[],
+                        'interpretations':[],'respondent_expressed_topic':False,'question_or_scenario_topic':False,
+                        'status':'unexplored','remaining_gaps':[],'wishes_to_continue':'unknown'})
+                    row['question_or_scenario_topic']=True
+                    if event['control']=='decline' or event['interaction']=='declined':row.update(status='declined',wishes_to_continue='no')
+                    elif event['control']=='unsure' or event['interaction'] in {'unsure','confused'}:row.update(status='unresolved')
+                    elif any(c.get('topic_ids') and topic in c['topic_ids'] for c in event['claims']):
+                        row.update(status='partially_explored',interpretation_status='claim_recorded')
+                    else:
+                        row.update(status='unresolved',interpretation_status=event.get('interpretation_status','no_claim_recorded'),
+                            remaining_gaps=['No topic-linked interpretation is recorded; this does not establish absence of knowledge.'])
+        return [grouped[k] for k in sorted(grouped)]
+
+    def qualitative_assessment(self):
+        """Evidence disposition only; deliberately contains no readiness level."""
+        profile=self.profile();rows=[]
+        for dimension,coverage in profile['coverage'].items():
+            claims=[c for c in profile['claims'] if c['dimension']==dimension]
+            status=('proposal_view_only' if dimension=='proposal' and claims else
+                'supported_self_report' if any(c['status']=='supported' for c in claims) else
+                'explicit_absence_reported' if any(c['kind']=='absence' for c in claims) else
+                'uncertainty_reported' if any(c['kind']=='unknown' for c in claims) else
+                'not_established')
+            rows.append({'criterion':dimension,'evidence_status':status,
+                'evidence_ids':sorted({c['evidence_id'] for c in claims}),
+                'question_disposition':coverage['status'],
+                'external_verification':'not_performed'})
+        return {'version':'qualitative-evidence-profile-1.2.0',
+            'status':'descriptive_evidence_only','readiness_level':None,'overall_srl':None,
+            'criteria':rows,'note':'Evidence status describes this interview only. Missing evidence does not establish lack of capability; reported evidence is not independently verified.'}
+
+    def respondent_summary(self):
+        claims=self.profile()['claims']
+        sections={
+            'familiarity_and_understanding':{'dimensions':['familiarity','concept','delivery','understanding']},
+            'benefits_and_concerns':{'kinds':['explained_impact','claim_without_detail','view_concern','view_condition','view_purpose_support']},
+            'information_needs':{'dimensions':['information']},
+            'engagement_and_participation':{'dimensions':['exposure','participation','influence','opportunity']},
+            'proposal_view':{'dimensions':['proposal']},
+        }
+        result=[]
+        for name,filtering in sections.items():
+            rows=[c for c in claims if c['dimension'] in filtering.get('dimensions',[]) or c['kind'] in filtering.get('kinds',[])]
+            result.append({'section':name,'observations':[{'interpretation':c['interpretation'],
+                'evidence_id':c['evidence_id'],'quotation':c.get('span_quote',''),
+                'subject':c['subject'],'temporality':c['temporality'],
+                'information_context':c.get('information_context')} for c in rows]})
+        return {'version':'respondent-summary-1.2.0','evidence_grounded':True,
+            'sections':result,'remaining_unknowns':deepcopy(self.qualitative_assessment()['criteria']),
+            'note':'Interpretations reflect confirmed self-report; they are not independently verified.'}
 
     def scenario_options(self):
         return retrieve_scenarios(self.collection,self.respondent,self.profile())
@@ -449,6 +535,23 @@ class ConversationSession:
                 'corrections':deepcopy(self.general.corrections+(self.scenario.corrections if self.scenario else [])),
                 'meaning':'Assessment refinement or post-information reasoning; not proof of personal development.'},
             'proposal_views':self.proposal_view(),'planning_actions':deepcopy(self.plans),
+            'topic_memory_version':'topic-memory-1.2.0','topic_memory':deepcopy(self.topic_memory),
+            'qualitative_assessment':self.qualitative_assessment(),'respondent_summary':self.respondent_summary(),
+            'objective_registry_version':objective_registry()['version'],
+            'planner_metrics':{'attempts':sum(p.get('attempt_count',0) for p in self.plans),
+                'successful_model_selections':sum(p.get('successful_model_selections',0) for p in self.plans),
+                'accepted_adaptations':sum(p.get('accepted_adaptations',0) for p in self.plans),
+                'deterministic_fallbacks':sum(p.get('deterministic_fallbacks',0) for p in self.plans),
+                'schema_failures':sum(p.get('failure_class')=='schema_failure' for p in self.plans),
+                'semantic_rejections':sum(p.get('failure_class')=='semantic_review_rejection' for p in self.plans),
+                'invalid_candidate_selections':sum(p.get('failure_class')=='invalid_candidate_selection' for p in self.plans),
+                'invalid_wording':sum(p.get('failure_class')=='invalid_wording' for p in self.plans),
+                'timeouts':sum(p.get('failure_class')=='timeout' for p in self.plans),
+                'transport_failures':sum(p.get('failure_class')=='model_transport_failure' for p in self.plans),
+                'privacy_failures':sum(p.get('failure_class')=='privacy_failure' for p in self.plans),
+                'latency_seconds':round(sum(p.get('latency_seconds',0) for p in self.plans),4),
+                'failures':{code:sum(p.get('fallback_reason')==code for p in self.plans) for code in
+                    sorted({p.get('fallback_reason') for p in self.plans if p.get('fallback_reason')})}},
             'information_exposures':deepcopy(self.information_exposures),'pre_information_snapshots':deepcopy(self.pre_information_snapshots),
             'unresolved_attempt':deepcopy(self.failed_attempt),'failure_history':deepcopy(self.failure_history),
             'superseded_scenarios':deepcopy(self.superseded_scenarios),'stop_reason':self.stop_reason,
