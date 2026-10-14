@@ -17,22 +17,21 @@ then
     echo 'The configured model service is healthy; no restart needed.'
     exit 0
 fi
-if [[ -n "${IAM_BASE_URL:-}" ]]; then
-    echo "The configured IAM_BASE_URL is unavailable or does not serve Qwen/Qwen3-8B. No process was stopped. Run scripts/diagnose-model.py." >&2
-    exit 1
-fi
+"$IAM_ROOT/.venv/bin/python" "$IAM_ROOT/scripts/wait-model.py" --check-local-only
 cd "$IAM_ROOT"
 # Check GPU availability before stopping any project process.
 "$IAM_ROOT/.venv/bin/python" - <<'PY'
-import runpy
+import runpy, subprocess
 ops = runpy.run_path('scripts/ops.py')
 try:
     row = ops['gpu']()
 except (RuntimeError, OSError) as exc:
     raise SystemExit(str(exc)) from None
+except subprocess.CalledProcessError:
+    raise SystemExit('GPU inventory is unavailable. Run recovery in the model-host terminal; no process was stopped.') from None
 if float(row[5]) > 2048:
     raise SystemExit('Selected GPU is occupied. Existing workloads are retained. Run scripts/diagnose-model.py.')
 PY
 "$IAM_ROOT/scripts/stop-vllm.sh"
 "$IAM_ROOT/scripts/start-vllm.sh"
-echo 'Model startup requested. Run scripts/health-check.sh when loading has finished.'
+"$IAM_ROOT/.venv/bin/python" "$IAM_ROOT/scripts/wait-model.py"
