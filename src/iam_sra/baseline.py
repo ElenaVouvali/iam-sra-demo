@@ -6,9 +6,10 @@ from .schemas import Strict, ConcernID
 from .assessment import AssessmentError
 from .evidence import original_quote
 
-Dimension = Literal['concept','delivery','understanding','information','exposure','participation','influence','opportunity']
+Dimension = Literal['concept','delivery','understanding','information','exposure','participation','influence','opportunity','proposal']
 Kind = Literal['concept_explanation','use_knowledge','explained_impact','claim_without_detail','recognition','information_need','learning_exposure',
-               'contribution','influence','opportunity','barrier','intention','absence','unknown']
+               'contribution','influence','opportunity','barrier','intention','absence','unknown',
+               'view_support','view_opposition','view_uncertainty','view_mixed','view_concern','view_condition','view_purpose_support']
 KINDS = {'concept':{'concept_explanation','absence','unknown'},
          'delivery':{'use_knowledge','absence','unknown'},
          'understanding':{'explained_impact','claim_without_detail','recognition','absence','unknown'},
@@ -16,7 +17,8 @@ KINDS = {'concept':{'concept_explanation','absence','unknown'},
          'exposure':{'learning_exposure','absence','unknown'},
          'participation':{'contribution','intention','absence','unknown'},
          'influence':{'influence','absence','unknown'},
-         'opportunity':{'opportunity','barrier','intention','absence','unknown'}}
+         'opportunity':{'opportunity','barrier','intention','absence','unknown'},
+         'proposal':{'view_support','view_opposition','view_uncertainty','view_mixed','view_concern','view_condition','view_purpose_support'}}
 
 class BaselineClaim(Strict):
     evidence_id: str
@@ -26,6 +28,7 @@ class BaselineClaim(Strict):
     # Exact answer span. Required by the 2.3 contract; optional only so frozen
     # 2.0–2.2 exports and validators remain readable.
     span_quote: str = Field(default='',max_length=240)
+    effect_quote: str = Field(default='',max_length=160)
     topic_ids: list[ConcernID] = Field(default_factory=list,max_length=3)
     subject: Literal['respondent','organisation','other','unknown']
     temporality: Literal['actual','intention','not_applicable','unknown']
@@ -63,6 +66,7 @@ class BaselineDecision(Strict):
     temporality: Literal['actual','intention','not_applicable','unknown'] | None = None
     domain: Literal['IAM','transferable','unknown','not_applicable'] | None = None
     span_quote: str | None = Field(default=None,min_length=1,max_length=240)
+    effect_quote: str | None = Field(default=None,max_length=160)
 
 class BaselineReview(Strict):
     decisions: list[BaselineDecision] = Field(max_length=6)
@@ -91,11 +95,21 @@ CLAIM_TYPE_MAP = {
     'influence_reported':('influence','influence','actual'), 'influence_absence':('influence','absence','not_applicable'), 'influence_unknown':('influence','unknown','unknown'),
     'opportunity_access':('opportunity','opportunity','not_applicable'), 'opportunity_barrier':('opportunity','barrier','not_applicable'), 'opportunity_intention':('opportunity','intention','intention'), 'opportunity_absence':('opportunity','absence','not_applicable'), 'opportunity_unknown':('opportunity','unknown','unknown'),
 }
+CLAIM_TYPE_MAP.update({
+    'proposal_supported':('proposal','view_support','not_applicable'),
+    'proposal_opposed':('proposal','view_opposition','not_applicable'),
+    'proposal_uncertain':('proposal','view_uncertainty','not_applicable'),
+    'proposal_mixed':('proposal','view_mixed','not_applicable'),
+    'proposal_concern':('proposal','view_concern','not_applicable'),
+    'proposal_condition':('proposal','view_condition','not_applicable'),
+    'proposal_medical_purpose_support':('proposal','view_purpose_support','not_applicable'),
+})
 
 class CanonicalClaim(Strict):
     evidence_id: str
     claim_type: str
     span_quote: str = Field(min_length=1,max_length=240)
+    effect_quote: str = Field(default='',max_length=160)
     interpretation: str = Field(min_length=1,max_length=240)
     topic_ids: list[ConcernID] = Field(default_factory=list,max_length=3)
     subject: Literal['respondent','organisation','other','unknown']
@@ -122,6 +136,7 @@ class CanonicalDecision(Strict):
     topic_ids: list[ConcernID] = Field(default_factory=list,max_length=3)
     reason: str = Field(default='',max_length=100)
     span_quote: str | None = Field(default=None,min_length=1,max_length=240)
+    effect_quote: str | None = Field(default=None,max_length=160)
     interpretation: str | None = Field(default=None,min_length=1,max_length=240)
     ambiguities: list[Literal['subject','activity','time','meaning','contradiction']] | None = Field(default=None,max_length=3)
     outcome_relation: Literal['unknown','reported_link','sequence_only'] | None = None
@@ -142,12 +157,14 @@ class CanonicalReview(Strict):
 def canonical_claim(value, evidence):
     c=CanonicalClaim.model_validate(value) if not isinstance(value,CanonicalClaim) else value
     if c.evidence_id not in evidence: raise AssessmentError('Unknown baseline passage ID.',code='evidence')
-    for quote in (c.span_quote,c.activity_quote,c.time_quote):
+    for quote in (c.span_quote,c.effect_quote,c.activity_quote,c.time_quote):
         if quote and original_quote(evidence[c.evidence_id],quote) is None:
             raise AssessmentError('Claim support must be an exact span from the cited answer passage.',code='evidence')
+    if c.effect_quote and original_quote(c.span_quote,c.effect_quote) is None:
+        raise AssessmentError('The named effect must be inside its supporting answer span.',code='evidence')
     dimension,kind,temporality=CLAIM_TYPE_MAP[c.claim_type]
     return BaselineClaim(evidence_id=c.evidence_id,dimension=dimension,kind=kind,interpretation=c.interpretation,
-        span_quote=c.span_quote,topic_ids=c.topic_ids,subject=c.subject,temporality=temporality,domain=c.domain,
+        span_quote=c.span_quote,effect_quote=c.effect_quote,topic_ids=c.topic_ids,subject=c.subject,temporality=temporality,domain=c.domain,
         activity_quote=c.activity_quote,time_quote=c.time_quote,ambiguities=c.ambiguities,outcome_relation=c.outcome_relation)
 
 
@@ -166,6 +183,8 @@ def reviewed_canonical(source, review, evidence):
         old=source.claims[d.candidate]
         if d.span_quote and original_quote(evidence[old.evidence_id],d.span_quote) is None:
             raise AssessmentError('Reviewer support must be an exact span from the cited answer passage.',code='evidence')
+        if d.effect_quote and original_quote(d.span_quote or old.span_quote,d.effect_quote) is None:
+            raise AssessmentError('The named effect must be an exact span within the reviewed supporting words.',code='evidence')
         old_is_actual=old.temporality=='actual';new_is_actual=temp=='actual'
         old_is_intention=old.temporality=='intention';new_is_intention=temp=='intention'
         if d.supported and ((old_is_intention and new_is_actual) or (old_is_actual and new_is_intention)):
@@ -173,7 +192,7 @@ def reviewed_canonical(source, review, evidence):
                 raise AssessmentError('A reviewed change between intention and actual activity needs a distinct supporting answer span.',code='evidence')
         decisions.append(BaselineDecision(candidate=d.candidate,supported=d.supported,dimension=dim,kind=kind,
             topic_ids=d.topic_ids,reason=d.reason,interpretation=d.interpretation,ambiguities=d.ambiguities,
-            outcome_relation=d.outcome_relation,subject=d.subject,temporality=temp,domain=d.domain,span_quote=d.span_quote))
+            outcome_relation=d.outcome_relation,subject=d.subject,temporality=temp,domain=d.domain,span_quote=d.span_quote,effect_quote=d.effect_quote))
     accepted=reviewed(source,BaselineReview(decisions=decisions))
     # Invalid reclassifications raise in reviewed(); they cannot disappear
     # silently from an otherwise complete interpretation.
@@ -192,7 +211,7 @@ def validate_source(raw, evidence):
     value = BaselineExtraction.model_validate_json(raw) if isinstance(raw,str) else BaselineExtraction.model_validate(raw)
     for c in value.claims:
         if c.evidence_id not in evidence: raise AssessmentError('Unknown baseline passage ID.',code='evidence')
-        for scope in (c.span_quote,c.activity_quote,c.time_quote):
+        for scope in (c.span_quote,c.effect_quote,c.activity_quote,c.time_quote):
             if scope and original_quote(evidence[c.evidence_id],scope) is None:
                 raise AssessmentError('Claim support and activity/time scope must use exact words from the cited answer or be empty.',code='evidence')
     return value
@@ -213,6 +232,7 @@ def reviewed(source, review):
                     interpretation=d.interpretation or c.interpretation,
                     topic_ids=sorted(set(c.topic_ids)&set(d.topic_ids)))
         if d.span_quote is not None:data['span_quote']=d.span_quote
+        if d.effect_quote is not None:data['effect_quote']=d.effect_quote
         for field in ('subject','temporality','domain'):
             if getattr(d,field) is not None:data[field]=getattr(d,field)
         if d.ambiguities is not None:data['ambiguities']=d.ambiguities

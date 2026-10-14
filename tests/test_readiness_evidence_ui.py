@@ -71,7 +71,7 @@ def test_developer_mode_choice_precedes_session_creation(monkeypatch):
     monkeypatch.delenv('IAM_ASSESSMENT_MODE',raising=False)
     app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app.py'),default_timeout=10).run()
     assert 'session' not in app.session_state
-    assert len(app.selectbox(key='assessment_mode_choice').options) == 2
+    assert len(app.selectbox(key='assessment_mode_choice').options) == 3
     app.selectbox(key='assessment_mode_choice').select('acceptance_and_readiness_evidence').run()
     assert 'session' not in app.session_state
     click(app,'Start selected demo')

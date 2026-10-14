@@ -88,7 +88,7 @@ def test_generated_secret_withheld_before_trace_validator_and_cache():
         return httpx.Response(200,json={'choices':[{'finish_reason':'stop','message':{'content':json.dumps({'answer':SECRETS[1]})}}]})
     with httpx.Client(transport=httpx.MockTransport(transport)) as http:
         with pytest.raises(PrivacyError): c._request(http,'readiness_evidence','Return JSON.',{'answer':'I oppose the route.'},{},lambda raw:validated.append(raw))
-    assert calls==['/tokenize','/v1/chat/completions']
+    assert calls==['/tokenize','/v1/chat/completions']*2
     assert not validated and not c.last_trace and not c._request_cache
     assert c._accepted_wire is None
     assert SECRETS[1] not in repr(vars(c))

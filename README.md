@@ -7,6 +7,28 @@ interview. Baseline answers remain separate from scenario scoring. SRL also
 requires technical and organisational evidence and is not inferred from one
 citizen interview.
 
+The new selectable **Conversational interview and illustrative case** joins the
+general interview, a confirmed profile, source-selected medical-corridor example,
+contextual questions, optional sourced explanation and final screened export.
+See the [meeting guide and three copy-paste scripts](docs/conversational-meeting-demo.md).
+The current 1.1 update adds GA route examples, reviewed adaptive question wording
+and an evidence assessment against each workbook CRL anchor. See the
+[update and verification guide](docs/conversation-update-1.1.md).
+It remains a draft readiness instrument.
+
+```bash
+cd ~/iam-sra-demo
+.venv-privacy/bin/python scripts/build-conversation-corpus.py
+scripts/stop-ui.sh
+IAM_MOCK=0 IAM_BASE_URL=http://127.0.0.1:18000 IAM_ASSESSMENT_MODE=retrieval_grounded_conversation scripts/start-ui.sh
+```
+
+The current davinci model endpoint uses port 18000; set `IAM_BASE_URL` to your
+service address (port 8000 for the original direct-host setup). Open
+http://localhost:8501. Restart the UI
+after code changes; browser refresh alone does not reload modules with file
+watching disabled. Sources and the generated corpus remain Git-ignored.
+
 The original IAM-SRA acceptance demo is preserved on
 [`legacy`](https://github.com/ElenaVouvali/iam-sra-demo/tree/legacy),
 commit `708024817f31b48c7a9009a8ba5103cbf10b93f8`. Its numerical acceptance

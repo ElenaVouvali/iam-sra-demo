@@ -1,0 +1,800 @@
+{
+  "schema_version": "conversation-meeting-cases-1.0.0",
+  "benchmark_version": "conversation-meeting-1.0.0",
+  "target_instrument": "conversation-1.0.0",
+  "scripted_confirmation": "automation, not actual citizen validation",
+  "fixture_claims": "Authored controlled outputs for offline flow testing only; never sent to the live model.",
+  "unsupported_branch_policy": "Report unsupported; never invent a matching answer.",
+  "cases": [
+    {
+      "id": "enthusiastic_novice",
+      "title": "Enthusiastic novice citizen",
+      "synthetic": true,
+      "context": {
+        "perspective": "personal",
+        "role": "citizen",
+        "city": "withheld"
+      },
+      "answers": {
+        "familiarity": {
+          "text": "little",
+          "control": "answer",
+          "fixture_claims": []
+        },
+        "concept": {
+          "text": "I have heard the term, but I do not know what a drone is.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "concept_unknown",
+              "span_quote": "I do not know what a drone is",
+              "interpretation": "You have heard the term but cannot explain what a drone is.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "delivery": {
+          "text": "I heard that drones can carry medicines, but I do not know how that works.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "delivery_use_knowledge",
+              "span_quote": "drones can carry medicines",
+              "interpretation": "You have heard of drones carrying medicines.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "understanding": {
+          "text": "I like the idea, but I cannot explain its effects.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "understanding_unknown",
+              "span_quote": "I cannot explain its effects",
+              "interpretation": "You like the idea but cannot explain its possible effects.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "experience": {
+          "text": "I have not attended a discussion, demonstration or training about delivery drones.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "exposure_absence",
+              "span_quote": "I have not attended a discussion, demonstration or training",
+              "interpretation": "You report no discussion, demonstration or training experience.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "needs": {
+          "text": "I want to know how the drones are controlled and whether images are stored.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "information_need",
+              "span_quote": "how the drones are controlled and whether images are stored",
+              "interpretation": "You want to understand control systems and whether images are stored.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "opportunity": {
+          "text": "I have not been invited to a discussion and do not know where to comment.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "opportunity_barrier",
+              "span_quote": "I have not been invited to a discussion and do not know where to comment",
+              "interpretation": "You report no invitation or known way to submit comments.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_effect": {
+          "text": "I do not know enough to explain the effects.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "understanding_unknown",
+              "span_quote": "I do not know enough to explain the effects",
+              "interpretation": "You cannot yet explain the possible effects.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_information": {
+          "text": "I would want sound measurements and the image-retention policy.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "information_need",
+              "span_quote": "sound measurements and the image-retention policy",
+              "interpretation": "You want sound measurements and a clear image-retention policy.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_access": {
+          "text": "I do not know how to send comments on this example.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "opportunity_unknown",
+              "span_quote": "I do not know how to send comments",
+              "interpretation": "You do not know a way to submit comments.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_view": {
+          "text": "I support this example because hospital deliveries sound useful, but I do not know what effects it would have.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "proposal_supported",
+              "span_quote": "I support this example",
+              "interpretation": "You support the illustrative proposal.",
+              "subject": "respondent",
+              "domain": "IAM"
+            },
+            {
+              "claim_type": "proposal_medical_purpose_support",
+              "span_quote": "hospital deliveries sound useful",
+              "interpretation": "You see value in the medical purpose.",
+              "subject": "respondent",
+              "domain": "IAM"
+            },
+            {
+              "claim_type": "understanding_unknown",
+              "span_quote": "I do not know what effects it would have",
+              "interpretation": "You are unsure what effects this route would have.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_reflection": {
+          "text": "No recording policy is supplied. Flights when people are sleeping could disturb them because the sound may interrupt sleep; I would still need actual sound measurements.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "understanding_explained_impact",
+              "span_quote": "Flights when people are sleeping could disturb them because the sound may interrupt sleep",
+              "interpretation": "You explain a possible effect on sleep while recognising that sound measurements are missing.",
+              "subject": "respondent",
+              "domain": "IAM",
+              "effect_quote": "could disturb them"
+            },
+            {
+              "claim_type": "information_need",
+              "span_quote": "I would still need actual sound measurements",
+              "interpretation": "You still need actual sound measurements.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        }
+      },
+      "bindings": {
+        "familiarity": {
+          "personal": "familiarity"
+        },
+        "concept": {
+          "personal": "concept"
+        },
+        "delivery": {
+          "personal": "delivery"
+        },
+        "understanding": {
+          "personal": "understanding"
+        },
+        "experience": {
+          "personal": "experience",
+          "contribution_after_exposure": "experience"
+        },
+        "needs": {
+          "personal": "needs"
+        },
+        "opportunity": {
+          "personal": "opportunity"
+        },
+        "scenario_effect": {
+          "personal": "scenario_effect"
+        },
+        "scenario_information": {
+          "personal": "scenario_information"
+        },
+        "scenario_access": {
+          "personal": "scenario_access"
+        },
+        "scenario_view": {
+          "personal": "scenario_view"
+        },
+        "scenario_reflection": {
+          "personal": "scenario_reflection"
+        }
+      },
+      "optional_information": true,
+      "information_question": "Are camera images recorded or retained?",
+      "correction": false,
+      "correction_suffix": " This is my view of the illustrative case, not an independently verified result.",
+      "expected_evidence": [
+        "Limited concept knowledge; heard of medicines delivery",
+        "Uncertainty about effects without a reasoning probe",
+        "No reported attendance; unmet participation opportunity",
+        "Support remains separate from readiness; optional reflection is after information"
+      ],
+      "must_not_infer": [
+        "Verified influence",
+        "Automatic co-design or chat readiness gain",
+        "A city SRL or organisational/technical score",
+        "Known camera policy, measured noise or mitigation feasibility"
+      ],
+      "semantic_review_status": "pending_human_review"
+    },
+    {
+      "id": "sceptical_academic_personal",
+      "title": "Informed sceptical academic answering personally",
+      "synthetic": true,
+      "context": {
+        "perspective": "personal",
+        "role": "researcher",
+        "city": "milan"
+      },
+      "answers": {
+        "familiarity": {
+          "text": "lot",
+          "control": "answer",
+          "fixture_claims": []
+        },
+        "concept": {
+          "text": "A drone is an aircraft without a pilot on board; a person can control it remotely or it can follow automated instructions.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "concept_explanation",
+              "span_quote": "an aircraft without a pilot on board",
+              "interpretation": "You describe an aircraft without a pilot on board.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "delivery": {
+          "text": "I have heard of drones carrying medical samples between healthcare sites.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "delivery_use_knowledge",
+              "span_quote": "drones carrying medical samples between healthcare sites",
+              "interpretation": "You know about medical-sample delivery applications.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "understanding": {
+          "text": "I am sceptical of residential routes. Early flights could wake shift workers because they happen while those workers sleep.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "understanding_explained_impact",
+              "span_quote": "Early flights could wake shift workers because they happen while those workers sleep",
+              "interpretation": "You explain why early flights could disturb shift workers.",
+              "subject": "respondent",
+              "domain": "IAM",
+              "effect_quote": "could wake shift workers"
+            }
+          ]
+        },
+        "experience": {
+          "text": "Last year I attended a bus consultation and proposed a clinic stop; I do not know whether my proposal changed the decision.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "participation_contribution",
+              "span_quote": "I attended a bus consultation and proposed a clinic stop",
+              "interpretation": "You report proposing a clinic stop at a bus consultation.",
+              "subject": "respondent",
+              "domain": "transferable",
+              "activity_quote": "bus consultation",
+              "time_quote": "Last year"
+            },
+            {
+              "claim_type": "influence_unknown",
+              "span_quote": "I do not know whether my proposal changed the decision",
+              "interpretation": "You do not know whether your proposal affected the decision.",
+              "subject": "respondent",
+              "domain": "transferable",
+              "activity_quote": "bus consultation",
+              "time_quote": "Last year"
+            }
+          ]
+        },
+        "needs": {
+          "text": "I want sound measurements at homes and a clear statement about whether camera images are stored or shared.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "information_need",
+              "span_quote": "sound measurements at homes and a clear statement about whether camera images are stored or shared",
+              "interpretation": "You want sound measurements and clarity about image handling.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "opportunity": {
+          "text": "I would attend a drone discussion, but I do not know where to comment and evening meetings conflict with caring responsibilities.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "opportunity_intention",
+              "span_quote": "I would attend a drone discussion",
+              "interpretation": "You would be willing to attend a drone discussion.",
+              "subject": "respondent",
+              "domain": "IAM"
+            },
+            {
+              "claim_type": "opportunity_barrier",
+              "span_quote": "I do not know where to comment and evening meetings conflict with caring responsibilities",
+              "interpretation": "You report an unknown feedback channel and an evening access barrier.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_view": {
+          "text": "I oppose this route as described. Early repeated flights could disturb rest because people may be sleeping. I would reconsider a route that avoids homes, but I need evidence about noise and camera recording.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "proposal_opposed",
+              "span_quote": "I oppose this route as described",
+              "interpretation": "You oppose the route as described.",
+              "subject": "respondent",
+              "domain": "IAM"
+            },
+            {
+              "claim_type": "understanding_explained_impact",
+              "span_quote": "Early repeated flights could disturb rest because people may be sleeping",
+              "interpretation": "You explain a possible effect on rest.",
+              "subject": "respondent",
+              "domain": "IAM",
+              "effect_quote": "could disturb rest"
+            },
+            {
+              "claim_type": "proposal_condition",
+              "span_quote": "I would reconsider a route that avoids homes",
+              "interpretation": "You would reconsider a route avoiding homes.",
+              "subject": "respondent",
+              "domain": "IAM"
+            },
+            {
+              "claim_type": "information_need",
+              "span_quote": "I need evidence about noise and camera recording",
+              "interpretation": "You want evidence about noise and recording.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_information": {
+          "text": "I would want sound measurements and the image-retention policy.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "information_need",
+              "span_quote": "sound measurements and the image-retention policy",
+              "interpretation": "You want sound measurements and a clear image-retention policy.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_access": {
+          "text": "I do not know how to send comments on this example.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "opportunity_unknown",
+              "span_quote": "I do not know how to send comments",
+              "interpretation": "You do not know a way to submit comments.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_effect": {
+          "text": "Flights when people sleep could disturb rest because their sound may interrupt sleep.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "understanding_explained_impact",
+              "span_quote": "Flights when people sleep could disturb rest because their sound may interrupt sleep",
+              "interpretation": "You link sound during sleep to possible rest disruption.",
+              "subject": "respondent",
+              "domain": "IAM",
+              "effect_quote": "could disturb rest"
+            }
+          ]
+        },
+        "domain": {
+          "text": "The consultation was about a bus service, not drones.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "participation_contribution",
+              "span_quote": "The consultation was about a bus service",
+              "interpretation": "You clarify the transferable bus-service context.",
+              "subject": "respondent",
+              "domain": "transferable"
+            }
+          ]
+        },
+        "influence": {
+          "text": "I do not know whether the bus proposal changed the decision.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "influence_unknown",
+              "span_quote": "I do not know whether the bus proposal changed the decision",
+              "interpretation": "You do not know the outcome of your bus proposal.",
+              "subject": "respondent",
+              "domain": "transferable"
+            }
+          ]
+        },
+        "scenario_outcome": {
+          "text": "I do not know whether my bus proposal changed the decision.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "influence_unknown",
+              "span_quote": "I do not know whether my bus proposal changed the decision",
+              "interpretation": "The influence of your bus proposal remains unknown.",
+              "subject": "respondent",
+              "domain": "transferable"
+            }
+          ]
+        }
+      },
+      "bindings": {
+        "familiarity": {
+          "personal": "familiarity"
+        },
+        "concept": {
+          "personal": "concept"
+        },
+        "delivery": {
+          "personal": "delivery"
+        },
+        "understanding": {
+          "personal": "understanding"
+        },
+        "experience": {
+          "personal": "experience",
+          "contribution_after_exposure": "experience"
+        },
+        "needs": {
+          "personal": "needs"
+        },
+        "opportunity": {
+          "personal": "opportunity"
+        },
+        "scenario_view": {
+          "personal": "scenario_view"
+        },
+        "scenario_information": {
+          "personal": "scenario_information"
+        },
+        "scenario_access": {
+          "personal": "scenario_access"
+        },
+        "scenario_effect": {
+          "personal": "scenario_effect"
+        },
+        "domain": {
+          "personal": "domain"
+        },
+        "influence": {
+          "personal": "influence"
+        },
+        "scenario_outcome": {
+          "personal": "scenario_outcome"
+        }
+      },
+      "optional_information": false,
+      "information_question": "Are camera images recorded or retained?",
+      "correction": true,
+      "correction_suffix": " This is my view of the illustrative case, not an independently verified result.",
+      "expected_evidence": [
+        "Reasoned concern about rest",
+        "Personal bus-consultation contribution is transferable experience",
+        "Outcome unknown; willingness and barriers distinct",
+        "Opposition with conditions stays separate from understanding"
+      ],
+      "must_not_infer": [
+        "Verified influence",
+        "Automatic co-design or chat readiness gain",
+        "A city SRL or organisational/technical score",
+        "Known camera policy, measured noise or mitigation feasibility"
+      ],
+      "semantic_review_status": "pending_human_review"
+    },
+    {
+      "id": "authority_representative",
+      "title": "Authority representative",
+      "synthetic": true,
+      "context": {
+        "perspective": "organisation",
+        "role": "authority",
+        "city": "madrid",
+        "function": "Transport planning"
+      },
+      "answers": {
+        "familiarity": {
+          "text": "lot",
+          "control": "answer",
+          "fixture_claims": []
+        },
+        "concept": {
+          "text": "A drone is an aircraft flown without a pilot on board.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "concept_explanation",
+              "span_quote": "an aircraft flown without a pilot on board",
+              "interpretation": "You explain the basic drone concept.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "delivery": {
+          "text": "Our team knows of carrying medicines and laboratory samples with drones.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "delivery_use_knowledge",
+              "span_quote": "carrying medicines and laboratory samples with drones",
+              "interpretation": "You report that your team knows these delivery applications.",
+              "subject": "organisation",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "understanding": {
+          "text": "Flights while residents rest could disturb sleep because the sound occurs during a sensitive activity.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "understanding_explained_impact",
+              "span_quote": "Flights while residents rest could disturb sleep because the sound occurs during a sensitive activity",
+              "interpretation": "You explain how timing and activity could affect disturbance.",
+              "subject": "respondent",
+              "domain": "IAM",
+              "effect_quote": "could disturb sleep"
+            }
+          ]
+        },
+        "experience": {
+          "text": "Last month our team reviewed draft delivery-drone planning options and I added a request for noise measurements; I do not know whether our review changed a decision.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "exposure_learning",
+              "span_quote": "our team reviewed draft delivery-drone planning options",
+              "interpretation": "You report a team review of draft drone planning options.",
+              "subject": "organisation",
+              "domain": "IAM",
+              "activity_quote": "reviewed draft delivery-drone planning options",
+              "time_quote": "Last month"
+            },
+            {
+              "claim_type": "participation_contribution",
+              "span_quote": "I added a request for noise measurements",
+              "interpretation": "You report personally adding a request for noise measurements.",
+              "subject": "respondent",
+              "domain": "IAM",
+              "activity_quote": "reviewed draft delivery-drone planning options",
+              "time_quote": "Last month"
+            },
+            {
+              "claim_type": "influence_unknown",
+              "span_quote": "I do not know whether our review changed a decision",
+              "interpretation": "You do not know whether the review affected a decision.",
+              "subject": "respondent",
+              "domain": "IAM",
+              "activity_quote": "reviewed draft delivery-drone planning options",
+              "time_quote": "Last month"
+            }
+          ]
+        },
+        "needs": {
+          "text": "We still need local sound data and a documented image-handling policy.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "information_need",
+              "span_quote": "local sound data and a documented image-handling policy",
+              "interpretation": "You report a need for local sound data and image-policy documentation.",
+              "subject": "organisation",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "opportunity": {
+          "text": "We have not established a public consultation channel for delivery drones yet.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "opportunity_absence",
+              "span_quote": "We have not established a public consultation channel",
+              "interpretation": "You report that no consultation channel has been established.",
+              "subject": "organisation",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_view": {
+          "text": "I cannot endorse this illustrative route without evidence. It is not a project our team has reviewed. We would need measured sound and an image-handling policy.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "proposal_uncertain",
+              "span_quote": "I cannot endorse this illustrative route without evidence",
+              "interpretation": "You withhold endorsement pending evidence.",
+              "subject": "respondent",
+              "domain": "IAM"
+            },
+            {
+              "claim_type": "information_need",
+              "span_quote": "measured sound and an image-handling policy",
+              "interpretation": "You identify evidence needed to review the example.",
+              "subject": "organisation",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_effect": {
+          "text": "In this case early flights could disturb rest because their sound occurs while residents are sleeping.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "understanding_explained_impact",
+              "span_quote": "early flights could disturb rest because their sound occurs while residents are sleeping",
+              "interpretation": "You explain a possible sleep-related impact in the example.",
+              "subject": "respondent",
+              "domain": "IAM",
+              "effect_quote": "could disturb rest"
+            }
+          ]
+        },
+        "scenario_information": {
+          "text": "We would need measured sound and a documented camera-retention policy.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "information_need",
+              "span_quote": "measured sound and a documented camera-retention policy",
+              "interpretation": "You report a need for measured sound and retention policy.",
+              "subject": "organisation",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_access": {
+          "text": "We would want affected groups to have accessible ways to comment; no such local channel is established by this example.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "opportunity_intention",
+              "span_quote": "We would want affected groups to have accessible ways to comment",
+              "interpretation": "You express a preference for accessible participation.",
+              "subject": "organisation",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "influence": {
+          "text": "I do not know whether our review changed a decision.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "influence_unknown",
+              "span_quote": "I do not know whether our review changed a decision",
+              "interpretation": "The review outcome remains unknown.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        },
+        "scenario_outcome": {
+          "text": "I do not know whether our review changed a decision.",
+          "control": "answer",
+          "fixture_claims": [
+            {
+              "claim_type": "influence_unknown",
+              "span_quote": "I do not know whether our review changed a decision",
+              "interpretation": "The review outcome remains unknown.",
+              "subject": "respondent",
+              "domain": "IAM"
+            }
+          ]
+        }
+      },
+      "bindings": {
+        "familiarity": {
+          "organisation": "familiarity"
+        },
+        "concept": {
+          "organisation": "concept"
+        },
+        "delivery": {
+          "organisation": "delivery"
+        },
+        "understanding": {
+          "organisation": "understanding"
+        },
+        "experience": {
+          "organisation_authority": "experience",
+          "contribution_after_exposure": "experience"
+        },
+        "needs": {
+          "organisation": "needs"
+        },
+        "opportunity": {
+          "organisation": "opportunity"
+        },
+        "scenario_view": {
+          "organisation": "scenario_view"
+        },
+        "scenario_effect": {
+          "organisation": "scenario_effect"
+        },
+        "scenario_information": {
+          "organisation": "scenario_information"
+        },
+        "scenario_access": {
+          "organisation": "scenario_access"
+        },
+        "influence": {
+          "organisation": "influence"
+        },
+        "scenario_outcome": {
+          "organisation": "scenario_outcome"
+        }
+      },
+      "optional_information": false,
+      "information_question": "Are camera images recorded or retained?",
+      "correction": false,
+      "correction_suffix": " This is my view of the illustrative case, not an independently verified result.",
+      "expected_evidence": [
+        "Reported team planning review and separate personal contribution",
+        "Outcome and local evidence remain unknown",
+        "No existing participation channel reported",
+        "The illustrative proposal was not reviewed by the team"
+      ],
+      "must_not_infer": [
+        "Verified influence",
+        "Automatic co-design or chat readiness gain",
+        "A city SRL or organisational/technical score",
+        "Known camera policy, measured noise or mitigation feasibility"
+      ],
+      "semantic_review_status": "pending_human_review"
+    }
+  ]
+}

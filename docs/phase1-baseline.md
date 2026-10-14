@@ -1,4 +1,7 @@
-# Current general interview: baseline-2.1.0
+# Current general interview: baseline-2.3.1
+
+See [response recovery and effects prerequisites](baseline-recovery-2.3.1.md) for
+the current UI controls, named-effect probes, privacy recovery and benchmark version.
 
 New sessions now use the [role-aware adaptive interview](baseline-adaptive-interview.md),
 with explicit evidence requirements and interleaved clarifications. See that document

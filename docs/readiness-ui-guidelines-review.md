@@ -46,3 +46,21 @@ conditional, or pending. Page numbers are PDF pages, matching the printed number
 Main cleanup retains the current styling and this source checklist. Earlier
 change logs and historical interaction notes live in Git history. Live browser
 layout, keyboard and accessibility checks remain a host verification task.
+
+## Conversational mode check — 13 October 2026
+
+The actual local 19-page guide was re-read as text, and the rendered p.12 form
+example was visually rechecked. The new mode reuses the existing header/footer,
+theme, palette, spacing, focus CSS and native controls. It adds a secondary mode
+picker, single-question screens, explicit scenario continuation, secondary
+information controls and confirmed-summary downloads; no new visual system or
+unapproved mark was introduced. AppTest exercises all three journeys, edits,
+source display, privacy previews, partial finish and downloads. These are
+Streamlit element/interaction tests, not browser screenshots.
+
+There is no installed browser/Playwright tool here. A temporary localhost UI
+launch on a separate test port was denied at socket creation by the execution
+sandbox. Therefore desktop/mobile rendered layouts, 360/390px overflow, 200%
+zoom, actual keyboard focus/contrast and screenshots remain explicitly unverified.
+Use the short manual checklist in conversational-meeting-demo.md on the host.
+Approved branding assets/fonts, privacy URL and WP2 hub decisions remain missing.

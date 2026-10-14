@@ -1,9 +1,14 @@
 {
-  "version": "3.0.0",
+  "version": "4.0.0",
   "default_mode": "general_baseline",
   "modes": {
     "general_baseline": {
-      "label": "Phase 1 \u2014 general baseline",
+      "label": "General interview",
+      "numerical_crl": null,
+      "numerical_srl": null
+    },
+    "retrieval_grounded_conversation": {
+      "label": "Conversational interview and illustrative case",
       "numerical_crl": null,
       "numerical_srl": null
     },

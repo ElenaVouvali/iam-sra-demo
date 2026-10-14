@@ -13,13 +13,25 @@ from iam_sra.settings import ROOT
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--mock',action='store_true',help='Empty extraction fixture; not model accuracy. Privacy screening remains active.')
-    parser.add_argument('--benchmark',type=Path,default=ROOT/'eval/benchmarks/baseline_adaptive_v3.json')
+    parser.add_argument('--benchmark',type=Path)
+    parser.add_argument('--conversation',action='store_true',help='Run the complete retrieved baseline-to-scenario journey.')
+    parser.add_argument('--fixtures',action='store_true',help='Authored controlled claims for offline conversational flow tests; not model semantics.')
+    parser.add_argument('--decline-scenario',action='store_true',help='Test completing after declining the illustrative example.')
     parser.add_argument('--case',action='append',help='Run a case ID; repeat to select several.')
     parser.add_argument('--output',type=Path,default=ROOT/'.runtime/baseline-adaptive-benchmark.json')
     parser.add_argument('--cpu',action='store_true',help='Pinned local model, CPU-only Transformers/XGrammar; no GPU service.')
     parser.add_argument('--cpu-threads',type=int,default=4)
     parser.add_argument('--cpu-generation-seconds',type=int,default=300)
     args=parser.parse_args()
+    if args.conversation:
+        if args.cpu:parser.error('Use the existing Qwen/vLLM service for the conversational live run.')
+        from iam_sra.conversation_benchmark import run_bank
+        result=run_bank(args.benchmark or ROOT/'eval/conversation_meeting_cases_v2.json',args.output,
+            fixtures=args.fixtures,mock=args.mock,case_ids=args.case,decline=args.decline_scenario)
+        print(json.dumps({'status':result['status'],'output':str(args.output),'semantic_review_status':result['semantic_review_status']}))
+        return 0 if result['status']=='completed' else 2
+    if args.fixtures:parser.error('--fixtures is only for --conversation.')
+    args.benchmark=args.benchmark or ROOT/'eval/benchmarks/baseline_adaptive_v4.json'
     if args.cpu and args.mock:parser.error('--cpu and --mock are mutually exclusive')
     runtime=None
     if args.cpu:

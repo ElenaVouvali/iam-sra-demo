@@ -101,8 +101,13 @@ class LLMTransport:
                     'privacy_boundary':'model_output','entity_types':list(exc.entity_types),
                     'privacy_findings':list(exc.findings),
                     'latency_seconds':round(time.monotonic()-attempt_start,4)})
+                body=None  # Rejected content must never enter traces or retry feedback.
+                if attempt==0 and exc.code!='privacy_unavailable':
+                    messages[0]['content']=system+'\nRetry: generated content failed local privacy screening. Return a fresh grounded object without introducing private details. Use only the supplied passage IDs; do not add facts.'
+                    continue
                 raise PrivacyError('The generated interpretation could not be displayed safely. Retry this step with the same answer; rejected output was not saved.',
-                    unavailable=exc.code=='privacy_unavailable', entity_types=exc.entity_types,findings=exc.findings) from None
+                    unavailable=exc.code=='privacy_unavailable', entity_types=exc.entity_types,findings=exc.findings,
+                    boundary='model_output') from None
             try:
                 choice=body['choices'][0];message=choice['message'];content=message.get('content') or ''
                 if not isinstance(content,str) or not isinstance(choice['finish_reason'],str):raise TypeError()

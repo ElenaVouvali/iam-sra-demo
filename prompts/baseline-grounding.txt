@@ -7,6 +7,7 @@ For each additional claim, use the shortest exact answer span and the same claim
 Interpretation distinctions:
 - A drone definition is concept knowledge; knowledge that drones carry goods/medical materials or a stated delivery purpose is delivery-use knowledge.
 - “Could arrive sooner” is a possible effect without a reason; a reason that explains how/why the effect could occur is reasoned impact. Do not conflate delivery purpose with an established benefit.
+- Check effect_quote independently: an impact claim needs a specific effect quoted inside its supporting answer span. Approval/disapproval or inability to identify any difference is not an effect; correct explicit uncertainty to understanding_unknown. If an effect is actually named but its reason is unknown, retain the effect as an unexplained assertion. Never use the question's wording as a named effect. Leave effect_quote empty for non-impact claims.
 - “I attended/listened but did not contribute” supports actual exposure and explicit absence of contribution, not participation.
 - A future consultation or intention to comment is hypothetical, not an actual contribution.
 - A personal action is not an organisational action; organisational perspective alone does not change the subject.

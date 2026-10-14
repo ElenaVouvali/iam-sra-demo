@@ -114,7 +114,7 @@ def test_unrelated_explained_effect_does_not_close_another_effect_gap():
     s=new();familiarity(s)
     answer(s,'Aircraft can carry parcels. Deliveries might arrive sooner. Road traffic could ease if van trips are replaced.',
         knowledge()+[
-            claim('understanding','claim_without_detail',evidence_id='B3_2.p002',span_quote='Deliveries might arrive sooner.'),
+            claim('understanding','claim_without_detail',evidence_id='B3_2.p002',span_quote='Deliveries might arrive sooner.',effect_quote='arrive sooner'),
             claim('understanding','explained_impact',evidence_id='B3_2.p003',span_quote='Road traffic could ease if van trips are replaced.'),
         ])
     assert s.current_question['id']=='reasoning'

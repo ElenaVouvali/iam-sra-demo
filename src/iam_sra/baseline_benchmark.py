@@ -199,7 +199,14 @@ def probe_supported(q, previous, respondent):
             same_scope(c,d) and (d['dimension']=='influence' or d['dimension']=='participation' and d['kind']=='absence')
             for d in claims) for c in candidates)
     if q['id']=='reasoning':
-        return any(c['kind']=='claim_without_detail' and c['status']=='supported' for c in candidates) and not any(c['kind']=='explained_impact' and c['status']=='supported' for c in claims)
+        def explained_same_effect(c):
+            span=(c.get('span_quote') or '').casefold().strip()
+            return any(d['kind']=='explained_impact' and d['status']=='supported'
+                and span and (other:=(d.get('span_quote') or '').casefold().strip())
+                and (span in other or other in span) for d in claims)
+        return any(c['kind']=='claim_without_detail' and c['status']=='supported'
+            and ('named_effect_template' not in q or c.get('effect_quote'))
+            and not explained_same_effect(c) for c in candidates)
     if q['id']=='domain':return any(actual(c) and c['kind'] in {'learning_exposure','contribution'} and c['domain']=='unknown' for c in candidates)
     if q['id']=='contribution':return any(actual(c) and c['kind']=='learning_exposure' and not any(
         d['dimension']=='participation' and d['kind']!='intention' and same_scope(c,d) for d in claims) for c in candidates)

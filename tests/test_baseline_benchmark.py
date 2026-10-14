@@ -9,7 +9,7 @@ from iam_sra.baseline_client import MockBaselineClient
 from iam_sra.settings import ROOT
 from test_baseline import Extractor, claim
 
-BANK=ROOT/'eval/benchmarks/baseline_adaptive_v3.json'
+BANK=ROOT/'eval/benchmarks/baseline_adaptive_v4.json'
 
 
 def bank():return load_bank(BANK)

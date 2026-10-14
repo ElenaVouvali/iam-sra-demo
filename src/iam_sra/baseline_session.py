@@ -4,13 +4,20 @@ from copy import deepcopy
 from datetime import datetime, timezone
 from hashlib import sha256
 from uuid import uuid4
-from .privacy import VERSION, guarded, export_guard, require_clean, require_safe_data
+from .privacy import VERSION, guarded, export_guard, require_clean, require_safe_data, PrivacyError
 from .settings import ROOT, config
 from .baseline import profile, select_question, selection_plan, validate_source
 from .evidence import passages
 from .assessment import AssessmentError
 
 MODE='general_baseline'
+
+def _screen_interpretation(value,boundary='assessment_record'):
+    try:require_safe_data(value)
+    except PrivacyError as exc:
+        if exc.code=='privacy_unavailable':raise
+        raise PrivacyError('We could not safely display the interpretation. Your answer is retained. Retry this answer; no interpretation has been saved.',
+            entity_types=exc.entity_types,findings=exc.findings,boundary=boundary) from None
 
 class BaselineSession:
     assessment_mode=MODE
@@ -110,10 +117,12 @@ class BaselineSession:
             if control=='answer' and text not in self.instrument['familiarity']:raise ValueError('Choose a listed familiarity answer.')
         if control=='answer' and not text.strip():raise ValueError('Write an answer, or choose Unsure or Skip.')
         if len(text)>6000:raise ValueError('Please shorten the answer to 6,000 characters.')
-        version=self.version+1;event_id='B'+str(version)+'_'+str(len(self.events)+1)
+        version=self.version+1;event_id=getattr(self,'evidence_prefix','B')+str(version)+'_'+str(len(self.events)+1)
         evidence={event_id+'.'+key:value for key,value in passages(text).items()} if text.strip() else {}
         claims=[];interaction='substantive'
         information_context='after_information' if self.information_exposures else 'before_information'
+        assessment_context=q.get('assessment_context','general_baseline')
+        scenario_id=q.get('scenario_id') if assessment_context=='illustrative_scenario' else None
         if q['id']=='familiarity' and control=='answer':
             selection=text
             claims=[{'evidence_id':next(iter(evidence)),'dimension':'familiarity','kind':'self_report',
@@ -131,7 +140,7 @@ class BaselineSession:
             claims,interaction=self._claims(result,evidence,q,event_id,version,information_context)
         event={'id':event_id,'version':version,'question':deepcopy(q),'text':text if control=='answer' or q['id']=='familiarity' else '',
                'control':control,'interaction':interaction,'claims':claims,'confirmed':False,'active':True,
-               'context':'general_baseline','scenario_id':None,'information_context':information_context,
+               'context':assessment_context,'scenario_id':scenario_id,'information_context':information_context,
                'created_at':datetime.now(timezone.utc).isoformat(),'replaces':self._editing}
         if self.instrument.get('canonical_claim_contract') and control=='answer' and q['id']!='familiarity':
             event['interpretation_status']='reviewed_claims' if claims else 'no_supported_claims_after_independent_review'
@@ -144,18 +153,18 @@ class BaselineSession:
                 c.pop('ambiguities',None);c.pop('outcome_relation',None)
         for c in claims:
             c.update(question_id=q['id'],event_id=event_id,evidence_basis='self_report' if c['dimension']!='understanding' or c['kind']!='explained_impact' else 'answer_demonstrated_reasoning',
-                confirmation_status='pending',version=version,context='general_baseline',scenario_id=None,
-                source='respondent_answer',elicitation_context='baseline_core' if not q['is_probe'] else 'baseline_probe',
+                confirmation_status='pending',version=version,context=assessment_context,scenario_id=scenario_id,
+                source='respondent_answer',elicitation_context=q.get('elicitation_context','baseline_core' if not q['is_probe'] else 'baseline_probe'),
                 information_context=information_context,external_verification=False)
         for c in claims:
             c['independent_prior_knowledge']=False if information_context=='after_information' else None
-        require_safe_data(event)
+        _screen_interpretation(event)
         audit=None
         if control=='answer' and q['id']!='familiarity':
             audit={'event_id':event_id,'instrument_version':self.instrument['version'],'prompt_version':self.prompt_version,
                 'prompt_hashes':deepcopy(self.prompt_hashes),'diagnostics':deepcopy(getattr(client,'last_diagnostics',[])),
                 'settings':deepcopy(getattr(client,'last_settings',{}))}
-            require_safe_data(audit)
+            _screen_interpretation(audit)
         self.version=version;self.pending=event;self.evidence.update(evidence)
         if audit is not None:
             self.inference.append(audit)
@@ -164,11 +173,12 @@ class BaselineSession:
 
     def _claims(self,result,evidence,q,event_id,version,information_context):
         result=validate_source(result.model_dump(),evidence)
-        require_safe_data(result.model_dump());claims=[]
+        _screen_interpretation(result.model_dump(),boundary='model_output');claims=[]
         for c in result.claims:
             if c.dimension not in self.instrument['dimensions']:
                 raise AssessmentError('The interpretation used a category outside this session version.',code='evidence')
             row=c.model_dump()
+            if not self.instrument.get('named_effect_probes'):row.pop('effect_quote',None)
             if not self.instrument.get('canonical_claim_contract'):
                 row.pop('span_quote',None)
             row['status']='explicit_absence' if c.kind=='absence' else 'unknown' if c.kind=='unknown' else 'supported'
@@ -179,8 +189,8 @@ class BaselineSession:
                 row.pop('ambiguities',None);row.pop('outcome_relation',None)
             row.update(question_id=q['id'],event_id=event_id,
                 evidence_basis='answer_demonstrated_reasoning' if c.kind=='explained_impact' else 'self_report',
-                confirmation_status='pending',version=version,context='general_baseline',scenario_id=None,
-                source='respondent_answer',elicitation_context='baseline_probe' if q['is_probe'] else 'baseline_core',
+                confirmation_status='pending',version=version,context=q.get('assessment_context','general_baseline'),scenario_id=q.get('scenario_id'),
+                source='respondent_answer',elicitation_context=q.get('elicitation_context','baseline_probe' if q['is_probe'] else 'baseline_core'),
                 information_context=information_context,external_verification=False,
                 independent_prior_knowledge=False if information_context=='after_information' else None)
             claims.append(row)
@@ -207,7 +217,7 @@ class BaselineSession:
                'original_answer_unchanged':True,'confirmed':False,'revision':revised['interpretation_revision'],
                'diagnostics':deepcopy(getattr(client,'last_diagnostics',[])),
                'settings':deepcopy(getattr(client,'last_settings',{}))}
-        require_safe_data({'pending':revised,'audit':audit})
+        _screen_interpretation({'pending':revised,'audit':audit})
         if not hasattr(self,'interpretation_reviews'):self.interpretation_reviews=[]
         self.interpretation_reviews.append(audit);self.pending=revised
 
@@ -218,7 +228,7 @@ class BaselineSession:
         original=next((deepcopy(e) for e in self.events if e['id']==event_id and e['active'] and e['claims'] and e['question']['id']!='familiarity'),None)
         if original is None:raise ValueError('Choose an interpretation from this summary.')
         self.edit_answer(event_id)
-        version=self.version+1;new_id='B'+str(version)+'_'+str(len(self.events)+1)
+        version=self.version+1;new_id=getattr(self,'evidence_prefix','B')+str(version)+'_'+str(len(self.events)+1)
         evidence={new_id+'.'+k:v for k,v in passages(original['text']).items()}
         mapping={old:new_id+old[len(original['id']):] for old in self.evidence if old.startswith(original['id']+'.')}
         pending={**original,'id':new_id,'version':version,'confirmed':False,'active':True,

@@ -17,6 +17,7 @@ REQUIREMENTS={
  'experience_domain':('exposure',{'learning_exposure','contribution'}),
  'reported_outcome':('influence',{'influence'}),
  'scope_resolution':(None,set()),
+ 'proposal_view':('proposal',{'view_support','view_opposition','view_uncertainty','view_mixed'}),
 }
 CONDITIONS={'none','material_ambiguity','understanding_claim_without_reason',
  'actual_exposure_without_contribution_evidence','actual_experience_unknown_domain','actual_contribution_without_outcome'}
@@ -47,6 +48,12 @@ def validate_registry(instrument):
     experience=next(q for q in items if q['id']=='experience')
     if any('organisation_'+r not in experience['variants'] for r in policy['role_mapping'].values()):
         raise ValueError('Missing organisational role wording.')
+    if instrument.get('named_effect_probes'):
+        reasoning=next(q for q in items if q['id']=='reasoning')
+        template=reasoning.get('named_effect_template','')
+        remainder=template.replace('{effect}','')
+        if template.count('{effect}')!=1 or '{' in remainder or '}' in remainder:
+            raise ValueError('Reasoning wording must contain one plain effect placeholder.')
 
 
 def active_events(events):return [e for e in events if e['active'] and e['confirmed']]
@@ -185,7 +192,7 @@ def enrich_profile(result,events,instrument,respondent=None):
             result['interview_dispositions'][q['id']]['disposition']='not_applicable'
 
 
-def adaptive_plan(events,instrument,respondent):
+def adaptive_plan(events,instrument,respondent,*,shortlist=False):
     validate_registry(instrument)
     from .baseline import profile
     active=active_events(events);current=profile(active,instrument,respondent);claims=current['claims'];policy=instrument['routing']
@@ -205,6 +212,9 @@ def adaptive_plan(events,instrument,respondent):
             claim_scope='respondent_or_organisation' if respondent['perspective']=='organisation' else 'respondent')
         if q['id']=='experience' and any(actual(c) and c['kind']=='learning_exposure' for c in scoped_claims):
             r['question_text']=q['when_exposure_already_reported'];r['variant_id']='contribution_after_exposure'
+        if q['id']=='reasoning' and instrument.get('named_effect_probes'):
+            cited=next(c for c in scoped_claims if c['evidence_id'] in trigger and c.get('effect_quote'))
+            r['question_text']=q['named_effect_template'].format(effect=cited['effect_quote'])
         return r
     for q in sorted(instrument['core_questions'],key=lambda q:(q['priority'],q['id'])):
         if q['id'] in done:continue
@@ -226,6 +236,7 @@ def adaptive_plan(events,instrument,respondent):
     candidates={
       'material_ambiguity':issues[0]['evidence_ids'] if issues else [],
       'understanding_claim_without_reason':references([c for c in scoped_claims if positive(c) and c['kind']=='claim_without_detail'
+          and (not instrument.get('named_effect_probes') or c.get('effect_quote'))
           and not any(positive(explained) and explained['kind']=='explained_impact' and same_effect_scope(c,explained)
                       for explained in scoped_claims)]) ,
       'actual_exposure_without_contribution_evidence':references([a for a in rows('learning_exposure') if not any(c['dimension']=='participation' and c['kind']!='intention' and compatible_context(a,c) for c in scoped_claims)]),
@@ -238,20 +249,30 @@ def adaptive_plan(events,instrument,respondent):
         if respondent['perspective'] not in q['applicable_perspectives'] or respondent['stakeholder_category'] not in q['applicable_roles']:
             omitted.append({'question_id':q['id'],'rule_id':'not_applicable','reason':'Outside this respondent scope.'});continue
         ids=candidates[q['probe_condition']]
-        if not ids:continue
+        if not ids:
+            if q['id']=='reasoning' and instrument.get('named_effect_probes') and any(
+                    positive(c) and c['kind']=='claim_without_detail' and not c.get('effect_quote') for c in scoped_claims):
+                omitted.append({'question_id':q['id'],'rule_id':'no_named_unexplained_effect',
+                    'reason':'No confirmed, specifically quoted unexplained effect justifies this probe.'})
+            continue
         item=prepare(q,'Clarify confirmed evidence: '+q['probe_condition'],ids,issues[0]['ambiguity'] if q['id']=='scope' else None)
         if q['id']=='scope':item['dimension']=issues[0]['dimension'];item['covers']=[item['dimension']]
         else:item['covers']=[item['dimension']]
         probes.append(item)
     slots=policy['maximum_questions']-len(active)
     if slots<=0:
-        return None,omitted+[{'question_id':q['id'],'rule_id':'total_question_budget','reason':'Question budget reached.'} for q in cores+probes]
+        return ([] if shortlist else None),omitted+[{'question_id':q['id'],'rule_id':'total_question_budget','reason':'Question budget reached.'} for q in cores+probes]
     used=sum(e['question']['is_probe'] for e in active)
     allow_probe=used<policy['maximum_probes'] and (not active or not active[-1]['question']['is_probe']) and slots>len(cores)
     if allow_probe and probes:
         latest={c['evidence_id'] for c in active[-1]['claims']} if active else set()
         immediate=[q for q in probes if q['id']=='scope' or latest.intersection(q['triggering_evidence_ids'])]
-        if immediate:return immediate[0],omitted
+        if immediate:
+            if shortlist:return immediate+cores+[q for q in probes if q not in immediate],omitted
+            return immediate[0],omitted
+    if shortlist:
+        if 'familiarity' not in done:return [q for q in cores if q['id']=='familiarity'],omitted
+        return cores+(probes if allow_probe else []),omitted
     if cores:return cores[0],omitted
     if allow_probe and probes:return probes[0],omitted
     return None,omitted+[{'question_id':q['id'],'rule_id':'probe_budget_or_suppression','reason':'No further useful clarification within policy.'} for q in probes]

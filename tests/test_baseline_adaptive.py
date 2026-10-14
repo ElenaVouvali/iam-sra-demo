@@ -75,7 +75,7 @@ def test_concise_equivalent_concept_claims_meet_same_requirement(text):
 
 def test_assertion_does_not_cover_effect_reasoning_and_probe_is_interleaved():
     s=new();familiarity(s)
-    answer(s,'Drones are uncrewed and carry parcels. They could make a difference.',knowledge()+[claim(kind='claim_without_detail')])
+    answer(s,'Drones are uncrewed and carry parcels. Deliveries could be quicker.',knowledge()+[claim(kind='claim_without_detail',effect_quote='Deliveries could be quicker.',evidence_id='B3_2.p002')])
     assert s.current_question['id']=='reasoning'  # before effects/experience/needs
     assert s.current_profile['requirements']['understanding']['status']=='missing'
     q=s.current_question;assert q['triggering_evidence_ids'] and q['target_requirement']=='effect_reasoning'
@@ -86,7 +86,7 @@ def test_assertion_does_not_cover_effect_reasoning_and_probe_is_interleaved():
 
 def test_unknown_reasoning_probe_does_not_repeat_core_effects():
     s=new();familiarity(s)
-    answer(s,'Aircraft carry goods. There may be effects.',knowledge()+[claim(kind='claim_without_detail')])
+    answer(s,'Aircraft carry goods. Deliveries could be quicker.',knowledge()+[claim(kind='claim_without_detail',effect_quote='Deliveries could be quicker.',evidence_id='B3_2.p002')])
     assert s.current_question['id']=='reasoning';s.answer('',Extractor(),'unsure')
     assert s.current_question['id']=='experience'
 
@@ -150,7 +150,7 @@ def test_personal_route_does_not_use_organisation_or_third_party_activity_as_own
 
 def test_budget_reserves_every_remaining_core_and_never_repeats_probes():
     s=new();familiarity(s);until(s,'understanding')
-    answer(s,'There may be effects.',[claim(kind='claim_without_detail')])
+    answer(s,'Deliveries could be quicker.',[claim(kind='claim_without_detail',effect_quote='Deliveries could be quicker.')])
     # One spare slot permits immediate clarification, but not a second that
     # would displace a remaining shared objective.
     assert s.current_question['id']=='reasoning';s.answer('',Extractor(),'unsure')
@@ -231,8 +231,8 @@ def test_frozen_20_and_1x_keep_original_selector_and_export_shape():
 
 def test_completed_export_has_dispositions_requirements_provenance_no_scores():
     s=new();familiarity(s);s.finish();s.complete(actor='automation');d=s.export()
-    assert d['schema_version']=='iam-baseline-2.3.0'
-    assert d['routing_version']=='baseline-routing-1.0.0'
+    assert d['schema_version']=='iam-baseline-2.3.1'
+    assert d['routing_version']=='baseline-routing-1.0.1'
     assert d['routing_stop_reason']=='user_finish'
     assert d['role_mapping']['answering_perspective']=='personal'
     assert d['current_profile']['interview_dispositions']['concept']['disposition']=='not_asked'
@@ -241,7 +241,7 @@ def test_completed_export_has_dispositions_requirements_provenance_no_scores():
 
 def test_two_probe_ceiling_when_broad_answer_frees_slots():
     s=new();familiarity(s)
-    answer(s,'Uncrewed aircraft carry goods. They may have effects.',knowledge()+[claim(kind='claim_without_detail')])
+    answer(s,'Uncrewed aircraft carry goods. Deliveries could be quicker.',knowledge()+[claim(kind='claim_without_detail',effect_quote='Deliveries could be quicker.',evidence_id='B3_2.p002')])
     assert s.current_question['id']=='reasoning'
     answer(s,'Repeated sound could interrupt rest.',[claim()])
     assert s.current_question['id']=='experience'
@@ -315,7 +315,7 @@ def test_real_detector_adaptive_registry_request_and_export(monkeypatch):
     s=new(stakeholder='researcher');familiarity(s);s.answer('An aircraft without a pilot on board.',BaselineClient());s.confirm(True)
     complete(s)
     assert calls==['readiness_evidence','readiness_grounding']
-    assert s.export()['schema_version']=='iam-baseline-2.3.0'
+    assert s.export()['schema_version']=='iam-baseline-2.3.1'
     assert s.export()['privacy_screening_enabled'] is True
 
 

@@ -104,7 +104,7 @@ def test_no_small_notes_supporting_words_or_phase_labels(monkeypatch):
     assert 'Phase 1' not in visible and 'baseline' not in visible.lower()
 
 
-def test_welcome_title_eight_budget_and_explicit_definition_display(monkeypatch):
+def test_welcome_and_question_screen_have_no_definition_or_extra_response_buttons(monkeypatch):
     app=start(monkeypatch)
     assert app.title[0].value=='Drones in your community'
     assert any('No technical knowledge is needed' in x.value for x in app.markdown)
@@ -112,9 +112,9 @@ def test_welcome_title_eight_budget_and_explicit_definition_display(monkeypatch)
     assert not any('up to 8' in x.value for x in app.markdown)
     assert not app.session_state.session.information_exposures
     assert not any('without a person on board' in x.value for x in app.text)
-    click(app,'Show definition')
-    assert len(app.session_state.session.information_exposures)==1
-    assert any('without a person on board' in x.value for x in app.text)
+    assert not any(e.label=='What does “drone” mean? (optional)' for e in app.expander)
+    assert not any(b.label in {'Show definition','Unsure','Prefer not to answer'} for b in app.button)
+    assert any(b.label=='Skip' for b in app.button)
     click(app,'Skip');click(app,'Finish now');click(app,'Confirm summary')
     assert any(e.label=='What we have not discussed' for e in app.expander)
     assert len(app.get('download_button'))==2
@@ -194,7 +194,9 @@ def test_organisational_role_variant_and_interleaved_outcome_journey(monkeypatch
     assert app.session_state.session.state=='review'
     click(app,'Confirm and continue')
     assert app.session_state.session.current_question['id']=='influence'
-    click(app,'Unsure')
+    app.session_state._baseline_client=Extractor(interaction='unsure');app.run()
+    app.text_area(key='baseline_answer_text').set_value('I do not know whether anything changed.');click(app,'Continue')
+    click(app,'Confirm and continue')
     assert app.session_state.session.current_question['id']=='needs'
     click(app,'Skip');click(app,'Skip');click(app,'Confirm summary')
     data=app.session_state.session.export()

@@ -23,6 +23,7 @@ def preview_identity(action):
             getattr(owner,'version',None),len(getattr(owner,'information_exposures',[])),question_id,
             pending.get('id',pending.get('version')) if isinstance(pending,dict) else None,
             tuple(st.session_state.get(k) for k in ('baseline_perspective','baseline_stakeholder_category','baseline_city','baseline_sector')),
+            tuple(st.session_state.get(k) for k in ('conversation_perspective','conversation_role','conversation_city')),
             tuple(sorted(k for k in st.session_state if isinstance(st.session_state.get(k),str) and st.session_state[k] and any(tag in k for tag in ('answer','text','clarification','information_custom','readiness_correction_')))))
 
 
@@ -58,15 +59,19 @@ def invoke(action, *args):
             # Do not offer an address-only fragment as an assessment answer.
             # Context fields retain their existing explicit preview workflow.
             if 'text' in bound.arguments and only_private_detail_fragment(bound.arguments['text']):
-                raise PrivacyError('We removed private details, leaving no answer to assess. Write a new answer without an address or other identifying details, or choose Unsure or Skip.')
+                raise PrivacyError('We removed private details, leaving no answer to assess. Write a new answer without an address or other identifying details, or skip this question.')
             st.session_state.privacy_preview = '\n\n'.join(bound.arguments[k] for k in getattr(action, '_privacy_fields', ()) if k in bound.arguments and isinstance(bound.arguments[k], str))
             st.session_state.privacy_prepared = (action, bound.args, bound.kwargs)
             clear_text_widgets()
             st.session_state.privacy_preview_identity=preview_identity(action)
             raise PrivacyError('Private details were removed. Check the preview above, or write a new answer without those details.')
         return action(*args)
-    except PrivacyError:
-        clear_text_widgets()
+    except PrivacyError as exc:
+        # The submitted fields already passed screening. A rejected generated
+        # interpretation is not a reason to erase that safe answer or demand a
+        # new session. Rejected input still follows the clear/preview workflow.
+        if exc.code=='privacy_unavailable' or getattr(exc,'boundary',None) not in {'model_output','assessment_record'}:
+            clear_text_widgets()
         # Models have no valid unsafe-output cache/trace to keep after a rejection.
         for value in args:
             if hasattr(value, 'last_trace'):
@@ -97,7 +102,7 @@ def preview_control(perform):
     st.button('Confirm cleaned text', on_click=confirm_cleaned)
     def discard():
         discard_preview()
-        for key in ('baseline_error','readiness_error'):
+        for key in ('baseline_error','readiness_error','conversation_error'):
             st.session_state.pop(key,None)
     st.button('Write a general description instead', on_click=discard)
 

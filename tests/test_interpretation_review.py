@@ -82,16 +82,15 @@ def test_reviewer_can_correct_personal_belief_subject_and_keep_undetailed_impact
 
 
 def test_welcome_and_review_hide_redundant_controls_and_preserve_user_text(monkeypatch):
-    app=start(monkeypatch)
+    app=start(monkeypatch,Extractor([claim('concept','concept_explanation',topic_ids=[],interpretation='You describe an uncrewed aircraft.')]))
     assert not any(x.label=='Sector (optional)' for x in app.selectbox)
     click(app,'Begin');app.radio(key='baseline_familiarity').set_value('little');click(app,'Continue')
     assert not any('up to' in x.value for x in app.markdown)
     assert not any('Edit your details' in e.label for e in app.expander)
     app.text_area(key='baseline_answer_text').set_value('An uncrewed aircraft.');click(app,'Continue')
-    assert any(e.label=='Correct this interpretation' for e in app.expander)
-    correction=app.text_area(key='baseline_correction_text_'+app.session_state.session.pending['id'])
-    assert correction.value==''
-    correction.set_value('Keep the aircraft definition.');click(app,'Review revised interpretation')
+    correction=app.text_area(key=f"baseline_interpretation_{app.session_state.session.pending['id']}_0")
+    assert correction.value=='You describe an uncrewed aircraft.'
+    correction.set_value('Keep the aircraft definition.');click(app,'Apply my correction')
     assert app.session_state.session.pending['text']=='An uncrewed aircraft.'
     click(app,'Back')
     assert app.text_area(key='baseline_answer_text').value=='An uncrewed aircraft.'
@@ -107,7 +106,11 @@ def test_transport_failure_retry_reads_same_visible_draft_without_consuming_ques
     app.text_area(key='baseline_answer_text').set_value('An uncrewed aircraft.');click(app,'Continue')
     assert app.text_area(key='baseline_answer_text').value=='An uncrewed aircraft.'
     assert not any('choose Unsure or Skip' in w.value for w in app.warning)
-    click(app,'Try reading my answer again')
+    assert any(b.label=='Retry this answer' for b in app.button)
+    # Existing browser sessions retain the older error string without the new flag.
+    app.session_state.baseline_retryable=None;app.run()
+    assert any(b.label=='Retry this answer' for b in app.button)
+    click(app,'Retry this answer')
     assert app.session_state.session.pending['text']=='An uncrewed aircraft.'
 
 
@@ -115,9 +118,11 @@ def test_blind_review_payload_hides_extractor_labels(monkeypatch):
     client=BaselineClient();requests=[]
     def request(self,http,stage,system,user,schema,validator):
         requests.append((stage,user))
-        if stage=='readiness_evidence':return BaselineExtraction(interaction='substantive',claims=[BaselineClaim.model_validate(claim('concept','concept_explanation',evidence_id='x',topic_ids=[]))])
+        if stage=='readiness_evidence':return validator(json.dumps({'interaction':'substantive','claims':[{
+            'evidence_id':'x','claim_type':'concept_explanation','span_quote':'An uncrewed aircraft.',
+            'interpretation':'You describe an uncrewed aircraft.','subject':'respondent','domain':'IAM','effect_quote':''}]}))
         assert 'dimension' not in user['candidates'][0] and 'kind' not in user['candidates'][0] and 'subject' not in user['candidates'][0]
-        return BaselineReview(decisions=[BaselineDecision(candidate=0,supported=True,dimension='concept',kind='concept_explanation')])
+        return validator(json.dumps({'decisions':[{'candidate':0,'supported':True,'claim_type':'concept_explanation','effect_quote':''}],'additional_claims':[]}))
     monkeypatch.setattr(BaselineClient,'_request',request)
     s=pending();client.extract_baseline({'x':'An uncrewed aircraft.'},question=s.pending['question'],respondent=s.respondent,instrument=s.instrument,prompts=s.prompts)
     assert len(requests)==2
@@ -149,4 +154,4 @@ def test_real_detector_allows_original_answer_bound_interpretation_feedback():
     s.confirm(True);s.finish();s.complete()
     result=s.export()
     assert result['interpretation_reviews'][-1]['original_answer_unchanged']
-    assert result['schema_version']=='iam-baseline-2.2.0'
+    assert result['schema_version']=='iam-baseline-2.3.1'

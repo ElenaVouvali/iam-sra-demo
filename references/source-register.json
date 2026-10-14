@@ -1,6 +1,6 @@
 {
-  "version": "1.4.0",
-  "review_date": "2026-10-12",
+  "version": "1.5.0",
+  "review_date": "2026-10-13",
   "private_sources_git_ignored": true,
   "sources": [
     {
@@ -72,6 +72,16 @@
         "Foundations pp.5–9; components pp.11–15; hub and handover pp.17–18"
       ],
       "interpretation": "UI guide v1.0, September 2026. Partner kit not supplied; partial alignment, not approval of this implementation.",
+      "approval_of_demo": null
+    },
+    {
+      "document": "meeting_notes",
+      "local_path": "references/private/meeting_notes",
+      "sha256": "03b9312a08e83f7397c634bc2d51c93f6af8675986eaab3f68de2b8f7228e57d",
+      "reviewed_sections": [
+        "Entire single plain-text file, 969 bytes"
+      ],
+      "interpretation": "User-supplied meeting ideas for role/city, general questions and retrieval-driven illustrative scenarios. Not an approved questionnaire, numerical decision rule or privacy certification.",
       "approval_of_demo": null
     }
   ],
@@ -187,5 +197,44 @@
       "Complete approved FN question bank and numerical synthesis rules"
     ],
     "privacy_review_note": "Exact reviewed workbook citation labels added to existing bibliographic registry after installed Presidio misclassified cell IDs I15/L13 as PERSON. No citizen-text exemption."
+  },
+  "conversational_demo_review": {
+    "date": "2026-10-13",
+    "instrument": "conversation-1.0.0",
+    "review_status": "draft_pending_FN",
+    "approved_by": null,
+    "code_base": "fc5b69a0aa207e7fe840b573eb0195667517aad6 with preserved local changes",
+    "originals_rechecked": [
+      "GA T3.2–T3.4, Part B pp.5/16 and section 2.2.1",
+      "Workbook Read me, SRA IAM indicators D/H/I8,15,16 and C8/D8/H8/J8 comments",
+      "Use case(s) per LL A2 template; B2:D2 unpopulated",
+      "FN concept all 9 pages; scenario p.5; example numbers pp.6–7; hypothetical gates pp.8–9",
+      "UI guide all 19 pages text; rendered p.12 form example rechecked; existing presentation retained",
+      "WP3 minutes decisions and slide deck slides 3–6",
+      "meeting_notes: a single file, not a directory"
+    ],
+    "retrieval_collections": "Private questions, scenario cards and explanatory/reference passages built by scripts/build-conversation-corpus.py",
+    "original_wording": "Private source-notes sidecar retains workbook D/H/I rows and comments; corpus records reference these. Raw draft questions are not fed to the planner.",
+    "missing": [
+      "Approved completed FN report and 135 × 3 statement bank",
+      "Populated reviewed LL scenarios",
+      "Available full paper texts for substantive findings",
+      "Approved logo/font/partner asset kit and hub/privacy ownership decisions",
+      "Completed D1.2/D13.1 policies"
+    ],
+    "method": "Eligibility and budgets are deterministic; the LLM chooses a question and an authored natural wording from a retrieved shortlist. This is a prototype, not a calibrated adaptive test."
+  },
+  "conversational_update_20261014": {
+    "date": "2026-10-14",
+    "instrument": "conversation-1.1.0",
+    "review_status": "draft_pending_FN",
+    "approved_by": null,
+    "scenario_sources": "GA PDF pp.56–59 / Part B pp.19–22: two Madrid, two Milan and four Coimbra routes; FN concept p.5 retained separately.",
+    "question_sources": "Workbook SRA IAM indicators D/I3,4,6,8,10,14,15,16; J2/J8; Read me L5:L13. Authored adaptations, not approved wording.",
+    "scoring_sources": "Read me J1:L13 and N6:N11; SRA IAM indicators J2, I8/I15/I16. All nine descriptions retained; no weights or societal synthesis formula.",
+    "planner": "Eligible shortlist of up to five; model-selected sequence and freely adapted wording within one sourced objective; separate model meaning/neutrality review and authored fallback.",
+    "scoring": "Nine independent anchor judgements with exact claim references, evidence-admission checks and separate model review of positive support. A selected draft CRL is optional; main numerical fields remain null.",
+    "privacy_note": "Exact controlled GA identifiers and public route labels reviewed after real-detector false positives; arbitrary source descriptions, respondent/model text and exports remain screened.",
+    "missing": "Current reviewed local operating details, approved FN questionnaire/evidence-to-level policy and agreed overall SRL synthesis remain unavailable."
   }
 }

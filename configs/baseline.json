@@ -1,5 +1,5 @@
 {
-  "version": "baseline-2.3.0",
+  "version": "baseline-2.3.1",
   "review_status": "draft_pending_FN",
   "approved_by": null,
   "locale": "en",
@@ -401,6 +401,7 @@
     },
     {
       "id": "reasoning",
+      "named_effect_template": "You mentioned “{effect}”. Why do you think that might happen?",
       "dimension": "understanding",
       "text": "Can you explain why that effect might occur?",
       "rule_id": "understanding_detail",
@@ -432,7 +433,7 @@
       "source_reference": "Workbook SRA IAM indicators!I8,I16",
       "review_status": "draft_pending_FN",
       "approved_by": null,
-      "version": "2.1.0",
+      "version": "2.3.1",
       "locale": "en",
       "response_format": "text",
       "variants": {
@@ -587,8 +588,8 @@
     "GA: T3.2–T3.4; Part B pp.5,16"
   ],
   "wording_status": "Questions proposed for this prototype under latest meeting instructions; not FN-approved verbatim wording. No complete 135 × 3 bank supplied.",
-  "prompt_version": "baseline-2.3.0",
-  "schema_version": "iam-baseline-2.3.0",
+  "prompt_version": "baseline-2.3.1",
+  "schema_version": "iam-baseline-2.3.1",
   "maximum_questions": 8,
   "stakeholder_taxonomy": {
     "version": "ga-target-groups-1.0.0",
@@ -672,7 +673,7 @@
     "permitted_use": "Optional baseline explanation, explicitly requested and exposure logged."
   },
   "routing": {
-    "version": "baseline-routing-1.0.0",
+    "version": "baseline-routing-1.0.1",
     "maximum_questions": 8,
     "maximum_probes": 2,
     "reserve_remaining_core_slots": true,
@@ -697,5 +698,6 @@
     "original_answer_immutable": true,
     "feedback_is_evidence": false
   },
-  "canonical_claim_contract": true
+  "canonical_claim_contract": true,
+  "named_effect_probes": true
 }

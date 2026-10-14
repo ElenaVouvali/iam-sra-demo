@@ -1,22 +1,40 @@
 """Scenario-free baseline screens; substantive confirmation and explicit handoff."""
 import streamlit as st
+import logging
 from .privacy import NOTICE, PrivacyError, safe_message, safe_diagnostics
 from .privacy_ui import invoke, preview_control, download_button
 from .assessment import AssessmentError
 from .ui_presentation import restart_control, footer
 
 
+def _retryable_error():
+    explicit=st.session_state.get('baseline_retryable')
+    if explicit is not None:return bool(explicit)
+    # A running Streamlit session may contain a transient error created before
+    # retryability was recorded separately. Only the model-error wording used
+    # by the pre-upgrade UI gets this compatibility treatment; privacy messages
+    # always require their dedicated recovery path.
+    return str(st.session_state.get('baseline_error','')).endswith('Your text and saved answers are unchanged.')
+
+
 def render(s,client,developer=False):
     restart_control()
     def perform(action,*args):
         st.session_state.pop('baseline_error',None)
+        st.session_state.pop('baseline_retryable',None)
         st.session_state.pop('baseline_diagnostics',None)
         try:
             with st.spinner('Reading your answer…'):return invoke(action,*args)
         except (AssessmentError,ValueError) as exc:
+            output_rejection=isinstance(exc,PrivacyError) and exc.code!='privacy_unavailable' and getattr(exc,'boundary',None) in {'model_output','assessment_record'}
+            st.session_state.baseline_retryable=isinstance(exc,AssessmentError) and (not isinstance(exc,PrivacyError) or output_rejection)
             from .ui_errors import user_error
             st.session_state.baseline_error=(safe_message(exc) if isinstance(exc,PrivacyError) else user_error(exc) if isinstance(exc,AssessmentError) else safe_message(exc))
-            if developer:st.session_state.baseline_diagnostics=safe_diagnostics({'code':getattr(exc,'code','validation'),'diagnostics':getattr(client,'last_diagnostics',[]),'message':safe_message(exc)})
+            diagnostic=safe_diagnostics({'code':getattr(exc,'code','validation'),
+                'request':getattr(client,'last_request_context',{}),'diagnostics':getattr(client,'last_diagnostics',[]),
+                'privacy_boundary':getattr(exc,'boundary',None),'privacy_findings':list(getattr(exc,'findings',()))})
+            logging.getLogger(__name__).warning('Baseline step failed: %s',diagnostic)
+            if developer:st.session_state.baseline_diagnostics=diagnostic
     preview_control(perform)
     if st.session_state.get('baseline_error'):st.warning(st.session_state.baseline_error)
     if developer and st.session_state.get('baseline_diagnostics'):
@@ -82,25 +100,12 @@ def render(s,client,developer=False):
                 def submit():
                     before=s.state;perform(s.answer,st.session_state.get('baseline_answer_text',''),client)
                     if s.state!=before:st.session_state.baseline_answer_text=''
-                st.form_submit_button('Continue',type='primary',on_click=submit)
-        if st.session_state.get('baseline_error') and q['id']!='familiarity':
-            def retry():
-                before=s.state;perform(s.answer,st.session_state.get('baseline_answer_text',''),client)
-                if s.state!=before:st.session_state.baseline_answer_text=''
-            st.button('Try reading my answer again',on_click=retry)
-        controls=st.columns(3)
-        for col,label,control in zip(controls,['Unsure','Skip','Prefer not to answer'],['unsure','skip','decline']):
-            def skip(ctrl=control):
-                perform(s.answer,'',client,ctrl);st.session_state.baseline_answer_text=''
-            col.button(label,on_click=skip)
+                submit_label='Retry this answer' if _retryable_error() else 'Continue'
+                st.form_submit_button(submit_label,type='primary',on_click=submit)
+        def skip():
+            perform(s.answer,'',client,'skip');st.session_state.baseline_answer_text=''
+        st.button('Skip',on_click=skip)
         st.button('Finish now',on_click=perform,args=(s.finish,))
-        if 'definition' in s.instrument and (q['id']=='concept' or any(e['active'] and e['question']['id']=='concept' and (e['control'] in {'unsure','skip'} or e.get('interaction') in {'unsure','confused'} or any(c['kind'] in {'unknown','absence'} for c in e['claims'])) for e in s.events)):
-            with st.expander('What does “drone” mean? (optional)'):
-                st.write('You can keep going without an explanation, or ask for a short definition. We record when it is shown.')
-                st.button('Show definition',on_click=perform,args=(s.show_definition,))
-        if s.information_exposures:
-            st.text(s.information_exposures[-1]['text'])
-            st.write('Draft explanation — awaiting review.')
     elif s.state=='review':
         st.subheader('Check our interpretation')
         st.write(s.pending['question']['question_text'])
@@ -114,7 +119,11 @@ def render(s,client,developer=False):
                          key=edit_key,max_chars=1500,height=120)
             st.write('Your edit guides a fresh reading; your original answer stays unchanged.')
         else:
-            st.write('We could not summarize this answer yet. You can tell us what we missed, or ask us to re-read it.')
+            message={'unsure':'You are unsure about this question.',
+                'declined':'You prefer not to answer this question.',
+                'confused':'You did not understand this question.',
+                'already_answered':'You said you had already answered this question.'}.get(s.pending['interaction'])
+            st.write(message or 'We could not summarize this answer yet. You can tell us what we missed, or ask us to re-read it.')
             st.text_area('What did we miss?',value='',key=edit_key,max_chars=1500,height=120)
         st.button('Confirm and continue',type='primary',on_click=perform,args=(s.confirm,True))
         st.button('Re-read my answer',on_click=perform,

@@ -19,10 +19,11 @@ UNAVAILABLE = ('Local privacy screening is unavailable. Run scripts/setup-privac
 
 
 class PrivacyError(AssessmentError):
-    def __init__(self, message, *, preview=None, unavailable=False, entity_types=(), findings=()):
+    def __init__(self, message, *, preview=None, unavailable=False, entity_types=(), findings=(), boundary=None):
         super().__init__(message, code='privacy_unavailable' if unavailable else 'privacy')
         self.entity_types = tuple(sorted(set(entity_types)))
         self.preview = preview  # Cleaned text only; never the original or an offset mapping.
+        self.boundary = boundary if boundary in {'model_output','assessment_record'} else None
         # Safe detector metadata only; never include the detected text or offsets.
         self.findings = tuple({k:v for k,v in row.items() if k in {'field_path','entity_type','recognizer','confidence'}} for row in findings)
 
@@ -178,13 +179,32 @@ def reviewed_bibliographic_values():
     # function and answer strings still pass through the mandatory detector.
     from .settings import config
     from .llm_client import BACKEND
-    values += [BACKEND, 'iam-baseline-1.0.0','iam-baseline-2.0.0','iam-baseline-2.1.0','iam-baseline-2.2.0','iam-baseline-2.3.0','baseline-handoff-1.0.0'] + config('baseline')['sources']
+    values += [BACKEND, 'iam-baseline-1.0.0','iam-baseline-2.0.0','iam-baseline-2.1.0','iam-baseline-2.2.0','iam-baseline-2.3.0','iam-baseline-2.3.1','baseline-handoff-1.0.0'] + config('baseline')['sources']
     for bank in ('perspectives','stakeholders','cities','familiarity','dimensions','sectors'):
         values += list(config('baseline').get(bank,{}).values())
     taxonomy=config('baseline').get('stakeholder_taxonomy',{})
     for row in taxonomy.get('categories',[]):
         values += [row['canonical_wording'],row['source_section']]
     if taxonomy:values.append(taxonomy['source_reference'])
+    # Exact application-curated workbook locators are bibliographic metadata.
+    # The detector misclassifies cell coordinates as PERSON; respondent text
+    # and arbitrary values in source/locator fields are still screened.
+    if (ROOT/'configs/conversation.json').is_file():
+        conversation=config('conversation')
+        values += list(conversation['source_locators'].values())
+        values += [q['source_locator'] for q in conversation['scenario_questions']]
+        values += [conversation['schema_version'],conversation['version'],conversation['planner_version']]
+        values += conversation.get('scoring_source_locators',[])
+        # The real detector flags the fixed GA scenario identifiers as PERSON.
+        # These exact application identifiers cannot contain respondent text.
+        from .conversation_sources import GRANT_SCENARIO_IDS,GRANT_ROUTE_LABELS
+        values += list(GRANT_SCENARIO_IDS)+[i+'_facts' for i in GRANT_SCENARIO_IDS]
+        values += list(GRANT_ROUTE_LABELS)
+        values += ['eval/conversation_meeting_cases_v2.json']
+        values += ['p.5; hypothetical changes pp.8–9','C/D/H/I8,15,16; relevant comments']
+        values += [f'SRA IAM indicators!D/H/I{row}' for row in (3,4,6,8,10,14,15,16)]
+        values += [f'SRA IAM indicators!{col}{row}' for row in (3,4,6,8,10,14,15,16) for col in 'DHI']
+    values += [row['cells'] for row in config('readiness_levels')['crl']]
     return frozenset(values)
 
 
@@ -212,7 +232,17 @@ def require_safe_data(value):
                  or path == 'root.provenance.code_snapshot_sha256')
                 and re.fullmatch(r'[a-f0-9]{64}', item) is not None
             )
-            if item not in reviewed_bibliographic_values() and not generated_digest:
+            # Generated scoring claim IDs (C1, C2, ...) are references, not names.
+            # The real detector flags C3. Exempt only this bounded ID syntax in
+            # reference fields; text, quotations and arbitrary field values stay screened.
+            generated_claim_reference=(re.fullmatch(r'C[1-9]\d{0,2}',item) is not None and (
+                path.endswith('.claim_id') or
+                re.search(r'\.(?:criteria\[\d+\]|judgement)\.evidence_ids\[\d+\]$',path) is not None))
+            # NLP can tag a substring of a generated UUID as PERSON, making
+            # otherwise identical model calls fail randomly at audit retention.
+            generated_request_id=(path.endswith('.request_id') and
+                re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}',item) is not None)
+            if item not in reviewed_bibliographic_values() and not generated_digest and not generated_claim_reference and not generated_request_id:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():

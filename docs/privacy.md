@@ -6,6 +6,28 @@ IAM-SRA2 starts with a scenario-free general interview and offers a separate opt
 
 ## Implemented flow — privacy-1.0.0
 
+The selectable `retrieval_grounded_conversation` mode exports schema
+`iam-conversation-1.0.0`: separately contextualised general/scenario components,
+confirmed snapshots, original screened answers, corrections, retrieved question
+plans, exact information exposures, unresolved attempts and source/code/model
+provenance. It uses the same mandatory local boundary and final download checks.
+The corpus and source-comparison sidecars remain private; neither citizen answers
+nor identifiable session records are indexed. The role/city picker, optional RAG
+question, interpretation feedback and edits all use the existing screening flow.
+
+The new mode's exact version strings and fixed workbook locators are registered
+application metadata after real Presidio PERSON false positives. No arbitrary
+strings or respondent answers are exempted. An address-only cleaned fragment is
+not sent for assessment. A safe answer remains available for retry after a
+withheld generated interpretation; an unsafe original is cleared from
+application-owned text widgets. This does not promise forensic memory erasure.
+
+`meeting_notes` is a single private file. Workbook original draft/feedback text
+is retained in a private comparison sidecar, outside retrieval, rather than fed
+wholesale into the planner. Only screened, curated question variants and
+allowlisted explanations enter the new mode. Historical numerical examples are
+researcher references and excluded from citizen explanation retrieval.
+
 ```mermaid
 flowchart LR
   B[Browser text widget] --> S[Local Streamlit server]
@@ -23,7 +45,7 @@ Credentials, contextual PINs, financial details and identifiable medical identif
 
 All model responses are screened before validation traces, history or display. Routine inference traces retain structural metadata, not raw model output. Unsafe output is withheld. Curated retrieval passages are screened before use; exact source-register bibliographic titles, local source filenames and hashes are separately allowlisted metadata, not a general exemption for draft or approved content. Citizen sessions and stakeholder lists are never indexed. Evidence and citation checks remain required after privacy screening.
 
-Every download is screened again. Unsafe or older records without the current privacy contract are withheld rather than silently rewritten. Start a new synthetic session; existing files are not deleted. New general-interview exports use **iam-baseline-2.0.0** (old frozen sessions retain **iam-baseline-1.0.0**); scenario exports use **6.4.0** or **6.5.0** when carrying separate baseline provenance, and researcher evidence reports use **1.1.0**, with `privacy_contract=privacy-1.0.0`. Historical acceptance code and exports are isolated on the legacy branch. Confirmed snapshots remain versioned and unchanged by later answers.
+Every download is screened again. Unsafe or older records without the current privacy contract are withheld rather than silently rewritten. Start a new synthetic session; existing files are not deleted. New general-interview exports use **iam-baseline-2.3.1** (old frozen sessions retain their original **1.0.0–2.3.0** versions); scenario exports use **6.4.0** or **6.5.0** when carrying separate baseline provenance, and researcher evidence reports use **1.1.0**, with `privacy_contract=privacy-1.0.0`. Historical acceptance code and exports are isolated on the legacy branch. Confirmed snapshots remain versioned and unchanged by later answers.
 
 ## Dependencies and detector limits
 
@@ -98,4 +120,17 @@ excludes only the mistaken PERSON finding: contextual credentials and all other
 entity checks still run, including a password whose value is such a UUID. It is
 not a general user-string exemption or a claim that session identifiers are anonymous.
 
-Privacy notices at baseline free-text entries use information boxes. Cleaned previews explain the replacement marker and require explicit confirmation before assessment. A narrow English UI check rejects answer fragments containing only the privacy marker and address-introduction words (for example, “My [private detail removed]”); it requests a new answer, Unsure or Skip without a model call or consumed question. This is not a general relevance classifier or multilingual completeness check. Useful remaining answer text and context fields retain the existing screened-preview confirmation workflow.
+Privacy notices at baseline free-text entries use information boxes. Cleaned previews explain the replacement marker and require explicit confirmation before assessment. A narrow English UI check rejects answer fragments containing only the privacy marker and address-introduction words (for example, “My [private detail removed]”); it requests a new answer or Skip without a model call or consumed question. This is not a general relevance classifier or multilingual completeness check. Useful remaining answer text and context fields retain the existing screened-preview confirmation workflow.
+
+### Baseline 2.3.1 — input versus generated-output rejection
+
+Generated-output screening can consume the second existing model attempt; it adds
+no retry budget and never retries when detector resources are unavailable. The
+rejected body is excluded from retry feedback, traces and caches. A baseline
+output/derived-record rejection keeps the already screened answer available for
+retry without committing an interpretation. Input rejection still clears unsafe
+widget text and requires cleaning/resubmission. Exports still withhold unsafe
+records. Only screened failure metadata is logged (stage/boundary, entity type,
+recognizer, confidence and field path); no rejected content is logged. The exact
+trigger in the reported live screenshot was unavailable and is not claimed as an
+adjudicated false positive. See `baseline-recovery-2.3.1.md` for verification scope.

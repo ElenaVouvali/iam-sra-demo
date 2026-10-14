@@ -1,0 +1,182 @@
+{
+  "version": "conversation-1.1.0",
+  "schema_version": "iam-conversation-1.0.0",
+  "planner_version": "retrieved-planner-1.1.0",
+  "locale": "en",
+  "review_status": "draft_pending_FN",
+  "approved_by": null,
+  "general_budget": 8,
+  "scenario_followup_budget": 4,
+  "shortlist_size": 5,
+  "information_budget": 4,
+  "plain_variants": {
+    "concept": "How would you describe a drone in everyday words?",
+    "delivery": "What, if anything, have you heard about using drones to carry goods?",
+    "understanding": "How could drone deliveries affect people or local services?",
+    "needs": "Is there anything about delivery drones you would like explained?",
+    "scenario_effect": "In this example, what could change for people or services, and why?",
+    "scenario_information": "Which facts about this example would you want checked?"
+  },
+  "corpus_path": "references/private/conversation-corpus.json",
+  "source_locators": {
+    "familiarity": "Read me!J1:L7; SRA IAM indicators!D15/I15",
+    "concept": "Read me!L5:L7; SRA IAM indicators!D16/I16",
+    "delivery": "Read me!L6:L7; SRA IAM indicators!D15/I15",
+    "understanding": "SRA IAM indicators!D8/H8/I8; comments C8/D8/H8",
+    "experience": "Read me!L8:L10; SRA IAM indicators!D16/H16/I16",
+    "needs": "SRA IAM indicators!D15/H15/I15,D16/H16/I16",
+    "opportunity": "Read me!L12:L13; SRA IAM indicators!I15/I16",
+    "reasoning": "SRA IAM indicators!D8/I8",
+    "scope": "SRA IAM indicators!I16; authored scope clarification",
+    "contribution": "Read me!L8:L10; SRA IAM indicators!I16",
+    "domain": "SRA IAM indicators!D16/I16; authored domain clarification",
+    "influence": "Read me!L11; SRA IAM indicators!I8/I15"
+  },
+  "scenario_questions": [
+    {
+      "id": "scenario_view",
+      "criterion": "proposal",
+      "personal": "What do you think about this example? What matters most to you?",
+      "organisation": "What stands out to you about this illustrative proposal from the perspective you chose?",
+      "source_locator": "FN concept p.5; revised neutral invitation",
+      "initial": true
+    },
+    {
+      "id": "scenario_effect",
+      "criterion": "understanding",
+      "personal": "Which details in this example could affect people or local services, and why?",
+      "organisation": "Which details in this example would matter when reviewing its possible effects, and why?",
+      "source_locator": "SRA IAM indicators!D8/I8",
+      "initial": false
+    },
+    {
+      "id": "scenario_information",
+      "criterion": "information",
+      "personal": "What would you need to check before forming a view about this example?",
+      "organisation": "What information would help you review this example, and what is still missing?",
+      "source_locator": "SRA IAM indicators!I8/I15/I16",
+      "initial": false
+    },
+    {
+      "id": "scenario_access",
+      "criterion": "opportunity",
+      "personal": "What would help you contribute to a discussion or decision about this example?",
+      "organisation": "How could people affected by this example contribute to its discussion or review?",
+      "source_locator": "Read me!L12:L13; SRA IAM indicators!I15/I16",
+      "initial": false
+    },
+    {
+      "id": "scenario_contribution",
+      "criterion": "participation",
+      "personal": "During the activity you mentioned, what did you contribute, if anything?",
+      "organisation": "During the activity you mentioned, what did you personally contribute, if anything?",
+      "source_locator": "Read me!L8:L10; SRA IAM indicators!I16",
+      "prerequisite": "actual_exposure_without_contribution",
+      "initial": false
+    },
+    {
+      "id": "scenario_outcome",
+      "criterion": "influence",
+      "personal": "Do you know whether your contribution affected a decision? It is fine if you do not know.",
+      "organisation": "Do you know whether your contribution affected the review or a decision? It is fine if you do not know.",
+      "source_locator": "Read me!L11; SRA IAM indicators!I8/I15",
+      "prerequisite": "actual_contribution_without_outcome",
+      "initial": false
+    },
+    {
+      "id": "scenario_reflection",
+      "criterion": "understanding",
+      "personal": "After reading that information, what conclusions or questions would you draw about this example, and why?",
+      "organisation": "After reading that information, what conclusions or questions would you draw when reviewing this example, and why?",
+      "source_locator": "SRA IAM indicators!I8/I16; authored optional reflection",
+      "prerequisite": "explicit_reflection",
+      "initial": false
+    },
+    {
+      "id": "scenario_topic_noise",
+      "criterion": "understanding",
+      "personal": "What factors, if any, could affect how people experience noise from this example?",
+      "organisation": "What factors, if any, could affect how people experience noise from this example?",
+      "source_locator": "SRA IAM indicators!D8/I8",
+      "topic_ids": [
+        "noise"
+      ],
+      "initial": false
+    },
+    {
+      "id": "scenario_topic_privacy",
+      "criterion": "information",
+      "personal": "What information would help you form an informed view about safety or privacy in this example?",
+      "organisation": "What information would help you form an informed view about safety or privacy in this example?",
+      "source_locator": "SRA IAM indicators!D10/I10",
+      "topic_ids": [
+        "perceived_safety_privacy"
+      ],
+      "initial": false
+    },
+    {
+      "id": "scenario_topic_access",
+      "criterion": "understanding",
+      "personal": "How, if at all, could this example affect access to medical supplies for different people?",
+      "organisation": "How, if at all, could this example affect access to medical supplies for different people?",
+      "source_locator": "SRA IAM indicators!D6/I6",
+      "topic_ids": [
+        "accessibility"
+      ],
+      "initial": false
+    },
+    {
+      "id": "scenario_topic_equity",
+      "criterion": "understanding",
+      "personal": "Which people or communities, if any, could benefit from this example or experience disadvantages?",
+      "organisation": "Which people or communities, if any, could benefit from this example or experience disadvantages?",
+      "source_locator": "SRA IAM indicators!D14/I14",
+      "topic_ids": [
+        "welfare_equity"
+      ],
+      "initial": false
+    },
+    {
+      "id": "scenario_topic_environment",
+      "criterion": "understanding",
+      "personal": "What would you want to compare to understand the environmental effects of these medical deliveries?",
+      "organisation": "What would you want to compare to understand the environmental effects of these medical deliveries?",
+      "source_locator": "SRA IAM indicators!D4/I4",
+      "topic_ids": [
+        "energy_emissions"
+      ],
+      "initial": false
+    },
+    {
+      "id": "scenario_topic_sites",
+      "criterion": "understanding",
+      "personal": "What implications, if any, could the take-off and landing locations have for people or public space?",
+      "organisation": "What implications, if any, could the take-off and landing locations have for people or public space?",
+      "source_locator": "SRA IAM indicators!D3/I3",
+      "topic_ids": [
+        "infrastructure_land_use"
+      ],
+      "initial": false
+    },
+    {
+      "id": "scenario_agency",
+      "criterion": "participation",
+      "personal": "What role, if any, do you currently have in ongoing decisions or review of the activity you described?",
+      "organisation": "What role, if any, do you personally have in ongoing decisions or review of the activity you described?",
+      "source_locator": "Read me!L12:L13; SRA IAM indicators!I8/I16",
+      "prerequisite": "actual_contribution_for_agency",
+      "initial": false
+    }
+  ],
+  "information_questions": [
+    "What is specified in this example?",
+    "What is known about noise or privacy for this route?",
+    "What remains uncertain about these deliveries?",
+    "What counts as participation or influence?"
+  ],
+  "numerical_reason": "An approved evidence-to-level and societal synthesis method is not available. An optional citizen estimate is a separate draft model judgement.",
+  "scoring_source_locators": [
+    "Read me!J1:L13; N6:N11",
+    "SRA IAM indicators!J2; I8/I15/I16"
+  ]
+}
