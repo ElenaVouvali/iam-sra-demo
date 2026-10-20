@@ -222,15 +222,17 @@ def require_safe_data(value):
                 if isinstance(decoded, (dict, list)):
                     collect(decoded,path)
                     return
-            # Source/code SHA-256 values in the application-generated
+            # Source/code SHA-256 values and the Git commit in application-generated
             # provenance map are opaque integrity metadata. NLP models can
             # misread long hex strings as names; only this exact structural
             # location and encoding is exempt. User/model text and hashes in
             # every other field are still screened.
             generated_digest = (
-                (path.startswith('root.provenance.file_sha256.')
-                 or path == 'root.provenance.code_snapshot_sha256')
-                and re.fullmatch(r'[a-f0-9]{64}', item) is not None
+                ((path.startswith('root.provenance.file_sha256.')
+                  or path == 'root.provenance.code_snapshot_sha256')
+                 and re.fullmatch(r'[a-f0-9]{64}', item) is not None)
+                or (path == 'root.provenance.code_commit'
+                    and re.fullmatch(r'[a-f0-9]{40}', item) is not None)
             )
             # Generated scoring claim IDs (C1, C2, ...) are references, not names.
             # The real detector flags C3. Exempt only this bounded ID syntax in

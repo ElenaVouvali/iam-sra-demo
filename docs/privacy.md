@@ -2,6 +2,14 @@
 
 # Internal synthetic demonstration: privacy and data handling
 
+The API integration preserves these screening gates. A real-detector HTTP export
+check found that spaCy misclassified the current Git commit as a person. The
+generated `provenance.code_commit` field now recognises only a full lowercase
+40-character hexadecimal Git identifier as integrity metadata, alongside the
+existing narrowly located SHA-256 metadata. The same text in an answer remains
+screened. Names, credentials and arbitrary strings in that metadata field remain
+screened too; this does not exempt respondent or model prose.
+
 The v1.2 synthetic respondent evaluator writes only to ignored `.runtime/`
 paths, marks each generated session `SYNTHETIC_TEST_ONLY`, and passes the full
 record through the same privacy screening. If screening withholds an artifact,

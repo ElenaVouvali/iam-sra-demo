@@ -295,6 +295,36 @@ def test_only_generated_source_hashes_are_exempt_from_name_recognition():
     with pytest.raises(PrivacyError):require_safe_data({'answer':digest})
 
 
+def test_commit_metadata_exemption_is_limited_to_exact_structure_and_encoding(monkeypatch):
+    from iam_sra import privacy
+    commit = 'e8ee21012779e0b6980c7f9ea41770f27cad9ed6'
+    original = privacy.detector()
+
+    class CommitFalsePositive:
+        def analyze(self, *, text, **kwargs):
+            findings = original.analyze(text=text, **kwargs)
+            if text == commit:
+                findings.append(privacy.Finding('PERSON', 0, len(text)))
+            return findings
+
+    monkeypatch.setattr(privacy, 'detector', lambda: CommitFalsePositive())
+    require_safe_data({'provenance': {'code_commit': commit}})
+    for value in ({'answer': commit}, {'code_commit': commit},
+                  {'provenance': {'code_commit': 'Alice Example'}},
+                  {'provenance': {'code_commit': 'password=synthetic-secret-xyz'}}):
+        with pytest.raises(PrivacyError):
+            require_safe_data(value)
+
+
+@pytest.mark.presidio_live
+def test_real_detector_allows_generated_commit_but_screens_it_in_prose():
+    pytest.importorskip('presidio_analyzer');pytest.importorskip('en_core_web_sm')
+    commit = 'e8ee21012779e0b6980c7f9ea41770f27cad9ed6'
+    require_safe_data({'provenance': {'code_commit': commit}})
+    with pytest.raises(PrivacyError):
+        require_safe_data({'answer': commit})
+
+
 @pytest.mark.presidio_live
 def test_model_json_labels_are_structure_but_prose_is_still_screened():
     pytest.importorskip('presidio_analyzer');pytest.importorskip('en_core_web_sm')
