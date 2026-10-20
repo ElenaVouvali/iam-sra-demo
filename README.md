@@ -11,12 +11,12 @@ The new selectable **Conversational interview and illustrative case** joins the
 general interview, a confirmed profile, source-selected medical-corridor example,
 contextual questions, optional sourced explanation and final screened export.
 See the [meeting guide and three copy-paste scripts](docs/conversational-meeting-demo.md).
-The current 1.1 update adds GA route examples, reviewed adaptive question wording
+The 1.1 update adds GA route examples, reviewed adaptive question wording
 and an evidence assessment against each workbook CRL anchor. See the
 [update and verification guide](docs/conversation-update-1.1.md).
 It remains a draft readiness instrument.
 
-The feature branch `feature/adaptive-conversation-v1.2` adds objective-level
+Adaptive conversational mode v1.2 on `main` adds objective-level
 planning, grounded topic memory, and a synthetic respondent evaluation runner.
 Its source review status and operational limits are documented in
 [`Adaptive conversational assessment v1.2`](docs/adaptive-conversation-v1.2.md).
@@ -113,4 +113,4 @@ the model server on 8000, with separate UI sessions and logs. Forward both UI
 ports if connecting remotely. The legacy app does not have the newer privacy
 controls.
 
-Current interface and saved-session review: [dynamic interview improvements](docs/dynamic-interview-review.md). The proposed adaptive conversational mode v1.2 is documented in [adaptive conversation v1.2](docs/adaptive-conversation-v1.2.md); it remains pending partner review and is available on branch `feature/adaptive-conversation-v1.2`. The synthetic interviewer evaluation is separate from real stakeholder data.
+Current interface and saved-session review: [dynamic interview improvements](docs/dynamic-interview-review.md). The proposed adaptive conversational mode v1.2 is documented in [adaptive conversation v1.2](docs/adaptive-conversation-v1.2.md); it remains pending partner review and is available on `main`. The synthetic interviewer evaluation is separate from real stakeholder data.

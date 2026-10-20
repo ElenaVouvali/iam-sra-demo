@@ -26,9 +26,9 @@ Stop with `scripts/stop-ui.sh` and `scripts/stop-vllm.sh`. Cleanup of historical
 
 The model server binds `127.0.0.1:8000`; Streamlit binds `127.0.0.1:8501`. Configure ports with `IAM_VLLM_PORT` and `IAM_UI_PORT`, and the client endpoint with `IAM_BASE_URL` for direct UI runs. `.env` is not loaded automatically. Follow the port-forwarding instructions in [README](../README.md).
 
-## Adaptive conversation v1.2 branch
+## Adaptive conversation v1.2
 
-When deploying branch `feature/adaptive-conversation-v1.2`, first pull the branch and run `scripts/build-conversation-corpus.py` on a host that has the approved-to-use local source files in ignored `references/private/`. This regenerates the ignored local corpus against the new configuration hashes; it does not approve its draft questions. Then use `scripts/health-check.sh` and `IAM_BASE_URL=http://127.0.0.1:18000 IAM_MOCK=0 scripts/start-ui.sh`. The app will not rebuild a missing corpus or restart a model service automatically. See [the v1.2 evaluation and limitations](adaptive-conversation-v1.2.md).
+When deploying adaptive conversation v1.2 from `main`, first pull `main` and run `scripts/build-conversation-corpus.py` on a host that has the approved-to-use local source files in ignored `references/private/`. This regenerates the ignored local corpus against the new configuration hashes; it does not approve its draft questions. Then use `scripts/health-check.sh` and `IAM_BASE_URL=http://127.0.0.1:18000 IAM_MOCK=0 scripts/start-ui.sh`. The app will not rebuild a missing corpus or restart a model service automatically. See [the v1.2 evaluation and limitations](adaptive-conversation-v1.2.md).
 
 ## Inference contract
 

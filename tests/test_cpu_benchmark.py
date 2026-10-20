@@ -21,3 +21,21 @@ def test_cpu_lifecycle_records_distinct_deployment():
     assert client.last_settings['backend'] == 'transformers_xgrammar_cpu'
     assert client._deadline > time.monotonic() + 180
     assert client.base_url == 'cpu-local'
+
+
+def test_cpu_lifecycle_records_missing_optional_libraries(monkeypatch):
+    from importlib.metadata import PackageNotFoundError
+
+    def installed_version(name):
+        if name in ('torch', 'xgrammar'):
+            raise PackageNotFoundError(name)
+        return '4.51.3'
+
+    monkeypatch.setattr('importlib.metadata.version', installed_version)
+    client = CPUBaselineClient(CPURuntime())
+    client._start()
+    deployment = client.last_settings['expected_deployment']
+    assert deployment['libraries'] == {
+        'torch': None, 'transformers': '4.51.3', 'xgrammar': None,
+    }
+    assert deployment['model_loaded'] is False

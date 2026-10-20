@@ -41,11 +41,17 @@ class CPURuntime:
         self.ready = True
 
     def metadata(self):
-        from importlib.metadata import version
+        from importlib.metadata import PackageNotFoundError, version
+        libraries = {}
+        for name in ('torch', 'transformers', 'xgrammar'):
+            try:
+                libraries[name] = version(name)
+            except PackageNotFoundError:
+                libraries[name] = None
         return {'device': 'cpu', 'backend': 'transformers_xgrammar_cpu', 'dtype': 'float32',
             'threads': self.threads, 'seed': 42, 'generation_timeout_seconds': self.generation_seconds,
             'model_load_seconds': self.load_seconds, 'model_loaded': self.ready,
-            'libraries': {name: version(name) for name in ('torch', 'transformers', 'xgrammar')},
+            'libraries': libraries,
             'gpu_timing_comparable': False}
 
 
