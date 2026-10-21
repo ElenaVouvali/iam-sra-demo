@@ -109,6 +109,25 @@
       ],
       "interpretation": "D3.1 draft methodological context, independently reopened. Filename v0.18 differs from document-control/history version 0.1. Generic descriptions, indicator definitions/criteria and nine example statements match v4 exactly. Aggregation/integration proposals are explicitly to be finalised; no operational scoring policy inferred; future quality-control dates are not proof of completed approval.",
       "approval_of_demo": null
+    },
+    {
+      "id": "questionnaire-v02",
+      "document": "IAM_SRA2_questionnaire_v0.2.json",
+      "local_path": "references/private/questionnaire-v0.2/IAM_SRA2_questionnaire_v0.2.json",
+      "sha256": "837dbc9dab3b767cda86c6a2825e33a91f52aa3af7677921aabe358259858de2",
+      "status": "authored_prototype_pending_partner_review",
+      "role": "Draft question configuration; not the FN source bank or an approved scoring instrument.",
+      "reviewed_sections": [
+        "45 profile/indicator modules; shared probes; review/context guidance"
+      ]
+    },
+    {
+      "id": "scenario-expansion-v01",
+      "document": "IAM_SRA2_scenarios_v0.1.json",
+      "local_path": "references/private/scenarios-v0.1/IAM_SRA2_scenarios_v0.1.json",
+      "sha256": "022ed7e33d3ffb3f9c3774f137107ce04527f019ea7c15025c16afdd210c5e0d",
+      "status": "authored_draft_configuration",
+      "role": "Six source-status-labelled paraphrases and citizen reflection prompts; not original source extraction or approved instrument."
     }
   ],
   "meeting_review": {
@@ -156,7 +175,19 @@
     "User meeting direction; authored clarification",
     "Workbook SRA IAM indicators!I8,I16",
     "Workbook SRA IAM indicators!I16",
-    "Workbook Read me!L8:L13; SRA IAM indicators!D15/I15"
+    "Workbook Read me!L8:L13; SRA IAM indicators!D15/I15",
+    "§1.2.1, Part B pp.15–16; full signed PDF pp.112–113 / technical-annex PDF pp.52–53; Maya/James vignette",
+    "§1.2.1, Part B p.16; full signed PDF p.113 / technical-annex PDF p.53; Anna vignette",
+    "Part B p.22; full signed PDF p.119 / technical-annex PDF p.59; Coimbra: Demo flight routes",
+    "§12.2.1 Living Lab responses on R&I goals",
+    "§12.2.1 Living Lab responses on R&I goals, printed p.38",
+    "PDF p.8, The Proposed Solution: Medical Logistics by Drone; Common logistics requirements",
+    "Slide 7, Interviews; Journey AS-IS",
+    "§12.5 Objections and concerns; non-digital reporting pathway under investigation",
+    "SRA IAM indicators!I3; conditional question after presentation of possible locations; Use case(s) per LL!A2, B2:D2 blank",
+    "§12.5; socially preferred vertiport locations in VR",
+    "Slide 6, Activities in progress; hospital-platform location verification",
+    "§12.4 Benefits and burdens; VR experiments and scaling to the city"
   ],
   "privacy_reviewed_presentation_labels": [
     "Draft demo explanation · awaiting FN review",
@@ -358,6 +389,78 @@
       "Operational evidence sufficiency and ambiguous matching",
       "Capability and participation-opportunity interpretation per statement",
       "Official questionnaire/KVIs, validation and future aggregation input"
-    ]
+    ],
+    "implementation_status": "historical_checkpoint_superseded_by_questionnaire_v02"
+  },
+  "questionnaire_v02": {
+    "questionnaire_version": "2026-10-21-v0.2",
+    "schema_version": "iam-sra-provisional-questionnaire-0.2.0",
+    "document": "IAM_SRA2_questionnaire_v0.2.json",
+    "json_sha256": "837dbc9dab3b767cda86c6a2825e33a91f52aa3af7677921aabe358259858de2",
+    "package_sha256": "b116dbe5c58093fa67e0af4cd9e25818cb9d1b9d1f6d1f81888efd876849e61e",
+    "status": "draft_pending_FN_ISCTE_review",
+    "runtime_use_authority": "Project-owner instruction to integrate the supplied draft, without approving methodology.",
+    "verified_counts": {
+      "modules": 45,
+      "exact_statements": 405,
+      "questions": 150,
+      "shared_probes": 42,
+      "citizen_likert_items": 15,
+      "local_verbatim_cell_matches": 20
+    },
+    "source_discrepancies": [
+      "V4, D3.1, October minutes and historical FN concept hashes match local originals despite filename prefixes.",
+      "Package GA, topic workbook and Meeting_14_10 binary hashes differ from local originals. Registered local hashes remain unchanged. GA relevant methodology text and all 20 questionnaire verbatim topic-cell selections were checked locally; no binary identity is claimed.",
+      "July slides/minutes, September minutes and Madrid/Milan workshop originals referenced by the package are unavailable locally. Their package references remain unverified; the draft reports are not evidence of their contents."
+    ],
+    "policy_version": "indicator-matching-draft-2.0.1",
+    "response_profiles": [
+      "citizen",
+      "organisational",
+      "technical"
+    ],
+    "assessment_schema_version": "indicator-self-assessment-2.0.0"
+  },
+  "scenario_expansion_v01": {
+    "document": "IAM_SRA2_scenarios_v0.1.json",
+    "local_path": "references/private/scenarios-v0.1/IAM_SRA2_scenarios_v0.1.json",
+    "json_sha256": "022ed7e33d3ffb3f9c3774f137107ce04527f019ea7c15025c16afdd210c5e0d",
+    "package_sha256": "76dd496f8fd624631bc2a737e7bd9712382a71728c603c6aeb38f9422a677705",
+    "schema_version": "iam-sra-scenario-expansion-0.1.0",
+    "scenario_bank_version": "2026-10-21-v0.1",
+    "status": "authored_prototype_pending_partner_and_local_review",
+    "source_resolution": {
+      "ga": {
+        "local_document": "GA.pdf",
+        "status": "local_text_checked_binary_differs",
+        "verification_note": "Local technical-annex PDF pp.52–53 and 59 checked against the supplied paraphrases; binary identity differs."
+      },
+      "topic": {
+        "local_document": "IAM-CC_Topic_experts.xlsx",
+        "status": "local_text_checked_binary_differs",
+        "verification_note": "Local SRA IAM indicators!I3 and Use case(s) per LL!A2, B2:D2 checked; binary identity differs."
+      },
+      "d31": {
+        "local_document": "IAM-CC_D3.1_Initial_Societal_Readiness_Report_v0.18_with_LL_workshops.docx",
+        "status": "verified_hash",
+        "verification_note": "Hash matches; chapter 12, especially 12.2.1, 12.4 and 12.5 checked."
+      },
+      "v4": {
+        "local_document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+        "status": "verified_hash",
+        "verification_note": "Hash matches; anchors remain in the separate bank."
+      },
+      "madrid": {
+        "local_document": null,
+        "status": "original_missing",
+        "verification_note": "Original IAM-CC LL Madrid Workshop 11-09-2026 Results.pdf unavailable locally."
+      },
+      "wp8-september": {
+        "local_document": null,
+        "status": "original_missing",
+        "verification_note": "Original IAM-CC WP8 20260929.pptx unavailable locally."
+      }
+    },
+    "runtime_use_authority": "Project-owner scenario addendum; no source approval or scoring policy change."
   }
 }

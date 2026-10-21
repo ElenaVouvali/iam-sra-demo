@@ -5,9 +5,9 @@ import time
 import pytest
 from iam_sra.assessment import AssessmentError
 from iam_sra.indicator_assessment import IndicatorAssessment, resolved_scale
-from iam_sra.indicator_client import validate_match, validate_reading, historical_requirement
+from iam_sra.indicator_client import validate_match, validate_reading
 from iam_sra.privacy import PrivacyError
-from indicator_fixtures import bank, Client, engine, reading, matching
+from indicator_fixtures import bank, questionnaire, Client, engine, reading, matching
 
 
 def selected():
@@ -23,7 +23,7 @@ def complete(s, client=None):
 
 
 def test_all_fifteen_resolve_exact_citizen_scales_and_no_profile_by_profession():
-    source = bank(); group = IndicatorAssessment(source)
+    source = bank(); group = IndicatorAssessment(source,questionnaire(source))
     for indicator in source['indicators']:
         scale = group.scale(indicator['id'])
         assert [s['level'] for s in scale] == list(range(1, 10))
@@ -34,7 +34,7 @@ def test_all_fifteen_resolve_exact_citizen_scales_and_no_profile_by_profession()
     assert s.indicators.scope['response_profile'] == 'citizen'
     s.respondent['perspective'] = 'organisation'
     with pytest.raises(ValueError): s.select_indicators(['indicator-01'], 'general_understanding')
-    assert not s.indicator_view()['available']
+    assert s.indicator_view()['available']  # v0.2 exposes profile configuration, not an automatic citizen result.
 
 
 def test_new_policy_does_not_reuse_global_participation_gate_and_opposition_is_neutral():
@@ -47,27 +47,34 @@ def test_new_policy_does_not_reuse_global_participation_gate_and_opposition_is_n
         more.append({'evidence_id': 'stance', 'answer': stance, 'observations': reading(stance, 'stance')['observations']})
         result = validate_match(matching(scale, more), scale, more)
         assert result['selected_statement_id'] == row['tool']['selected_statement_id']
-        with pytest.raises(AssessmentError): validate_match(matching(scale, more[-1:]), scale, more[-1:])
+        assert validate_match(matching(scale, more[-1:], abstain=True), scale, more[-1:])['selected_statement_id'] is None
 
 
 @pytest.mark.parametrize('kind,actor,actuality,domain', [
     ('intention','self','hypothetical','IAM'), ('barrier','self','unspecified','IAM'),
     ('activity','organisation','actual','IAM'), ('influence','third_party','actual','IAM'),
     ('contribution','self','actual','other'), ('influence','self','hypothetical','IAM')])
-def test_intentions_barriers_third_party_and_other_domains_cannot_establish_influence(kind, actor, actuality, domain):
-    scale = resolved_scale(bank(), 'indicator-07')
-    quote = 'I would contribute if a meeting were accessible.'
-    evidence = [{'evidence_id': 'e1', 'answer': quote, 'observations': reading(quote,kind,actuality,actor,domain)['observations']}]
-    with pytest.raises(AssessmentError): validate_match(matching(scale,evidence,7),scale,evidence)
+def test_v2_fallible_categories_are_preserved_without_pre_excluding_statements(kind,actor,actuality,domain,monkeypatch):
+    from iam_sra.indicator_client import IndicatorClient
+    scale=resolved_scale(bank(),'indicator-07');quote='I would contribute if a meeting were accessible.'
+    evidence=[{'evidence_id':'e1','answer':quote,'observations':reading(quote,kind,actuality,actor,domain)['observations']}]
+    def request(self,http,stage,system,user,schema,validator):
+        assert user['evidence'][0]['answer']==quote and user['evidence'][0]['observations']==evidence[0]['observations']
+        assert len(schema['properties']['selected_statement_id']['anyOf'][0]['enum'])==9
+        assert all('supported' in r['properties']['status']['enum'] for r in schema['properties']['assessments']['properties'].values())
+        raw=matching(scale,evidence,abstain=True);raw['assessments']={r.pop('statement_id'):r for r in raw['assessments']}
+        return validator(raw)
+    monkeypatch.setattr(IndicatorClient,'_request',request)
+    IndicatorClient().match(bank()['indicators'][6],{'response_profile':'citizen'},scale,evidence)
 
 
-def test_attendance_does_not_establish_influence_but_actual_link_can_support_it():
-    scale = resolved_scale(bank(), 'indicator-07')
-    quote = 'I attended a meeting.'
-    evidence = [{'evidence_id': 'e1','answer':quote,'observations':reading(quote,'activity','actual')['observations']}]
-    with pytest.raises(AssessmentError): validate_match(matching(scale,evidence,7),scale,evidence)
-    evidence[0]['answer'] = 'My written input changed the agreed hours.'
-    evidence[0]['observations'] = reading(evidence[0]['answer'],'influence','actual')['observations']
+def test_exact_report_is_retained_but_fabricated_influence_citations_are_rejected():
+    scale=resolved_scale(bank(),'indicator-07');quote='I attended a meeting but made no contribution.'
+    evidence=[{'evidence_id':'e1','answer':quote,'observations':reading(quote,'activity','actual')['observations']}]
+    raw=matching(scale,evidence,7);raw['assessments'][6]['evidence'][0]['quote']='My input changed a decision.'
+    with pytest.raises(AssessmentError):validate_match(raw,scale,evidence)
+    evidence[0]['answer']='My written input changed the agreed hours.'
+    evidence[0]['observations']=reading(evidence[0]['answer'],'influence','actual')['observations']
     assert validate_match(matching(scale,evidence,7),scale,evidence)['selected_statement_id'].endswith('-7')
 
 
@@ -77,7 +84,7 @@ def test_barrier_neither_forces_low_level_nor_earns_a_level():
     evidence.append({'evidence_id':'barrier','answer':quote,'observations':reading(quote,'barrier')['observations']})
     scale=s.indicators.scale('indicator-07')
     assert validate_match(matching(scale,evidence),scale,evidence)['selected_statement_id'].endswith('-5')
-    with pytest.raises(AssessmentError): validate_match(matching(scale,evidence[-1:],1),scale,evidence[-1:])
+    assert validate_match(matching(scale,evidence[-1:],abstain=True),scale,evidence[-1:])['selected_statement_id'] is None
 
 
 @pytest.mark.parametrize('choice', ['endorse','select','unsure','decline'])
@@ -171,7 +178,7 @@ def test_explicit_reuse_avoids_duplicate_understanding_question_without_leaking_
         'claims':[{'kind':'explained_impact','subject':'respondent','span_quote':text,
                    'interpretation':'You explain an effect.','domain':'IAM','temporality':'not_applicable'}]})
     s.select_indicators(['indicator-07','indicator-08'],'general_understanding',reuse_answers={'indicator-07':['confirmed_prior']})
-    assert s.indicators.question()['intent']=='conditions'
+    assert s.indicators.question() is None  # Explicit equivalent evidence avoids the opening; matching decides sufficiency.
     assert s.indicators.evidence()[0]['information_context']=='before_information'
     s.indicator_next('indicator-08')
     assert s.indicators.evidence()==[] and s.indicators.question()['intent']=='understanding'
@@ -212,7 +219,8 @@ def test_confirmed_ambiguity_is_not_discarded_to_create_support():
     s=selected();complete(s)
     evidence=s.indicators.evidence();evidence[0]['observations'][0]['ambiguities']=['Actor is unclear.']
     scale=s.indicators.scale('indicator-07')
-    with pytest.raises(AssessmentError):validate_match(matching(scale,evidence),scale,evidence)
+    raw=matching(scale,evidence);raw['selection_unclear']=True
+    with pytest.raises(AssessmentError):validate_match(raw,scale,evidence)
 
 
 def test_wire_selection_is_constrained_to_bank_ids_or_real_json_null(monkeypatch):
@@ -222,17 +230,17 @@ def test_wire_selection_is_constrained_to_bank_ids_or_real_json_null(monkeypatch
         selection = schema['properties']['selected_statement_id']['anyOf']
         assert selection[1] == {'type':'null'}
         assert 'indicator-07-crl-5' in selection[0]['enum']
-        assert 'indicator-07-crl-7' not in selection[0]['enum']
+        assert 'indicator-07-crl-7' in selection[0]['enum']  # v2 does not gate from category/keywords.
         rows = schema['properties']['assessments']
         assert rows['required'] == [r['id'] for r in scale] and not rows['additionalProperties']
-        assert rows['properties']['indicator-07-crl-7']['properties']['status']['enum'] == ['insufficient','conflicting']
+        assert rows['properties']['indicator-07-crl-7']['properties']['status']['enum'] == ['supported','insufficient','conflicting']
         assert schema['$defs']['Citation']['properties']['evidence_id']['enum']==[e['evidence_id'] for e in evidence]
-        assert schema['$defs']['Citation']['properties']['quote']['enum']==[evidence[0]['observations'][0]['quote']]
+        assert 'enum' not in schema['$defs']['Citation']['properties']['quote']
         wire = matching(scale,evidence,abstain=True)
         wire['assessments'] = {r.pop('statement_id'): r for r in wire['assessments']}
         return validator(__import__('json').dumps(wire))
     monkeypatch.setattr(IndicatorClient,'_request',request)
-    result=IndicatorClient().match(s.indicators.indicator('indicator-07'),{},scale,evidence)
+    result=IndicatorClient().match(s.indicators.indicator('indicator-07'),s.indicators.current['scope'],scale,evidence)
     assert result['selected_statement_id'] is None
 
 

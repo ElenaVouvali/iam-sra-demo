@@ -159,3 +159,49 @@ fields remain unchanged, not aggregates. Export schema 1.0 retains additive
 `indicator_assessment` with its own versioned schema. The new matching workflow
 is draft and has no second semantic-review pass. See
 [indicator methodology and operator commands](indicator-assisted-self-assessment.md).
+
+## Questionnaire v0.2 / API 1.2
+
+This supersedes the historical citizen-only continuation above. The shared
+`indicator_assessment` schema is now `indicator-self-assessment-2.0.0`.
+Profiles are `citizen`, `organisational`, `technical` with CRL/ORL/TRL respectively.
+`start_assessment` is available at welcome, establishes explicit profile/use_case,
+city/area, discussion_status and optional broad role/unit/object/use-case fields,
+and plans all fifteen indicators unless an explicit subset is provided. It
+bypasses the optional baseline without inventing answers or confirmations.
+`select_indicators` accepts up to fifteen and deliberate profile/context edits.
+
+Additional actions on the same existing sessions/actions endpoint:
+
+| Action | Payload / behaviour |
+| --- | --- |
+| `indicator_scope` | availability, organisation_or_unit, responsibilities, technical_object, object_version, intended_environment, component_scope; confirms or deliberately changes per-indicator scope |
+| `indicator_add_information` | text (1500); ordinary screened answer addition, requires interpretation confirmation |
+| `indicator_link` | answer_ids (1–3); explicitly reuse equivalent confirmed same-profile/object/context words |
+| `indicator_information` | kind: definition/scale; records supplied information exposure |
+| `complete_assessment` | empty; partial individual report, unresolved coverage remains explicit |
+
+`indicator_next` resumes without invalidating results. Correction/edit/scope
+changes invalidate dependent active judgments, including linked snapshots;
+review still requires current API and assessment revisions. Busy jobs block
+edits except deliberate reset. Ownership, CSRF, receipt and generation checks
+are unchanged. Every new free-text field uses the existing cleaned preview
+boundary, including nested select_indicators.use_case_fields.
+
+Both presentation and screened JSON/JSONL projections include profile/object
+scope, exact statement references, questionnaire and policy versions, separate
+tool/participant judgments, exposure, gaps and superseded history. No overall
+number or changed meaning of numerical_crl/numerical_srl is introduced.
+See [policy and operator note](questionnaire-v02-prototype.md).
+
+### Optional scenario expansion v0.1
+
+`indicator_case` accepts `{scenario_id: <applicable ID or null>}` through the same
+action endpoint. It is offered without a pending interpretation. Same case/version
+is idempotent; a deliberate change invalidates dependent judgments/links while
+retaining the primary local use case and unrelated completed indicators. Case
+source status, original verification status, presented text/version, unknowns and
+exposure are included in indicator scope, presented_cases and both screened
+export projections. `suggestion_error.status = unavailable` is distinct from a
+model abstention and never contains rejected output or a fabricated tool level.
+See [scenario configuration and operator commands](scenario-expansion-v01.md).

@@ -205,6 +205,8 @@ def reviewed_bibliographic_values():
         values += [f'SRA IAM indicators!D/H/I{row}' for row in (3,4,6,8,10,14,15,16)]
         values += [f'SRA IAM indicators!{col}{row}' for row in (3,4,6,8,10,14,15,16) for col in 'DHI']
     values += [row['cells'] for row in config('readiness_levels')['crl']]
+    # Exact application schema identifier, not a respondent-supplied metadata exception.
+    values += ['iam-sra-provisional-questionnaire-0.2.0']
     return frozenset(values)
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Reproducible private demo collection. Never index transcripts or contact lists."""
 import json
+import argparse
 from copy import deepcopy
 from hashlib import sha256
 from pathlib import Path
@@ -34,7 +35,7 @@ def workbook(path):
         return sheets,comments
 
 
-def build():
+def build(output=None):
     private=ROOT/'references/private';spec=config('conversation');base=config('baseline')
     names=['GA.pdf','IAM-CC_Topic_experts.xlsx','IAM-CC_UI_guidelines_for_tools.pdf',
            'WP3_IAM-CC_Minutes_20261008.docx','IAM-CC_WP3_2026.09.10.pptx','SRA_LLM_FN_concept.pdf']
@@ -101,6 +102,13 @@ def build():
         'review_status':'historical_illustrative','permitted_use':['illustrative_scenario','researcher_reference'],
         'search_text':'hospital medical deliveries noise cameras privacy illustrative corridor'}
     cards=[card]+grant_scenarios(pdfs['GA.pdf'],base,source)
+    grant_cards=deepcopy(cards[1:])
+    from iam_sra.scenario_expansion import load_expansion
+    additions,expansion_sources,expansion_identity=load_expansion()
+    cards+=additions
+    existing={s['document'] for s in sources}
+    for item in expansion_sources:
+        if item['document'] not in existing:sources.append(item);existing.add(item['document'])
     explanations=deepcopy(config('readiness_corpus')['passages'])
     for p in explanations:
         p.update(type='explanation',target_criterion=p['topic'],topic_ids=[],
@@ -111,7 +119,7 @@ def build():
     # Workbook construct explanations apply across cases. FN-specific facts do not.
     for passage in explanations:
         if passage['document_title']=='IAM-CC_Topic_experts.xlsx':passage['scenario_applicability']='all'
-    explanations+=scenario_explanations(cards[1:])
+    explanations+=scenario_explanations(grant_cards+additions)
     for row in questions+cards+explanations:
         row['approved_by']=None;row.setdefault('version',spec['version'])
     comparisons=[{'id':'workbook_row_'+str(row),
@@ -122,7 +130,7 @@ def build():
     notes_path=private/'meeting_notes'
     inventory=[{'path':str(p.relative_to(ROOT)),'kind':'file','bytes':p.stat().st_size,
                 'sha256':sha256(p.read_bytes()).hexdigest()} for p in ([notes_path] if notes_path.is_file() else sorted(notes_path.rglob('*'))) if p.is_file()]
-    data={'version':'conversation-corpus-1.1.0','review_status':'draft_pending_FN','approved_by':None,
+    data={'version':'conversation-corpus-1.2.0','scenario_expansion':expansion_identity,'review_status':'draft_pending_FN','approved_by':None,
         'configuration':{name:sha256((ROOT/'configs'/f'{name}.json').read_bytes()).hexdigest() for name in ('baseline','conversation')},
         'sources':sources,'meeting_notes_inventory':inventory,'questions':questions,'scenarios':cards,'explanations':explanations,
         'source_comparisons':comparisons,
@@ -135,15 +143,27 @@ def build():
                     'LL_template':'Use case(s) per LL!A2; B2:D2 empty; no real city scenario inferred'}}
     # No participant/contact lists or meeting administration enter these collections.
     require_safe_data(questions);require_safe_data(cards);require_safe_data(explanations);require_safe_data(comparisons)
-    (ROOT/spec['corpus_path']).write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+    target=(output or ROOT/spec['corpus_path']).resolve()
+    if not target.is_relative_to(private.resolve()):raise ValueError('Generated source text must stay under references/private/.')
+    target.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
     notes={'source':source('IAM-CC_Topic_experts.xlsx','Reviewed definitions, original drafts, feedback and J2/J8 revisions'),
         'cells':{key:ind[key] for key in ind if key in {f'{col}{row}' for col in 'CDHIJ' for row in reviewed_rows}|{'J2'}},'comments':comments,
         'use':'Private researcher comparison only; never a planner/citizen retrieval collection.'}
-    (private/'conversation-source-notes.json').write_text(json.dumps(notes,ensure_ascii=False,indent=2)+'\n')
-    (private/'conversation-coverage.json').write_text(json.dumps(data['coverage'],ensure_ascii=False,indent=2)+'\n')
+    if target==(ROOT/spec['corpus_path']).resolve():
+        (private/'conversation-source-notes.json').write_text(json.dumps(notes,ensure_ascii=False,indent=2)+'\n')
+        (private/'conversation-coverage.json').write_text(json.dumps(data['coverage'],ensure_ascii=False,indent=2)+'\n')
     print(json.dumps({'status':'built_private','version':data['version'],**data['coverage']['counts'],'meeting_notes_files':len(inventory)}))
 
 if __name__=='__main__':
-    try:build()
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output',type=Path,help='Private review corpus path; an alternate output leaves deployed corpus and sidecars unchanged.')
+    parser.add_argument('--inspect-case',choices=[f'expansion-{n:02d}' for n in range(1,7)],help='Researcher view of source basis/status; builds nothing.')
+    args=parser.parse_args()
+    try:
+        if args.inspect_case:
+            from iam_sra.scenario_expansion import load_expansion
+            card=next(c for c in load_expansion()[0] if c['id']==args.inspect_case)
+            print(json.dumps(card,ensure_ascii=False,indent=2))
+        else:build(args.output)
     except PrivacyError as exc:
         print(json.dumps({'status':'screening_blocked','code':exc.code,'findings':list(exc.findings)}));raise SystemExit(1)

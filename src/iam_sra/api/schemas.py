@@ -3,7 +3,7 @@ from typing import Any, Literal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, UUID4
 
-API_VERSION = '1.1.0'
+API_VERSION = '1.2.0'
 
 
 class Strict(BaseModel):
@@ -52,12 +52,67 @@ class Preview(Strict):
     preview_id: str = Field(min_length=32, max_length=64)
 
 
+class IndicatorScope(Strict):
+    availability: Literal['ready_to_discuss','outside_role','no_technical_object_identified','not_applicable_explained'] = 'ready_to_discuss'
+    organisation_or_unit: str = Field(default='', max_length=240)
+    responsibilities: str = Field(default='', max_length=500)
+    technical_object: str = Field(default='', max_length=240)
+    object_version: str = Field(default='', max_length=100)
+    intended_environment: str = Field(default='', max_length=240)
+    component_scope: Literal['component','system','model','tool','concept','unsure'] = 'unsure'
+
+
+class AssessmentStart(Strict):
+    profile: Literal['citizen','organisational','technical']
+    use_case: str = Field(min_length=1, max_length=240)
+    city: str = Field(default='other', max_length=60)
+    area: str = Field(default='', max_length=80)
+    stakeholder_role: str = Field(default='withheld', max_length=80)
+    discussion_status: Literal['proposal','illustrative','pilot','operational','unsure'] = 'proposal'
+    indicator_ids: list[str] | None = Field(default=None, min_length=1, max_length=15)
+    organisation_or_unit: str = Field(default='', max_length=240)
+    responsibilities: str = Field(default='', max_length=240)
+    technical_object: str = Field(default='', max_length=240)
+    object_version: str = Field(default='', max_length=100)
+    intended_environment: str = Field(default='', max_length=240)
+    component_scope: Literal['component','system','model','tool','concept','unsure'] = 'unsure'
+    likert_enabled: bool = False
+    materials_or_service: str = Field(default='', max_length=240)
+    use_case_purpose: str = Field(default='', max_length=240)
+    origin_destination_types_or_unknown: str = Field(default='', max_length=240)
+    significant_unknowns: str = Field(default='', max_length=500)
+    scenario_id: str | None = Field(default=None, max_length=100)
+
+
+class IndicatorInformation(Strict):
+    kind: Literal['definition','scale'] = 'definition'
+
+
+class IndicatorLink(Strict):
+    answer_ids: list[str] = Field(min_length=1, max_length=3)
+
+
+class IndicatorCase(Strict):
+    scenario_id: str | None = Field(default=None,max_length=100)
+
+
 class IndicatorSelection(Strict):
-    profile: Literal['citizen'] = 'citizen'
-    indicator_ids: list[str] = Field(min_length=1, max_length=3)
+    profile: Literal['citizen', 'organisational', 'technical'] = 'citizen'
+    indicator_ids: list[str] = Field(min_length=1, max_length=15)
     context: Literal['general_understanding', 'illustrative_proposal', 'actual_experience']
     use_case: str = Field(default='', max_length=240)
     reuse_answers: dict[str, list[str]] = Field(default_factory=dict)
+    area: str = Field(default='', max_length=80)
+    discussion_status: Literal['proposal','illustrative','pilot','operational','unsure'] = 'proposal'
+    organisation_or_unit: str = Field(default='', max_length=240)
+    responsibilities: str = Field(default='', max_length=240)
+    technical_object: str = Field(default='', max_length=240)
+    object_version: str = Field(default='', max_length=100)
+    intended_environment: str = Field(default='', max_length=240)
+    component_scope: Literal['component','system','model','tool','concept','unsure'] = 'unsure'
+    likert_enabled: bool = False
+    scenario_id: str | None = Field(default=None, max_length=100)
+    use_case_fields: dict[str,str] = Field(default_factory=dict)
 
 
 class IndicatorAnswer(Strict):
@@ -82,6 +137,9 @@ class IndicatorEdit(Strict):
 
 
 ACTION_DATA = {
+    'start_assessment': AssessmentStart, 'indicator_scope': IndicatorScope,
+    'indicator_add_information': Correction, 'indicator_information': IndicatorInformation, 'complete_assessment': Empty,
+    'indicator_link': IndicatorLink, 'indicator_case': IndicatorCase,
     'select_indicators': IndicatorSelection, 'indicator_answer': IndicatorAnswer,
     'indicator_correct': Correction, 'indicator_review': IndicatorReview,
     'indicator_next': IndicatorNext, 'indicator_edit': IndicatorEdit,

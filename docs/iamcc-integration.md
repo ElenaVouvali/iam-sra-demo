@@ -399,3 +399,18 @@ estimator is a developer facility. Use free review ports and isolated builds to
 preserve a running integration. Full commands, draft matching policy, source
 boundaries and demonstration are in
 [indicator assisted self-assessment](indicator-assisted-self-assessment.md).
+
+## Current questionnaire v0.2 prototype
+
+The normal assessment route now supports explicit citizen, organisational and
+technical capacity directly after onboarding. The earlier baseline is optional;
+all fifteen indicator modules can be continued across sections without restarting
+completed judgments. Private questionnaire configuration is required alongside
+the FN v4 bank. No deployment changes are part of this checkpoint. See
+[the current methodology/run note](questionnaire-v02-prototype.md) for isolated
+liono commands, source discrepancies, memory-only restoration and model limits.
+
+An optional six-case expansion is available through an isolated private corpus
+selected by `IAM_CONVERSATION_CORPUS`. The legacy nine-card corpus remains
+loadable and was not overwritten. [Build and source-status notes](scenario-expansion-v01.md)
+identify the two missing originals and the explicitly unverified adaptation.

@@ -1,3 +1,5 @@
+> Historical v1 citizen-only implementation note. Current three-profile questionnaire v0.2 behaviour and policy are documented in [questionnaire-v02-prototype.md](questionnaire-v02-prototype.md). Verification below belongs to the earlier checkpoint.
+
 # Draft citizen indicator assisted self-assessment
 
 Starting checkout: clean `main`, `be54cea99a533b7ce9a362bc7d77b4d23160f4d2`.

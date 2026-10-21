@@ -60,6 +60,7 @@ export const flows = {
       await waitUntil(() => seen.view && seen.view.version > before && !seen.view.busy_job, `Action did not complete: ${title}`)
       await wait(100)
     }
+    await disclosure(page, 'Optional general interview before assessment')
     await select(page, 'Are you answering', CASE.context.perspective)
     await select(page, 'Which role', CASE.context.role)
     await select(page, 'Which city', CASE.context.city)
@@ -127,7 +128,7 @@ export const flows = {
     expect(await page.$('[data-testid=indicator-interpretation]'), 'Indicator interpretation did not restore after reload')
     expect(await page.$eval('[data-testid=indicator-interpretation]', (el) => el.textContent.includes('Proposed condition or safeguard') && el.textContent.includes('your own reasoning or action')), 'Interpretation hides the classifications used for matching')
     await act('Confirm indicator interpretation')
-    await act('Finish indicator questions')
+    if (seen.view.indicator_assessment.current.state==='collecting') await act('Finish indicator questions')
     await act('Request draft indicator suggestion')
     expect(seen.view.indicator_assessment.current.participant === null, 'Tool suggestion prepopulated participant result')
     await select(page, 'Your own statement selection', 'indicator-07-crl-3')
@@ -149,7 +150,7 @@ export const flows = {
       const response = await fetch('/api/sra-assessment/v1/sessions/' + active.id + '/actions', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':cap.csrf_token}, body:JSON.stringify({action:'indicator_review', data:{choice:'endorse',revision}, expected_version:active.version, request_id:crypto.randomUUID()}) })
       if (response.status !== 409) throw new Error('Stale assessment review was not rejected')
     }, priorRevision)
-    await act('Confirm indicator interpretation'); await act('Finish indicator questions'); await act('Request draft indicator suggestion'); await act('Confirm suggested statement')
+    await act('Confirm indicator interpretation'); if (seen.view.indicator_assessment.current.state==='collecting') await act('Finish indicator questions'); await act('Request draft indicator suggestion'); await act('Confirm suggested statement')
     await clickText(page, 'button', 'Download JSON')
     await waitUntil(() => seen.exports.length === 1, 'JSON download missing')
     await waitUntil(() => page.$$eval('button', (els) => !els.find((el) => el.textContent.trim() === 'Download JSONL')?.disabled), 'Export controls stayed disabled')
@@ -174,6 +175,7 @@ export const flows = {
       await waitUntil(async () => !seen.view.busy_job && (seen.view.version > version || (failure && await page.$('[role=alert]'))), title)
       await wait(100)
     }
+    await disclosure(page, 'Optional general interview before assessment')
     await select(page, 'Are you answering', 'personal'); await select(page, 'Which role', 'citizen'); await select(page, 'Which city', 'madrid')
     await act('Begin interview')
     await select(page, 'Your answer', 'little'); await act('Submit answer')
@@ -246,4 +248,81 @@ flows['processing reset, navigation cancellation and organisation scope'] = asyn
   if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + '/organisation-final.png', fullPage: true })
   await clickText(page, 'button', 'End session'); await clickText(page, 'button', 'Confirm end')
   await page.waitForFunction(() => document.body.textContent.includes('Your server session has ended'))
+}
+
+for (const [profile,scale] of [['citizen','crl'],['organisational','orl'],['technical','trl']]) {
+ flows[`direct ${profile} questionnaire, continuation, restoration and report`] = async (page,_errors,{go,expect,clickText}) => {
+  const seen=monitor(page);await go(page,'/tools/sra-assessment/app')
+  await waitUntil(()=>seen.view || page.$('[data-testid=assessment] .empty button'),'Assessment not ready')
+  if(!seen.view){await clickText(page,'button','Start interview');await waitUntil(()=>seen.view,'New session missing')}
+  async function act(title){const v=seen.view.version;await clickText(page,'button',title);await waitUntil(()=>seen.view.version>v && !seen.view.busy_job,title);await wait(100)}
+  if(seen.view.state!=='general_welcome'){await clickText(page,'button','Reset interview');await act('Confirm reset')}
+  await select(page,'Response capacity',profile);await fill(page,'#assessment-use-case','Synthetic proposed service')
+  await act('Begin indicator assessment')
+  expect(seen.view.answers.length===0,'Direct route required baseline answers')
+  expect(seen.view.indicator_assessment.selected_indicator_ids.length===15,'Assessment was limited to a batch')
+  if(profile!=='citizen'){
+   if(profile==='organisational'){await fill(page,'#indicator-unit','Planning unit');await fill(page,'#indicator-responsibilities','Planning and coordination')}
+   else{await fill(page,'#indicator-object','Test model');await fill(page,'#indicator-version','A');await fill(page,'#indicator-environment','Laboratory')}
+   await act('Confirm indicator scope')
+  }
+  await fill(page,'#indicator-answer','I propose safeguards because repeated disruption matters.');await act('Submit indicator answer')
+  await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('[data-testid=indicator-interpretation]')
+  await act('Confirm indicator interpretation');await act('Request draft indicator suggestion')
+  const tool=seen.view.indicator_assessment.current.tool
+  expect(tool.statement.profile===profile && tool.statement.scale===scale.toUpperCase(),'Wrong profile statement')
+  await act('Read all nine source statements')
+  expect(await page.$$eval('[data-testid=indicator-review] ol > li',els=>els.length)===9,'Complete source scale inaccessible')
+  await select(page,'Your own statement selection',`indicator-01-${scale}-3`);await act('Record my selected statement')
+  expect(seen.view.indicator_assessment.current.participant.statement.level===3,'Participant selection missing')
+  expect(seen.view.indicator_assessment.current.tool.selected_statement_id===tool.selected_statement_id,'Tool judgment overwritten')
+  for(const n of [6,11])await act(`Continue Synthetic indicator ${n}`)
+  await act('Return to Synthetic indicator 1')
+  expect(seen.view.indicator_assessment.current.participant.statement.level===3,'Navigation restarted completed indicator')
+  await act('Finish with my current indicator profile');await page.reload({waitUntil:'networkidle0'})
+  await page.waitForSelector('[data-testid=individual-profile-report]')
+  expect(seen.view.indicator_assessment.report_finished,'Partial report did not restore')
+  await clickText(page,'button','Download JSON');await waitUntil(()=>seen.exports.length===1,'JSON missing')
+  await waitUntil(()=>page.$$eval('button',els=>!els.find(e=>e.textContent.trim()==='Download JSONL')?.disabled),'Download still busy')
+  await clickText(page,'button','Download JSONL');await waitUntil(()=>seen.exports.length===2,'JSONL missing')
+ }
+}
+
+flows['unavailable tool suggestion preserves explicit participant assessment'] = async (page,_errors,{go,expect,clickText}) => {
+ const seen=monitor(page);await go(page,'/tools/sra-assessment/app')
+ await page.waitForSelector('[data-testid=assessment] .empty button');await clickText(page,'button','Start interview');await waitUntil(()=>seen.view,'Session missing')
+ async function act(title){const v=seen.view.version;await clickText(page,'button',title);await waitUntil(()=>seen.view.version>v && !seen.view.busy_job,title);await wait(100)}
+ await select(page,'Response capacity','citizen');await fill(page,'#assessment-use-case','Synthetic service');await act('Begin indicator assessment')
+ await fill(page,'#indicator-answer','simulate indicator failure; I propose safeguards.');await act('Submit indicator answer');await act('Confirm indicator interpretation');await act('Request draft indicator suggestion')
+ expect(seen.view.indicator_assessment.current.tool===null,'Rejected matching became a suggestion or abstention')
+ expect(seen.view.indicator_assessment.current.suggestion_error.status==='unavailable','Unavailable status missing')
+ await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('[data-testid=indicator-review]')
+ expect(await page.$eval('[data-testid=indicator-assessment]',el=>el.textContent.includes('No valid tool suggestion is available')),'Failure notice did not restore')
+ await select(page,'Your own statement selection','indicator-01-crl-1');await act('Record my selected statement');await act('Finish with my current indicator profile')
+ expect(seen.view.indicator_assessment.current.participant.statement.level===1 && seen.view.indicator_assessment.current.tool===null,'Participant selection fabricated a tool score')
+ await clickText(page,'button','Download JSON');await waitUntil(()=>seen.exports.length===1,'Export missing after model rejection')
+}
+
+for(const profile of ['citizen','organisational','technical']) {
+ flows[`optional scenario context in ${profile} assessment`] = async(page,_errors,{go,expect,clickText})=>{
+  if(profile==='citizen')await page.setViewport({width:360,height:900})
+  const seen=monitor(page);await go(page,'/tools/sra-assessment/app')
+  await waitUntil(()=>seen.view || page.$('[data-testid=assessment] .empty button'),'Ready state missing')
+  if(!seen.view){await clickText(page,'button','Start interview');await waitUntil(()=>seen.view,'Session missing')}
+  async function act(title){const v=seen.view.version;await clickText(page,'button',title);await waitUntil(()=>seen.view.version>v && !seen.view.busy_job,title);await wait(100)}
+  if(seen.view.state!=='general_welcome'){await clickText(page,'button','Reset interview');await act('Confirm reset')}
+  await select(page,'Response capacity',profile);await fill(page,'#assessment-use-case','Confirmed local proposal');await act('Begin indicator assessment')
+  if(profile!=='citizen'){if(profile==='organisational'){await fill(page,'#indicator-unit','Planning unit');await fill(page,'#indicator-responsibilities','Planning')}else await fill(page,'#indicator-object','Test model');await act('Confirm indicator scope')}
+  await disclosure(page,'Optional illustrative case for this indicator');await select(page,'Optional case','expansion-04');await act('Use optional case for this indicator')
+  expect(seen.view.indicator_assessment.current.scope.use_case==='Confirmed local proposal','Case replaced primary local use case')
+  expect(await page.$eval('[data-testid=indicator-case]',el=>el.textContent.includes('unverified_draft_adaptation')),'Case verification status hidden')
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Scenario context scrolls sideways')
+  await fill(page,'#indicator-answer','I propose safeguards.');await act('Submit indicator answer');await act('Confirm indicator interpretation');await act('Request draft indicator suggestion');await act('Remain unsure about my level')
+  await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('[data-testid=indicator-case]')
+  expect(seen.view.indicator_assessment.current.scope.illustrative_case.id==='expansion-04','Reload lost exact selected case')
+  await act('Finish with my current indicator profile');await clickText(page,'button','Download JSON');await waitUntil(()=>seen.exports.length===1,'Case export missing')
+  await act('Return to Synthetic indicator 1');await disclosure(page,'Optional illustrative case for this indicator');await act('Continue without an optional case')
+  expect(!seen.view.indicator_assessment.current.scope.illustrative_case && seen.view.indicator_assessment.current.participant===null,'Case decline did not invalidate dependent review')
+  await act('Finish with my current indicator profile')
+ }
 }

@@ -88,3 +88,8 @@ Focused verification:
 ```bash
 .venv/bin/python -m pytest -q tests/test_import_readiness_scales.py
 ```
+
+Current runtime advancement uses questionnaire v0.2 and all three explicitly
+selected profiles through [the shared draft assessment workflow](questionnaire-v02-prototype.md).
+The [optional scenario expansion](scenario-expansion-v01.md) is separate source
+configuration; it does not change the anchor bank or approve matching rules.

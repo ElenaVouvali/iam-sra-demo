@@ -39,20 +39,9 @@ def main():
         record={'case':name,'synthetic':True,'model_alias':'Qwen/Qwen3-8B','status':'failed'}
         try:
             session.indicator_answer(answer,client)
-            # Curated synthetic reference expectation, never sent as a target
-            # level. Behave like a participant who notices a misinterpretation.
-            if name in {'disagreement','explicit_disagreement'}:
-                observations=session.indicators.current['pending']['reading']['observations']
-                def preserves_proposal(items):
-                    return any(o['kind']=='condition' and o['actor']=='self' and o['domain']=='IAM' for o in items)
-                record['initial_proposal_preserved']=preserves_proposal(observations)
-                record['interpretation_correction_requested']=not record['initial_proposal_preserved']
-                if record['interpretation_correction_requested']:
-                    session.indicator_correct('I explained a possible effect and proposed safeguards. I am not claiming past action or only promising future participation. Please preserve my reasoning and the proposed conditions.',client)
-                    observations=session.indicators.current['pending']['reading']['observations']
-                record['reviewed_proposal_preserved']=preserves_proposal(observations)
-                if not record['reviewed_proposal_preserved']:
-                    raise AssessmentError('The interpretation still loses the proposed safeguard after participant correction.',code='interpretation_semantic')
+            # Interpretation categories are fallible annotations, not eligibility gates.
+            # Matching receives the complete screened answer even if a safeguard
+            # was labelled intention. The v0.2 controller smoke covers corrections.
             session.indicator_confirm();session.indicator_finish()
             session.indicator_suggest(client)
             row=session.indicators.current
@@ -88,7 +77,7 @@ def main():
         record.update(duration_seconds=round(time.monotonic()-started,3),
                       metrics=getattr(client,'session_metrics',{}))
         runs.append(record)
-    report={'synthetic_only':True,'policy':'indicator-matching-draft-1.0.0','runs':runs,
+    report={'synthetic_only':True,'policy':__import__('iam_sra.indicator_client',fromlist=['POLICY']).POLICY,'runs':runs,
             'interpretation':'Live semantic observations, not independent or empirical validation.',
             'bank':session.indicators.identity(),
             'provenance':{k:session.provenance[k] for k in ('code_commit','working_tree_dirty','code_snapshot_sha256')}}

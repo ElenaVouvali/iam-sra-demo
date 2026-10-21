@@ -5,17 +5,24 @@ from hashlib import sha256
 import json
 import math
 import subprocess
+import os
 from pathlib import Path
 from .settings import ROOT,config
 from .privacy import require_clean,require_safe_data
 from .readiness_retrieval import tokens
 
 
+def corpus_path():
+    path=(ROOT/os.getenv('IAM_CONVERSATION_CORPUS',config('conversation')['corpus_path'])).resolve()
+    if not path.is_relative_to((ROOT/'references/private').resolve()):raise ValueError('Use a private conversation corpus path.')
+    return path
+
+
 def load_corpus():
-    path=ROOT/config('conversation')['corpus_path']
+    path=corpus_path()
     if not path.is_file():raise ValueError('Prepare the local source collection with scripts/build-conversation-corpus.py before starting this mode.')
     value=json.loads(path.read_text())
-    if value.get('version')!='conversation-corpus-1.1.0':raise ValueError('Rebuild the local collection with scripts/build-conversation-corpus.py for the updated conversation.')
+    if value.get('version') not in {'conversation-corpus-1.1.0','conversation-corpus-1.2.0'}:raise ValueError('Rebuild the local collection with scripts/build-conversation-corpus.py for the updated conversation.')
     for name in ('baseline','conversation'):
         if value.get('configuration',{}).get(name)!=sha256((ROOT/'configs'/f'{name}.json').read_bytes()).hexdigest():
             raise ValueError('The local collection is out of date. Re-run scripts/build-conversation-corpus.py.')
@@ -33,9 +40,18 @@ def load_corpus():
         return {'document':document,'locator':locator,'sha256':known[document],
                 'version':known[document],'source_status':'contract'}
     ga={c['id']:c for c in grant_scenarios(ga_text,config('baseline'),source)}
-    if {c['id'] for c in value['scenarios']}!={expected['id'],*ga}:
+    expanded={}
+    if value['version']=='conversation-corpus-1.2.0':
+        from .scenario_expansion import load_expansion
+        cards,_,identity=load_expansion()
+        if value.get('scenario_expansion')!=identity:raise ValueError('Scenario expansion configuration changed; rebuild the private review corpus.')
+        expanded={c['id']:c for c in cards}
+    if len({c['id'] for c in value['scenarios']})!=len(value['scenarios']) or {c['id'] for c in value['scenarios']}!={expected['id'],*ga,*expanded}:
         raise ValueError('Scenario collection membership differs from the source-checked cases.')
     for card in value['scenarios']:
+        if card['id'] in expanded:
+            if card!=expanded[card['id']]:raise ValueError('A draft expansion card differs from the registered configuration.')
+            continue
         original=ga.get(card['id'])
         if original:
             if card!=original:raise ValueError('A grant scenario differs from its source-checked card.')
@@ -53,6 +69,8 @@ def runtime_provenance(collection):
         ROOT/'eval/conversation_meeting_cases_v2.json',ROOT/'eval/conversation_adaptive_regressions_v1.json',
         ROOT/'eval/synthetic_personas_v1.json',ROOT/'references/source-register.json']
     hashes={str(p.relative_to(ROOT)):sha256(p.read_bytes()).hexdigest() for p in files}
+    for source in collection.get('sources',[]):
+        if source.get('document')=='IAM_SRA2_scenarios_v0.1.json':hashes[source['path']]=source['sha256']
     hashes['conversation_collection_canonical.json']=sha256(json.dumps(collection,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     try:
         commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
@@ -88,13 +106,19 @@ def retrieve_questions(collection,eligible,perspective,role,query,stage,limit=3)
     return [dict(r,question=deepcopy(allowed[(r['question_id'],r['variant_id'])])) for r in chosen]
 
 
-def retrieve_scenarios(collection,context,profile=None):
+def retrieve_scenarios(collection,context,profile=None,indicator_id=None,presented_ids=()):
     rows=[r for r in collection['scenarios'] if context['perspective'] in r['applicability']['perspectives']
           and context['stakeholder_category'] in r['applicability']['roles'] and r['locale']==context['language']]
     topics={t for claim in (profile or {}).get('claims',[]) for t in claim.get('topic_ids',[])}
     city=context['city']
-    return deepcopy(sorted(rows,key=lambda r:(-int(r.get('city')==city),
-        -len(topics.intersection(r.get('topic_ids',[]))),-int(r['id']=='urban_medical_corridor'),r['id'])))
+    ordered=sorted(rows,key=lambda r:(-int(r.get('city')==city),
+        -int(indicator_id in r.get('indicator_ids',[]) if indicator_id else False),
+        int(r['id'] in presented_ids),-len(topics.intersection(r.get('topic_ids',[]))),r['id']))
+    unique,duplicates,families=[],[],set()
+    for row in ordered:
+        family=row.get('situation_family') or ('route_'+row.get('city','') if row['id'].startswith('ga_') else row['id'])
+        (duplicates if family in families else unique).append(row);families.add(family)
+    return deepcopy(unique+duplicates)
 
 
 def retrieve_scenario(collection,context,profile=None):

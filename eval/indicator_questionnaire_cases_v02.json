@@ -1,0 +1,430 @@
+{
+  "version": "indicator-comparison-0.2.0",
+  "synthetic_only": true,
+  "design": "Fixed authored expectations grounded in exact bank anchors, pending partner review. Frozen annotations intentionally include misclassification in would/correction cases. Baseline/revised matching reuse identical full answers and annotations; not a whole-interview accuracy study.",
+  "cases": [
+    {
+      "id": "noise-propose",
+      "profile": "citizen",
+      "indicator_id": "indicator-07",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "I propose avoid night flights and invite residents to review the proposed hours, because repeated interruptions could disturb sleep. I have not taken part in a drone demonstration or influenced a decision.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "I propose avoid night flights and invite residents to review the proposed hours, because repeated interruptions could disturb sleep. I have not taken part in a drone demonstration or influenced a decision.",
+            "kind": "condition",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          4,
+          5
+        ],
+        "abstention_allowed": true,
+        "reason": "Current reasoned safeguard may fit discussion/proposal; no demonstration, influence or sustained governance.",
+        "status": "authored_provisional_pending_partner_review"
+      },
+      "paraphrase_group": "noise-safeguard"
+    },
+    {
+      "id": "noise-should",
+      "profile": "citizen",
+      "indicator_id": "indicator-07",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "Operators should avoid night flights and invite residents to review the proposed hours, because repeated interruptions could disturb sleep. I have not taken part in a drone demonstration or influenced a decision.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "Operators should avoid night flights and invite residents to review the proposed hours, because repeated interruptions could disturb sleep. I have not taken part in a drone demonstration or influenced a decision.",
+            "kind": "condition",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          4,
+          5
+        ],
+        "abstention_allowed": true,
+        "reason": "Current reasoned safeguard may fit discussion/proposal; no demonstration, influence or sustained governance.",
+        "status": "authored_provisional_pending_partner_review"
+      },
+      "paraphrase_group": "noise-safeguard"
+    },
+    {
+      "id": "noise-would",
+      "profile": "citizen",
+      "indicator_id": "indicator-07",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "I would propose avoid night flights and invite residents to review the proposed hours, because repeated interruptions could disturb sleep. I have not taken part in a drone demonstration or influenced a decision.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "I would propose avoid night flights and invite residents to review the proposed hours, because repeated interruptions could disturb sleep. I have not taken part in a drone demonstration or influenced a decision.",
+            "kind": "intention",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          4,
+          5
+        ],
+        "abstention_allowed": true,
+        "reason": "Current reasoned safeguard may fit discussion/proposal; no demonstration, influence or sustained governance.",
+        "status": "authored_provisional_pending_partner_review"
+      },
+      "paraphrase_group": "noise-safeguard"
+    },
+    {
+      "id": "willingness",
+      "profile": "citizen",
+      "indicator_id": "indicator-07",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "I would attend a meeting about drone noise if one was offered. I have not attended or contributed yet.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "I would attend a meeting about drone noise if one was offered. I have not attended or contributed yet.",
+            "kind": "intention",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [],
+        "abstention_allowed": true,
+        "reason": "Willingness establishes neither actual activity nor demonstrated understanding.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "bare-understanding",
+      "profile": "citizen",
+      "indicator_id": "indicator-10",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "I understand everything about drone safety and security.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "I understand everything about drone safety and security.",
+            "kind": "bare_claim",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [],
+        "abstention_allowed": true,
+        "reason": "A bare assertion does not establish the actual safety criterion.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "explained-safeguards",
+      "profile": "citizen",
+      "indicator_id": "indicator-10",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "An aircraft fault can endanger people below. Emergency responses need testing, cybersecurity protects control links, and data protection limits unnecessary collection. Operators and oversight bodies have different responsibilities.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "An aircraft fault can endanger people below. Emergency responses need testing, cybersecurity protects control links, and data protection limits unnecessary collection. Operators and oversight bodies have different responsibilities.",
+            "kind": "reasoning",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          2,
+          3
+        ],
+        "abstention_allowed": true,
+        "reason": "Explanation addresses risks, safeguards and responsibility; no evaluated demonstration is reported.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "attendance",
+      "profile": "citizen",
+      "indicator_id": "indicator-14",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "I attended an IAM information meeting and listened. I did not contribute, evaluate a demonstration or influence any decision.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "I attended an IAM information meeting and listened. I did not contribute, evaluate a demonstration or influence any decision.",
+            "kind": "activity",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          1
+        ],
+        "abstention_allowed": true,
+        "reason": "Attendance alone does not establish informed dialogue, evaluation or influence.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "contribution-change",
+      "profile": "citizen",
+      "indicator_id": "indicator-15",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "In an actual IAM consultation I explained why offline material was needed for residents without digital access. The organisers recorded my contribution and changed the agreed engagement plan to include printed materials. I have not sustained a governance role.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "In an actual IAM consultation I explained why offline material was needed for residents without digital access. The organisers recorded my contribution and changed the agreed engagement plan to include printed materials. I have not sustained a governance role.",
+            "kind": "influence",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          7
+        ],
+        "abstention_allowed": true,
+        "reason": "Explicit reported knowledge-based input linked to a specific change; self-report remains unverified.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "unavailable-opportunity",
+      "profile": "citizen",
+      "indicator_id": "indicator-15",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "I can explain that delivery aircraft carry goods and that benefits must be weighed against noise and privacy. No accessible local workshop has been offered, so I have had no opportunity to take part.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "I can explain that delivery aircraft carry goods and that benefits must be weighed against noise and privacy. No accessible local workshop has been offered, so I have had no opportunity to take part.",
+            "kind": "reasoning",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          2,
+          3
+        ],
+        "abstention_allowed": true,
+        "reason": "Reasoning can be assessed without an opportunity penalty or invented participation.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "contradiction",
+      "profile": "citizen",
+      "indicator_id": "indicator-07",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "My noise report changed the flight hours in last month’s consultation. I never sent a noise report and there was no consultation last month.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "My noise report changed the flight hours in last month’s consultation. I never sent a noise report and there was no consultation last month.",
+            "kind": "influence",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [],
+        "abstention_allowed": true,
+        "reason": "Material same-actor/event contradiction needs clarification; no clear influence selection.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "critical-information",
+      "profile": "citizen",
+      "indicator_id": "indicator-14",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "A promotional leaflet may explain the intended delivery purpose, but I would compare it with independent evidence and ask about the limitations before accepting its claims. Benefits alone do not establish safety or fairness.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "A promotional leaflet may explain the intended delivery purpose, but I would compare it with independent evidence and ask about the limitations before accepting its claims. Benefits alone do not establish safety or fairness.",
+            "kind": "reasoning",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          2,
+          3
+        ],
+        "abstention_allowed": true,
+        "reason": "Critically distinguishes information independence and limitations; no co-design or governance claim.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "no-information",
+      "profile": "citizen",
+      "indicator_id": "indicator-10",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "I do not know about drone safety or data protection.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "I do not know about drone safety or data protection.",
+            "kind": "absence",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [],
+        "abstention_allowed": true,
+        "reason": "Explicit lack of information requires abstention rather than a fabricated low level.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "correction",
+      "profile": "citizen",
+      "indicator_id": "indicator-07",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "I would propose limiting flights during rest hours because repeated noise could disturb sleep. This is a safeguard I am proposing now, not past participation.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "I would propose limiting flights during rest hours because repeated noise could disturb sleep. This is a safeguard I am proposing now, not past participation.",
+            "kind": "intention",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          4,
+          5
+        ],
+        "abstention_allowed": true,
+        "reason": "Full answer and clarification distinguish a current safeguard from willingness.",
+        "status": "authored_provisional_pending_partner_review"
+      },
+      "correction": "I am proposing a safeguard now and explaining its reason; I am not promising to participate later."
+    },
+    {
+      "id": "organisation-plan",
+      "profile": "organisational",
+      "indicator_id": "indicator-07",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "Our municipal planning unit has prepared draft time and location restrictions, public information and a complaint-handling plan. We coordinate oversight but do not operate aircraft or hold an operator’s permissions. No pilot has tested the plan.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "Our municipal planning unit has prepared draft time and location restrictions, public information and a complaint-handling plan. We coordinate oversight but do not operate aircraft or hold an operator’s permissions. No pilot has tested the plan.",
+            "kind": "condition",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          4
+        ],
+        "abstention_allowed": true,
+        "reason": "Role-scoped organisational planning, not pilot validation or another actor’s authorisation.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    },
+    {
+      "id": "technical-lab",
+      "profile": "technical",
+      "indicator_id": "indicator-10",
+      "question": "What can you explain about this issue, your relevant experience and any conditions?",
+      "answer": "For the synthetic system prototype version A, emergency responses, cybersecurity controls and privacy functions have been tested together in the laboratory against failure and attack scenarios. We have no evidence from relevant-site flights or operational use.",
+      "annotation": {
+        "meaning": "Synthetic confirmed annotation; the full answer remains authoritative.",
+        "observations": [
+          {
+            "quote": "For the synthetic system prototype version A, emergency responses, cybersecurity controls and privacy functions have been tested together in the laboratory against failure and attack scenarios. We have no evidence from relevant-site flights or operational use.",
+            "kind": "activity",
+            "actor": "self",
+            "actuality": "unspecified",
+            "domain": "IAM",
+            "ambiguities": []
+          }
+        ]
+      },
+      "expectation": {
+        "acceptable_levels": [
+          4
+        ],
+        "abstention_allowed": true,
+        "reason": "Named system/version with lab validation does not establish relevant-environment flight demonstration.",
+        "status": "authored_provisional_pending_partner_review"
+      }
+    }
+  ]
+}

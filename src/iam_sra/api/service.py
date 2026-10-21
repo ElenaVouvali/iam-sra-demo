@@ -292,7 +292,7 @@ class AssessmentService:
         # worker; the HTTP threads never take the engine's LLM transport lock.
         if self.queue.full():
             raise APIError('queue_full', 429)
-        if action in {'back', 'edit_answer', 'edit_context', 'correct_interpretation', 'indicator_edit', 'indicator_correct', 'select_indicators'}:
+        if action in {'back', 'edit_answer', 'edit_context', 'correct_interpretation', 'indicator_edit', 'indicator_correct', 'select_indicators', 'start_assessment', 'indicator_scope', 'indicator_add_information', 'indicator_link','indicator_case'}:
             self._invalidate(record)
         now = self.clock()
         job = Job(str(uuid4()), record.id, record.owner, record.generation,
@@ -360,9 +360,15 @@ class AssessmentService:
                     record.preview = None
                     if failure:
                         job.status, job.error = 'failed', failure.public()
+                        if job.action=='indicator_suggest' and record.engine.indicators:
+                            record.engine.indicators.note_suggestion_failure(failure.code)
+                            try:
+                                record.view=self.adapter.present(record.engine,job.session_id,record.version)
+                            except (PrivacyError,APIError):
+                                pass  # Keep the previous screened view if screening is unavailable.
                         if safe_failed_attempt:
                             record.engine.failed_attempt = safe_failed_attempt
-                        if job.action in {'answer', 'correct_interpretation', 'ask_information', 'indicator_answer', 'indicator_correct'}:
+                        if job.action in {'answer', 'correct_interpretation', 'ask_information', 'indicator_answer', 'indicator_correct', 'indicator_add_information'}:
                             record.retry = {'action': job.action, 'data': data}
                     else:
                         record.engine, record.view = candidate, view

@@ -17,7 +17,7 @@ from iam_sra.settings import ROOT
 from iam_sra.assessment import AssessmentError
 from iam_sra.citizen_score import empty_assessment
 from iam_sra.indicator_assessment import IndicatorAssessment
-from indicator_fixtures import bank, Client as IndicatorFixtureClient
+from indicator_fixtures import bank, questionnaire, scenario_cases, Client as IndicatorFixtureClient
 
 
 class FixtureScore:
@@ -38,18 +38,28 @@ class SlowFixture(FixtureClient):
             return MockBaselineClient().extract_baseline(evidence, **kwargs)
 
 
+class IndicatorBrowserClient(IndicatorFixtureClient):
+    def match(self, indicator, scope, statements, evidence):
+        if any('simulate indicator failure' in e['answer'] for e in evidence):
+            raise AssessmentError('Synthetic matching rejection.',code='evidence')
+        return super().match(indicator,scope,statements,evidence)
+
+
 def create_fixture():
     privacy.detector = lambda: SyntheticDetector()
     case = load_cases(ROOT / 'eval/conversation_meeting_cases_v2.json')['cases'][0]
     def make_engine():
-        value = ConversationSession(synthetic_collection())
-        value.indicators = IndicatorAssessment(bank())
+        collection=synthetic_collection()
+        collection['scenarios'][0]['city']='madrid'  # The frozen authored baseline case is local to its Madrid fixture.
+        collection['scenarios']+=scenario_cases()
+        value = ConversationSession(collection)
+        value.indicators = IndicatorAssessment(bank(),questionnaire())
         return value
     adapter = ControllerAdapter(
         engine_factory=make_engine,
         clients_factory=lambda engine: {'baseline': SlowFixture(case), 'planner': None,
                                         'information': FixtureComposer(), 'score': FixtureScore(),
-                                        'indicator': IndicatorFixtureClient()},
+                                        'indicator': IndicatorBrowserClient()},
         readiness=lambda: {'privacy': 'synthetic-detector-fixture', 'corpus': 'synthetic-corpus-fixture'})
     return create_app({'TESTING': True, 'SECRET_KEY': 'browser-fixture-only-not-a-deployment-secret'},
                       service=AssessmentService(adapter))

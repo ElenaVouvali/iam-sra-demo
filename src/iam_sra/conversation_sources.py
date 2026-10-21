@@ -71,8 +71,12 @@ def scenario_explanations(cards):
         passages.append({'id':card['id']+'_facts','type':'explanation','document_title':source['document'],
             'location':source['locator'],'source_version':source['version'],'source_sha256':source['sha256'],
             'topic':'scenario medical deliveries route logistics','locale':'en','scenario_applicability':card['id'],
-            'source_status':'source_described_plan','review_status':card['review_status'],'approved_by':None,
+            'source_status':card.get('source_status','source_described_plan'),'review_status':card['review_status'],'approved_by':None,
             'permitted_use':['citizen_explanation','researcher_reference'],'text':card['text'],
             'source':deepcopy(source),'target_criterion':'contextual_application','topic_ids':card['topic_ids'],
             'applicability':deepcopy(card['applicability']),'derivation':card['derivation'],'search_text':card['search_text']})
+        if card.get('scenario_bank_version'):
+            passages[-1].update(source_refs=deepcopy(card['source_refs']),source_verification=card['source_verification'],
+                text=card['text']+'\nSource status: '+card['source_status']+'. Verification: '+card['source_verification']+
+                '. Still unknown: '+'; '.join(card['unknowns']))
     return passages

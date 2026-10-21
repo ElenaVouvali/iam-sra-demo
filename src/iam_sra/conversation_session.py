@@ -476,37 +476,116 @@ class ConversationSession:
                 row.update(state='superseded', pending=None)
 
     def indicator_view(self):
-        if not self.respondent or self.respondent['perspective'] != 'personal':
-            return {'available': False, 'notice': 'Indicator results currently support the individual citizen profile only. Organisational interviews remain evidence summaries, without ORL or TRL assessment.'}
-        if self.stage != 'final':
-            return {'available': False, 'notice': 'Confirm the interview summary to continue with citizen indicator self-assessment.'}
         if getattr(self, 'indicators', None) is None:
             from .indicator_assessment import IndicatorAssessment
             try:
                 self.indicators = IndicatorAssessment()
-            except ValueError:
-                return {'available': False, 'notice': 'The private v4 readiness bank is missing or incompatible. Ask the operator to run scripts/import-readiness-scales.py build and restart the API/UI.'}
-        return {'available': True, **self.indicators.view()}
+            except ValueError as exc:
+                return {'available': False, 'notice': 'The private readiness-scales-v4.json or IAM_SRA2_questionnaire_v0.2.json is unavailable or incompatible. Ask the operator to run scripts/import-readiness-scales.py build, extract the registered questionnaire package and restart the review API/UI.'}
+        return {'available': True, **self.indicators.view(),
+                'direct_entry': getattr(self, 'assessment_route', False),
+                'entry_possible': self.state in {'general_welcome','general_context'},
+                'illustrative_options': [{'id':c['id'],'title':c.get('title',c['id']),'text':c['text'],
+                    'source':deepcopy(c['source']),'source_status':c.get('source_status',c.get('review_status','illustrative_context')),
+                    'source_verification':c.get('source_verification','source_described_illustration'),
+                    'unknowns':deepcopy(c.get('unknowns',[]))} for c in (retrieve_scenarios(self.collection,self.respondent,{},
+                        self.indicators.current_id,[c['id'] for c in self.indicators.presented_cases]) if self.respondent else
+                        sorted((c for c in self.collection['scenarios'] if c['locale']=='en'),key=lambda c:c['id']))],
+                'introduction': self.indicators.questionnaire['participant_introduction']}
 
     def _indicator(self):
-        if not self.indicator_view().get('available'):
-            raise ValueError('Citizen indicator assessment requires a confirmed summary, personal perspective and valid v4 bank.')
+        view = self.indicator_view()
+        if not view.get('available') or self.stage != 'final':
+            raise ValueError('Establish the assessment profile/context first; the private v4 bank and questionnaire are required.')
         return self.indicators
 
-    @guarded('indicator_ids', 'context', 'use_case', 'reuse_answers', 'profile')
-    def select_indicators(self, indicator_ids, context, use_case='', reuse_answers=None, profile='citizen'):
-        if profile != 'citizen' or context not in {'general_understanding', 'illustrative_proposal', 'actual_experience'}:
-            raise ValueError('Choose a citizen profile and a listed assessment context.')
+    @guarded('use_case', 'area', 'organisation_or_unit', 'responsibilities', 'technical_object',
+             'object_version', 'intended_environment', 'component_scope', 'materials_or_service',
+             'use_case_purpose', 'origin_destination_types_or_unknown', 'significant_unknowns')
+    def start_assessment(self, profile, use_case, city='other', area='', discussion_status='proposal', stakeholder_role='withheld',
+                         indicator_ids=None, organisation_or_unit='', responsibilities='', technical_object='',
+                         object_version='', intended_environment='', component_scope='unsure', likert_enabled=False,
+                         materials_or_service='', use_case_purpose='', origin_destination_types_or_unknown='',
+                         significant_unknowns='', scenario_id=None):
+        if self.state not in {'general_welcome','general_context'}:
+            raise ValueError('Start a new assessment or deliberately revise its scope.')
+        if profile not in {'citizen','organisational','technical'} or discussion_status not in {'proposal','illustrative','pilot','operational','unsure'}:
+            raise ValueError('Choose a response capacity and discussion status.')
+        if not use_case.strip() or len(use_case)>240: raise ValueError('Describe the use case in general terms, up to 240 characters.')
+        view=self.indicator_view()
+        if not view.get('available'): raise ValueError('The registered private questionnaire is unavailable.')
+        chosen=indicator_ids if indicator_ids is not None else [f'indicator-{n:02d}' for n in range(1,16)]
+        if not 1<=len(chosen)<=15 or len(set(chosen))!=len(chosen) or set(chosen)-{i['indicator_id'] for i in view['coverage']}:
+            raise ValueError('Choose distinct indicators from the source bank.')
+        if discussion_status=='illustrative' and not scenario_id:
+            raise ValueError('Select a source-backed illustrative alternative before starting.')
+        if scenario_id and discussion_status!='illustrative':
+            raise ValueError('Select an illustration only for an illustrative discussion.')
+        self.set_context('organisation' if profile=='organisational' else 'personal', stakeholder_role, city, area, responsibilities)
+        if scenario_id and scenario_id not in {c['id'] for c in self.scenario_options()}:
+            raise ValueError('Select an applicable source-backed illustrative alternative.')
+        # The direct route creates no baseline answers or summary confirmations.
+        self.general.finish()
+        self.stage = 'final'
+        self.assessment_route = True
+        self.stop_reason = 'direct_indicator_entry_baseline_bypassed'
+        self.select_indicators(chosen,
+            'general_understanding' if discussion_status in {'proposal','unsure'} else
+            'illustrative_proposal' if discussion_status=='illustrative' else 'actual_experience',
+            use_case, profile=profile, area=area, discussion_status=discussion_status,
+            organisation_or_unit=organisation_or_unit, responsibilities=responsibilities,
+            technical_object=technical_object, object_version=object_version, intended_environment=intended_environment,
+            component_scope=component_scope, likert_enabled=likert_enabled,
+            use_case_fields=dict(materials_or_service=materials_or_service, use_case_purpose=use_case_purpose,
+                origin_destination_types_or_unknown=origin_destination_types_or_unknown, significant_unknowns=significant_unknowns),
+            scenario_id=scenario_id)
+
+    @guarded('indicator_ids', 'context', 'use_case', 'reuse_answers', 'profile', 'area',
+             'organisation_or_unit', 'responsibilities', 'technical_object', 'object_version',
+             'intended_environment', 'component_scope', 'use_case_fields')
+    def select_indicators(self, indicator_ids, context, use_case='', reuse_answers=None, profile='citizen',
+                          area='', discussion_status='proposal', organisation_or_unit='', responsibilities='',
+                          technical_object='', object_version='', intended_environment='', component_scope='unsure',
+                          likert_enabled=False, use_case_fields=None, scenario_id=None):
+        if profile not in {'citizen','organisational','technical'} or context not in {'general_understanding', 'illustrative_proposal', 'actual_experience'}:
+            raise ValueError('Choose a response profile and a listed assessment context.')
         if len(use_case) > 240:
             raise ValueError('Use a short, general context description without identifying details.')
         group = self._indicator()
-        if context == 'illustrative_proposal' and not self.scenario:
-            raise ValueError('An illustrative assessment requires an example actually discussed in this interview.')
+        card = self.card if context=='illustrative_proposal' and self.scenario else None
+        if scenario_id:
+            card = next((c for c in self.scenario_options() if c['id']==scenario_id), None)
+            if card is None: raise ValueError('Select a source-backed illustrative alternative.')
+            context='illustrative_proposal'; discussion_status='illustrative'
+        if context=='illustrative_proposal' and card is None:
+            raise ValueError('Select and confirm a source-backed illustrative example; no current service is assumed.')
+        if not getattr(self,'assessment_route',False):
+            if profile=='citizen' and self.respondent['perspective']!='personal':
+                raise ValueError('An organisational interview is not a citizen assessment. Start in the chosen capacity.')
+
+        allowed_fields={'materials_or_service','use_case_purpose','origin_destination_types_or_unknown','significant_unknowns'}
+        if set(use_case_fields or {})-allowed_fields or any(len(v)>500 for v in (use_case_fields or {}).values()):
+            raise ValueError('Use only the documented general use-case fields.')
         scope = {'response_profile': profile, 'context': context, 'use_case': use_case or 'IAM in the selected context',
-                 'scenario_id': self.card['id'] if context == 'illustrative_proposal' else None,
+                 'scenario_id': card['id'] if card else None,
+                 'area': area or self.respondent.get('broad_place') or self.respondent['city'],
+                 'discussion_status': discussion_status, 'organisation_or_unit':organisation_or_unit,
+                 'responsibilities':responsibilities, 'technical_object':technical_object,
+                 'object_version':object_version, 'intended_environment':intended_environment,
+                 'component_scope':component_scope, 'likert_enabled': bool(likert_enabled and profile=='citizen'),
+                 'use_case_card':{'origin':'participant_confirmed_context' if not card else 'source_backed_illustrative',
+                     'area':area or self.respondent['city'], 'discussion_status':discussion_status,
+                     **{k:((use_case_fields or {}).get(k) or 'Not established') for k in sorted(allowed_fields)},
+                     'source':deepcopy(card['source']) if card else None,
+                     'case_version':card['version'] if card else None,
+                     'source_status':card.get('source_status',card.get('review_status','illustrative_context')) if card else None,
+                     'source_verification':card.get('source_verification','source_described_illustration') if card else None,
+                     'source_refs':deepcopy(card.get('source_refs',[])) if card else [],
+                     'unknowns':deepcopy(card.get('unknowns',[])) if card else [],
+                     'illustrative_text':card['text'] if card else None},
                  'respondent_context': deepcopy(self.respondent),
                  'information_exposure_ids': [e['id'] for e in self.information_exposures],
-                 'definitions_exposure': {'bank_version': group.bank['bank_version'], 'meaning': 'Definitions are supplied information, not prior competence.'}}
+                 'bank_version': group.bank['bank_version']}
         prior = {e['id']: e for phase in [self.general, self.scenario] if phase for e in phase.events if e['active'] and e['confirmed']}
         reuse = {}
         mapping = {'concept_explanation': 'reasoning', 'use_knowledge': 'reasoning', 'explained_impact': 'reasoning',
@@ -520,7 +599,7 @@ class ConversationSession:
             for event_id in ids:
                 event = prior.get(event_id)
                 expected = 'illustrative_scenario' if context == 'illustrative_proposal' else 'general_baseline'
-                if not event or event['context'] != expected:
+                if profile=='technical' or not event or event['context'] != expected or (profile=='organisational' and self.respondent['perspective']!='organisation'):
                     raise ValueError('Select confirmed answers from the same general or illustrative context.')
                 observations = [{'quote': c['span_quote'], 'kind': mapping.get(c['kind'], 'stance'),
                     'actor': 'self' if c['subject'] == 'respondent' else 'organisation' if c['subject'] == 'organisation' else 'third_party',
@@ -534,6 +613,8 @@ class ConversationSession:
                     'scope': deepcopy(scope), 'information_context': event['information_context'],
                     'relevance_basis': 'Participant explicitly linked this answer to this indicator; the tool must still assess its actual relevance.'})
         group.select(indicator_ids, scope, reuse)
+        if card and group.current['scope'].get('illustrative_case') is None:
+            group.set_case(card)
         self._provisional = None
 
     @guarded('text', 'control')
@@ -564,9 +645,38 @@ class ConversationSession:
     def indicator_next(self, indicator_id):
         self._indicator().next(indicator_id)
 
+    @guarded('scenario_id')
+    def indicator_case(self, scenario_id=None):
+        group=self._indicator()
+        card=next((c for c in retrieve_scenarios(self.collection,self.respondent,{},group.current_id)
+                   if c['id']==scenario_id),None) if scenario_id else None
+        if scenario_id and card is None:raise ValueError('Select an applicable illustrative case.')
+        group.set_case(card)
+
     @guarded('event_id', 'mode')
     def indicator_edit(self, event_id, mode='answer'):
         return self._indicator().edit(event_id, mode)
+
+    @guarded('organisation_or_unit','responsibilities','technical_object','object_version','intended_environment','component_scope')
+    def indicator_scope(self, availability='ready_to_discuss', organisation_or_unit='', responsibilities='',
+                        technical_object='', object_version='', intended_environment='', component_scope='unsure'):
+        self._indicator().set_scope(availability,organisation_or_unit,responsibilities,technical_object,object_version,intended_environment,component_scope)
+
+    @guarded('text')
+    def indicator_add_information(self, text, client):
+        self._indicator().add_information(text, client)
+
+    @guarded('kind')
+    def indicator_information(self, kind='definition'):
+        self._indicator().read_more(kind)
+
+    @guarded()
+    def complete_assessment(self):
+        self._indicator().finish_assessment()
+
+    @guarded('answer_ids')
+    def indicator_link(self, answer_ids):
+        self._indicator().link_answers(answer_ids)
 
     def proposal_view(self):
         rows=[c for c in self.profile()['claims'] if c['dimension']=='proposal']

@@ -24,7 +24,12 @@ def preview_identity(action):
             pending.get('id',pending.get('version')) if isinstance(pending,dict) else None,
             tuple(st.session_state.get(k) for k in ('baseline_perspective','baseline_stakeholder_category','baseline_city','baseline_sector')),
             tuple(st.session_state.get(k) for k in ('conversation_perspective','conversation_role','conversation_city')),
-            tuple(sorted(k for k in st.session_state if isinstance(st.session_state.get(k),str) and st.session_state[k] and any(tag in k for tag in ('answer','text','clarification','information_custom','readiness_correction_')))))
+            tuple(st.session_state.get(k) for k in ('assessment_profile','assessment_city','assessment_role','assessment_status','assessment_scenario','assessment_likert','indicator_profile','indicator_scope','indicator_case_id')),
+            tuple(sorted((k,st.session_state[k]) for k in st.session_state if k.startswith(('availability_','component_')))),
+            tuple(sorted(k for k in st.session_state if isinstance(st.session_state.get(k),str) and st.session_state[k] and (
+                any(tag in k for tag in ('answer','text','clarification','information_custom','readiness_correction_')) or
+                k.startswith(('assessment_use_case','assessment_area','assessment_unit','assessment_responsibilities','assessment_object',
+                              'organisation_or_unit_','responsibilities_','technical_object_','object_version_','intended_environment_'))))))
 
 
 def discard_preview():
@@ -40,10 +45,10 @@ def only_private_detail_fragment(text):
     return not words or set(words)<=set('my home address is at i live the'.split())
 
 
-def invoke(action, *args):
+def invoke(action, *args, **kwargs):
     """Prepare a cleaned preview before invoking any controller with private text."""
     discard_preview()
-    bound = inspect.signature(action).bind(*args)
+    bound = inspect.signature(action).bind(*args, **kwargs)
     changed = False
     try:
         for key in getattr(action, '_privacy_fields', ()):
@@ -65,7 +70,7 @@ def invoke(action, *args):
             clear_text_widgets()
             st.session_state.privacy_preview_identity=preview_identity(action)
             raise PrivacyError('Private details were removed. Check the preview above, or write a new answer without those details.')
-        return action(*args)
+        return action(*args, **kwargs)
     except PrivacyError as exc:
         # The submitted fields already passed screening. A rejected generated
         # interpretation is not a reason to erase that safe answer or demand a
@@ -73,7 +78,7 @@ def invoke(action, *args):
         if exc.code=='privacy_unavailable' or getattr(exc,'boundary',None) not in {'model_output','assessment_record'}:
             clear_text_widgets()
         # Models have no valid unsafe-output cache/trace to keep after a rejection.
-        for value in args:
+        for value in (*args, *kwargs.values()):
             if hasattr(value, 'last_trace'):
                 value.last_trace = []; value._request_cache = {}; value._token_count_cache = {}
                 value._accepted_wire = None; value.last_settings = {}
@@ -96,9 +101,8 @@ def preview_control(perform):
             discard_preview();raise PrivacyError('This preview is no longer current. Submit your answer again.')
         discard_preview()
         st.session_state.pop('privacy_preview', None)
-        # UI calls currently use positional controller arguments only.
-        if kwargs: raise PrivacyError('Please resubmit the cleaned text directly.')
-        perform(action, *args)
+        # Prepared keyword fields remain bound to this screened action and revision.
+        perform(action, *args, **kwargs)
     st.button('Confirm cleaned text', on_click=confirm_cleaned)
     def discard():
         discard_preview()

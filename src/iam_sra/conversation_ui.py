@@ -12,10 +12,10 @@ from .ui_presentation import restart_control,footer
 
 def render(s,client,planner,developer=False):
     restart_control()
-    def perform(action,*args):
+    def perform(action,*args,**kwargs):
         st.session_state.pop('conversation_error',None)
         try:
-            with st.spinner('Reading and preparing the next step…'):return invoke(action,*args)
+            with st.spinner('Reading and preparing the next step…'):return invoke(action,*args,**kwargs)
         except (AssessmentError,ValueError) as exc:
             st.session_state.conversation_error=safe_message(exc) if isinstance(exc,PrivacyError) else user_error(exc) if isinstance(exc,AssessmentError) else safe_message(exc)
             diagnostic=safe_diagnostics({'code':getattr(exc,'code','validation'),
@@ -63,6 +63,7 @@ def render(s,client,planner,developer=False):
             if added:st.write('The follow-ups added detail to this assessment. More detail does not by itself show personal development over time.')
 
     def edits():
+        if getattr(s,'assessment_route',False): return
         rows=[(stage,e) for stage,phase in [('general',s.general),('scenario',s.scenario)] if phase
               for e in phase.events if e['active'] and e['confirmed']]
         if not rows and not s.respondent:return
@@ -102,6 +103,9 @@ def render(s,client,planner,developer=False):
 
     state=s.state
     if state in {'general_welcome','general_context'}:
+        from .indicator_ui import render_start
+        render_start(s,perform)
+        st.caption('Optional: the existing general interview below can precede an assessment.')
         st.subheader('Before we begin')
         c=s.respondent or {};base=s.general.instrument
         for field,bank,label in [('perspective','perspectives','Are you answering personally or representing an organisation?'),
@@ -171,6 +175,9 @@ def render(s,client,planner,developer=False):
         if selected!=s.card['id']:perform(s.select_scenario,selected)
         st.write('Examples are ordered by your selected city and the topics in your confirmed answers. You can choose another example.')
         st.text(s.card['text'])
+        if s.card.get('source_status'):
+            st.caption(s.card['source_status'].replace('_',' ')+' · '+s.card.get('source_verification','source described illustration').replace('_',' '))
+        st.text('Still unknown: '+'; '.join(s.card.get('unknowns',[])))
         st.text(s.card['source']['document']+' · '+s.card['source']['locator'])
         st.write('A source-described plan or hypothetical example does not establish a current local service. For organisational respondents, this discussion does not audit the organisation or its technical system.')
         st.button('Continue with this example',type='primary',on_click=perform,args=(s.accept_scenario,planner))
@@ -180,8 +187,9 @@ def render(s,client,planner,developer=False):
         st.button('Confirm final summary',type='primary',on_click=perform,args=(s.confirm_final,))
         information();edits()
     elif state=='final':
-        st.subheader('Your summary');summary()
-        st.info('Continue with draft citizen indicator self-assessment below. This interview does not produce an overall societal readiness score.')
+        if not getattr(s,'assessment_route',False):
+            st.subheader('Your summary');summary()
+        st.info('Continue with a draft individual indicator profile below. Participant judgments remain separate from tool suggestions; no overall score is produced.')
         from .indicator_ui import render_indicators
         render_indicators(s,perform)
         try:
@@ -196,7 +204,7 @@ def render(s,client,planner,developer=False):
                     st.text(c['dimension']+' · '+c['evidence_status']+' · '+c['information_context']+' · confirmed meaning; external verification absent')
             st.write('Additional answers refine the assessment. Reading this example or completing the chat alone does not establish historical engagement, co-design or influence.')
             for source in s.collection['sources']:st.text(source['document'])
-        if developer and s.respondent['perspective']=='personal':
+        if developer and s.respondent['perspective']=='personal' and not getattr(s,'assessment_route',False) and not (s.indicators and s.indicators.selected):
             with st.expander('Historical global-anchor estimate (developer only; not v4)'):
                 st.write('An evidence assessment against each draft workbook level, with a separate model check of supported levels. It may abstain and is not an approved rubric result or SRL.')
                 def estimate():
