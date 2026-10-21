@@ -1,0 +1,54 @@
+# IAM-IQ app (Vue frontend + /api/<tool> proxy). ClusterIP only: nothing is published outside the cluster;
+# reach it with `kubectl port-forward --address 127.0.0.1 svc/iam-iq-app 5000:5000` (bundle: ./iamiq.sh open).
+# IAMIQ_IN_CLUSTER=1: the proxy reaches the backends by service name (app/proxy-routes.json "service").
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iam-iq-app
+  labels:
+    app: iam-iq-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iam-iq-app
+  template:
+    metadata:
+      labels:
+        app: iam-iq-app
+    spec:
+      containers:
+      - name: app
+        image: iam-iq/app:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
+        env:
+        - name: IAMIQ_IN_CLUSTER
+          value: "1"
+        - name: PORT
+          value: "5000"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iam-iq-app
+spec:
+  type: ClusterIP
+  selector:
+    app: iam-iq-app
+  ports:
+  - port: 5000
+    targetPort: 5000

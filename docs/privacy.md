@@ -10,6 +10,15 @@ existing narrowly located SHA-256 metadata. The same text in an answer remains
 screened. Names, credentials and arbitrary strings in that metadata field remain
 screened too; this does not exempt respondent or model prose.
 
+A final real-resource API export check also reproduced a spaCy PERSON finding on
+a substring of a randomly generated public session UUID. The exact UUID4 encoding
+is now recognised only in known controller/export and presentation ID locations,
+including baseline/scenario records and archived scenarios. IDs provide references,
+not ownership: the signed HttpOnly cookie is still required. UUIDs in answers,
+respondent context and nested respondent JSON remain screened, as do names,
+credentials and arbitrary strings in the ID fields. Synthetic and real-detector
+regressions exercise the reproduced identifier and these boundaries.
+
 The v1.2 synthetic respondent evaluator writes only to ignored `.runtime/`
 paths, marks each generated session `SYNTHETIC_TEST_ONLY`, and passes the full
 record through the same privacy screening. If screening withholds an artifact,

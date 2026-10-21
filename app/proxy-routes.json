@@ -1,0 +1,8 @@
+{
+  "_comment": "Single allowlist for Vite and serve_app.py. Prefix /api/<tool> is removed. Backend overrides are server-side only.",
+  "defaultHost": "127.0.0.1",
+  "timeoutMs": 30000,
+  "routes": {
+    "sra-assessment": { "nodePort": 8001, "service": "iam-sra-api:8001", "targetEnv": "IAM_SRA_API_TARGET" }
+  }
+}

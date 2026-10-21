@@ -1,0 +1,39 @@
+# Adapted from IAM-IQ k8s/iam-iq-app.yaml. Review image/source/model provisioning before applying.
+# ClusterIP only; kubectl port-forward --address 127.0.0.1 svc/iam-sra-ui 5001:5001
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iam-sra-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: iam-sra-ui}
+  template:
+    metadata:
+      labels: {app: iam-sra-ui}
+    spec:
+      containers:
+      - name: ui
+        image: iam-sra/frontend:local
+        imagePullPolicy: Never
+        ports: [{containerPort: 5001}]
+        env:
+        - {name: IAMIQ_IN_CLUSTER, value: "1"}
+        - {name: HOST, value: "0.0.0.0"}
+        - {name: PORT, value: "5001"}
+        readinessProbe:
+          httpGet: {path: /, port: 5001}
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        resources:
+          requests: {cpu: 50m, memory: 64Mi}
+          limits: {memory: 256Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iam-sra-ui
+spec:
+  type: ClusterIP
+  selector: {app: iam-sra-ui}
+  ports: [{port: 5001, targetPort: 5001}]

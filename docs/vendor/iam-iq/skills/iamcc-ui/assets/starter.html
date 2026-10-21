@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Title format (decision D3, docs/frontend-spec.md): "<Page> · IAM-IQ | IAM-CC" -->
+<title>Noise assessment tool · IAM-IQ | IAM-CC</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="layout.css">
+</head>
+<body>
+<!-- Starter: tool WORKING page (hub template /tools/iam-compass-demo). Example content is the ImAFUSA
+     noise tool; replace it. Leave out any section the tool has no content for; never add placeholders.
+     Icons: icons.svg must be served from the same origin (http://), not opened as file://. -->
+<div class="iq">
+
+  <header class="tool-header">
+    <svg class="logo" viewBox="0 0 1781.34 333.04" role="img" aria-label="IAM-CC"><use href="icons.svg#iamcc-logo"/></svg>
+    <span class="divider" aria-hidden="true"></span>
+    <span class="name">IAM-IQ</span>
+    <a class="back" href="https://hub.iamcc.eu/tools" target="_blank" rel="noopener">Back to hub</a>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href="/">Tools</a><span class="sep" aria-hidden="true">/</span>
+        <a href="/tools/imafusa-noise">Noise assessment</a><span class="sep" aria-hidden="true">/</span>
+        <span aria-current="page">Tool</span>
+      </nav>
+
+      <article class="tool-card">
+        <div class="strip">
+          <svg class="ico ico-btn" aria-hidden="true"><use href="icons.svg#i-settings"/></svg>
+          <h1 class="t-card">Noise assessment</h1>
+        </div>
+
+        <div class="body">
+          <section class="tsec" aria-labelledby="s-def">
+            <span class="tile" aria-hidden="true"><svg class="ico"><use href="icons.svg#i-info"/></svg></span>
+            <div><h2 class="t-card" id="s-def">Definition</h2>
+              <p class="t-body muted">Drone noise at ground level for a chosen altitude, operation and payload, from recorded test flights.</p></div>
+          </section>
+
+          <section class="tsec" aria-labelledby="s-how">
+            <span class="tile" aria-hidden="true"><svg class="ico"><use href="icons.svg#i-file"/></svg></span>
+            <div><h2 class="t-card" id="s-how">How to use</h2>
+              <ol class="bullets t-body"><li>Choose the flight altitude.</li><li>Choose the operation and payload.</li><li>Pick a recorded run, then select Calculate.</li></ol></div>
+          </section>
+
+          <section class="tsec" aria-labelledby="s-in">
+            <span class="tile" aria-hidden="true"><svg class="ico"><use href="icons.svg#i-settings"/></svg></span>
+            <div><h2 class="t-card" id="s-in">Inputs</h2>
+              <!-- Filter state lives in the query string (?altitude=50&op=cruise…) so Back restores it. -->
+              <div class="fields4">
+                <div class="field"><label for="alt">Altitude</label>
+                  <select id="alt" class="input" name="altitude"><option value="">Choose altitude</option><option>50 m</option></select></div>
+                <div class="field"><label for="op">Operation</label>
+                  <select id="op" class="input" name="op" disabled><option>Choose altitude first</option></select></div>
+                <div class="field"><label for="pay">Payload</label>
+                  <select id="pay" class="input" name="payload" disabled><option>Choose operation first</option></select></div>
+                <div class="field"><label for="run">Recorded run</label>
+                  <select id="run" class="input" name="run" disabled><option>Choose payload first</option></select></div>
+              </div></div>
+          </section>
+
+          <div class="run"><button class="btn primary lg" type="button">Calculate</button></div>
+
+          <section class="tsec" aria-labelledby="s-res" aria-live="polite">
+            <span class="tile" aria-hidden="true"><svg class="ico"><use href="icons.svg#i-check"/></svg></span>
+            <div><h2 class="t-card" id="s-res">Results</h2>
+              <!-- Before the first run: a real empty state, not instruction text. -->
+              <div class="empty">
+                <svg class="m" viewBox="0 0 333 333" aria-hidden="true"><use href="icons.svg#iamcc-mark"/></svg>
+                <h3 class="t-card">No results yet</h3>
+                <p class="t-small muted">Choose the inputs above and calculate to see the noise metrics.</p>
+              </div>
+              <!-- After a run: numbers formatted for people (Intl.NumberFormat), never toFixed(6).
+              <div class="results">
+                <div class="stat"><span class="t-label muted">LAmax</span><span class="v">68.4</span><span class="u">dB(A)</span></div>
+              </div> --></div>
+          </section>
+
+          <section class="tsec full" aria-labelledby="s-vis">
+            <div><h2 class="t-card" id="s-vis">Visualisation</h2>
+              <div class="chart-card"><div class="ctitle">Noise level over time</div><div class="csub">Recorded run, dB(A)</div>
+                <div class="chart"><!-- Plotly / Leaflet mounts here; series colours var(--s1)…var(--s5) in order --></div></div></div>
+          </section>
+
+          <section class="tsec" aria-labelledby="s-ref">
+            <span class="tile" aria-hidden="true"><svg class="ico"><use href="icons.svg#i-ext"/></svg></span>
+            <div><h2 class="t-card" id="s-ref">References</h2>
+              <ul class="bullets t-small"><li><a href="https://www.eea.europa.eu/" target="_blank" rel="noopener">EEA environmental noise data</a></li></ul></div>
+          </section>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer class="tool-footer">
+    <div class="eu"><img src="eu-emblem.svg" alt="Funded by the European Union"><p>Funded by the European Union under Grant Agreement No 101271620. Views and opinions expressed are those of the author(s) only and do not necessarily reflect those of the European Union or the granting authority. Neither the European Union nor the granting authority can be held responsible for them.</p></div>
+    <div class="credit">Developed by ICCS · <a href="/privacy">Privacy</a></div>
+  </footer>
+</div>
+</body>
+</html>

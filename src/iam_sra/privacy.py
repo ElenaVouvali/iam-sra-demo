@@ -244,7 +244,18 @@ def require_safe_data(value):
             # otherwise identical model calls fail randomly at audit retention.
             generated_request_id=(path.endswith('.request_id') and
                 re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}',item) is not None)
-            if item not in reviewed_bibliographic_values() and not generated_digest and not generated_claim_reference and not generated_request_id:
+            # Public controller/transport session IDs can suffer the same
+            # substring PERSON false positive. Only known generated record
+            # locations are metadata; UUIDs in answers or nested user JSON
+            # still go through the detector. These IDs are not owner credentials.
+            session_id_path = path in {
+                'root.id', 'root.session_id', 'root.baseline.session_id', 'root.scenario.session_id',
+                'root.handoff.baseline_session_id', 'root.baseline.handoff.baseline_session_id',
+                'root.baseline_handoff.baseline_session_id',
+            } or re.fullmatch(r'root\.superseded_scenarios\[\d+\]\.session\.session_id', path) is not None
+            generated_session_id = session_id_path and re.fullmatch(
+                r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}', item) is not None
+            if item not in reviewed_bibliographic_values() and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_session_id:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():

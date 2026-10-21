@@ -1,0 +1,50 @@
+# Preparation only: provision an approved API image, source volumes and reachable existing model.
+# One process/replica is mandatory. Recreate prevents overlap of in-memory stores.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iam-sra-api
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: iam-sra-api}
+  template:
+    metadata:
+      labels: {app: iam-sra-api}
+    spec:
+      containers:
+      - name: api
+        image: iam-sra/api:local
+        imagePullPolicy: Never
+        ports: [{containerPort: 8001}]
+        env:
+        - {name: IAM_SRA_API_HOST, value: "0.0.0.0"}
+        - {name: IAM_SRA_API_PORT, value: "8001"}
+        - {name: IAM_SRA_ALLOWED_ORIGINS, value: "http://127.0.0.1:5001,http://localhost:5001"}
+        - name: IAM_BASE_URL
+          valueFrom: {configMapKeyRef: {name: iam-sra-runtime, key: model-origin}}
+        - name: IAM_SRA_API_SECRET
+          valueFrom: {secretKeyRef: {name: iam-sra-api, key: cookie-signing-key}}
+        volumeMounts:
+        - {name: sources, mountPath: /srv/iam-sra/references/private, readOnly: true}
+        readinessProbe:
+          httpGet: {path: /v1/health, port: 8001}
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 10
+        resources:
+          requests: {cpu: "1", memory: 1Gi}
+          limits: {memory: 3Gi}
+      volumes:
+      - name: sources
+        persistentVolumeClaim: {claimName: iam-sra-approved-sources}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iam-sra-api
+spec:
+  type: ClusterIP
+  selector: {app: iam-sra-api}
+  ports: [{port: 8001, targetPort: 8001}]

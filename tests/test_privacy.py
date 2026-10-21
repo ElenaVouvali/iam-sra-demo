@@ -325,6 +325,41 @@ def test_real_detector_allows_generated_commit_but_screens_it_in_prose():
         require_safe_data({'answer': commit})
 
 
+def test_generated_session_id_scope_does_not_exempt_user_json_or_credentials(monkeypatch):
+    from iam_sra import privacy
+    identifier = 'dae4380c-d26c-4f4f-b62c-e9cd1a32adab'
+    original = privacy.detector()
+
+    class IdentifierFalsePositive:
+        def analyze(self, *, text, **kwargs):
+            found = original.analyze(text=text, **kwargs)
+            if identifier in text:
+                start = text.index(identifier) + 4
+                found.append(privacy.Finding('PERSON', start, start + 8))
+            return found
+
+    monkeypatch.setattr(privacy, 'detector', lambda: IdentifierFalsePositive())
+    for record in ({'session_id': identifier}, {'id': identifier},
+                   {'baseline': {'session_id': identifier}}, {'scenario': {'session_id': identifier}},
+                   {'superseded_scenarios': [{'session': {'session_id': identifier}}]},
+                   {'baseline_handoff': {'baseline_session_id': identifier}}):
+        require_safe_data(record)
+    for record in ({'answer': identifier}, {'text': json.dumps({'session_id': identifier})},
+                   {'respondent_context': {'session_id': identifier}}, {'session_id': identifier + ' extra'},
+                   {'session_id': 'Alice Example'}, {'session_id': 'password=synthetic-sensitive-value'}):
+        with pytest.raises(PrivacyError):
+            require_safe_data(record)
+
+
+@pytest.mark.presidio_live
+def test_real_detector_generated_session_id_false_positive_is_metadata_only():
+    pytest.importorskip('presidio_analyzer');pytest.importorskip('en_core_web_sm')
+    identifier = 'dae4380c-d26c-4f4f-b62c-e9cd1a32adab'
+    require_safe_data({'session_id': identifier, 'baseline': {'session_id': identifier}})
+    with pytest.raises(PrivacyError):
+        require_safe_data({'answer': identifier})
+
+
 @pytest.mark.presidio_live
 def test_model_json_labels_are_structure_but_prose_is_still_screened():
     pytest.importorskip('presidio_analyzer');pytest.importorskip('en_core_web_sm')

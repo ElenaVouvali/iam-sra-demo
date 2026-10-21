@@ -1,7 +1,7 @@
 """The in-memory store requires exactly one non-preloaded API worker."""
 import os
 
-bind = f"127.0.0.1:{int(os.getenv('IAM_SRA_API_PORT', '8001'))}"
+bind = f"{os.getenv('IAM_SRA_API_HOST', '127.0.0.1')}:{int(os.getenv('IAM_SRA_API_PORT', '8001'))}"
 workers = 1
 worker_class = 'gthread'
 threads = 8

@@ -1,0 +1,71 @@
+/* IAM-IQ page layouts: hand-written (NOT generated). Load after tokens.css and components.css.
+   Structure follows the hub templates (docs/iamcc-ui-notes.md, live hub notes §7 and §8),
+   restyled with the playground tokens only. No new colours or sizes are introduced here. */
+
+/* Page container: 82rem max content width (1312px), grid margins from components.css (.wrap) */
+.iq .wrap{max-width:calc(82rem + 2*var(--margin));margin:0 auto;width:100%}
+.iq main{padding-bottom:var(--sp12)}
+
+/* Breadcrumb: Tools / Current page. Every view is a real URL, so it always works with Back. */
+.iq .crumbs{display:flex;flex-wrap:wrap;gap:var(--sp2);align-items:center;padding:var(--sp6) 0 var(--sp4);font-size:var(--fs-small);color:var(--c-slate)}
+.iq .crumbs a{color:var(--c-slate);text-decoration:none}
+.iq .crumbs a:hover{color:var(--c-azure);text-decoration:underline}
+.iq .crumbs a:focus-visible{outline:var(--ring) solid var(--ring-coral);outline-offset:0.125rem;border-radius:var(--r-sm)}
+.iq .crumbs [aria-current=page]{color:var(--c-azure);font-weight:500}
+.iq .crumbs .sep{color:var(--c-a300)}
+
+/* Plain text links: Dark Azure, underlined (coral is never text). Buttons and header links style themselves. */
+.iq :not(.crumbs)>a:not([class]){color:var(--c-azure);text-decoration:underline;text-underline-offset:0.15em}
+.iq :not(.crumbs)>a:not([class]):hover{color:var(--c-a900);text-decoration-thickness:0.125rem}
+.iq :not(.crumbs)>a:not([class]):focus-visible{outline:var(--ring) solid var(--ring-coral);outline-offset:0.125rem;border-radius:var(--r-sm)}
+
+/* Long strings never overflow their box */
+.iq code,.iq .path{overflow-wrap:anywhere}
+.iq .table-scroll{overflow-x:auto;max-width:100%}
+
+/* ---- Tool detail page (template: hub /tools/iam-compass) ---- */
+.iq .detail-head{display:flex;flex-direction:column;gap:var(--sp3);margin-bottom:var(--sp8)}
+.iq .detail-head .lead{max-width:40rem;font-size:var(--fs-card);color:var(--c-slate)}
+.iq .detail{display:grid;grid-template-columns:minmax(0,1fr);gap:2.5rem}
+@container iq (min-width:62rem){.iq .detail{grid-template-columns:minmax(0,1fr) 22.5rem}}
+.iq .detail>*{min-width:0}
+.iq .shot{aspect-ratio:2/1;border-radius:var(--r-lg);background:var(--c-a50);overflow:hidden;display:grid;place-items:center}
+.iq .shot img{width:100%;height:100%;object-fit:cover}
+.iq .sidebar{display:flex;flex-direction:column;gap:var(--sp4)}
+.iq .sidebar .card{gap:var(--sp3)}
+.iq .sidebar .btn.block{width:100%}
+.iq dl.facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--sp2) var(--sp4);margin:0;font-size:var(--fs-small)}
+.iq dl.facts dt{color:var(--c-slate)}
+.iq dl.facts dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.iq .bullets{margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:var(--sp2)}
+.iq .bullets li::marker{color:var(--c-slate)}
+
+/* ---- Tool working page (template: hub /tools/iam-compass-demo) ---- */
+.iq .tool-card{background:var(--c-surface);border:var(--bw) solid var(--c-a100);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
+.iq .tool-card>.strip{display:flex;align-items:center;gap:var(--sp3);background:var(--c-a50);padding:var(--sp4) var(--pad);border-bottom:var(--bw) solid var(--c-a100)}
+.iq .tool-card>.body{padding:var(--pad);display:flex;flex-direction:column;gap:var(--sp8)}
+.iq .tsec{display:grid;grid-template-columns:2.25rem minmax(0,1fr);gap:var(--sp4);align-items:start}
+.iq .tsec .tile{width:2.25rem;height:2.25rem;border-radius:var(--r-md);background:var(--c-a50);color:var(--c-slate);display:grid;place-items:center}
+.iq .tsec .tile .ico{width:var(--icon-btn);height:var(--icon-btn)}
+.iq .tsec>div{display:flex;flex-direction:column;gap:var(--sp3);min-width:0}
+.iq .tsec.full{grid-template-columns:minmax(0,1fr)}           /* visualisation: full card width */
+.iq .run{display:flex;justify-content:center}
+.iq .results{display:grid;gap:var(--sp4);grid-template-columns:minmax(0,1fr)}
+@container iq (min-width:40rem){.iq .results{grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))}}
+.iq .stat{border:var(--bw) solid var(--c-a100);border-radius:var(--r-md);padding:var(--sp4);display:flex;flex-direction:column;gap:var(--sp1)}
+.iq .stat .v{font-size:var(--fs-section);font-weight:600;font-variant-numeric:tabular-nums;color:var(--c-azure)}
+.iq .stat .u{font-size:var(--fs-small);color:var(--c-slate)}
+.iq .map{aspect-ratio:16/9;min-height:18rem;border-radius:var(--r-md);overflow:hidden;background:var(--c-a50)}
+
+/* Visually hidden, still read by screen readers (labels for table-cell inputs) */
+.iq .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Top nav (hub style): slate links, current page Dark Azure with a coral dot underneath.
+   Mark the current link with aria-current="page"; the dot is decorative. */
+.iq .topnav ul{display:flex;align-items:center;gap:calc(var(--sp)*12);list-style:none;margin:0;padding:0}
+.iq .topnav a{position:relative;display:inline-block;padding:calc(var(--sp)*2) 0;font-size:var(--fs-card);font-weight:500;color:var(--c-slate);text-decoration:none;white-space:nowrap}
+.iq .topnav a:hover{color:var(--c-azure)}
+.iq .topnav a[aria-current="page"]{color:var(--c-azure);font-weight:600}
+.iq .topnav a[aria-current="page"]::after{content:"";position:absolute;left:50%;bottom:calc(var(--sp)*-1.5);width:0.4375rem;height:0.4375rem;border-radius:50%;background:var(--c-coral);transform:translateX(-50%)}
+.iq .topnav a:focus-visible{outline:none;border-radius:var(--r-sm);box-shadow:0 0 0 var(--ring) var(--ring-coral)}
+.iq .topnav{overflow-x:auto;scrollbar-width:none}

@@ -21,3 +21,8 @@ iam-session*.json
 
 # Methodological partner drafts and source documents are local only.
 references/private/
+
+# Frontend build and browser output
+app/node_modules/
+app/dist/
+app/test-results/

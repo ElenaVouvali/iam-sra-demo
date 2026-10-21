@@ -1,0 +1,271 @@
+{
+  "repository": "https://codeberg.org/IAM-CC/IAM-IQ.git",
+  "commit": "bb1ff04913c32f3a0d85ee6b6a34d38c1dd00f2e",
+  "files": [
+    {
+      "source": "app/Dockerfile",
+      "destination": "app/Dockerfile",
+      "donor_sha256": "aee0274625a5ba3e9bdb9a639f3a7184cda69f747b4584bf9a3e2b1e756010a5"
+    },
+    {
+      "source": "app/package.json",
+      "destination": "app/package.json",
+      "donor_sha256": "9e8dbf828d5b01c357d4df4e096500bdeec7c2c6a30e087977dd100c0f5b7a94"
+    },
+    {
+      "source": "app/package-lock.json",
+      "destination": "app/package-lock.json",
+      "donor_sha256": "730d99b81d736ca384899223ba7dabffccbafe656b4590ae9f00baccd16423bb"
+    },
+    {
+      "source": "app/index.html",
+      "destination": "app/index.html",
+      "donor_sha256": "d21a9c444fda615f06f197140d661e185ef169475d03748fc9361a7cb98f1f12"
+    },
+    {
+      "source": "app/vite.config.js",
+      "destination": "app/vite.config.js",
+      "donor_sha256": "a940622b43fe391e0efdf0182f4382d31f26c54913a76fc5e8d55f98f3f63956"
+    },
+    {
+      "source": "app/.dockerignore",
+      "destination": "app/.dockerignore",
+      "donor_sha256": "e495330fb2b90e56a34e3cd7ea2ca64f20ce73057c76e68a1acaef06ddc30593"
+    },
+    {
+      "source": "app/serve_app.py",
+      "destination": "app/serve_app.py",
+      "donor_sha256": "953ad03f09363d0b9d7eefac25227eb08f293acf27315bd42def1c38d9c4203a"
+    },
+    {
+      "source": "app/proxy-routes.json",
+      "destination": "app/proxy-routes.json",
+      "donor_sha256": "b3cfac3a6cb94ece07879a693db695596fce36ae6f2dafdac89954db4718b02c"
+    },
+    {
+      "source": "app/src/toolPages.js",
+      "destination": "app/src/toolPages.js",
+      "donor_sha256": "acc435f33956d7ea4f10bafc2d6bee1a3a7a5e843652b6eeaa4709cb9467429d"
+    },
+    {
+      "source": "app/src/router.js",
+      "destination": "app/src/router.js",
+      "donor_sha256": "27254f597a24426254cfafeec47382b4feaa6ae6b8fa03d29c13130ee48f380f"
+    },
+    {
+      "source": "app/src/format.js",
+      "destination": "app/src/format.js",
+      "donor_sha256": "f81f4e4db00c65a64ec263ec06eadc6899f2e5f656e85d72af56624af4a0ca72"
+    },
+    {
+      "source": "app/src/main.js",
+      "destination": "app/src/main.js",
+      "donor_sha256": "44ed68a3dbdf472f50ce8608eee33c113c7d94d04da5868f23456ac75b14db14"
+    },
+    {
+      "source": "app/src/App.vue",
+      "destination": "app/src/App.vue",
+      "donor_sha256": "250b8a46258c4a18221dc5bf045637ccf49a8ee784f781b41edd56aec67dc130"
+    },
+    {
+      "source": "app/src/tools.js",
+      "destination": "app/src/tools.js",
+      "donor_sha256": "1e0a144581b8690a0266b6a241bf74f833f75117ff8f79302e8287b4e21dc34a"
+    },
+    {
+      "source": "app/src/api.js",
+      "destination": "app/src/api.js",
+      "donor_sha256": "5cd81b90728dbb29f0bca9075d72c7da3741684fb5116dc789f0084df390ec70"
+    },
+    {
+      "source": "app/src/composables/useAsync.js",
+      "destination": "app/src/composables/useAsync.js",
+      "donor_sha256": "419e491b94476c9f73b4d63a3bc89bf6d98d06ae92cd5970763bd9da0fadb995"
+    },
+    {
+      "source": "app/src/composables/useQueryState.js",
+      "destination": "app/src/composables/useQueryState.js",
+      "donor_sha256": "b175ce2745f84c4b87f4cb3f61ead5d6791a2af6eb3bc6ebd499bedcf04c67b2"
+    },
+    {
+      "source": "app/src/components/AsyncState.vue",
+      "destination": "app/src/components/AsyncState.vue",
+      "donor_sha256": "488cd2f3953132cebea186957366c1bf04b5cb6e6974fc4cb28955924c1af824"
+    },
+    {
+      "source": "app/src/components/Breadcrumb.vue",
+      "destination": "app/src/components/Breadcrumb.vue",
+      "donor_sha256": "2f815491419cb030a0630136b472fa05e0dc786740708e90370fadf3d22b9343"
+    },
+    {
+      "source": "app/src/components/SelectField.vue",
+      "destination": "app/src/components/SelectField.vue",
+      "donor_sha256": "0f6c11aab5944373c4785ec60277b35902f990cd728f21046caa09c228ce721b"
+    },
+    {
+      "source": "app/src/components/AppChrome.vue",
+      "destination": "app/src/components/AppChrome.vue",
+      "donor_sha256": "83eaf7fc19a6e0e79a2901c5b22b8932097a98cf9f489ba29d0bbef232c744b0"
+    },
+    {
+      "source": "app/src/pages/ToolApp.vue",
+      "destination": "app/src/pages/ToolApp.vue",
+      "donor_sha256": "58aa9be3da4b37d92352ba1ca4ed8d9c76855968c72f09889b73a38a1545e00a"
+    },
+    {
+      "source": "app/src/pages/ToolDetail.vue",
+      "destination": "app/src/pages/ToolDetail.vue",
+      "donor_sha256": "87805601343fc4064b4c6a40f32eec786bd499c9066a2a46d74cb3df6de004fb"
+    },
+    {
+      "source": "app/src/pages/NotFound.vue",
+      "destination": "app/src/pages/NotFound.vue",
+      "donor_sha256": "2cf37d713119af5d83aaae4ce2df7ef98405bf645ad0b3abb8da9f9b0a6255c7"
+    },
+    {
+      "source": "app/src/pages/Home.vue",
+      "destination": "app/src/pages/Home.vue",
+      "donor_sha256": "36ec5b568b5e9c9b592128f182c13100edd714a2056f9e2381d9be8ba39e71d8"
+    },
+    {
+      "source": "app/src/styles/components.css",
+      "destination": "app/src/styles/components.css",
+      "donor_sha256": "22cfaedc008608fd280916dcdc32a43a52f9b9180dc2a5f7a9c7147af879b32b"
+    },
+    {
+      "source": "app/src/styles/layout.css",
+      "destination": "app/src/styles/layout.css",
+      "donor_sha256": "aefa0acd6229495c4f7dea23f5949d834368d692cb9764e661fa0fe1176600c8"
+    },
+    {
+      "source": "app/src/styles/tokens.css",
+      "destination": "app/src/styles/tokens.css",
+      "donor_sha256": "9e6522f0926c1bc28a1d6d9bb30a87ba39c04d2342fc51de5500a5fab7a46cc8"
+    },
+    {
+      "source": "app/tests/browser_check.mjs",
+      "destination": "app/tests/browser_check.mjs",
+      "donor_sha256": "5b4139f1212622706460aa9c90a26cb76e61200de6ffd43dd68906ff3587eb8a"
+    },
+    {
+      "source": "app/public/brand/eu-emblem.svg",
+      "destination": "app/public/brand/eu-emblem.svg",
+      "donor_sha256": "46fe32dfa9e2eaef62ac429c30a21a889412eafc3c4b8c1e12592d0256fb322f"
+    },
+    {
+      "source": "app/public/brand/icons.svg",
+      "destination": "app/public/brand/icons.svg",
+      "donor_sha256": "a87ff503d55e3d326cce85e5820b1bad19a7fea5a110d5d14592e21dd90719e9"
+    },
+    {
+      "source": "docs/iamcc-ui-notes.md",
+      "destination": "docs/vendor/iam-iq/iamcc-ui-notes.md",
+      "donor_sha256": "4e33d9414b72596cc525632bcbd0f4273624e86c407c8d8c92130dc84efb30e9"
+    },
+    {
+      "source": "docs/iamcc-ui-playground-standalone.html",
+      "destination": "docs/vendor/iam-iq/iamcc-ui-playground-standalone.html",
+      "donor_sha256": "239b470ee7536475c003c135b5856858640be3d7de65577334354f0ba731645b"
+    },
+    {
+      "source": "docs/frontend-spec.md",
+      "destination": "docs/vendor/iam-iq/frontend-spec.md",
+      "donor_sha256": "ec4214c2ff82f6a9a671b5ed34f756ef33afd6bf0ed212bbb6aaa3fe0c7e708d"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/SKILL.md",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/SKILL.md",
+      "donor_sha256": "e3f7f73c06db7cc6f38ea36a0e4e3840f3067568605347739a23cffab30caede"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/assets/eu-emblem.svg",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/assets/eu-emblem.svg",
+      "donor_sha256": "46fe32dfa9e2eaef62ac429c30a21a889412eafc3c4b8c1e12592d0256fb322f"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/assets/components.css",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/assets/components.css",
+      "donor_sha256": "22cfaedc008608fd280916dcdc32a43a52f9b9180dc2a5f7a9c7147af879b32b"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/assets/icons.svg",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/assets/icons.svg",
+      "donor_sha256": "a87ff503d55e3d326cce85e5820b1bad19a7fea5a110d5d14592e21dd90719e9"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/assets/layout.css",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/assets/layout.css",
+      "donor_sha256": "aefa0acd6229495c4f7dea23f5949d834368d692cb9764e661fa0fe1176600c8"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/assets/tokens.css",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/assets/tokens.css",
+      "donor_sha256": "9e6522f0926c1bc28a1d6d9bb30a87ba39c04d2342fc51de5500a5fab7a46cc8"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/assets/tokens.json",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/assets/tokens.json",
+      "donor_sha256": "256f2d8864190e469099eb32f16fa3f220122a6c8265fa323e05bb5591c283e1"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/assets/starter.html",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/assets/starter.html",
+      "donor_sha256": "12759077ba292998a258c318ae688e648ce3103c6a7967811a1c486dcb459c5e"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/assets/fonts.css",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/assets/fonts.css",
+      "donor_sha256": "2765473e3068308e7fd2de38058bf790ad329035efa3ea7de883b1959de0ca22"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/scripts/sync_from_playground.mjs",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/scripts/sync_from_playground.mjs",
+      "donor_sha256": "fbbb7ae4a4cd6b4e70dd1ece020920e442ae82f9cd8bcdf11e06a2effb01aa3c"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/references/page-templates.md",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/references/page-templates.md",
+      "donor_sha256": "66c5e79396962f319a125c3d07d48f02857c8cbde0e051200271a3e94ad929da"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/references/components.md",
+      "destination": "docs/vendor/iam-iq/skills/iamcc-ui/references/components.md",
+      "donor_sha256": "6203c7e2ae4d83cbc3f3bc0889cf38438626df49bad6d1b4d3fc2ccc1465f313"
+    },
+    {
+      "source": ".claude/skills/front-end-development/SKILL.md",
+      "destination": "docs/vendor/iam-iq/skills/front-end-development/SKILL.md",
+      "donor_sha256": "9bd8d15be709229479aaa3f76e9251b3fc36076ae3d53f2fea586ff099d75cb8"
+    },
+    {
+      "source": ".claude/skills/front-end-development/scripts/inventory_endpoints.py",
+      "destination": "docs/vendor/iam-iq/skills/front-end-development/scripts/inventory_endpoints.py",
+      "donor_sha256": "9f3bcb8455fbaf802bd14f271893d4d1c2153e93e3d45a3d5451b4f81e513006"
+    },
+    {
+      "source": ".claude/skills/front-end-development/references/patterns.md",
+      "destination": "docs/vendor/iam-iq/skills/front-end-development/references/patterns.md",
+      "donor_sha256": "a199f7ae30560a9699ad4db5d9aa420cfb92d8d2be0e8e17abf245cfeca20b1b"
+    },
+    {
+      "source": ".claude/skills/front-end-development/references/endpoints.md",
+      "destination": "docs/vendor/iam-iq/skills/front-end-development/references/endpoints.md",
+      "donor_sha256": "0883b34842625cd83a32db7d3edb59b79d885ebea25f3b5ffc695717dee1e12e"
+    },
+    {
+      "source": ".claude/skills/iamcc-ui/assets/fonts.css",
+      "destination": "app/src/styles/fonts.css",
+      "donor_sha256": "2765473e3068308e7fd2de38058bf790ad329035efa3ea7de883b1959de0ca22"
+    },
+    {
+      "source": "deploy/BUNDLE_README.md",
+      "destination": "docs/vendor/iam-iq/BUNDLE_README.md",
+      "donor_sha256": "6ca674ad3772d5a0233f7057080c0cb7a7cbf3b26e0d495841947cd295460238"
+    },
+    {
+      "source": "k8s/iam-iq-app.yaml",
+      "destination": "docs/vendor/iam-iq/iam-iq-app.yaml",
+      "donor_sha256": "b54f6f02aa7b892dae30d181f1f057277a06b8ff68d2b1c08ecb15424e351eae"
+    }
+  ]
+}

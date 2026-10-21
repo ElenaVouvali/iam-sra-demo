@@ -6,10 +6,10 @@ assessment instrument. `ControllerAdapter` maps operations and projects public
 presentation data. `AssessmentService` owns sessions, versions, previews and jobs.
 
 The backend paths are `/v1/...`. The requested browser prefix is
-`/api/sra-assessment/v1/...`, **provided the actual IAM-IQ proxy removes
-`/api/sra-assessment`**. That rewrite still needs to be verified against the donor
-checkout before a frontend proxy is configured. No proxy compatibility is claimed
-yet, and no extra IAM-IQ destinations are enabled.
+`/api/sra-assessment/v1/...`. Both the adapted Vite proxy and production
+`serve_app.py` remove `/api/sra-assessment`, as verified in the actual donor.
+The allowlist contains only `sra-assessment`. Cookies, CSRF/version headers,
+status codes and export headers pass through both proxies.
 
 ## Endpoints
 
