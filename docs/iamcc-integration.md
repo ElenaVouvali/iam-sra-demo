@@ -387,3 +387,15 @@ The API-only checkpoint is `66094455377060511fcd9c84095232c07ff986ae`; it can
 also be inspected in a separate detached worktree without overwriting this one.
 Do not reset hard, delete environments/weights/private sources, or restart model
 services as part of UI rollback. No hub deployment needs to be undone.
+
+## Citizen indicator continuation
+
+The current continuation uses the private v4 bank through the same
+`ConversationSession` in Vue/Flask and Streamlit. Rebuild/inspect the bank and
+restart the relevant UI/API after source-bank updates; process/session snapshots
+are pinned. There is no automatic v4-to-global-scorer substitution. Normal
+participant journeys offer per-indicator self-assessment; the historical global
+estimator is a developer facility. Use free review ports and isolated builds to
+preserve a running integration. Full commands, draft matching policy, source
+boundaries and demonstration are in
+[indicator assisted self-assessment](indicator-assisted-self-assessment.md).

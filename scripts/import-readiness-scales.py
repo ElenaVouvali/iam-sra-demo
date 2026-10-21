@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import posixpath
 import re
+import sys
 from xml.etree import ElementTree as ET
 from zipfile import BadZipFile, ZipFile
 
@@ -15,7 +16,8 @@ WORKBOOK = ROOT / 'references/private/IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scal
 BANK = ROOT / 'references/private/readiness-scales-v4.json'
 NS = {'m': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 REL_ID = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id'
-PROFILES = {'technical': 'TRL', 'organisational': 'ORL', 'citizen': 'CRL'}
+sys.path.insert(0, str(ROOT/'src'))
+from iam_sra.readiness_bank import PROFILES, validate_bank
 
 
 def normalise(text):
@@ -130,45 +132,6 @@ def number(sheet, ref):
         raise ValueError(f'Expected positive integer: {sheet.name}!{ref} = {text!r}')
     return int(text)
 
-
-def validate_bank(bank):
-    indicators = bank['indicators']
-    if len(indicators) != 15 or {i['number'] for i in indicators} != set(range(1, 16)):
-        raise ValueError('Expected exactly 15 distinct indicators numbered 1–15.')
-    ids = {i['id'] for i in indicators}
-    if len(ids) != 15:
-        raise ValueError('Duplicate indicator IDs.')
-    for indicator in indicators:
-        if not indicator['name'].strip() or not indicator['definition'].strip():
-            raise ValueError('Incomplete indicator definition.')
-        if set(indicator['assessment_criteria']) != set(PROFILES) or any(
-                not c['text'].strip() for c in indicator['assessment_criteria'].values()):
-            raise ValueError('Expected complete assessment criteria for all three profiles.')
-    expected = {(i, p, level) for i in ids for p in PROFILES for level in range(1, 10)}
-    seen = set()
-    rows = {r['id']: r for r in bank['review_rows']}
-    if len(rows) != len(bank['review_rows']):
-        raise ValueError('Duplicate shared source review-row IDs.')
-    if len(rows) != 135:
-        raise ValueError('Expected 135 distinct shared source review rows.')
-    for record in bank['statements']:
-        key = (record['indicator_id'], record['profile'], record['level'])
-        if key in seen:
-            raise ValueError(f'Duplicate indicator/profile/level: {key}')
-        seen.add(key)
-        if record['scale'] != PROFILES.get(record['profile']) or not record['statement'].strip():
-            raise ValueError(f'Incomplete or incompatible statement: {key}')
-        row = rows.get(record['review_row_id'])
-        if row is None or (row['indicator_id'], row['level']) != (key[0], key[2]):
-            raise ValueError(f'Invalid shared review-row reference: {key}')
-    if seen != expected or len(bank['statements']) != 405:
-        raise ValueError('Expected 405 statements: nine distinct levels for each indicator/profile.')
-    if set(bank['generic_scales']) != {'TRL', 'ORL', 'CRL', 'SRL'}:
-        raise ValueError('Expected all four generic scales.')
-    for scale, descriptions in bank['generic_scales'].items():
-        if len(descriptions) != 9 or {r['level'] for r in descriptions} != set(range(1, 10)) or any(
-                not r['description'].strip() for r in descriptions):
-            raise ValueError(f'Incomplete or duplicate generic {scale} levels.')
 
 
 def import_bank(path):

@@ -4,6 +4,7 @@ import { useAssessment } from '@/composables/useAssessment'
 import AsyncState from '@/components/AsyncState.vue'
 import SelectField from '@/components/SelectField.vue'
 import AssessmentSummary from '@/components/AssessmentSummary.vue'
+import IndicatorAssessment from '@/components/IndicatorAssessment.vue'
 import { label } from '@/format'
 const flow = useAssessment()
 const { session, capabilities, expired, ended, jobStatus, boot, operation, working, allowed } = flow
@@ -70,8 +71,8 @@ onMounted(flow.initialize)
         <div class="sra-prose">
           <h2 class="t-card">Methodology and sources</h2>
           <p>The general interview remains separate from the optional illustrative scenario. Reviewed local source material supports the example and optional information. The existing IAM-SRA2 controller chooses eligible questions and evidence.</p>
-          <p>Check each interpretation, correct it when needed, and confirm the final evidence summary. Missing evidence is unknown. Opinions about a proposal and participation in this interview do not establish readiness.</p>
-          <p>Any citizen estimate is provisional. Technical, organisational and overall societal readiness remain unavailable.</p>
+          <p>Check each interpretation, correct it when needed, and confirm the final evidence summary. Missing evidence is unknown. Completing the chat or expressing support or opposition alone does not establish readiness. Reasoning can support a matching statement where its wording permits; it does not prove past participation or influence.</p>
+          <p>Draft per-indicator citizen self-assessment is available after summary confirmation. Technical, organisational and overall societal scores are outside this interview.</p>
           <RouterLink to="/privacy">Read privacy and retention details</RouterLink>
         </div>
       </details>
@@ -148,12 +149,12 @@ onMounted(flow.initialize)
                 <section v-for="answer in session.answers" :key="answer.id" class="sra-exposure"><h3 class="t-card">{{ answer.question_text }}</h3><p class="sra-whitespace">{{ answer.text }}</p><p class="t-small muted">{{ answer.stage === 'general' ? 'General interview' : 'Illustrative scenario' }} · Confirmed self-report</p><button v-if="allowed('edit_answer')" class="btn secondary sm" :disabled="working" @click="submit('edit_answer', { stage: answer.stage, event_id: answer.id })">Edit answer</button></section>
                 <ul class="bullets"><li v-for="item in session.evidence" :key="item.evidence_id">{{ item.interpretation }} <span class="t-small muted">({{ label(item.information_context || 'general_baseline') }}, {{ item.external_verification || 'not independently verified' }})</span></li></ul>
               </details>
-              <section v-if="state === 'final'" class="sra-results" data-testid="results"><h3 class="t-card">Assessment limits</h3><p>CRL, TRL, ORL and overall SRL are unavailable from this evidence summary. Missing evidence does not establish low readiness.</p>
+              <section v-if="state === 'final'" class="sra-results" data-testid="results"><h3 class="t-card">Assessment limits</h3><p>Your confirmed summary can support a draft citizen self-assessment for selected indicators. There is no overall citizen, TRL, ORL or societal SRL score. Missing evidence does not establish low readiness.</p>
                 <div class="row"><button class="btn secondary" :disabled="working" @click="flow.act('export', { format: 'json' })">Download JSON</button><button class="btn secondary" :disabled="working" @click="flow.act('export', { format: 'jsonl' })">Download JSONL</button></div>
-                <details v-if="allowed('provisional_estimate')" class="sra-disclosure"><summary>Optional provisional citizen estimate</summary><p>This draft, unapproved model judgement uses confirmed personal evidence against workbook descriptions. It is not independently verified and may abstain. It does not establish technical, organisational or overall societal readiness.</p><button class="btn secondary" :disabled="working" @click="submit('provisional_estimate')">Request provisional estimate</button><div v-if="session.results.provisional_citizen_estimate"><p class="t-card">Provisional citizen estimate: {{ session.results.provisional_citizen_estimate.crl ?? 'Unavailable' }}</p><p>{{ session.results.provisional_citizen_estimate.explanation }}</p><p class="t-small muted">Draft · Unapproved · Not independently verified</p></div></details>
+                <IndicatorAssessment :view="session.indicator_assessment" :allowed="allowed" :working="working" :answers="session.answers" :returned-text="session.returned_text" @action="submit" />
               </section>
             </div>
-            <nav class="sra-controls row" aria-label="Interview controls"><button v-if="allowed('back')" class="btn secondary sm" :disabled="working" @click="submit('back')">Back one step</button><button v-if="allowed('edit_context')" class="btn secondary sm" :disabled="working" @click="submit('edit_context')">Edit details</button><button v-if="allowed('finish')" class="btn secondary sm" :disabled="working" @click="submit('finish')">Finish here</button><button class="btn secondary sm" :disabled="operation.state.value === 'loading' && !session.busy_job" @click="askDeliberate('reset')">Reset interview</button><button class="btn secondary sm" :disabled="working" @click="askDeliberate('end')">End session</button></nav>
+            <nav class="sra-controls row" aria-label="Interview controls"><button v-if="allowed('back')" class="btn secondary sm" :disabled="working" @click="submit('back')">{{ state === 'final' && session.indicator_assessment?.current ? 'Back to interview review' : 'Back one step' }}</button><button v-if="allowed('edit_context')" class="btn secondary sm" :disabled="working" @click="submit('edit_context')">Edit details</button><button v-if="allowed('finish')" class="btn secondary sm" :disabled="working" @click="submit('finish')">Finish here</button><button class="btn secondary sm" :disabled="operation.state.value === 'loading' && !session.busy_job" @click="askDeliberate('reset')">Reset interview</button><button class="btn secondary sm" :disabled="working" @click="askDeliberate('end')">End session</button></nav>
           </template>
           <div v-if="!session && error" class="alert danger" role="alert"><svg class="ico" aria-hidden="true"><use href="/brand/icons.svg#i-err" /></svg><p>{{ error.userMessage }}</p></div>
         </template>

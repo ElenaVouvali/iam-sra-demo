@@ -255,7 +255,23 @@ def require_safe_data(value):
             } or re.fullmatch(r'root\.superseded_scenarios\[\d+\]\.session\.session_id', path) is not None
             generated_session_id = session_id_path and re.fullmatch(
                 r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}', item) is not None
-            if item not in reviewed_bibliographic_values() and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_session_id:
+            # The pinned vLLM envelope also has an opaque public completion ID.
+            # Its hexadecimal suffix sometimes triggers PERSON; it carries no
+            # respondent prose or ownership credential.
+            generated_completion_id = path == 'root.id' and re.fullmatch(r'chatcmpl-[0-9a-f]{32}', item) is not None
+            # V4's controller-resolved cell addresses (e.g. G63) are fixed source
+            # coordinates. The installed NLP model tags G63 as PERSON. Exempt
+            # only the bounded coordinate syntax in actual source-reference fields;
+            # quotations, explanations, arbitrary source values and respondent prose
+            # remain screened. Membership is validated against the pinned bank.
+            readiness_cell_reference = (
+                (path.endswith('.source.cell') or path.endswith('.criterion_source.cell') or path.endswith('.review_source.status_cell')
+                 or path.endswith('.review_source.comment_cell'))
+                and re.fullmatch(r'[A-I](?:[2-9]|[1-9][0-9]|1[0-2][0-9]|13[0-6])', item) is not None
+            )
+            readiness_review_reference = (path.endswith('.review_row_id') and re.fullmatch(
+                r'indicator-(?:0[1-9]|1[0-5])-level-[1-9]', item) is not None)
+            if item not in reviewed_bibliographic_values() and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():

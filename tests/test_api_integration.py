@@ -112,7 +112,7 @@ def finish_declined(browser):
     browser.act('confirm_final')
 
 
-def test_complete_synthetic_interview_information_and_exports(make_api):
+def test_complete_synthetic_interview_information_and_exports(make_api, monkeypatch):
     case = load_cases(ROOT/'eval/conversation_meeting_cases_v2.json')['cases'][0]
     app, service = make_api(case)
     browser = Browser(app)
@@ -160,6 +160,9 @@ def test_complete_synthetic_interview_information_and_exports(make_api):
     assert saw_reflection
     assert browser.view['results'] == {'crl': None, 'trl': None, 'orl': None, 'srl': None,
                                         'provisional_citizen_estimate': None}
+    # Historical global estimator is deliberately a developer facility in API 1.1.
+    assert 'provisional_estimate' not in browser.view['allowed_actions']
+    monkeypatch.setenv('IAM_DEVELOPER', '1')
     browser.act('provisional_estimate')
     estimate = browser.view['results']['provisional_citizen_estimate']
     assert estimate['status'] == 'draft_provisional_model_judgement'

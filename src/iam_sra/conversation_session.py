@@ -169,6 +169,7 @@ class ConversationSession:
         self.planner_prompt=(ROOT/'prompts/conversation-planner.txt').read_text()
         self.topic_memory=[]
         self._provisional=None
+        self.indicators=None
         self.rubric=deepcopy(config('readiness_levels'))
 
     @property
@@ -180,7 +181,7 @@ class ConversationSession:
     @property
     def pending(self):return self.phase.pending if self.stage in {'general','scenario'} else None
     @property
-    def version(self):return self.general.version+(self.scenario.version if self.scenario else 0)+self.edit_epoch
+    def version(self):return self.general.version+(self.scenario.version if self.scenario else 0)+self.edit_epoch+(self.indicators.revision if getattr(self,'indicators',None) else 0)
     @property
     def state(self):
         if self.stage in {'offer','final_review','final'}:return self.stage
@@ -440,6 +441,7 @@ class ConversationSession:
 
     @guarded()
     def back(self):
+        self.invalidate_indicators('Interview answer or scope reopened')
         self.edit_epoch+=1;self._provisional=None;self.stop_reason=None
         if self.stage in {'offer','final','final_review'}:
             if self.scenario:self.stage='scenario';return self.scenario.back()
@@ -449,6 +451,7 @@ class ConversationSession:
     @guarded()
     def edit_answer(self,stage,event_id):
         if stage not in {'general','scenario'}:raise ValueError('Select an answer from this interview.')
+        self.invalidate_indicators('Interview answer or scope reopened')
         self.edit_epoch+=1;self._provisional=None;self.failed_attempt=None;self.stop_reason=None
         if stage=='general' and self.scenario:
             self.superseded_scenarios.append({'reason':'Baseline answer corrected','session':self.scenario.export()})
@@ -459,11 +462,111 @@ class ConversationSession:
 
     @guarded()
     def edit_context(self):
+        self.invalidate_indicators('Interview answer or scope reopened')
         self.edit_epoch+=1;self._provisional=None;self.stop_reason=None
         if self.scenario:
             self.superseded_scenarios.append({'reason':'Respondent context corrected','session':self.scenario.export(),'scenario_card':deepcopy(self.card)})
         self.scenario=None;self.card=None;self.baseline_snapshot=None;self.stage='general'
         self.general.edit_context()
+
+    def invalidate_indicators(self, reason):
+        if getattr(self, 'indicators', None):
+            self.indicators.invalidate(reason, all_results=True)
+            for row in self.indicators.results.values():
+                row.update(state='superseded', pending=None)
+
+    def indicator_view(self):
+        if not self.respondent or self.respondent['perspective'] != 'personal':
+            return {'available': False, 'notice': 'Indicator results currently support the individual citizen profile only. Organisational interviews remain evidence summaries, without ORL or TRL assessment.'}
+        if self.stage != 'final':
+            return {'available': False, 'notice': 'Confirm the interview summary to continue with citizen indicator self-assessment.'}
+        if getattr(self, 'indicators', None) is None:
+            from .indicator_assessment import IndicatorAssessment
+            try:
+                self.indicators = IndicatorAssessment()
+            except ValueError:
+                return {'available': False, 'notice': 'The private v4 readiness bank is missing or incompatible. Ask the operator to run scripts/import-readiness-scales.py build and restart the API/UI.'}
+        return {'available': True, **self.indicators.view()}
+
+    def _indicator(self):
+        if not self.indicator_view().get('available'):
+            raise ValueError('Citizen indicator assessment requires a confirmed summary, personal perspective and valid v4 bank.')
+        return self.indicators
+
+    @guarded('indicator_ids', 'context', 'use_case', 'reuse_answers', 'profile')
+    def select_indicators(self, indicator_ids, context, use_case='', reuse_answers=None, profile='citizen'):
+        if profile != 'citizen' or context not in {'general_understanding', 'illustrative_proposal', 'actual_experience'}:
+            raise ValueError('Choose a citizen profile and a listed assessment context.')
+        if len(use_case) > 240:
+            raise ValueError('Use a short, general context description without identifying details.')
+        group = self._indicator()
+        if context == 'illustrative_proposal' and not self.scenario:
+            raise ValueError('An illustrative assessment requires an example actually discussed in this interview.')
+        scope = {'response_profile': profile, 'context': context, 'use_case': use_case or 'IAM in the selected context',
+                 'scenario_id': self.card['id'] if context == 'illustrative_proposal' else None,
+                 'respondent_context': deepcopy(self.respondent),
+                 'information_exposure_ids': [e['id'] for e in self.information_exposures],
+                 'definitions_exposure': {'bank_version': group.bank['bank_version'], 'meaning': 'Definitions are supplied information, not prior competence.'}}
+        prior = {e['id']: e for phase in [self.general, self.scenario] if phase for e in phase.events if e['active'] and e['confirmed']}
+        reuse = {}
+        mapping = {'concept_explanation': 'reasoning', 'use_knowledge': 'reasoning', 'explained_impact': 'reasoning',
+                   'recognition': 'recognition', 'view_condition': 'condition', 'learning_exposure': 'activity',
+                   'contribution': 'contribution', 'influence': 'influence', 'absence': 'absence', 'unknown': 'uncertainty',
+                   'intention': 'intention', 'barrier': 'barrier', 'claim_without_detail': 'bare_claim'}
+        for key, ids in (reuse_answers or {}).items():
+            if len(ids) > 3 or len(set(ids)) != len(ids):
+                raise ValueError('Reuse up to three distinct confirmed answers per indicator.')
+            reuse[key] = []
+            for event_id in ids:
+                event = prior.get(event_id)
+                expected = 'illustrative_scenario' if context == 'illustrative_proposal' else 'general_baseline'
+                if not event or event['context'] != expected:
+                    raise ValueError('Select confirmed answers from the same general or illustrative context.')
+                observations = [{'quote': c['span_quote'], 'kind': mapping.get(c['kind'], 'stance'),
+                    'actor': 'self' if c['subject'] == 'respondent' else 'organisation' if c['subject'] == 'organisation' else 'third_party',
+                    'actuality': 'actual' if c.get('temporality') == 'actual' else 'hypothetical' if c.get('kind') == 'intention' else 'unspecified',
+                    'domain': c.get('domain') if c.get('domain') in {'IAM', 'other'} else 'unclear',
+                    'ambiguities': deepcopy(c.get('ambiguities', []))}
+                    for c in event['claims'] if c.get('span_quote') and c['span_quote'] in event['text']]
+                reuse[key].append({'id': event_id, 'text': event['text'], 'question': deepcopy(event['question']),
+                    'control': event['control'], 'reading': {'meaning': ' '.join(c['interpretation'] for c in event['claims']),
+                    'observations': observations}, 'confirmed': True, 'active': True, 'origin': 'confirmed_interview_reuse',
+                    'scope': deepcopy(scope), 'information_context': event['information_context'],
+                    'relevance_basis': 'Participant explicitly linked this answer to this indicator; the tool must still assess its actual relevance.'})
+        group.select(indicator_ids, scope, reuse)
+        self._provisional = None
+
+    @guarded('text', 'control')
+    def indicator_answer(self, text, client, control='answer'):
+        self._indicator().answer(text, control, client)
+
+    @guarded()
+    def indicator_confirm(self):
+        self._indicator().confirm()
+
+    @guarded('text')
+    def indicator_correct(self, text, client):
+        self._indicator().correct(text, client)
+
+    @guarded()
+    def indicator_finish(self):
+        self._indicator().finish()
+
+    @guarded()
+    def indicator_suggest(self, client):
+        self._indicator().suggest(client, self.version)
+
+    @guarded('choice', 'statement_id', 'explanation')
+    def indicator_review(self, choice, revision, statement_id=None, explanation=''):
+        self._indicator().review(choice, statement_id, explanation, revision)
+
+    @guarded('indicator_id')
+    def indicator_next(self, indicator_id):
+        self._indicator().next(indicator_id)
+
+    @guarded('event_id', 'mode')
+    def indicator_edit(self, event_id, mode='answer'):
+        return self._indicator().edit(event_id, mode)
 
     def proposal_view(self):
         rows=[c for c in self.profile()['claims'] if c['dimension']=='proposal']
@@ -519,6 +622,25 @@ class ConversationSession:
         require_safe_data(result);self._provisional=result
 
     @export_guard
+    def browser_export(self):
+        """Streamlit downloads use the same operational-data boundary as the API."""
+        omitted = {'inference', 'selection_decisions', 'planning_actions', 'planner_metrics', 'model_provenance',
+                   'prompt_hashes', 'prompts', 'prompt', 'last_settings', 'diagnostics', 'trace', 'settings',
+                   'base_url', 'endpoint', 'local_path', 'path', 'file_sha256', 'instrument', 'handoff',
+                   'anchor_review', 'provenance'}
+        def project(value):
+            if isinstance(value, dict):
+                return {k: project(v) for k, v in value.items() if k not in omitted}
+            if isinstance(value, list):
+                return [project(v) for v in value]
+            return value
+        result = project(self.export())
+        result['export_profile'] = 'browser_evidence'
+        result['corpus_provenance'] = {'version': self.collection['version'],
+            'sources': [{k: s[k] for k in ('document', 'sha256') if k in s} for s in self.collection['sources']]}
+        return result
+
+    @export_guard
     def export(self):
         baseline=self.general.export();scenario=self.scenario.export() if self.scenario else None
         if scenario:scenario.update(assessment_mode='conversational_scenario_component',context='illustrative_scenario',scenario_id=self.card['id'])
@@ -535,6 +657,7 @@ class ConversationSession:
                 'corrections':deepcopy(self.general.corrections+(self.scenario.corrections if self.scenario else [])),
                 'meaning':'Assessment refinement or post-information reasoning; not proof of personal development.'},
             'proposal_views':self.proposal_view(),'planning_actions':deepcopy(self.plans),
+            'indicator_assessment':self.indicators.export() if getattr(self,'indicators',None) else None,
             'topic_memory_version':'topic-memory-1.2.0','topic_memory':deepcopy(self.topic_memory),
             'qualitative_assessment':self.qualitative_assessment(),'respondent_summary':self.respondent_summary(),
             'objective_registry_version':objective_registry()['version'],

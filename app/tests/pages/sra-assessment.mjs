@@ -33,6 +33,7 @@ function monitor(page) {
   })
   return state
 }
+
 export const flows = {
   'catalogue, detail, keyboard and Back': async (page, _errors, { go, back, expect, clickText }) => {
     await go(page, '/')
@@ -48,7 +49,7 @@ export const flows = {
     expect(await page.$eval('input[type=search]', (el) => el.value) === 'IAM-SRA2', 'Catalogue search was not restored')
   },
   'complete authored synthetic interview, correction, information and exports': async (page, _errors, { go, expect, clickText }) => {
-    const seen = monitor(page)
+    const seen = await monitor(page)
     await go(page, '/tools/sra-assessment/app')
     await page.waitForSelector('[data-testid=assessment] .empty button')
     await clickText(page, 'button', 'Start interview')
@@ -115,9 +116,40 @@ export const flows = {
     }
     expect(seen.view.state === 'final' && corrected && information && reflection, 'Full authored journey incomplete')
     expect(['crl', 'trl', 'orl', 'srl'].every((key) => seen.view.results[key] === null), 'Unavailable scores must remain null')
-    await disclosure(page, 'Optional provisional citizen estimate')
-    await act('Request provisional estimate')
-    expect(seen.view.results.provisional_citizen_estimate.crl === null, 'Fixture estimate must abstain')
+    expect(!await page.$eval('[data-testid=results]', (el) => el.textContent.includes('Request provisional estimate')), 'Historical global estimate competes with v4 journey')
+    await page.click('[data-testid=indicator-assessment] input[type=checkbox][value="indicator-07"]')
+    await act('Begin selected indicators')
+    expect(seen.view.indicator_assessment.current.scale.length === 9, 'Nine source statements missing')
+    await fill(page, '#indicator-answer', 'I propose safeguards to protect rest.')
+    await act('Submit indicator answer')
+    await page.reload({ waitUntil: 'networkidle0' })
+    await page.waitForSelector('[data-testid=indicator-interpretation]', { timeout: 15000 })
+    expect(await page.$('[data-testid=indicator-interpretation]'), 'Indicator interpretation did not restore after reload')
+    expect(await page.$eval('[data-testid=indicator-interpretation]', (el) => el.textContent.includes('Proposed condition or safeguard') && el.textContent.includes('your own reasoning or action')), 'Interpretation hides the classifications used for matching')
+    await act('Confirm indicator interpretation')
+    await act('Finish indicator questions')
+    await act('Request draft indicator suggestion')
+    expect(seen.view.indicator_assessment.current.participant === null, 'Tool suggestion prepopulated participant result')
+    await select(page, 'Your own statement selection', 'indicator-07-crl-3')
+    await fill(page, '#indicator-review-explanation', 'The description of understanding fits better.')
+    await act('Record my selected statement')
+    expect(seen.view.indicator_assessment.current.participant.statement.level === 3, 'Alternative participant statement missing')
+    expect(seen.view.indicator_assessment.current.tool.statement.level === 5, 'Participant choice overwrote tool suggestion')
+    await page.reload({ waitUntil: 'networkidle0' })
+    await page.waitForSelector('[data-testid=participant-indicator-result]', { timeout: 15000 })
+    expect(await page.$('[data-testid=participant-indicator-result]'), 'Participant review did not restore')
+    expect(await page.$eval('[data-testid=indicator-review] select', (el) => el.value) === '', 'Review was prepopulated on reload')
+    const priorRevision = seen.view.indicator_assessment.revision
+    await disclosure(page, 'Indicator answers, barriers and corrections')
+    await act('Review indicator interpretation')
+    expect(seen.view.indicator_assessment.current.tool === null && seen.view.indicator_assessment.current.participant === null, 'Reopening interpretation did not invalidate judgments')
+    await page.evaluate(async (revision) => {
+      const cap = await (await fetch('/api/sra-assessment/v1/capabilities')).json()
+      const active = (await (await fetch('/api/sra-assessment/v1/sessions/' + cap.sessions.at(-1).id)).json()).session
+      const response = await fetch('/api/sra-assessment/v1/sessions/' + active.id + '/actions', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':cap.csrf_token}, body:JSON.stringify({action:'indicator_review', data:{choice:'endorse',revision}, expected_version:active.version, request_id:crypto.randomUUID()}) })
+      if (response.status !== 409) throw new Error('Stale assessment review was not rejected')
+    }, priorRevision)
+    await act('Confirm indicator interpretation'); await act('Finish indicator questions'); await act('Request draft indicator suggestion'); await act('Confirm suggested statement')
     await clickText(page, 'button', 'Download JSON')
     await waitUntil(() => seen.exports.length === 1, 'JSON download missing')
     await waitUntil(() => page.$$eval('button', (els) => !els.find((el) => el.textContent.trim() === 'Download JSONL')?.disabled), 'Export controls stayed disabled')
@@ -133,7 +165,7 @@ export const flows = {
   },
   'mobile privacy preview, blocked input, recoverable model failure and decline': async (page, _errors, { go, expect, clickText }) => {
     await page.setViewport({ width: 360, height: 900 })
-    const seen = monitor(page)
+    const seen = await monitor(page)
     await go(page, '/tools/sra-assessment/app')
     await waitUntil(() => seen.view?.state === 'general_welcome', 'Resume after reset missing')
     async function act(title, failure = false) {
@@ -170,7 +202,7 @@ export const flows = {
 }
 
 flows['processing reset, navigation cancellation and organisation scope'] = async (page, _errors, { go, expect, clickText }) => {
-  const seen = monitor(page)
+  const seen = await monitor(page)
   await go(page, '/tools/sra-assessment/app')
   await page.waitForSelector('.sra-assessment .empty button')
   async function act(title) {

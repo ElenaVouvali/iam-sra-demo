@@ -181,9 +181,11 @@ def render(s,client,planner,developer=False):
         information();edits()
     elif state=='final':
         st.subheader('Your summary');summary()
-        st.info('The numerical readiness method awaits agreement. This evidence summary is not an overall societal readiness score.')
+        st.info('Continue with draft citizen indicator self-assessment below. This interview does not produce an overall societal readiness score.')
+        from .indicator_ui import render_indicators
+        render_indicators(s,perform)
         try:
-            data=s.export()
+            data=s.browser_export()
             download_button('Download interview (JSON)',json.dumps(data,ensure_ascii=False,indent=2),file_name='iam-conversation.json',mime='application/json')
             download_button('Download interview (JSONL)',json.dumps(data,ensure_ascii=False,separators=(',',':'))+'\n',file_name='iam-conversation.jsonl',mime='application/x-ndjson')
         except PrivacyError as exc:st.warning(safe_message(exc))
@@ -192,10 +194,10 @@ def render(s,client,planner,developer=False):
                 for c in phase.current_profile['claims']:
                     st.text(c.get('span_quote') or phase.evidence.get(c['evidence_id'],''));st.text(c['interpretation'])
                     st.text(c['dimension']+' · '+c['evidence_status']+' · '+c['information_context']+' · confirmed meaning; external verification absent')
-            st.write('Additional answers refine the assessment. Reading this example or completing the chat does not establish engagement, co-design or influence.')
+            st.write('Additional answers refine the assessment. Reading this example or completing the chat alone does not establish historical engagement, co-design or influence.')
             for source in s.collection['sources']:st.text(source['document'])
-        if s.respondent['perspective']=='personal':
-            with st.expander('Optional draft citizen estimate'):
+        if developer and s.respondent['perspective']=='personal':
+            with st.expander('Historical global-anchor estimate (developer only; not v4)'):
                 st.write('An evidence assessment against each draft workbook level, with a separate model check of supported levels. It may abstain and is not an approved rubric result or SRL.')
                 def estimate():
                     from .readiness_score import WorkbookScoreClient

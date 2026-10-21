@@ -14,7 +14,7 @@
  *   ONLY=sra-assessment BASE=http://127.0.0.1:5001 npm run check   # just those tools
  */
 import puppeteer from 'puppeteer-core'
-import { mkdirSync, readdirSync } from 'node:fs'
+import { mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 
 const BASE = (process.env.BASE || 'http://127.0.0.1:5001').replace(/\/$/, '')
 const SHOTS = process.env.SHOTS || ''
@@ -71,7 +71,7 @@ const browser = await puppeteer.launch({ browser: 'firefox', executablePath: FIR
 try {
   const page = await browser.newPage()
   const errors = []
-  page.on('pageerror', (e) => errors.push(`page error: ${e.message}`))
+  page.on('pageerror', (e) => errors.push(`page error: ${e.message}${e.stack ? '\n' + e.stack : ''}`))
   // Firefox reports an Error argument as "JSHandle@error"; read its message so failures say what went wrong.
   page.on('console', async (m) => {
     if (m.type() !== 'error') return
@@ -107,6 +107,15 @@ try {
       if (errors.length) throw new Error(errors.join('; '))
       console.log(`ok   flow: ${name}`)
     } catch (e) {
+      if (SHOTS) {
+        const nameSafe = name.replace(/[^a-z0-9]+/gi, '_')
+        await page.screenshot({ path: `${SHOTS}/failed-${nameSafe}.png`, fullPage: true })
+        writeFileSync(`${SHOTS}/failed-${nameSafe}.html`, await page.content())
+        writeFileSync(`${SHOTS}/failed-${nameSafe}.json`, JSON.stringify(await page.evaluate(() => ({
+          location: location.pathname,
+          resources: performance.getEntriesByType('resource').map((r) => ({name:r.name, duration:r.duration, size:r.transferSize})),
+        })), null, 2))
+      }
       failures.push(`flow "${name}": ${e.message}`)
       console.log(`FAIL flow: ${name}  ${e.message}`)
     }

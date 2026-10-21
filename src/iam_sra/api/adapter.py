@@ -3,6 +3,7 @@ from copy import deepcopy
 from pathlib import Path, PurePath
 from hashlib import sha256
 import json
+import os
 import re
 import subprocess
 import threading
@@ -154,8 +155,21 @@ class ControllerAdapter:
                             and q['variant_id'] == ('organisation' if engine.respondent['perspective'] == 'organisation' else 'personal')
                             for q in engine.collection['questions'])):
                 result.append('start_reflection')
-        if state == 'final' and engine.respondent['perspective'] == 'personal':
+        if state == 'final' and engine.respondent['perspective'] == 'personal' and os.getenv('IAM_DEVELOPER') == '1':
             result.append('provisional_estimate')
+        if state == 'final' and engine.respondent['perspective'] == 'personal':
+            view = engine.indicator_view()
+            if view.get('available'):
+                row = view['current']
+                if not row or row['state'] != 'interpretation':
+                    result.append('select_indicators')
+                if row:
+                    result.append('indicator_next')
+                    if row['state'] == 'collecting': result += ['indicator_answer', 'indicator_finish']
+                    if row['state'] == 'interpretation': result += ['indicator_confirm', 'indicator_correct']
+                    if row['state'] == 'ready' and row['tool'] is None: result.append('indicator_suggest')
+                    if row['state'] in {'ready', 'review', 'complete'}: result.append('indicator_review')
+                    if row['state'] != 'interpretation': result.append('indicator_edit')
         return result
 
     def prepare(self, action, data):
@@ -163,7 +177,9 @@ class ControllerAdapter:
         cleaned = deepcopy(data)
         changed = False
         for key in {'set_context': ('place', 'function'), 'answer': ('text',),
-                    'correct_interpretation': ('text',), 'ask_information': ('question',)}.get(action, ()):
+                    'correct_interpretation': ('text',), 'ask_information': ('question',),
+                    'select_indicators': ('use_case',), 'indicator_answer': ('text',),
+                    'indicator_correct': ('text',), 'indicator_review': ('explanation',)}.get(action, ()):
             try:
                 require_clean(data[key])
             except PrivacyError as exc:
@@ -172,7 +188,7 @@ class ControllerAdapter:
                 cleaned[key] = exc.preview
                 changed = True
         if changed:
-            for key in ('text', 'place', 'function', 'question'):
+            for key in ('text', 'place', 'function', 'question', 'use_case', 'explanation'):
                 if key in cleaned:
                     try:
                         require_clean(cleaned[key])
@@ -203,6 +219,19 @@ class ControllerAdapter:
         elif action == 'acknowledge':
             if not any(row['id'] == data['exposure_id'] and not row['acknowledged'] for row in engine.information_exposures):
                 raise APIError('invalid_action', 409)
+        elif action == 'select_indicators':
+            view = engine.indicator_view()
+            known = {i['indicator_id'] for i in view.get('coverage', [])}
+            if not view.get('available') or set(data['indicator_ids']) - known or len(set(data['indicator_ids'])) != len(data['indicator_ids']):
+                raise APIError('invalid_action', 409)
+        elif action == 'indicator_review':
+            group = engine.indicators
+            ids = {s['id'] for s in group.scale(group.current_id)} if group and group.current else set()
+            if not group or data['revision'] != group.revision or (data.get('statement_id') is not None and data['statement_id'] not in ids):
+                raise APIError('stale_action', 409)
+        elif action == 'indicator_next':
+            if data['indicator_id'] not in engine.indicators.selected:
+                raise APIError('invalid_action', 409)
         elif action == 'edit_answer':
             phase = engine.general if data['stage'] == 'general' else engine.scenario
             if not phase or not any(row['id'] == data['event_id'] and row['active'] and row['confirmed'] for row in phase.events):
@@ -216,8 +245,9 @@ class ControllerAdapter:
             from ..conversation_planner import PlannerClient
             from ..readiness_retrieval import ExplanationClient
             from ..readiness_score import WorkbookScoreClient
+            from ..indicator_client import IndicatorClient
             clients = {'baseline': BaselineClient(), 'planner': PlannerClient(prompt=engine.planner_prompt),
-                       'information': ExplanationClient(), 'score': WorkbookScoreClient()}
+                       'information': ExplanationClient(), 'score': WorkbookScoreClient(), 'indicator': IndicatorClient()}
         for client in clients.values():
             if client is not None:
                 client.external_deadline = deadline
@@ -247,6 +277,14 @@ class ControllerAdapter:
                 engine.ask_information(data['question'], clients.get('information'))
             elif action == 'provisional_estimate':
                 engine.provisional_estimate(clients['score'])
+            elif action == 'indicator_answer':
+                engine.indicator_answer(data['text'], clients['indicator'], data['control'])
+            elif action == 'indicator_correct':
+                engine.indicator_correct(data['text'], clients['indicator'])
+            elif action == 'indicator_suggest':
+                engine.indicator_suggest(clients['indicator'])
+            elif action == 'indicator_edit':
+                returned = engine.indicator_edit(**data)
             elif action == 'edit_answer':
                 candidates = engine.general if data['stage'] == 'general' else engine.scenario
                 if not candidates or not any(e['id'] == data['event_id'] and e['active'] and e['confirmed'] for e in candidates.events):
@@ -294,7 +332,7 @@ class ControllerAdapter:
                     qualitative_assessment=engine.qualitative_assessment(),
                     results={'crl': None, 'trl': None, 'orl': None, 'srl': None,
                              'provisional_citizen_estimate': estimate(engine._provisional)},
-                    privacy_notice=NOTICE)
+                    privacy_notice=NOTICE, indicator_assessment=engine.indicator_view())
         value = SessionView(**data).model_dump()
         return screened_export(value, engine)
 
@@ -318,7 +356,7 @@ class ControllerAdapter:
                 'scenario_decision', 'baseline', 'scenario', 'confirmed_baseline_history',
                 'initial_confirmed_profile', 'final_profile', 'confirmed_final_snapshots',
                 'changes', 'proposal_views', 'topic_memory_version', 'topic_memory',
-                'qualitative_assessment', 'respondent_summary', 'objective_registry_version',
+                'qualitative_assessment', 'respondent_summary', 'objective_registry_version', 'indicator_assessment',
                 'information_exposures', 'pre_information_snapshots', 'unresolved_attempt',
                 'failure_history', 'superseded_scenarios', 'stop_reason', 'numerical_crl',
                 'numerical_srl', 'numerical_orl', 'numerical_trl', 'numerical_reason')

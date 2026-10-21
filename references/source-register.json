@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
+  "version": "1.8.0",
   "review_date": "2026-10-21",
   "private_sources_git_ignored": true,
   "sources": [
@@ -314,7 +314,8 @@
       "row_validation_statuses": {
         "To review": 135
       },
-      "nonempty_row_comments": 0
+      "nonempty_row_comments": 0,
+      "sha256": "9fa561bcfd20e847ff9b64353e06b6ac95201903cdc86a49fabffbfd12175695"
     },
     "report_cross_check": {
       "comparison": "Exact source strings; no whitespace or punctuation rewriting.",
@@ -329,8 +330,34 @@
       "D3.1 filename v0.18 versus document-control/history version 0.1; ask FN which document version to cite.",
       "D3.1 capability/opportunity language and proposed median/weakest-link integration require methodological agreement before operational evidence rules or scoring change."
     ],
-    "methodological_boundary": "Reference data only. Existing global-anchor estimate, questionnaire, controller, Flask API and Vue UI are unchanged. No new scoring, thresholds, aggregation, opportunity adjustments or indicator-specific SRL rubrics.",
+    "methodological_boundary": "At the importer checkpoint this was reference data only; assessment behaviour was unchanged. Subsequent authorised draft runtime use is recorded separately under indicator_assisted_self_assessment. Importing the bank approves no scoring, thresholds, aggregation, opportunity adjustments or indicator-specific SRL rubrics.",
     "approval_of_scoring_policy": null,
     "historical_notes": "Earlier missing-bank/report statements in dated reviews describe their original checkpoints. The complete v4 draft bank and D3.1 draft are now locally available; availability does not establish consortium validation."
+  },
+  "indicator_assisted_self_assessment": {
+    "policy_version": "indicator-matching-draft-1.0.0",
+    "schema_version": "indicator-self-assessment-1.0.0",
+    "starting_commit": "be54cea99a533b7ce9a362bc7d77b4d23160f4d2",
+    "starting_worktree": "clean",
+    "status": "authored_prototype_pending_FN_ISCTE_review",
+    "runtime_use_authority": "Project-owner instruction explicitly authorises draft v4 definitions in an indicator-specific assisted citizen self-assessment continuation. Source approval status is unchanged.",
+    "source_sections": [
+      "GA Annex 1 T3.2/T3.3, printed p.9; Part B IAM-SRA2 description",
+      "D3.1 draft sections 10.4–10.6; Tables 5,6,7; From individual responses to a city-level snapshot",
+      "V4 Read me!A2,A5:A13; Scales per indicator!E2:I136; Indicators' assessment criteria!A2:F16"
+    ],
+    "implementation_choices": [
+      "Citizen profile explicitly selected; profession does not set the assessment profile.",
+      "Up to three selected indicators per round; three authored neutral questions per indicator, with explicit reuse and stopping.",
+      "Independent statement matching followed by a reasoned suggestion or abstention; no numeric tie breaker or cumulative prerequisites.",
+      "Participant review is separate from interpretation confirmation; participant choice is reported separately from the preserved tool suggestion.",
+      "No aggregation or overall SRL. Legacy global estimator remains a separate historical/developer facility."
+    ],
+    "approval_of_instrument": null,
+    "pending_decisions": [
+      "Operational evidence sufficiency and ambiguous matching",
+      "Capability and participation-opportunity interpretation per statement",
+      "Official questionnaire/KVIs, validation and future aggregation input"
+    ]
   }
 }

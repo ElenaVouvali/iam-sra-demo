@@ -3,7 +3,7 @@ from typing import Any, Literal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, UUID4
 
-API_VERSION = '1.0.0'
+API_VERSION = '1.1.0'
 
 
 class Strict(BaseModel):
@@ -52,7 +52,40 @@ class Preview(Strict):
     preview_id: str = Field(min_length=32, max_length=64)
 
 
+class IndicatorSelection(Strict):
+    profile: Literal['citizen'] = 'citizen'
+    indicator_ids: list[str] = Field(min_length=1, max_length=3)
+    context: Literal['general_understanding', 'illustrative_proposal', 'actual_experience']
+    use_case: str = Field(default='', max_length=240)
+    reuse_answers: dict[str, list[str]] = Field(default_factory=dict)
+
+
+class IndicatorAnswer(Strict):
+    text: str = Field(default='', max_length=2000)
+    control: Literal['answer', 'skip', 'unsure', 'decline'] = 'answer'
+
+
+class IndicatorReview(Strict):
+    choice: Literal['endorse', 'select', 'unsure', 'decline']
+    revision: int = Field(ge=0)
+    statement_id: str | None = Field(default=None, max_length=100)
+    explanation: str = Field(default='', max_length=600)
+
+
+class IndicatorNext(Strict):
+    indicator_id: str = Field(max_length=100)
+
+
+class IndicatorEdit(Strict):
+    event_id: str = Field(max_length=100)
+    mode: Literal['answer', 'interpretation'] = 'answer'
+
+
 ACTION_DATA = {
+    'select_indicators': IndicatorSelection, 'indicator_answer': IndicatorAnswer,
+    'indicator_correct': Correction, 'indicator_review': IndicatorReview,
+    'indicator_next': IndicatorNext, 'indicator_edit': IndicatorEdit,
+    **{key: Empty for key in ('indicator_confirm', 'indicator_finish', 'indicator_suggest')},
     'set_context': Context, 'answer': Answer,
     'correct_interpretation': Correction, 'ask_information': Information,
     'select_scenario': Scenario, 'acknowledge': Exposure, 'edit_answer': EditAnswer,
@@ -101,6 +134,7 @@ class SessionView(Strict):
     qualitative_assessment: dict[str, Any]
     results: dict[str, Any]
     privacy_notice: str
+    indicator_assessment: dict[str, Any] = Field(default_factory=dict)
     busy_job: str | None = None
     preview: dict[str, Any] | None = None
     retry_draft: dict[str, Any] | None = None

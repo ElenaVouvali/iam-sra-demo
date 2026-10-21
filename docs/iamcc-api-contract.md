@@ -1,4 +1,4 @@
-# IAM-SRA2 API contract, version 1.0.0
+# IAM-SRA2 API contract, version 1.1.0
 
 The Flask factory is `iam_sra.api:create_app()`. This API adapts the actual
 `ConversationSession` engine (`conversation-1.2.0`); it does not define a new
@@ -61,7 +61,7 @@ internal version: the latter does not advance on every controller mutation.
 | `acknowledge` | `exposure_id` from current information | unacknowledged current exposure |
 | `start_reflection` | `{}` | only when a sourced reflection is eligible under the existing engine rules |
 | `confirm_final` | `{}` | scenario summary/final review |
-| `provisional_estimate` | `{}` | final, personal perspective only |
+| `provisional_estimate` | `{}` | historical global-anchor estimate; final/personal and `IAM_DEVELOPER=1` only |
 | `back`, `edit_context` | `{}` | as listed by the current DTO |
 | `edit_answer` | `stage`: general/scenario, active confirmed `event_id` | as listed by the current DTO; invalidates dependent scenario/results |
 | `confirm_cleaned` | `preview_id` from this exact current preview | current owner/session/version/action/question binding |
@@ -129,3 +129,33 @@ then fetch current session state on completion/failure. A pending action disable
 duplicate UI submissions. Reset must stop obsolete polling and clear drafts and
 exports. A lost response can be retried using its original request UUID; a new
 attempt after a model failure needs a new UUID and current version.
+
+## Draft citizen indicator continuation (1.1)
+
+After final-summary confirmation, `SessionView.indicator_assessment` exposes
+availability, the pinned bank/policy identity, selected scope, current indicator,
+its exact nine citizen statements, confirmed evidence, distinct tool/participant
+judgments and fifteen-indicator coverage. Organisation/withheld perspectives
+receive a scope notice, not a citizen estimate. No new endpoint is introduced.
+
+| Action | Data | Condition |
+| --- | --- | --- |
+| `select_indicators` | `profile: citizen`, 1–3 `indicator_ids`, `context`: general_understanding/illustrative_proposal/actual_experience, optional `use_case` (240), `reuse_answers` mapping selected indicator IDs to up to three confirmed answer IDs | Final/personal, valid pinned bank |
+| `indicator_answer` | `text` (2000), `control`: answer/skip/unsure/decline | Current indicator collecting |
+| `indicator_confirm` | `{}` | Pending indicator interpretation |
+| `indicator_correct` | `text` (1500) | Pending interpretation; feedback is not new evidence |
+| `indicator_finish` | `{}` | Collecting, no pending interpretation |
+| `indicator_suggest` | `{}` | Evidence collection finished; no current suggestion |
+| `indicator_review` | `choice`: endorse/select/unsure/decline, assessment `revision`, optional `statement_id` and `explanation` (600) | Ready/review/complete; explicit review, current revisions |
+| `indicator_edit` | active indicator `event_id`, `mode`: answer/interpretation | Invalidates active dependent judgments |
+| `indicator_next` | selected `indicator_id` | Selected round; resumes that indicator |
+
+The existing owner/CSRF/API revision/receipt/preview/job boundaries apply. Every
+new free-text field is screened before retention and queueing. Statements and
+levels are resolved server-side; clients send IDs, never source wording.
+Both public presentation and JSON/JSONL exports include the separate judgments,
+source references, evidence and revision status. Historical global numerical
+fields remain unchanged, not aggregates. Export schema 1.0 retains additive
+`indicator_assessment` with its own versioned schema. The new matching workflow
+is draft and has no second semantic-review pass. See
+[indicator methodology and operator commands](indicator-assisted-self-assessment.md).

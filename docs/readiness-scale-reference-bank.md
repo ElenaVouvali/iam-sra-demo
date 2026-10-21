@@ -68,15 +68,20 @@ draft proposals, not approved operational rules. Future quality-control dates
 are not treated as completed approvals. No internal definition/mapping conflict
 was found.
 
-No runtime imports this bank. `configs/readiness_levels.json`,
+At the importer checkpoint, no runtime imported this bank. The subsequent
+[assisted self-assessment continuation](indicator-assisted-self-assessment.md)
+now has explicit project-owner authorisation to use its draft definitions,
+under a separate versioned prototype matching policy. The original reference
+and review status remains unchanged. At that earlier checkpoint, `configs/readiness_levels.json`,
 `ConversationSession.provisional_estimate`, `citizen_score.py`, Flask endpoints,
-Vue UI, questions and evidence requirements remain unchanged. V4 descriptions
-can differ from the old global anchors; this checkpoint does not migrate the
-existing estimate. Questionnaire design, evidence sufficiency, evidence-to-level
+Vue UI, questions and evidence requirements remained unchanged. V4 descriptions
+can differ from the old global anchors; the importer does not migrate the
+historical estimate. The authorised continuation uses separate per-indicator
+results, not the global score field. Questionnaire design, evidence sufficiency, evidence-to-level
 policy, prerequisites, aggregation, weights and SRL synthesis remain separate
 methodological decisions. The only corpus-builder change clarifies its missing
 approved instrument metadata; the reference bank is not added to conversational
-retrieval. Existing private conversation corpora are not rebuilt.
+retrieval. The importer does not rebuild conversation corpora; operators can independently rebuild the existing collection from its original sources.
 
 Focused verification:
 
