@@ -130,7 +130,7 @@ def build():
                     'scenario_followup_criteria':sorted({q['criterion'] for q in spec['scenario_questions']}),
                     'counts':{'questions':len(questions),'scenarios':len(cards),'explanations':len(explanations)},
                     'scenario_cities':sorted({c.get('city','illustrative') for c in cards}),
-                    'missing':['Approved FN questionnaire/135 × 3 bank','Promised completed FN report','Populated reviewed LL cases',
+                    'missing':['Approved FN questionnaire and operational evidence-to-level policy (draft v4 anchor bank is available separately)','Consortium-validated FN report (D3.1 v0.18 draft is available)','Populated reviewed LL cases',
                                'Full paper texts (bibliographies are not paper findings)','Approved assets/fonts and hub/privacy ownership decisions'],
                     'LL_template':'Use case(s) per LL!A2; B2:D2 empty; no real city scenario inferred'}}
     # No participant/contact lists or meeting administration enter these collections.

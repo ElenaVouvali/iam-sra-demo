@@ -24,8 +24,11 @@ comments). No source content is invented or labelled approved questionnaire text
 The latest user meeting direction sets the role-awareness and eight-question/two-probe
 scope. Registry wording, sufficiency rules, interleaving, slot reservation and stop
 rules are authored prototype choices: `draft_pending_FN`, `approved_by=null`.
-The approved FN question/indicator bank and agreed numerical/verification rules
-remain unavailable. No private original was added to Git.
+The complete FN v4 draft indicator-specific anchor bank is now available as
+[private reference data](readiness-scale-reference-bank.md). Approval of a
+questionnaire and operational evidence-to-level/verification rules remains
+separate. The current interview and optional estimate still use their existing
+configuration. No private original or generated source text is added to Git.
 
 ## Registry and role wording
 

@@ -1,6 +1,6 @@
 {
-  "version": "1.6.0",
-  "review_date": "2026-10-15",
+  "version": "1.7.0",
+  "review_date": "2026-10-21",
   "private_sources_git_ignored": true,
   "sources": [
     {
@@ -82,6 +82,32 @@
         "Entire single plain-text file, 969 bytes"
       ],
       "interpretation": "User-supplied meeting ideas for role/city, general questions and retrieval-driven illustrative scenarios. Not an approved questionnaire, numerical decision rule or privacy certification.",
+      "approval_of_demo": null
+    },
+    {
+      "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+      "local_path": "references/private/IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+      "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818",
+      "reviewed_sections": [
+        "Read me!A1:A17",
+        "Scales per indicator!A1:I136",
+        "Indicators' assessment criteria!A1:F16",
+        "TRL, ORL, CRL,  SRL scales!A1:E10"
+      ],
+      "interpretation": "FN v4 Task 3.2 draft for consortium validation. Provisional reference-bank input permitted by project-owner instruction; no approval of scoring, questionnaire or synthesis rules. H/I are shared source-row review metadata, not separate profile approvals.",
+      "approval_of_demo": null
+    },
+    {
+      "document": "IAM-CC_D3.1_Initial_Societal_Readiness_Report_v0.18_with_LL_workshops.docx",
+      "local_path": "references/private/IAM-CC_D3.1_Initial_Societal_Readiness_Report_v0.18_with_LL_workshops.docx",
+      "sha256": "c86e4742793f7f30cb18b0abb51ee64110a1f968929627e11764c6e5fbe5aefd",
+      "reviewed_sections": [
+        "Document Identification and Document History; Quality Control table",
+        "Sections 10.4.1–10.4.3; Tables 2 and 5 (generic scales)",
+        "Table 6 (15 indicator definitions and profile criteria); Table 7 (indicative statements)",
+        "From individual responses to a city-level snapshot; proposed four-step integration rule"
+      ],
+      "interpretation": "D3.1 draft methodological context, independently reopened. Filename v0.18 differs from document-control/history version 0.1. Generic descriptions, indicator definitions/criteria and nine example statements match v4 exactly. Aggregation/integration proposals are explicitly to be finalised; no operational scoring policy inferred; future quality-control dates are not proof of completed approval.",
       "approval_of_demo": null
     }
   ],
@@ -260,5 +286,51 @@
     "methodological_boundary": "Authored engineering implementation pending partner review. No new CRL, ORL, TRL or SRL decision rules.",
     "checkpoint_commit": "4934cfd9b45d51fe77e29d2ea11b52f542488eda",
     "live_validation": "Not run: configured endpoint and private source corpus unavailable in the implementation workspace."
+  },
+  "readiness_scale_reference_import": {
+    "date": "2026-10-21",
+    "baseline_commit": "1cd6a21a9b8129246e2bce7d691635241b2fc273",
+    "primary_source": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+    "supporting_sources": [
+      "IAM-CC_D3.1_Initial_Societal_Readiness_Report_v0.18_with_LL_workshops.docx",
+      "GA.pdf"
+    ],
+    "authority": "GA Annex 1 T3.2/T3.3, printed p.9; workbook Read me!A2 identifies a Task 3.2 draft.",
+    "permission": "Project-owner instruction permits v4 as provisional tool input pending consortium validation.",
+    "generated_bank": {
+      "local_path": "references/private/readiness-scales-v4.json",
+      "schema_version": "readiness-scale-bank-1.0.0",
+      "bank_version": "fn-v4-1.0.0",
+      "indicators": 15,
+      "assessment_criteria": 45,
+      "indicator_specific_statements": 405,
+      "generic_scales": {
+        "TRL": 9,
+        "ORL": 9,
+        "CRL": 9,
+        "SRL": 9
+      },
+      "shared_source_rows": 135,
+      "row_validation_statuses": {
+        "To review": 135
+      },
+      "nonempty_row_comments": 0
+    },
+    "report_cross_check": {
+      "comparison": "Exact source strings; no whitespace or punctuation rewriting.",
+      "indicator_names": 15,
+      "indicator_definitions": 15,
+      "profile_assessment_criteria": 45,
+      "generic_descriptions": 36,
+      "indicative_statements_table_7": 9,
+      "differences": 0
+    },
+    "source_clarifications": [
+      "D3.1 filename v0.18 versus document-control/history version 0.1; ask FN which document version to cite.",
+      "D3.1 capability/opportunity language and proposed median/weakest-link integration require methodological agreement before operational evidence rules or scoring change."
+    ],
+    "methodological_boundary": "Reference data only. Existing global-anchor estimate, questionnaire, controller, Flask API and Vue UI are unchanged. No new scoring, thresholds, aggregation, opportunity adjustments or indicator-specific SRL rubrics.",
+    "approval_of_scoring_policy": null,
+    "historical_notes": "Earlier missing-bank/report statements in dated reviews describe their original checkpoints. The complete v4 draft bank and D3.1 draft are now locally available; availability does not establish consortium validation."
   }
 }

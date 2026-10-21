@@ -49,7 +49,10 @@ originals remain under ignored `references/private/`.
 All interview questions and the short neutral definition are **authored prototype
 wording**, draft_pending_FN, approved_by=null. The definition records its authored
 provenance and is not attributed as an FN quotation or a verified engineering
-claim. No complete approved FN report/question bank/“135 × 3” bank was supplied.
+claim. At the original review date, no complete FN report/question bank/“135 × 3”
+bank was supplied. The later v4 draft anchor bank is now available as
+[private reference data](readiness-scale-reference-bank.md); questionnaire
+approval and operational evidence-to-level policy remain separate.
 Completed DMP D1.2/WP13 D13.1, approved branding/font kit and deployment/hub/privacy
 ownership decisions remain unavailable/unresolved. GA lists planned obligations,
 not completed privacy policies or approval of this instrument.
