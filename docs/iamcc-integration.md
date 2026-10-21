@@ -17,6 +17,10 @@ with an uncommitted change to this document. Its prior content is preserved at
 backups. No applicable AGENTS.md was found. Streamlit, assessment methodology,
 model selection, GPU packages, weights and model launchers were retained.
 
+The completed integration through commit `4c88bcf` is now included on `main`.
+The temporary `feature/iamcc-vue-api` branch is retired; use `main` for new
+checkouts and updates.
+
 The actual IAM-IQ donor was inspected at
 `bb1ff04913c32f3a0d85ee6b6a34d38c1dd00f2e`, from the separate
 `~/iam-iq-frontend-donor` checkout. Both copied reference SKILL.md files were read
@@ -69,10 +73,10 @@ inference was not claimed and no model service was restarted.
 
 ### Moving to a different server
 
-Clone the integration branch, rather than `main`, on the authorised destination:
+Clone `main`, which includes the integration, on the authorised destination:
 
 ```bash
-git clone --branch feature/iamcc-vue-api --single-branch \
+git clone --branch main --single-branch \
   https://github.com/ElenaVouvali/iam-sra-demo.git
 cd iam-sra-demo
 git rev-parse HEAD
@@ -373,9 +377,12 @@ http://127.0.0.1:8501/ directly or through the SSH tunnel.
 
 To roll back, stop only the new UI/API foreground processes with Ctrl+C, or stop
 the dedicated `iam-sra-ui` container. Restart loses API sessions. Preserve all
-source work on this feature branch before switching: commit reviewed changes or
-stash tracked/untracked source changes, then `git switch main`. `main` at the
-starting rollback point is `e8ee21012779e0b6980c7f9ea41770f27cad9ed6`.
+source work before switching: commit reviewed changes or stash tracked/untracked
+source changes. The preserved Streamlit interface can be used on current `main`
+without a checkout change. To inspect the pre-integration version, use
+`git switch --detach e8ee21012779e0b6980c7f9ea41770f27cad9ed6`;
+return to the integrated version with `git switch main`. Switching to `main`
+alone is no longer a rollback because it now includes the integration.
 The API-only checkpoint is `66094455377060511fcd9c84095232c07ff986ae`; it can
 also be inspected in a separate detached worktree without overwriting this one.
 Do not reset hard, delete environments/weights/private sources, or restart model

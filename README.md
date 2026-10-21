@@ -21,7 +21,7 @@ planning, grounded topic memory, and a synthetic respondent evaluation runner.
 Its source review status and operational limits are documented in
 [`Adaptive conversational assessment v1.2`](docs/adaptive-conversation-v1.2.md).
 
-The `feature/iamcc-vue-api` integration work adds a separate Flask API while
+The IAM-CC integration on `main` adds a separate Flask API while
 preserving this Streamlit application. The IAM-IQ-derived Vue frontend runs
 on http://127.0.0.1:5001/ with one IAM-SRA2 assessment tool. See the [integration status and operator
 instructions](docs/iamcc-integration.md) and [versioned API contract](docs/iamcc-api-contract.md).
