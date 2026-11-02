@@ -680,6 +680,10 @@ class ConversationSession:
         if scenario_id and card is None:raise ValueError('Select an applicable illustrative case.')
         group.set_case(card)
 
+    @guarded()
+    def indicator_back(self):
+        return self._indicator().back()
+
     @guarded('event_id', 'mode')
     def indicator_edit(self, event_id, mode='answer'):
         return self._indicator().edit(event_id, mode)

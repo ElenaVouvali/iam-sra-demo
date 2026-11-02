@@ -288,3 +288,45 @@ def test_actual_interpretation_prompt_passes_real_input_screening(monkeypatch):
     item = bank()['indicators'][0]
     IndicatorClient().interpret(item, {}, 'How could IAM affect people?', 'I propose protecting rest.')
     assert captured == ['indicator_interpretation']
+
+
+def test_back_from_interpretation_restores_answer_without_confirming_it():
+    s = selected()
+    text = 'I propose limits to protect rest.'
+    s.indicator_answer(text, Client())
+    assert s.indicator_back() == text
+    row = s.indicators.current
+    assert row['state'] == 'collecting' and row['pending'] is None
+    assert not s.indicators.evidence()
+    assert row['events'][-1]['text'] == text and not row['events'][-1]['active']
+    s.indicator_answer(text, Client())
+    s.indicator_confirm()
+    assert len(s.indicators.evidence()) == 1
+
+
+def test_back_from_results_preserves_choices_until_evidence_is_reopened():
+    s = selected()
+    row = complete(s)
+    s.indicator_review('endorse', s.indicators.revision)
+    original = deepcopy(row['participant'])
+    s.indicators.finish_assessment()
+    s.indicator_back()
+    assert not s.indicators.report_finished and row['participant'] == original
+    s.indicator_back()
+    assert row['state'] == 'review' and row['participant'] == original
+    s.indicator_back()
+    assert row['state'] == 'interpretation'
+    assert row['participant'] is None and row['tool'] is None
+    assert s.indicators.history[-1]['participant'] == original
+
+
+def test_back_from_new_topic_returns_to_previous_topic_without_erasing_it():
+    s = engine()
+    s.select_indicators(['indicator-07', 'indicator-10'], 'general_understanding')
+    s.indicators.next('indicator-07')
+    row = complete(s)
+    saved = deepcopy(row['tool'])
+    s.indicators.next('indicator-10')
+    s.indicator_back()
+    assert s.indicators.current_id == 'indicator-07'
+    assert s.indicators.current['tool'] == saved

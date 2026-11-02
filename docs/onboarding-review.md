@@ -190,3 +190,23 @@ The final layout also removes the nested results-card frame and places context
 and technical topic help below the answer, so the question comes first. This
 last layout adjustment rebuilt successfully; the browser flow check above was
 run before that ordering/padding adjustment.
+
+## Simplified setup and Back navigation (2 November 2026)
+
+The first screen no longer offers broad-area/role fields or the alternative
+conversation disclosure. The omitted role retains its existing withheld value;
+city, capacity, discussion choice and optional self-report controls remain.
+Existing conversation sessions and API callers retain their routes.
+
+Back is disabled on the first setup screen. On the first topic it reopens scope
+setup; canceling that screen returns to the topic. Later steps use the screened
+`indicator_back` action: a pending interpretation returns its answer for editing,
+level review returns to interpretation review, and completed results reopen level
+review. Reopening evidence archives dependent judgments through the existing edit
+and invalidation paths. A new topic can return to the previously visited topic;
+returning from the report preserves recorded choices. Privacy-preview Back discards
+the preview through the existing recovery action. No inference call is added.
+
+The review API must be restarted to load the new action (temporary sessions are
+lost on restart; download any needed reports first). Rebuild the review UI using
+the commands above, then refresh the browser. The model service needs no restart.

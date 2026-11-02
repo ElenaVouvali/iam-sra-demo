@@ -97,27 +97,12 @@ onMounted(flow.initialize)
             <div v-if="session.preview" class="sra-preview" data-testid="cleaned-preview">
               <h3 class="t-card">Check the cleaned text</h3><p>{{ session.preview.message }}</p>
               <dl class="facts"><template v-for="(value, key) in session.preview.fields" :key="key"><dt>{{ label(key) }}</dt><dd>{{ value || 'Not supplied' }}</dd></template></dl>
-              <div class="row"><button class="btn accent" :disabled="working" @click="submit('confirm_cleaned', { preview_id: session.preview.id })">Confirm cleaned text</button><button class="btn secondary" :disabled="working" @click="submit('discard_preview')">Discard preview</button></div>
+              <div class="row"><button class="btn secondary" :disabled="working" @click="submit('discard_preview')">Back</button><button class="btn accent" :disabled="working" @click="submit('confirm_cleaned', { preview_id: session.preview.id })">Confirm cleaned text</button><button class="btn secondary" :disabled="working" @click="submit('discard_preview')">Discard preview</button></div>
             </div>
             <div v-if="!session.preview" :aria-busy="working">
               <div v-if="allowed('set_context')">
                 <IndicatorAssessment :view="session.indicator_assessment" :allowed="allowed" :working="working" :onboarding="capabilities?.onboarding" @action="submit" />
-                <details class="sra-disclosure"><summary>Prefer to begin with a general conversation?</summary>
-                <p class="sra-notice">{{ session.privacy_notice }}</p>
-                <form class="sra-form" data-testid="general-onboarding" @submit.prevent="submitContext">
-                  <SelectField v-model="context.perspective" label="Are you answering personally or for an organisation?" :options="options('perspectives')" :disabled="working" @focusout="blurred.perspective = true" />
-                  <p v-if="blurred.perspective && !context.perspective" class="sra-validation">Choose a perspective.</p>
-                  <SelectField v-model="context.city" label="Which city or region is this about?" :options="options('cities')" :disabled="working" @focusout="blurred.city = true" />
-                  <p v-if="blurred.city && !context.city" class="sra-validation">Choose a city or region.</p>
-                  <details class="sra-disclosure"><summary>More about your context—optional</summary>
-                  <SelectField v-model="context.role" label="Which role best describes you?—optional" :options="options('stakeholders')" :disabled="working" @focusout="blurred.role = true" />
-                  <p v-if="blurred.role && !context.role" class="sra-validation">Choose a role.</p>
-                  <div v-if="context.city === 'other'" class="field"><label for="place">Neighbourhood or wider area—optional. No street address.</label><input id="place" v-model="context.place" class="input" maxlength="80" autocomplete="off" :disabled="working" /></div>
-                  <div v-if="context.perspective === 'organisation'" class="field"><label for="function">Function or responsibility (optional)</label><input id="function" v-model="context.function" class="input" maxlength="240" autocomplete="off" :disabled="working" /></div>
-                  </details>
-                  <button class="btn accent" :disabled="working">Begin interview</button>
-                </form>
-                </details>
+
               </div>
               <form v-else-if="allowed('answer') && session.question" class="sra-form" @submit.prevent="submitAnswer()">
                 <p class="t-card" data-testid="question">{{ session.question.question_text }}</p>

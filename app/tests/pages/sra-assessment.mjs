@@ -338,7 +338,7 @@ for(const profile of ['citizen','organisational','technical']) {
  }
 }
 
-flows['simple onboarding general, service, example, privacy and alternative route'] = async (page,_errors,{go,expect,clickText}) => {
+flows['simple onboarding general, service, example, privacy and back'] = async (page,_errors,{go,expect,clickText}) => {
  const seen=monitor(page);await go(page,'/tools/sra-assessment/app')
  await waitUntil(()=>seen.view || page.$('[data-testid=assessment] .empty button'),'Onboarding unavailable')
  if(!seen.view){await clickText(page,'button','Start assessment');await waitUntil(()=>seen.view,'Session missing')}
@@ -387,9 +387,15 @@ flows['simple onboarding general, service, example, privacy and alternative rout
  expect(seen.view.indicator_assessment.scope.context==='illustrative_proposal','Example treated as actual experience')
  expect(seen.view.indicator_assessment.current.information.some(e=>e.kind==='case'),'Example exposure lost')
  await reset()
- await disclosure(page,'Prefer to begin with a general conversation?')
- await select(page,'Are you answering','personal');await select(page,'Which city','madrid','[data-testid=general-onboarding]');await act('Begin interview')
- expect(seen.view.state==='general_interview' && seen.view.respondent.stakeholder_category==='withheld','Alternative route not usable with optional role withheld')
+ expect(!await page.$('[data-testid=general-onboarding]'),'Removed alternative setup is still visible')
+ expect(await page.$$eval('summary',els=>!els.some(e=>e.textContent.includes('More about your context'))),'Removed context disclosure is still visible')
+ await select(page,'Who are you answering for?','citizen');await act('Start assessment')
+ await clickText(page,'button','Back')
+ await page.waitForSelector('[data-testid=assessment-onboarding]')
+ expect(await page.$eval('#assessment-use-case',()=>true).catch(()=>false)===false,'Back to general setup requires a service')
+ await clickText(page,'button','Back')
+ expect(!await page.$('[data-testid=assessment-onboarding]'),'Back did not cancel scope editing')
+
 }
 
 flows['simple second screen, skip and partial results'] = async (page,_errors,{go,expect,clickText}) => {

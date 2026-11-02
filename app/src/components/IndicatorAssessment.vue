@@ -32,6 +32,14 @@ function act(name,data={}) {
  if(name==='indicator_scope')for(const key of ['organisation_or_unit','responsibilities','technical_object','object_version','intended_environment'])scope[key]=''
  emit('action',name,data)
 }
+function goBack(){
+ if(contextEditing.value){contextEditing.value=false;return}
+ if(!viewHasPreviousStep()){openContext();return}
+ act('indicator_back')
+}
+function viewHasPreviousStep(){
+ return props.view.report_finished || props.view.navigation_back_available || (row.value && (row.value.pending || row.value.events?.some((e)=>e.active) || row.value.state==='complete'))
+}
 function openContext(){
  for(const key of Object.keys(setup))if(props.view.scope?.[key]!==undefined)setup[key]=props.view.scope[key]
  setup.profile=props.view.profile
@@ -66,6 +74,7 @@ const bankOptions=(name)=>Object.entries(props.onboarding?.[name] || {}).map(([v
 
 <template>
 <section class="sra-results" data-testid="indicator-assessment">
+ <button type="button" class="btn secondary sm" :disabled="working || view?.entry_possible" @click="goBack">Back</button>
  <h3 v-if="!view?.entry_possible && !row" class="t-section">Choose what to discuss</h3>
  <p v-if="!view?.available" role="status">{{ view?.notice }}</p>
  <template v-else>
@@ -85,10 +94,7 @@ const bankOptions=(name)=>Object.entries(props.onboarding?.[name] || {}).map(([v
    </template>
    <SelectField v-model="setup.city" label="Which city or region is this about?" :options="bankOptions('cities')" :disabled="working || contextEditing" />
    <p v-if="contextEditing" class="t-small muted">City and role come from your initial setup. Start a new session to change them.</p>
-   <details class="sra-disclosure"><summary>More about your context—optional</summary>
-    <label for="assessment-area">Neighbourhood or wider area—optional. No street address.</label><input id="assessment-area" v-model="setup.area" class="input" maxlength="80" :disabled="working" autocomplete="off" />
-    <SelectField v-model="setup.stakeholder_role" label="Which role best describes you?—optional" :options="bankOptions('stakeholders')" :disabled="working || contextEditing" />
-   </details>
+
    <p v-if="setup.profile==='organisational'" class="t-small muted">You can discuss preparedness for a future service. We’ll ask about your organisation or team and relevant responsibilities when needed.</p>
    <p v-if="setup.profile==='technical'" class="t-small muted">A technology may be a concept or prototype. We’ll ask about the relevant object and environment when needed. You can say if these are unknown.</p>
    <details v-if="setup.profile==='citizen'" class="sra-disclosure"><summary>Optional self-report questions</summary><label><input v-model="setup.likert_enabled" type="checkbox" /> Include optional agreement questions. These answers do not become readiness levels.</label></details>

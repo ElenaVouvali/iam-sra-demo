@@ -311,3 +311,14 @@ def test_changed_general_discussion_scope_invalidates_prior_review(api_factory):
     row = b.view['indicator_assessment']['current']
     assert row['tool'] is None and row['participant'] is None
     assert b.submit('indicator_review', {'choice': 'endorse', 'revision': revision}).status_code == 409
+
+
+def test_back_action_returns_screened_draft_and_reopens_review(api_factory):
+    b, _ = api_factory()
+    select(b)
+    b.act('indicator_answer', {'text': 'I propose protections for rest.'})
+    assert 'indicator_back' in b.view['allowed_actions']
+    b.act('indicator_back')
+    assert b.view['returned_text'] == 'I propose protections for rest.'
+    assert b.view['indicator_assessment']['current']['state'] == 'collecting'
+    assert b.view['indicator_assessment']['current']['pending'] is None

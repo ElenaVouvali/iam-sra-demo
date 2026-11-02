@@ -56,6 +56,7 @@ class IndicatorAssessment:
         self.results = {}
         self.history = []
         self.presented_cases = []
+        self.navigation_history = []
 
     def identity(self):
         return {'source': deepcopy(self.bank['source']), 'bank_version': self.bank['bank_version'],
@@ -453,10 +454,42 @@ class IndicatorAssessment:
         if self.current and self.current['pending'] and indicator_id != self.current_id:
             raise ValueError('Resolve the pending interpretation before moving to another indicator.')
         self._ensure_row(indicator_id)
+        if self.current_id and self.current_id != indicator_id:
+            self.navigation_history.append(self.current_id)
         self.current_id = indicator_id
         self.report_finished = False
         self.revision += 1
         self.advance_question()
+
+    def back(self):
+        """Reopen the previous review step through the existing evidence edit path."""
+        row = self.current
+        if row is None:
+            raise ValueError('There is no previous indicator step.')
+        if self.report_finished:
+            self.report_finished = False
+            self.revision += 1
+            return
+        if row['state'] == 'complete':
+            row['state'] = 'review'
+            self.revision += 1
+            return
+        if row['pending']:
+            pending = row['pending']
+            self.invalidate('Pending answer reopened')
+            pending.update(active=False, confirmed=False)
+            row['events'].append(pending)
+            row.update(pending=None, state='collecting',
+                       question_override=deepcopy(pending['question']), editing=pending['id'])
+            row['evidence_revision'] += 1
+            return pending['text']
+        event = next((e for e in reversed(row['events'])
+                      if e['active'] and e['origin'] == 'indicator_interview'), None)
+        if event:
+            return self.edit(event['id'], 'interpretation' if row['state'] == 'review' else 'answer')
+        if self.navigation_history:
+            self.current_id = self.navigation_history.pop()
+        self.revision += 1
 
     def edit(self, event_id, mode):
         row = self.current
@@ -561,6 +594,7 @@ class IndicatorAssessment:
                     for i in self.bank['indicators']]
         return {'schema_version': SCHEMA, 'policy_version': POLICY, 'bank': self.identity(), 'questionnaire': self.questionnaire_identity(), 'profile': self.profile,
                 'scale_name': PROFILES[self.profile], 'report_finished': self.report_finished,
+                'navigation_back_available': bool(self.navigation_history),
                 'sections': deepcopy(self.questionnaire['protocol']['sections']),
                 'reusable_answers': [{'id':e['id'],'text':e['text']} for e in self.reusable_answers()],
                 'notice': NOTICE, 'revision': self.revision, 'selected_indicator_ids': self.selected,

@@ -292,7 +292,7 @@ class AssessmentService:
         # worker; the HTTP threads never take the engine's LLM transport lock.
         if self.queue.full():
             raise APIError('queue_full', 429)
-        if action in {'back', 'edit_answer', 'edit_context', 'correct_interpretation', 'indicator_edit', 'indicator_correct', 'select_indicators', 'start_assessment', 'indicator_scope', 'indicator_add_information', 'indicator_link','indicator_case'}:
+        if action in {'back', 'edit_answer', 'edit_context', 'correct_interpretation', 'indicator_edit', 'indicator_back', 'indicator_correct', 'select_indicators', 'start_assessment', 'indicator_scope', 'indicator_add_information', 'indicator_link','indicator_case'}:
             self._invalidate(record)
         now = self.clock()
         job = Job(str(uuid4()), record.id, record.owner, record.generation,

@@ -166,7 +166,7 @@ class ControllerAdapter:
                 if not row or row['state'] != 'interpretation':
                     result.append('select_indicators')
                 if row:
-                    result += ['indicator_next','complete_assessment','indicator_information']
+                    result += ['indicator_next','complete_assessment','indicator_information','indicator_back']
                     if row['state'] != 'interpretation': result += ['indicator_scope','indicator_case']
                     if row['state'] != 'interpretation' and view.get('reusable_answers'): result.append('indicator_link')
                     if row['state'] == 'collecting': result += ['indicator_answer', 'indicator_finish']
@@ -303,6 +303,8 @@ class ControllerAdapter:
                 engine.indicator_correct(data['text'], clients['indicator'])
             elif action == 'indicator_suggest':
                 engine.indicator_suggest(clients['indicator'])
+            elif action == 'indicator_back':
+                returned = engine.indicator_back()
             elif action == 'indicator_edit':
                 returned = engine.indicator_edit(**data)
             elif action == 'edit_answer':

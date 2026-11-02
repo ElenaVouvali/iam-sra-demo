@@ -145,7 +145,7 @@ ACTION_DATA = {
     'select_indicators': IndicatorSelection, 'indicator_answer': IndicatorAnswer,
     'indicator_correct': Correction, 'indicator_review': IndicatorReview,
     'indicator_next': IndicatorNext, 'indicator_edit': IndicatorEdit,
-    **{key: Empty for key in ('indicator_confirm', 'indicator_finish', 'indicator_suggest')},
+    **{key: Empty for key in ('indicator_confirm', 'indicator_finish', 'indicator_suggest', 'indicator_back')},
     'set_context': Context, 'answer': Answer,
     'correct_interpretation': Correction, 'ask_information': Information,
     'select_scenario': Scenario, 'acknowledge': Exposure, 'edit_answer': EditAnswer,
