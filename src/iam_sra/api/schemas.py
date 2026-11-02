@@ -64,11 +64,12 @@ class IndicatorScope(Strict):
 
 class AssessmentStart(Strict):
     profile: Literal['citizen','organisational','technical']
-    use_case: str = Field(min_length=1, max_length=240)
+    use_case: str = Field(default='', max_length=240)
+    discussion_choice: Literal['general','service','example'] | None = None
     city: str = Field(default='other', max_length=60)
     area: str = Field(default='', max_length=80)
     stakeholder_role: str = Field(default='withheld', max_length=80)
-    discussion_status: Literal['proposal','illustrative','pilot','operational','unsure'] = 'proposal'
+    discussion_status: Literal['general','proposal','illustrative','pilot','operational','unsure'] = 'proposal'
     indicator_ids: list[str] | None = Field(default=None, min_length=1, max_length=15)
     organisation_or_unit: str = Field(default='', max_length=240)
     responsibilities: str = Field(default='', max_length=240)
@@ -101,9 +102,10 @@ class IndicatorSelection(Strict):
     indicator_ids: list[str] = Field(min_length=1, max_length=15)
     context: Literal['general_understanding', 'illustrative_proposal', 'actual_experience']
     use_case: str = Field(default='', max_length=240)
+    discussion_choice: Literal['general','service','example'] | None = None
     reuse_answers: dict[str, list[str]] = Field(default_factory=dict)
     area: str = Field(default='', max_length=80)
-    discussion_status: Literal['proposal','illustrative','pilot','operational','unsure'] = 'proposal'
+    discussion_status: Literal['general','proposal','illustrative','pilot','operational','unsure'] = 'proposal'
     organisation_or_unit: str = Field(default='', max_length=240)
     responsibilities: str = Field(default='', max_length=240)
     technical_object: str = Field(default='', max_length=240)

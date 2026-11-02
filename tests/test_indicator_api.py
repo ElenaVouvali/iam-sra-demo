@@ -239,3 +239,75 @@ def test_optional_case_scope_and_judgments_survive_both_api_exports(api_factory,
         assert data['presented_cases'][0]['text']==scenario_cases()[3]['text']
     b.act('indicator_case',{'scenario_id':None})
     assert b.view['indicator_assessment']['current']['tool'] is None and b.view['indicator_assessment']['current']['participant'] is None
+
+
+@pytest.mark.parametrize('profile', ['citizen', 'organisational', 'technical'])
+def test_general_onboarding_needs_no_service_and_preserves_unresolved_scope(api_factory, profile):
+    b, _ = api_factory(); b.act('reset')
+    b.act('start_assessment', {'profile': profile, 'discussion_choice': 'general'})
+    a = b.view['indicator_assessment']; scope = a['scope']
+    assert scope['use_case'] == 'Healthcare drones in general'
+    assert scope['context'] == 'general_understanding' and scope['discussion_status'] == 'general'
+    assert scope['use_case_card']['origin'] == 'tool_derived_general_context'
+    assert scope['use_case_card']['context_label_origin'] == 'tool_label_for_explicit_general_choice'
+    assert not scope['scenario_id'] and not b.view['answers'] and not b.view['information']
+    assert scope['respondent_context']['stakeholder_category'] == 'withheld'
+    assert a['current']['state'] == ('collecting' if profile == 'citizen' else 'scope')
+    assert not a['current']['tool'] and not a['current']['participant']
+    for fmt in ('json', 'jsonl'):
+        saved = json.loads(b.client.get('/v1/sessions/' + b.view['id'] + '/export?format=' + fmt).data)
+        assert saved['indicator_assessment']['scope'] == scope
+        assert saved['numerical_crl'] is None and saved['numerical_srl'] is None
+
+
+@pytest.mark.parametrize('stage', ['proposal', 'pilot', 'operational', 'unsure'])
+def test_particular_service_retains_respondent_description_and_reported_stage(api_factory, stage):
+    b, _ = api_factory(); b.act('reset')
+    b.act('start_assessment', {'profile': 'citizen', 'discussion_choice': 'service',
+          'discussion_status': stage, 'use_case': 'Proposed hospital supplies transport'})
+    scope = b.view['indicator_assessment']['scope']
+    assert scope['use_case'] == 'Proposed hospital supplies transport'
+    assert scope['discussion_status'] == stage
+    assert scope['use_case_card']['origin'] == 'participant_described_service'
+    assert scope['use_case_card']['context_label_origin'] == 'participant_description'
+
+
+def test_example_onboarding_uses_trusted_title_status_unknowns_and_exposure(api_factory):
+    b, _ = api_factory(); b.act('reset')
+    card = b.view['indicator_assessment']['illustrative_options'][0]
+    b.act('start_assessment', {'profile': 'citizen', 'discussion_choice': 'example',
+          'scenario_id': card['id']})
+    scope = b.view['indicator_assessment']['scope']
+    assert scope['use_case'] == card['title'] and scope['context'] == 'illustrative_proposal'
+    assert scope['use_case_card']['origin'] == 'source_backed_illustrative'
+    assert scope['use_case_card']['source_status'] == card['source_status']
+    assert scope['use_case_card']['unknowns'] == card['unknowns']
+    assert b.view['indicator_assessment']['current']['information'][0]['kind'] == 'case'
+
+
+def test_cleaned_preview_retains_explicit_onboarding_choices(api_factory):
+    b, _ = api_factory(); b.act('reset')
+    response = b.submit('start_assessment', {'profile': 'organisational', 'discussion_choice': 'service',
+        'use_case': 'Alice Example described hospital transport', 'discussion_status': 'proposal',
+        'city': 'madrid', 'stakeholder_role': 'withheld'})
+    preview = response.json['session']['preview']
+    assert preview and preview['fields']['discussion_choice'] == 'service'
+    assert preview['fields']['profile'] == 'organisational' and preview['fields']['city'] == 'madrid'
+    assert 'Alice Example' not in json.dumps(preview)
+    b.view = response.json['session']; b.act('confirm_cleaned', {'preview_id': preview['id']})
+    scope = b.view['indicator_assessment']['scope']
+    assert scope['discussion_choice'] == 'service' and '[private detail removed]' in scope['use_case']
+    assert scope['respondent_context']['city'] == 'madrid'
+    assert b.view['indicator_assessment']['current']['state'] == 'scope'
+
+
+def test_changed_general_discussion_scope_invalidates_prior_review(api_factory):
+    b, _ = api_factory(); b.act('reset')
+    b.act('start_assessment', {'profile': 'citizen', 'discussion_choice': 'general', 'indicator_ids': ['indicator-07']})
+    suggest(b); revision = b.view['indicator_assessment']['revision']
+    b.act('indicator_review', {'choice': 'endorse', 'revision': revision})
+    b.act('select_indicators', {'profile': 'citizen', 'indicator_ids': ['indicator-07'],
+        'context': 'general_understanding', 'discussion_choice': 'service', 'use_case': 'Proposed hospital transport'})
+    row = b.view['indicator_assessment']['current']
+    assert row['tool'] is None and row['participant'] is None
+    assert b.submit('indicator_review', {'choice': 'endorse', 'revision': revision}).status_code == 409

@@ -8,14 +8,14 @@ import IndicatorAssessment from '@/components/IndicatorAssessment.vue'
 import { label } from '@/format'
 const flow = useAssessment()
 const { session, capabilities, expired, ended, jobStatus, boot, operation, working, allowed } = flow
-const context = reactive({ perspective: '', role: '', city: '', place: '', function: '' })
+const context = reactive({ perspective: '', role: 'withheld', city: '', place: '', function: '' })
 const text = ref(''), correction = ref(''), informationQuestion = ref(''), selection = ref(''), scenarioChoice = ref('')
 const blurred = reactive({})
 const dialog = ref(null), deliberateAction = ref('reset'), heading = ref(null)
 const options = (bank) => Object.entries(capabilities.value?.onboarding[bank] || {}).map(([value, title]) => ({ value, label: title }))
 const state = computed(() => session.value?.state)
-const taskTitle = computed(() => session.value?.indicator_assessment?.direct_entry ? 'Your indicator assessment' : ({
-  general_welcome: 'Before we begin', general_context: 'Review your details',
+const taskTitle = computed(() => session.value?.indicator_assessment?.direct_entry ? (session.value.indicator_assessment.report_finished ? 'Your results' : 'A few questions') : ({
+  general_welcome: 'Assessment setup', general_context: 'Review your details',
   general_interview: 'Your general interview', scenario_interview: 'The illustrative example',
   general_review: 'Check our interpretation', scenario_review: 'Check our interpretation',
   general_baseline_review: 'Check your general summary', offer: 'Explore an illustrative example?',
@@ -55,7 +55,7 @@ function submitAnswer(control = 'answer') {
 function askDeliberate(action) { deliberateAction.value = action; dialog.value.showModal() }
 async function confirmDeliberate() {
   dialog.value.close(); clearDrafts()
-  if (deliberateAction.value === 'reset') { Object.assign(context, { perspective: '', role: '', city: '' }); await flow.reset() }
+  if (deliberateAction.value === 'reset') { Object.assign(context, { perspective: '', role: 'withheld', city: '' }); await flow.reset() }
   else await flow.act('end')
 }
 onMounted(flow.initialize)
@@ -63,13 +63,16 @@ onMounted(flow.initialize)
 
 <template>
   <article class="tool-card sra-assessment" data-testid="assessment">
-    <div class="strip"><svg class="ico" aria-hidden="true"><use href="/brand/icons.svg#i-file" /></svg><h1 class="t-card">IAM-SRA2</h1><span class="badge">Draft instrument</span></div>
+    <div class="strip"><svg class="ico" aria-hidden="true"><use href="/brand/icons.svg#i-file" /></svg><h1 class="t-card">IAM-SRA2</h1><span class="badge">Prototype</span></div>
     <div class="body sra-body">
-      <p class="t-body muted">Explore your understanding and participation in innovative air mobility. Interpretations need your confirmation; self-reports are not independently verified.</p>
+      <h2 v-if="!session || allowed('set_context')" class="t-section">Let’s get started</h2>
+      <p v-if="!session || allowed('set_context')" class="t-body muted">Explore your views, experience or preparedness for healthcare drone services. The tool may suggest a readiness level, which you can review and change. Supporting or opposing drones does not determine your readiness. You can skip questions or stop at any time.</p>
+      <p class="sra-notice">Please avoid names, contact details and other sensitive information.</p>
+      <p class="t-small muted">Progress is temporary. Download your results when you finish.</p>
       <details class="sra-disclosure">
-        <summary>About the assessment</summary>
+        <summary>How this assessment works</summary>
         <div class="sra-prose">
-          <h2 class="t-card">Methodology and sources</h2>
+          <h2 class="t-card">Methodology and sources</h2><p>Your answers are self-reports. You confirm interpretations and review any model suggestion separately; neither action independently verifies facts. CRL means Citizen Readiness Level, ORL means Organisational Readiness Level, and TRL means Technology Readiness Level. These draft scales match the capacity you choose, not your profession.</p><p>General healthcare-drone discussion is valid without a deployed service. Examples are supplied information, not prior knowledge or actual activity. Hypothetical arrangements or system behaviour do not establish real capability or technical validation. Sessions are held temporarily in memory; there is no durable cross-day storage.</p>
           <p>The general interview remains separate from the optional illustrative scenario. Optional examples identify their source status and unknowns. The existing IAM-SRA2 controller chooses eligible questions and evidence.</p>
           <p>Check each interpretation, correct it when needed, and confirm the final evidence summary. Missing evidence is unknown. Completing the chat or expressing support or opposition alone does not establish readiness. Reasoning can support a matching statement where its wording permits; it does not prove past participation or influence.</p>
           <p>Choose citizen, organisational or technical capacity for draft indicator self-assessment. Individual profile results remain separate from future city and societal aggregation.</p>
@@ -84,11 +87,11 @@ onMounted(flow.initialize)
           <div v-if="ended" class="alert info" role="status"><svg class="ico" aria-hidden="true"><use href="/brand/icons.svg#i-info" /></svg><p>Your server session has ended. Any downloaded files remain with you.</p></div>
           <div v-if="!session" class="empty">
             <h2 class="t-section">{{ expired ? 'Interview expired' : 'No active interview' }}</h2>
-            <p class="t-body muted">Use synthetic, general descriptions for this internal demonstration.</p>
-            <button class="btn accent" :disabled="working" @click="flow.act('new')">Start interview</button>
+            <p class="t-body muted">Open a temporary session to get started.</p>
+            <button class="btn accent" :disabled="working" @click="flow.act('new')">Start assessment</button>
           </div>
           <template v-else>
-            <div class="sra-task-head"><h2 ref="heading" class="t-section" tabindex="-1">{{ taskTitle }}</h2><span class="badge">{{ session.stage === 'general' ? 'General interview' : session.stage === 'scenario' ? 'Illustrative scenario' : 'Review' }}</span></div>
+            <div class="sra-task-head"><h2 ref="heading" class="t-section" tabindex="-1">{{ taskTitle }}</h2><span v-if="!allowed('set_context') && !session.indicator_assessment?.direct_entry" class="badge">{{ allowed('set_context') ? 'Assessment setup' : session.stage === 'general' ? 'General interview' : session.stage === 'scenario' ? 'Illustrative scenario' : 'Review' }}</span></div>
             <div v-if="working" class="sra-processing" role="status" aria-live="polite"><p>{{ jobStatus === 'queued' ? 'Your action is queued.' : 'Processing your action. You can wait here or return later.' }}</p><div class="skel" aria-busy="true" aria-label="Processing"><i></i><i></i></div></div>
             <div v-if="error" class="alert danger" role="alert"><svg class="ico" aria-hidden="true"><use href="/brand/icons.svg#i-err" /></svg><div><b>{{ error.code === 'session_expired' ? 'Interview expired' : 'Action could not complete' }}</b><p>{{ error.userMessage }}</p><button class="btn secondary" :disabled="operation.state.value === 'loading'" @click="flow.retry">{{ session.retry_draft ? 'Retry step' : 'Refresh interview' }}</button></div></div>
             <div v-if="session.preview" class="sra-preview" data-testid="cleaned-preview">
@@ -99,17 +102,19 @@ onMounted(flow.initialize)
             <div v-if="!session.preview" :aria-busy="working">
               <div v-if="allowed('set_context')">
                 <IndicatorAssessment :view="session.indicator_assessment" :allowed="allowed" :working="working" :onboarding="capabilities?.onboarding" @action="submit" />
-                <details class="sra-disclosure"><summary>Optional general interview before assessment</summary>
+                <details class="sra-disclosure"><summary>Prefer to begin with a general conversation?</summary>
                 <p class="sra-notice">{{ session.privacy_notice }}</p>
-                <form class="sra-form" @submit.prevent="submitContext">
+                <form class="sra-form" data-testid="general-onboarding" @submit.prevent="submitContext">
                   <SelectField v-model="context.perspective" label="Are you answering personally or for an organisation?" :options="options('perspectives')" :disabled="working" @focusout="blurred.perspective = true" />
                   <p v-if="blurred.perspective && !context.perspective" class="sra-validation">Choose a perspective.</p>
-                  <SelectField v-model="context.role" label="Which role best describes you?" :options="options('stakeholders')" :disabled="working" @focusout="blurred.role = true" />
-                  <p v-if="blurred.role && !context.role" class="sra-validation">Choose a role.</p>
-                  <SelectField v-model="context.city" label="Which city or region are you answering about?" :options="options('cities')" :disabled="working" @focusout="blurred.city = true" />
+                  <SelectField v-model="context.city" label="Which city or region is this about?" :options="options('cities')" :disabled="working" @focusout="blurred.city = true" />
                   <p v-if="blurred.city && !context.city" class="sra-validation">Choose a city or region.</p>
-                  <div v-if="context.city === 'other'" class="field"><label for="place">Broad city or region (optional)</label><input id="place" v-model="context.place" class="input" maxlength="80" autocomplete="off" :disabled="working" /></div>
+                  <details class="sra-disclosure"><summary>More about your context—optional</summary>
+                  <SelectField v-model="context.role" label="Which role best describes you?—optional" :options="options('stakeholders')" :disabled="working" @focusout="blurred.role = true" />
+                  <p v-if="blurred.role && !context.role" class="sra-validation">Choose a role.</p>
+                  <div v-if="context.city === 'other'" class="field"><label for="place">Neighbourhood or wider area—optional. No street address.</label><input id="place" v-model="context.place" class="input" maxlength="80" autocomplete="off" :disabled="working" /></div>
                   <div v-if="context.perspective === 'organisation'" class="field"><label for="function">Function or responsibility (optional)</label><input id="function" v-model="context.function" class="input" maxlength="240" autocomplete="off" :disabled="working" /></div>
+                  </details>
                   <button class="btn accent" :disabled="working">Begin interview</button>
                 </form>
                 </details>
@@ -147,14 +152,17 @@ onMounted(flow.initialize)
                 <section v-for="exposure in session.information" :key="exposure.id" class="sra-exposure"><h3 class="t-card">{{ exposure.kind === 'explanation' ? 'Draft sourced explanation' : 'Illustrative scenario shown' }}</h3><p class="sra-whitespace">{{ exposure.text }}</p><p v-if="exposure.content.notice" class="t-small muted">{{ exposure.content.notice }}</p><div v-for="excerpt in exposure.content.excerpts" :key="excerpt.passage_id" class="t-small muted">{{ excerpt.source.document_title || excerpt.source.document }} · {{ excerpt.source.location || excerpt.source.locator }}</div><p v-if="exposure.acknowledged" class="t-small">Acknowledged as read.</p><button v-else-if="allowed('acknowledge')" class="btn secondary" :disabled="working" @click="submit('acknowledge', { exposure_id: exposure.id })">I have read this</button></section>
                 <button v-if="allowed('start_reflection')" class="btn secondary" :disabled="working" @click="submit('start_reflection')">Reflect on information</button>
               </details>
-              <details v-if="session.answers.length || session.evidence.length || reviewingSummary" class="sra-disclosure"><summary>Evidence and earlier answers</summary>
+              <details v-if="!session.indicator_assessment?.direct_entry && (session.answers.length || session.evidence.length || reviewingSummary)" class="sra-disclosure"><summary>Evidence and earlier answers</summary>
                 <p class="t-small muted">Prior knowledge and reasoning after supplied information remain separate. Confirmation does not provide external verification.</p>
                 <section v-for="answer in session.answers" :key="answer.id" class="sra-exposure"><h3 class="t-card">{{ answer.question_text }}</h3><p class="sra-whitespace">{{ answer.text }}</p><p class="t-small muted">{{ answer.stage === 'general' ? 'General interview' : 'Illustrative scenario' }} · Confirmed self-report</p><button v-if="allowed('edit_answer')" class="btn secondary sm" :disabled="working" @click="submit('edit_answer', { stage: answer.stage, event_id: answer.id })">Edit answer</button></section>
                 <ul class="bullets"><li v-for="item in session.evidence" :key="item.evidence_id">{{ item.interpretation }} <span class="t-small muted">({{ label(item.information_context || 'general_baseline') }}, {{ item.external_verification || 'not independently verified' }})</span></li></ul>
               </details>
-              <section v-if="state === 'final'" class="sra-results" data-testid="results"><h3 class="t-card">Assessment limits</h3><p>The individual indicator profile keeps participant choices separate from tool suggestions. This draft provides no overall numerical readiness score. Missing evidence does not establish low readiness.</p>
-                <div class="row"><button class="btn secondary" :disabled="working" @click="flow.act('export', { format: 'json' })">Download JSON</button><button class="btn secondary" :disabled="working" @click="flow.act('export', { format: 'jsonl' })">Download JSONL</button></div>
+              <section v-if="state === 'final'" class="sra-final" data-testid="results">
                 <IndicatorAssessment :view="session.indicator_assessment" :allowed="allowed" :working="working" :answers="session.answers" :returned-text="session.returned_text" :onboarding="capabilities?.onboarding" @action="submit" />
+                <details class="sra-disclosure" :open="!session.indicator_assessment?.direct_entry || session.indicator_assessment?.report_finished"><summary>{{ session.indicator_assessment?.report_finished ? 'Download your results' : 'Download a copy so far' }}</summary>
+                 <p class="t-small muted">Your choices and the tool’s suggestions are recorded separately. This draft gives no overall readiness score. Missing evidence does not mean low readiness.</p>
+                 <div class="row"><button class="btn secondary" :disabled="working" @click="flow.act('export', { format: 'json' })">Download JSON</button><button class="btn secondary" :disabled="working" @click="flow.act('export', { format: 'jsonl' })">Download JSONL</button></div>
+                </details>
               </section>
             </div>
             <nav class="sra-controls row" aria-label="Interview controls"><button v-if="allowed('back')" class="btn secondary sm" :disabled="working" @click="submit('back')">{{ state === 'final' && session.indicator_assessment?.current ? 'Back to interview review' : 'Back one step' }}</button><button v-if="allowed('edit_context')" class="btn secondary sm" :disabled="working" @click="submit('edit_context')">Edit details</button><button v-if="allowed('finish')" class="btn secondary sm" :disabled="working" @click="submit('finish')">Finish here</button><button class="btn secondary sm" :disabled="operation.state.value === 'loading' && !session.busy_job" @click="askDeliberate('reset')">Reset interview</button><button class="btn secondary sm" :disabled="working" @click="askDeliberate('end')">End session</button></nav>

@@ -221,7 +221,7 @@ class ControllerAdapter:
             baseline=engine.general.instrument
             if data['city'] not in baseline['cities'] or data['stakeholder_role'] not in baseline['stakeholders']:
                 raise APIError('invalid_request')
-            if data.get('scenario_id') and data['discussion_status']!='illustrative':
+            if data.get('scenario_id') and data['discussion_status']!='illustrative' and data.get('discussion_choice')!='example':
                 raise APIError('invalid_request')
         elif action == 'set_context':
             options = engine.general.instrument

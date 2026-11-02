@@ -273,7 +273,15 @@ def require_safe_data(value):
             )
             readiness_review_reference = (path.endswith('.review_row_id') and re.fullmatch(
                 r'indicator-(?:0[1-9]|1[0-5])-level-[1-9]', item) is not None)
-            if item not in reviewed_bibliographic_values() and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference:
+            # The pinned NLP model tags indicator-01-crl as PERSON. Only the
+            # 45 validated questionnaire module IDs in their structural reference
+            # fields are metadata; answers, quotations and arbitrary values in
+            # these fields still require screening.
+            questionnaire_module_reference = (
+                (path.endswith('.module_id') or path.endswith('.anchor_context_module_id'))
+                and re.fullmatch(r'indicator-(?:0[1-9]|1[0-5])-(?:crl|orl|trl)', item) is not None
+            )
+            if item not in reviewed_bibliographic_values() and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():

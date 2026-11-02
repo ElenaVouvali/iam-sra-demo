@@ -18,6 +18,25 @@ from .readiness_retrieval import explain
 def now():return datetime.now(timezone.utc).isoformat()
 
 
+def discussion_scope(choice, status, use_case, scenario_id):
+    """Explicit onboarding choices; legacy callers retain their described context."""
+    if choice not in {None, 'general', 'service', 'example'}:
+        raise ValueError('Choose general discussion, a particular service or an example.')
+    if choice == 'general' or status == 'general':
+        if scenario_id or choice in {'service', 'example'}:
+            raise ValueError('General discussion does not select a particular service or example.')
+        return 'general', 'general', 'Healthcare drones in general', 'general_understanding'
+    if choice == 'example':
+        if not scenario_id:
+            raise ValueError('Select an illustrative example.')
+        return choice, 'illustrative', '', 'illustrative_proposal'
+    if choice == 'service' and (not use_case.strip() or status == 'illustrative' or scenario_id):
+        raise ValueError('Briefly describe the service and choose its reported stage.')
+    context = ('illustrative_proposal' if status == 'illustrative' else
+               'actual_experience' if status in {'pilot', 'operational'} else 'general_understanding')
+    return choice, status, use_case, context
+
+
 def validate_policy(policy):
     if type(policy['general_budget']) is not int or not 1<=policy['general_budget']<=8:
         raise ValueError('General interview budget must be between one and eight.')
@@ -502,16 +521,17 @@ class ConversationSession:
     @guarded('use_case', 'area', 'organisation_or_unit', 'responsibilities', 'technical_object',
              'object_version', 'intended_environment', 'component_scope', 'materials_or_service',
              'use_case_purpose', 'origin_destination_types_or_unknown', 'significant_unknowns')
-    def start_assessment(self, profile, use_case, city='other', area='', discussion_status='proposal', stakeholder_role='withheld',
+    def start_assessment(self, profile, use_case='', city='other', area='', discussion_status='proposal', stakeholder_role='withheld',
                          indicator_ids=None, organisation_or_unit='', responsibilities='', technical_object='',
                          object_version='', intended_environment='', component_scope='unsure', likert_enabled=False,
                          materials_or_service='', use_case_purpose='', origin_destination_types_or_unknown='',
-                         significant_unknowns='', scenario_id=None):
+                         significant_unknowns='', scenario_id=None, discussion_choice=None):
         if self.state not in {'general_welcome','general_context'}:
             raise ValueError('Start a new assessment or deliberately revise its scope.')
-        if profile not in {'citizen','organisational','technical'} or discussion_status not in {'proposal','illustrative','pilot','operational','unsure'}:
+        discussion_choice, discussion_status, use_case, context = discussion_scope(discussion_choice, discussion_status, use_case, scenario_id)
+        if profile not in {'citizen','organisational','technical'} or discussion_status not in {'general','proposal','illustrative','pilot','operational','unsure'}:
             raise ValueError('Choose a response capacity and discussion status.')
-        if not use_case.strip() or len(use_case)>240: raise ValueError('Describe the use case in general terms, up to 240 characters.')
+        if (not use_case.strip() and discussion_choice != 'example') or len(use_case)>240: raise ValueError('Describe the use case in general terms, up to 240 characters.')
         view=self.indicator_view()
         if not view.get('available'): raise ValueError('The registered private questionnaire is unavailable.')
         chosen=indicator_ids if indicator_ids is not None else [f'indicator-{n:02d}' for n in range(1,16)]
@@ -529,16 +549,14 @@ class ConversationSession:
         self.stage = 'final'
         self.assessment_route = True
         self.stop_reason = 'direct_indicator_entry_baseline_bypassed'
-        self.select_indicators(chosen,
-            'general_understanding' if discussion_status in {'proposal','unsure'} else
-            'illustrative_proposal' if discussion_status=='illustrative' else 'actual_experience',
+        self.select_indicators(chosen, context,
             use_case, profile=profile, area=area, discussion_status=discussion_status,
             organisation_or_unit=organisation_or_unit, responsibilities=responsibilities,
             technical_object=technical_object, object_version=object_version, intended_environment=intended_environment,
             component_scope=component_scope, likert_enabled=likert_enabled,
             use_case_fields=dict(materials_or_service=materials_or_service, use_case_purpose=use_case_purpose,
                 origin_destination_types_or_unknown=origin_destination_types_or_unknown, significant_unknowns=significant_unknowns),
-            scenario_id=scenario_id)
+            scenario_id=scenario_id, discussion_choice=discussion_choice)
 
     @guarded('indicator_ids', 'context', 'use_case', 'reuse_answers', 'profile', 'area',
              'organisation_or_unit', 'responsibilities', 'technical_object', 'object_version',
@@ -546,7 +564,9 @@ class ConversationSession:
     def select_indicators(self, indicator_ids, context, use_case='', reuse_answers=None, profile='citizen',
                           area='', discussion_status='proposal', organisation_or_unit='', responsibilities='',
                           technical_object='', object_version='', intended_environment='', component_scope='unsure',
-                          likert_enabled=False, use_case_fields=None, scenario_id=None):
+                          likert_enabled=False, use_case_fields=None, scenario_id=None, discussion_choice=None):
+        if discussion_choice is not None or discussion_status == 'general':
+            discussion_choice, discussion_status, use_case, context = discussion_scope(discussion_choice, discussion_status, use_case, scenario_id)
         if profile not in {'citizen','organisational','technical'} or context not in {'general_understanding', 'illustrative_proposal', 'actual_experience'}:
             raise ValueError('Choose a response profile and a listed assessment context.')
         if len(use_case) > 240:
@@ -559,6 +579,7 @@ class ConversationSession:
             context='illustrative_proposal'; discussion_status='illustrative'
         if context=='illustrative_proposal' and card is None:
             raise ValueError('Select and confirm a source-backed illustrative example; no current service is assumed.')
+        if discussion_choice == 'example': use_case = card.get('title', card['id'])
         if not getattr(self,'assessment_route',False):
             if profile=='citizen' and self.respondent['perspective']!='personal':
                 raise ValueError('An organisational interview is not a citizen assessment. Start in the chosen capacity.')
@@ -586,6 +607,12 @@ class ConversationSession:
                  'respondent_context': deepcopy(self.respondent),
                  'information_exposure_ids': [e['id'] for e in self.information_exposures],
                  'bank_version': group.bank['bank_version']}
+        if discussion_choice is not None:
+            scope['discussion_choice'] = discussion_choice
+            scope['use_case_card']['origin'] = ('tool_derived_general_context' if discussion_choice == 'general' else
+                'source_backed_illustrative' if card else 'participant_described_service')
+            scope['use_case_card']['context_label_origin'] = ('tool_label_for_explicit_general_choice' if discussion_choice == 'general' else
+                'source_example_title' if card else 'participant_description')
         prior = {e['id']: e for phase in [self.general, self.scenario] if phase for e in phase.events if e['active'] and e['confirmed']}
         reuse = {}
         mapping = {'concept_explanation': 'reasoning', 'use_knowledge': 'reasoning', 'explained_impact': 'reasoning',

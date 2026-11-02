@@ -44,7 +44,7 @@ def questionnaire(source=None):
     for item in source['indicators']:
         for profile,(scale,_) in profiles.items():
             key=item['id']+'-'+scale.lower()
-            questions=[{'id':key+f'-q{n:02d}','profile':profile,'indicator_id':item['id'],
+            questions=[{'id':key+f'-q{n:02d}','profile':profile,'indicator_id':item['id'],'anchor_context_module_id':key,
                 'text':f'Synthetic {profile} question {n} about issue {item["number"]}?',
                 'purpose':'understanding' if n==1 else 'clarification','role':'opening' if n==1 else 'conditional_follow_up',
                 'ask_when':'Relevant equivalent evidence is missing.' if n==1 else 'Only when unresolved and applicable.',

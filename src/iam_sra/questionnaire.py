@@ -65,6 +65,8 @@ def validate_questionnaire(value, bank):
             if probe_id not in probes or probes[probe_id]['profile'] != profile:
                 raise ValueError('Unknown or wrong-profile shared probe.')
         for question in module['questions'] + module['optional_likert_items']:
+            if question.get('anchor_context_module_id', module['id']) != module['id']:
+                raise ValueError('Question anchor context belongs to another module/profile.')
             if question['id'] in seen or not question['text'].strip():
                 raise ValueError('Duplicate or empty questionnaire item.')
             seen.add(question['id'])

@@ -247,3 +247,22 @@ def test_reconfirming_identical_scope_does_not_restart_completed_assessment(prof
  keys=['availability','organisation_or_unit','responsibilities','technical_object','object_version','intended_environment','component_scope']
  s.indicator_scope(**{k:scope[k] for k in keys})
  assert s.indicators.current==original and s.indicators.current['state']=='complete'
+
+
+@pytest.mark.parametrize('data', [
+ {'discussion_choice': 'service'},
+ {'discussion_choice': 'example'},
+ {'discussion_choice': 'general', 'scenario_id': 'expansion-04'},
+ {},  # Legacy callers still need their description unless explicitly choosing general discussion.
+])
+def test_missing_or_incompatible_discussion_does_not_complete_onboarding(data):
+ s=ConversationSession(synthetic_collection());s.indicators=IndicatorAssessment(bank(),questionnaire())
+ with pytest.raises(ValueError):s.start_assessment('citizen',**data)
+ assert s.state=='general_welcome' and s.indicators.scope is None
+
+
+def test_question_anchor_context_must_match_its_validated_module():
+ b=bank();q=questionnaire(b)
+ q['modules'][0]['questions'][0]['anchor_context_module_id']='indicator-02-crl'
+ with pytest.raises(ValueError,match='anchor context'):
+  validate_questionnaire(q,b)

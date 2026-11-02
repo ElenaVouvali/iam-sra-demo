@@ -205,3 +205,30 @@ exposure are included in indicator scope, presented_cases and both screened
 export projections. `suggestion_error.status = unavailable` is distinct from a
 model abstention and never contains rejected output or a fabricated tool level.
 See [scenario configuration and operator commands](scenario-expansion-v01.md).
+
+### Simplified onboarding: explicit discussion choice
+
+`start_assessment` and deliberate `select_indicators` scope edits accept optional
+`discussion_choice: general | service | example`. Existing callers that omit it
+retain their described-context behaviour. A description is still required on
+legacy direct entry and for `service`; `use_case` now defaults to an empty string
+at the transport boundary so explicit general/example entry can omit it.
+
+- `general` derives `Healthcare drones in general` server-side, with
+  `context=general_understanding`, `discussion_status=general`, and
+  `use_case_card.origin=tool_derived_general_context`. The separate
+  `context_label_origin=tool_label_for_explicit_general_choice` makes clear this
+  is neither a participant-described service nor a confirmed proposal or source
+  fact. No scenario is selected and no information exposure is invented.
+- `service` retains the screened description and respondent-reported stage
+  (`proposal`, `pilot`, `operational`, `unsure`); origin is
+  `participant_described_service`. Reported operation does not verify activity.
+- `example` requires an applicable `scenario_id`; the server resolves its title,
+  text, status and unknowns from the existing corpus, uses illustrative context
+  and records supplied-information exposure. No participant description is needed.
+
+Both presentation and screened exports retain these additive scope fields.
+Cleaned previews retain the selected capacity, discussion choice, city, stage
+and optional/withheld role. Organisation responsibilities and technical objects
+remain separately confirmed per indicator; missing scope never creates a level.
+Scales, questionnaire wording, matching policy and model settings are unchanged.

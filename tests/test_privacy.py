@@ -375,3 +375,34 @@ def test_privacy_is_mandatory_and_environment_cannot_bypass(monkeypatch, setting
     assert screening_enabled()
     with pytest.raises(PrivacyError): require_clean(SECRETS[0])
     with pytest.raises(PrivacyError): require_safe_data({'content': PRIVATE[0]})
+
+
+def test_questionnaire_module_metadata_does_not_exempt_prose_or_arbitrary_ids(monkeypatch):
+    from iam_sra import privacy
+    original = privacy.detector()
+    class ModuleFalsePositive:
+        def analyze(self, *, text, **kwargs):
+            findings = list(original.analyze(text=text, **kwargs))
+            if text.startswith('indicator-'):
+                findings.append(privacy.Finding('PERSON', 0, len(text)))
+            return findings
+    monkeypatch.setattr(privacy, 'detector', lambda: ModuleFalsePositive())
+    for n in range(1, 16):
+        for scale in ('crl', 'orl', 'trl'):
+            identifier = f'indicator-{n:02d}-{scale}'
+            require_safe_data({'module_id': identifier, 'question': {'anchor_context_module_id': identifier}})
+            with pytest.raises(PrivacyError): require_safe_data({'answer': identifier})
+            with pytest.raises(PrivacyError): require_safe_data({'quote': identifier})
+    for field in ('module_id', 'anchor_context_module_id'):
+        for text in ('Alice Example', 'Email alice@example.com', 'password=synthetic-private-key',
+                     'indicator-16-crl', 'indicator-01-crl Alice Example'):
+            with pytest.raises(PrivacyError): require_safe_data({field: text})
+
+
+@pytest.mark.presidio_live
+def test_real_privacy_questionnaire_module_reference_false_positive():
+    pytest.importorskip('presidio_analyzer'); pytest.importorskip('en_core_web_sm')
+    require_safe_data({'indicator_assessment': {'current': {'module_id': 'indicator-01-crl',
+        'question': {'anchor_context_module_id': 'indicator-01-crl'}}}})
+    with pytest.raises(PrivacyError): require_safe_data({'answer': 'indicator-01-crl'})
+    with pytest.raises(PrivacyError): require_safe_data({'module_id': 'Alice Example'})
