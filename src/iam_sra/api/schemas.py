@@ -175,6 +175,11 @@ class ActionRequest(Strict):
         return value, data
 
 
+class SnapshotRequest(Strict):
+    expected_version: int = Field(ge=0)
+    idempotency_key: UUID4
+
+
 class SessionView(Strict):
     api_version: str = API_VERSION
     id: str

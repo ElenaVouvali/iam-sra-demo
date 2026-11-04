@@ -9,6 +9,9 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from hashlib import sha256
 import json
+import os
+import sqlite3
+from pathlib import Path
 from queue import Queue, Empty, Full
 import secrets
 import threading
@@ -412,6 +415,67 @@ class AssessmentService:
             if record.generation != generation or record.busy:
                 raise APIError('stale_action', 409)
         return value
+
+    def save_snapshot(self, sid, owner, expected_version, idempotency_key, database_path):
+        with self.lock:
+            record = self._record(sid, owner)
+            if record.version != expected_version:
+                raise APIError('stale_action', 409)
+            if record.busy:
+                raise APIError('session_busy', 409)
+            generation = record.generation
+        payload = self.export(sid, owner)  # same screened projection as browser JSON export
+        encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+        digest = sha256(encoded.encode()).hexdigest()
+        assessment = payload.get('indicator_assessment', {})
+        classification = 'synthetic' if self.adapter.fixture else 'real'
+        status = 'completed' if assessment.get('report_finished') else 'partial'
+        metadata = {
+            'application_version': payload.get('api_version'),
+            'source_version': assessment.get('bank', {}).get('bank_version'),
+            'questionnaire_version': assessment.get('questionnaire', {}).get('questionnaire_version'),
+            'policy_version': assessment.get('policy_version'),
+        }
+        with self.lock:
+            record = self._record(sid, owner)
+            if record.version != expected_version or record.generation != generation or record.busy:
+                raise APIError('stale_action', 409)
+            try:
+                path = Path(database_path).expanduser().resolve()
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with sqlite3.connect(path, timeout=5, isolation_level=None) as db:
+                    db.execute('PRAGMA journal_mode=WAL')
+                    db.execute('''CREATE TABLE IF NOT EXISTS assessment_snapshots (
+                        snapshot_id TEXT PRIMARY KEY, session_id TEXT NOT NULL, saved_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        session_revision INTEGER NOT NULL, payload_json TEXT NOT NULL, payload_sha256 TEXT NOT NULL,
+                        application_version TEXT, source_version TEXT, questionnaire_version TEXT, policy_version TEXT,
+                        classification TEXT NOT NULL, assessment_status TEXT NOT NULL,
+                        review_status TEXT NOT NULL DEFAULT 'unreviewed', training_eligible INTEGER NOT NULL DEFAULT 0,
+                        permission_notice_version TEXT NOT NULL, save_acknowledgement TEXT NOT NULL,
+                        idempotency_key TEXT NOT NULL, UNIQUE(session_id, payload_sha256), UNIQUE(session_id, idempotency_key))''')
+                    db.execute('BEGIN IMMEDIATE')
+                    previous = db.execute('SELECT snapshot_id,payload_sha256 FROM assessment_snapshots WHERE session_id=? AND idempotency_key=?', (sid, idempotency_key)).fetchone()
+                    if previous:
+                        if previous[1] != digest: raise APIError('duplicate_conflict', 409)
+                        db.execute('COMMIT')
+                        return {'snapshot_id': previous[0], 'saved': True, 'duplicate': True}
+                    existing = db.execute('SELECT snapshot_id FROM assessment_snapshots WHERE session_id=? AND payload_sha256=?', (sid, digest)).fetchone()
+                    if existing:
+                        db.execute('COMMIT')
+                        return {'snapshot_id': existing[0], 'saved': True, 'duplicate': True}
+                    snapshot_id = str(uuid4())
+                    db.execute('''INSERT INTO assessment_snapshots(snapshot_id,session_id,session_revision,payload_json,payload_sha256,
+                        application_version,source_version,questionnaire_version,policy_version,classification,assessment_status,
+                        permission_notice_version,save_acknowledgement,idempotency_key)
+                        VALUES(?,?,?, ?,?,?,?,?,?,?,?,?,?,?)''', (snapshot_id,sid,expected_version,encoded,digest,
+                        metadata['application_version'],metadata['source_version'],metadata['questionnaire_version'],metadata['policy_version'],
+                        classification,status,'save-notice-1.0','I understand this stores a copy and does not enable training.',idempotency_key))
+                    db.execute('COMMIT')
+                    return {'snapshot_id': snapshot_id, 'saved': True, 'duplicate': False}
+            except APIError:
+                raise
+            except (OSError, sqlite3.Error):
+                raise APIError('save_unavailable', 503) from None
 
     def delete(self, sid, owner, expected_version):
         with self.lock:
