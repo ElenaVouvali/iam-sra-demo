@@ -42,7 +42,7 @@ onMounted(start)
 
 <template>
  <article class="chat wrap" data-testid="chat-conversation">
-  <header><p class="t-small muted">IAM-CC · Research prototype</p><h1>Let's talk about drones</h1><p>A conversation about healthcare deliveries, your experience and what matters to you.</p></header>
+  <header><h1>Let's talk about drones</h1><p>A conversation about healthcare deliveries, your experience and what matters to you.</p></header>
   <details class="sra-disclosure"><summary>Privacy, help and conversation options</summary>
    <p>Please avoid names, contact details and sensitive information. This AI-assisted research prototype screens messages before processing. Your words are self-reports; generated interpretations and results are provisional.</p>
    <p>Progress and wording preferences are held temporarily in memory. Download a copy to keep them. Saving, cross-day resume and contact follow-up are unavailable. Nothing here enables training.</p>
@@ -75,7 +75,7 @@ onMounted(start)
    <p id="chat-hint" class="t-small">Write in your own words. Enter adds a new line; use Send when ready.</p>
    <button class="btn accent" :disabled="working || !draft.trim()">Send</button>
   </form>
-  <p v-if="working" role="status">The AI is responding. Your words are retained; you can keep reading.</p>
+  <p v-if="working" role="status">Responding…</p>
   <p class="sr-only" role="status" aria-live="polite">{{ notice }}</p>
   <details v-if="session" class="sra-disclosure"><summary>Download a copy</summary><p>This downloads the screened conversation so far, including partial results and any unresolved review.</p><div class="row"><button class="btn secondary" :disabled="working" @click="flow.act('export', { format:'json' })">Download JSON</button><button class="btn secondary" :disabled="working" @click="flow.act('export', { format:'jsonl' })">Download JSONL</button></div></details>
   <dialog ref="endDialog" aria-labelledby="chat-end-title"><h2 id="chat-end-title">End this temporary session?</h2><p>Download a copy first if you want to keep it. Ending clears the server session.</p><div class="row"><button class="btn secondary" @click="endDialog.close()">Keep talking</button><button class="btn secondary" :disabled="ending" @click="endSession">End session</button></div></dialog>
