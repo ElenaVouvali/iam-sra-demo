@@ -281,7 +281,9 @@ def require_safe_data(value):
                 (path.endswith('.module_id') or path.endswith('.anchor_context_module_id'))
                 and re.fullmatch(r'indicator-(?:0[1-9]|1[0-5])-(?:crl|orl|trl)', item) is not None
             )
-            if item not in reviewed_bibliographic_values() and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference:
+            chat_schema_reference = (item == 'iam-sra-chat-1.0.0' and path in {
+                'root.mode','root.schema_version','root.chat.mode','root.conversation.mode','root.conversation.schema_version'})
+            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():

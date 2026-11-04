@@ -4,6 +4,9 @@ import { toolById } from '@/tools'
 import { pageFor } from '@/toolPages'
 
 const routes = [
+  { path: '/chat', name: 'chat', component: () => import('@/components/ChatConversation.vue'), meta: { title: "Let's talk about drones", chat: true } },
+  { path: '/tools/sra-assessment/app', redirect: '/chat' },
+  { path: '/legacy', component: () => import('@/components/LegacyAssessment.vue'), meta: { title: 'Legacy indicator prototype' } },
   { path: '/privacy', component: () => import('@/pages/Privacy.vue'), meta: { title: 'Privacy' } },
   { path: '/', name: 'home', component: () => import('@/pages/Home.vue'), meta: { title: null } },
   { path: '/tools/:id', name: 'tool', component: () => import('@/pages/ToolDetail.vue'),

@@ -12,7 +12,7 @@ from werkzeug.exceptions import HTTPException
 from pydantic import ValidationError
 from .adapter import ControllerAdapter
 from .errors import APIError
-from .schemas import API_VERSION, Empty
+from .schemas import API_VERSION, Empty, SessionStart
 from .service import AssessmentService
 from ..privacy import PrivacyError
 from ..settings import config as engine_config
@@ -133,18 +133,19 @@ def create_app(config=None, *, service=None):
                        tool_id='sra-assessment', mode='retrieval_grounded_conversation',
                        engine_version=engine_config('conversation')['version'],
                        synthetic_fixture=manager.adapter.fixture,
+                       chat={'available': True, 'saving_enabled': False, 'synthetic_rehearsal': os.getenv('IAM_CHAT_SYNTHETIC_REHEARSAL')=='1', 'rubric_status': 'registered_example_scales_prototype'},
                        csrf_token=session['csrf'], onboarding=manager.adapter.onboarding(),
                        sessions=manager.owned_sessions(session['owner']), readiness=readiness,
                        limitations=['Draft instrument; self-reports are not externally verified.',
-                                    'This interview does not establish TRL, ORL or overall SRL.'])
+                                    'Profile judgments are provisional; this tool does not establish an overall societal SRL.'])
 
     @app.post('/v1/sessions')
     def create_session():
         try:
-            Empty.model_validate(request.get_json())
+            options = SessionStart.model_validate(request.get_json())
         except (ValueError, TypeError):
             raise APIError('invalid_request') from None
-        return jsonify(session=manager.create(owner())), 201
+        return jsonify(session=manager.create(owner(), **options.model_dump())), 201
 
     @app.get('/v1/sessions/<sid>')
     def read_session(sid):

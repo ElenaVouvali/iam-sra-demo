@@ -14,6 +14,16 @@ class Empty(Strict):
     pass
 
 
+class SessionStart(Strict):
+    mode: Literal['legacy', 'chat'] = 'legacy'
+    depth: Literal['short', 'extended'] = 'short'
+    assisted: bool = False
+
+
+class ChatMessage(Strict):
+    text: str = Field(min_length=1, max_length=1800)
+
+
 class Context(Strict):
     perspective: str = Field(max_length=60)
     role: str = Field(max_length=80)
@@ -139,6 +149,7 @@ class IndicatorEdit(Strict):
 
 
 ACTION_DATA = {
+    'chat_message': ChatMessage,
     'start_assessment': AssessmentStart, 'indicator_scope': IndicatorScope,
     'indicator_add_information': Correction, 'indicator_information': IndicatorInformation, 'complete_assessment': Empty,
     'indicator_link': IndicatorLink, 'indicator_case': IndicatorCase,

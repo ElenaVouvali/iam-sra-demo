@@ -1,0 +1,2 @@
+# Optional offline QR generation only; no inference/runtime dependency.
+qrcode==8.2

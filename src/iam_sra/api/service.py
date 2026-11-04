@@ -155,9 +155,15 @@ class AssessmentService:
         record.touched = self.clock()
         return record
 
-    def create(self, owner):
+    def create(self, owner, mode='legacy', depth='short', assisted=False):
         # Readiness and privacy work take place outside the store lock.
         engine = self.adapter.create()
+        if mode == 'chat':
+            from ..chat_session import ChatSession
+            from ..readiness_bank import load_bank
+            bank = engine.indicators.bank if getattr(engine, 'indicators', None) else load_bank()
+            try: engine.chat = ChatSession(bank, depth, self.adapter.fixture or os.getenv('IAM_CHAT_SYNTHETIC_REHEARSAL')=='1', assisted)
+            except (ValueError, OSError): raise APIError('source_unavailable',503) from None
         sid = str(uuid4())
         view = self.adapter.present(engine, sid, 0)
         with self.lock:
@@ -172,7 +178,7 @@ class AssessmentService:
     def owned_sessions(self, owner):
         with self.lock:
             self._prune()
-            return [{'id': record.id, 'version': record.version, 'state': record.view['state']}
+            return [{'id': record.id, 'version': record.version, 'state': record.view['state'], 'mode': 'chat' if getattr(record.engine, 'chat', None) else 'legacy'}
                     for record in self.records.values() if record.owner == owner]
 
     def _view(self, record):
@@ -280,6 +286,10 @@ class AssessmentService:
             else:
                 return self._enqueue(record, action, cleaned, key, fingerprint)
         engine = self.adapter.create()
+        if getattr(record.engine, 'chat', None):
+            from ..chat_session import ChatSession
+            old = record.engine.chat
+            engine.chat = ChatSession(old.bank, old.depth, old.synthetic, old.assisted)
         new_view = self.adapter.present(engine, sid, 0)
         with self.lock:
             record = self._record(sid, owner)
@@ -371,9 +381,11 @@ class AssessmentService:
                                 pass  # Keep the previous screened view if screening is unavailable.
                         if safe_failed_attempt:
                             record.engine.failed_attempt = safe_failed_attempt
-                        if job.action in {'answer', 'correct_interpretation', 'ask_information', 'indicator_answer', 'indicator_correct', 'indicator_add_information'}:
+                        if job.action in {'answer', 'correct_interpretation', 'ask_information', 'indicator_answer', 'indicator_correct', 'indicator_add_information', 'chat_message'}:
                             record.retry = {'action': job.action, 'data': data}
                     else:
+                        if getattr(getattr(candidate, 'chat', None), 'withdrawn', False):
+                            record.receipts.clear()
                         record.engine, record.view = candidate, view
                         record.view['returned_text'] = returned
                         record.retry = None
@@ -406,13 +418,13 @@ class AssessmentService:
             record = self._record(sid, owner)
             if record.busy:
                 raise APIError('session_busy', 409)
-            if record.engine.state != 'final':
+            if record.engine.state != 'final' and not getattr(record.engine, 'chat', None):
                 raise APIError('invalid_action', 409)
-            candidate, generation = deepcopy(record.engine), record.generation
+            candidate, generation, version = deepcopy(record.engine), record.generation, record.version
         value = self.adapter.export(candidate)
         with self.lock:
             record = self._record(sid, owner)
-            if record.generation != generation or record.busy:
+            if record.generation != generation or record.version != version or record.busy:
                 raise APIError('stale_action', 409)
         return value
 

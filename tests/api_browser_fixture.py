@@ -18,6 +18,7 @@ from iam_sra.assessment import AssessmentError
 from iam_sra.citizen_score import empty_assessment
 from iam_sra.indicator_assessment import IndicatorAssessment
 from indicator_fixtures import bank, questionnaire, scenario_cases, Client as IndicatorFixtureClient
+from chat_fixture import ChatFixture, ScoreFixture
 
 
 class FixtureScore:
@@ -39,9 +40,12 @@ class SlowFixture(FixtureClient):
 
 
 class IndicatorBrowserClient(IndicatorFixtureClient):
-    def match(self, indicator, scope, statements, evidence):
+    def match(self, indicator, scope, statements, evidence, evidence_contract='confirmed'):
         if any('simulate indicator failure' in e['answer'] for e in evidence):
             raise AssessmentError('Synthetic matching rejection.',code='evidence')
+        if evidence_contract=='respondent_provided':
+            from indicator_fixtures import matching
+            return matching(statements,evidence,abstain=True)
         return super().match(indicator,scope,statements,evidence)
 
 
@@ -59,7 +63,7 @@ def create_fixture():
         engine_factory=make_engine,
         clients_factory=lambda engine: {'baseline': SlowFixture(case), 'planner': None,
                                         'information': FixtureComposer(), 'score': FixtureScore(),
-                                        'indicator': IndicatorBrowserClient()},
+                                        'indicator': IndicatorBrowserClient(), 'chat': ChatFixture(), 'chat_score': ScoreFixture()},
         readiness=lambda: {'privacy': 'synthetic-detector-fixture', 'corpus': 'synthetic-corpus-fixture'})
     return create_app({'TESTING': True, 'SECRET_KEY': 'browser-fixture-only-not-a-deployment-secret'},
                       service=AssessmentService(adapter))

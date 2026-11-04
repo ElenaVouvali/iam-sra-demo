@@ -1,0 +1,14 @@
+{
+ "status":"authored_provisional_expectations_pending_FN_review",
+ "not_sent_to_model":true,
+ "source":"references/chat-source-register.json; exact PDF anchors retained privately",
+ "expectations":{
+  "unfamiliar_citizen":"Abstention or a lower anchor only if full meaning is supported; supplied explanation is not prior knowledge. No fixed level.",
+  "detailed_multitopic":"Consider full citizen anchors for reasoned safeguards/evaluation. No invented actual influence or sustained involvement; compare Level 5/6 meanings and Level 7 boundary against pp.13–14 short or pp.18–19 extended. Abstain if unresolved.",
+  "denied_opportunities":"No automatic low score due to unavailable opportunity. Record capability separately from actual influence and retain locality correction.",
+  "organisation_pilot":"Consider Validation versus Integration using organisation p.16 and example boundary p.17; tested pilot arrangements are not embedded routine capability. No assessment outside own remit.",
+  "technical_lab":"Consider experimental proof versus controlled validation of the specified component; representative/operational/qualification claims are unsupported. Apply exact technical pp.17–18 scale, not full-system maturity.",
+  "result_disagreement":"Initial result remains historical; preferred level and hypothetical additional facts are separate, pending review. No automatic upgrade.",
+  "optional_comparison":"Preference and reason are not readiness evidence; substantive answer is retained separately. No training eligibility."
+ }
+}

@@ -2,18 +2,20 @@
 // Mode B header + EU footer around every page (iamcc-ui components.md "Chrome"; spec §4).
 // "Back to hub" opens the hub tools list in a new tab: there is no /tools/iam-iq hub page yet.
 import { toolsLink } from '@/router'
+import { useRoute } from 'vue-router'
+const route = useRoute()
 </script>
 
 <template>
-  <div class="iq">
+  <div class="iq" :class="{ 'chat-shell': route.meta.chat }">
     <a class="skip" href="#main">Skip to content</a>
     <header class="tool-header">
-      <RouterLink :to="toolsLink" aria-label="IAM-SRA home" style="display: contents">
+      <RouterLink :to="route.meta.chat ? '/chat' : toolsLink" aria-label="IAM-SRA home" style="display: contents">
         <svg class="logo" viewBox="0 0 1781.34 333.04" role="img" aria-label="IAM-CC"><use href="/brand/icons.svg#iamcc-logo" /></svg>
       </RouterLink>
       <span class="divider" aria-hidden="true"></span>
       <span class="name">IAM-SRA</span>
-      <a class="back" href="https://hub.iamcc.eu/tools" target="_blank" rel="noopener">Back to hub</a>
+      <a v-if="!route.meta.chat" class="back" href="https://hub.iamcc.eu/tools" target="_blank" rel="noopener">Back to hub</a>
     </header>
 
     <main id="main" tabindex="-1"><slot /></main>
@@ -32,4 +34,7 @@ import { toolsLink } from '@/router'
 .skip { position: absolute; left: -999rem; }
 .skip:focus { left: var(--sp4); top: var(--sp2); z-index: 10; background: var(--c-surface); padding: var(--sp2) var(--sp3); border-radius: var(--r-sm); outline: var(--ring) solid var(--ring-coral); }
 main:focus { outline: none; }
+.chat-shell .tool-footer .eu { min-width: 0; max-width: 100%; }
+.chat-shell .tool-footer .eu img { max-width: 100%; height: auto; width: min(12rem, 100%); }
+.chat-shell .tool-footer .eu p { min-width: 0; overflow-wrap: anywhere; }
 </style>

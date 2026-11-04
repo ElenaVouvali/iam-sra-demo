@@ -51,7 +51,7 @@ export const flows = {
   },
   'complete authored synthetic interview, correction, information and exports': async (page, _errors, { go, expect, clickText }) => {
     const seen = await monitor(page)
-    await go(page, '/tools/sra-assessment/app')
+    await go(page, '/legacy')
     await page.waitForSelector('[data-testid=assessment] .empty button')
     await clickText(page, 'button', 'Start assessment')
     await waitUntil(() => seen.view?.state === 'general_welcome', 'New session missing')
@@ -174,7 +174,7 @@ export const flows = {
   'mobile privacy preview, blocked input, recoverable model failure and decline': async (page, _errors, { go, expect, clickText }) => {
     await page.setViewport({ width: 360, height: 900 })
     const seen = await monitor(page)
-    await go(page, '/tools/sra-assessment/app')
+    await go(page, '/legacy')
     await waitUntil(() => seen.view?.state === 'general_welcome', 'Resume after reset missing')
     async function act(title, failure = false) {
       const version = seen.view.version
@@ -213,7 +213,7 @@ export const flows = {
 
 flows['processing reset, navigation cancellation and organisation scope'] = async (page, _errors, { go, expect, clickText }) => {
   const seen = await monitor(page)
-  await go(page, '/tools/sra-assessment/app')
+  await go(page, '/legacy')
   await page.waitForSelector('.sra-assessment .empty button')
   async function act(title) {
     const before = seen.view?.version ?? -1
@@ -248,7 +248,7 @@ flows['processing reset, navigation cancellation and organisation scope'] = asyn
   const count = seen.requests.filter((url) => url.includes('/jobs/')).length
   await wait(1600)
   expect(seen.requests.filter((url) => url.includes('/jobs/')).length === count, 'Polling continued after navigation')
-  await go(page, '/tools/sra-assessment/app')
+  await go(page, '/legacy')
   await waitUntil(() => seen.view?.pending && !seen.view.busy_job, 'Session did not resume after background work')
   await clickText(page, 'button', 'Reset interview'); await act('Confirm reset')
   await context('organisation')
@@ -262,7 +262,7 @@ flows['processing reset, navigation cancellation and organisation scope'] = asyn
 
 for (const [profile,scale] of [['citizen','crl'],['organisational','orl'],['technical','trl']]) {
  flows[`direct ${profile} questionnaire, continuation, restoration and report`] = async (page,_errors,{go,expect,clickText}) => {
-  const seen=monitor(page);await go(page,'/tools/sra-assessment/app')
+  const seen=monitor(page);await go(page,'/legacy')
   await waitUntil(()=>seen.view || page.$('[data-testid=assessment] .empty button'),'Assessment not ready')
   if(!seen.view){await clickText(page,'button','Start assessment');await waitUntil(()=>seen.view,'New session missing')}
   async function act(title){const v=seen.view.version;await clickText(page,'button',title);await waitUntil(()=>seen.view.version>v && !seen.view.busy_job,title);await wait(100)}
@@ -300,7 +300,7 @@ for (const [profile,scale] of [['citizen','crl'],['organisational','orl'],['tech
 }
 
 flows['unavailable tool suggestion preserves explicit participant assessment'] = async (page,_errors,{go,expect,clickText}) => {
- const seen=monitor(page);await go(page,'/tools/sra-assessment/app')
+ const seen=monitor(page);await go(page,'/legacy')
  await page.waitForSelector('[data-testid=assessment] .empty button');await clickText(page,'button','Start assessment');await waitUntil(()=>seen.view,'Session missing')
  async function act(title){const v=seen.view.version;await clickText(page,'button',title);await waitUntil(()=>seen.view.version>v && !seen.view.busy_job,title);await wait(100)}
  await select(page,'Who are you answering for?','citizen');await select(page,'What would you like to discuss?','service');await fill(page,'#assessment-use-case','Synthetic service');await act('Start assessment')
@@ -317,7 +317,7 @@ flows['unavailable tool suggestion preserves explicit participant assessment'] =
 for(const profile of ['citizen','organisational','technical']) {
  flows[`optional scenario context in ${profile} assessment`] = async(page,_errors,{go,expect,clickText})=>{
   if(profile==='citizen')await page.setViewport({width:360,height:900})
-  const seen=monitor(page);await go(page,'/tools/sra-assessment/app')
+  const seen=monitor(page);await go(page,'/legacy')
   await waitUntil(()=>seen.view || page.$('[data-testid=assessment] .empty button'),'Ready state missing')
   if(!seen.view){await clickText(page,'button','Start assessment');await waitUntil(()=>seen.view,'Session missing')}
   async function act(title){const v=seen.view.version;await clickText(page,'button',title);await waitUntil(()=>seen.view.version>v && !seen.view.busy_job,title);await wait(100)}
@@ -339,7 +339,7 @@ for(const profile of ['citizen','organisational','technical']) {
 }
 
 flows['simple onboarding general, service, example, privacy and back'] = async (page,_errors,{go,expect,clickText}) => {
- const seen=monitor(page);await go(page,'/tools/sra-assessment/app')
+ const seen=monitor(page);await go(page,'/legacy')
  await waitUntil(()=>seen.view || page.$('[data-testid=assessment] .empty button'),'Onboarding unavailable')
  if(!seen.view){await clickText(page,'button','Start assessment');await waitUntil(()=>seen.view,'Session missing')}
  async function act(title){const v=seen.view.version;await clickText(page,'button',title);await waitUntil(()=>seen.view.version>v && !seen.view.busy_job,title);await wait(100)}
@@ -399,7 +399,7 @@ flows['simple onboarding general, service, example, privacy and back'] = async (
 }
 
 flows['simple second screen, skip and partial results'] = async (page,_errors,{go,expect,clickText}) => {
- const seen=monitor(page);await go(page,'/tools/sra-assessment/app')
+ const seen=monitor(page);await go(page,'/legacy')
  await waitUntil(()=>seen.view || page.$('[data-testid=assessment] .empty button'),'Assessment unavailable')
  if(!seen.view){await clickText(page,'button','Start assessment');await waitUntil(()=>seen.view,'Session missing')}
  async function act(title){const v=seen.view.version;await clickText(page,'button',title);await waitUntil(()=>seen.view.version>v && !seen.view.busy_job,title);await wait(100)}
@@ -414,4 +414,45 @@ flows['simple second screen, skip and partial results'] = async (page,_errors,{g
  await act('Skip');await act('Finish for now')
  expect(await page.$('[data-testid=individual-profile-report]'),'Partial result missing')
  expect(await page.$eval('[data-testid=indicator-coverage]',e=>e.open),'Completed report hides coverage')
+}
+
+flows['free chat direct entry, all profiles, privacy and keyboard'] = async (page,_errors,{go,expect,clickText}) => {
+ const seen=monitor(page)
+ await go(page,'/chat');await waitUntil(()=>seen.view?.chat,'Chat did not open')
+ async function send(text){const version=seen.view.version;await fill(page,'#chat-message',text);await clickText(page,'button','Send');await waitUntil(()=>seen.view.version>version && !seen.view.busy_job,text);await wait(100)}
+ expect(await page.$eval('h1',e=>e.textContent)==="Let's talk about drones",'Wrong title')
+ expect(!await page.$('[data-testid=indicator-assessment]'),'Indicator form exposed')
+ expect(!await page.$$eval('button',els=>els.some(e=>['Skip','I’m not sure','Confirm interpretation'].includes(e.textContent.trim()))),'Legacy controls exposed')
+ await send('My personal views');await send('Madrid, no known local service');await send('I have no idea what a drone is')
+ expect(seen.view.chat.messages.at(-1).text.includes('Would you like'),'No explanation permission')
+ await send('yes please');await send('Noise and privacy concern me')
+ await send('show two ways of asking that');expect(seen.view.chat.pending_comparison,'No comparison state')
+ await send('2. Sleep disturbance matters.');expect(!seen.view.chat.pending_comparison,'Comparison did not resolve')
+ await send('stop');expect(seen.view.chat.stage==='summary','Natural finish missing')
+ await send('looks right');expect(seen.view.chat.stage==='review','No result review')
+ expect(await page.$('section[aria-label="Scale disclosure"]'),'No scale disclosure')
+ await page.setViewport({width:360,height:900});await page.evaluate(()=>document.documentElement.style.fontSize='200%')
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Scale overflow at large text')
+ await page.evaluate(()=>document.documentElement.style.fontSize='');await page.setViewport({width:1200,height:900})
+ await send('I prefer level 7, something is missing');expect(seen.view.chat.participant_review.preferred_level===7,'Review mixed with suggestion')
+ await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('#chat-message')
+ expect(seen.view.chat.stage==='review_addition','Reload did not preserve stage')
+ for(const profile of ['organisational','technical']){
+  await disclosure(page,'Privacy, help and conversation options');await clickText(page,'button','New conversation');await waitUntil(()=>seen.view.chat.profile===null,'Reset failed')
+  await send(profile==='organisational'?'Our organisation responsibilities':'A technology subsystem')
+  await send('Madrid');await send('Test unit, safety subsystem v1, laboratory; healthcare logistics remit only')
+  expect(seen.view.chat.profile===profile,'Wrong profile')
+  expect(seen.view.chat.messages.at(-1).text.includes(profile==='organisational'?'team':'object'),'Scope-specific questions missing')
+ }
+ await send('My contact is demo@example.com and I discuss a laboratory system')
+ expect(seen.view.preview && !JSON.stringify(seen.view).includes('demo@example.com'),'Privacy repair bypassed')
+ await clickText(page,'button','Return to editing');await waitUntil(()=>!seen.view.preview,'Preview not discarded')
+ expect(await page.$eval('#chat-message',e=>e.value.includes('demo@example.com')),'Unsent draft cleared')
+ await page.setViewport({width:360,height:900})
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Mobile overflow')
+ await page.evaluate(()=>document.documentElement.style.fontSize='200%')
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Large-text mobile overflow')
+ await page.evaluate(()=>document.documentElement.style.fontSize='')
+ await page.focus('#chat-message');await page.keyboard.press('Enter');expect(await page.$eval('#chat-message',e=>e.value.includes('\n')),'Enter must allow multiline input')
+ await go(page,'/tools/sra-assessment/app');expect(new URL(page.url()).pathname==='/chat','Tool alias did not reach chat')
 }

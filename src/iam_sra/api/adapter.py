@@ -89,6 +89,11 @@ class ControllerAdapter:
                  *sorted((ROOT/'configs').glob('*.json')),
                  ROOT/'src/iam_sra/conversation_sources.py',
                  *(ROOT/row['path'] for row in collection['sources'])]
+        # Legacy sessions still use their original source requirements. Chat creation
+        # separately requires all registered interview PDFs and derived anchors.
+        paths += [p for p in [ROOT/'references/chat-source-register.json',
+            ROOT/'references/private/chat-rubrics-v1.json',
+            *sorted((ROOT/'references/private').glob('SRAA*.pdf'))] if p.is_file()]
         return tuple(sha256(path.read_bytes()).hexdigest() for path in paths)
 
     def readiness(self):
@@ -126,6 +131,8 @@ class ControllerAdapter:
         return {name: deepcopy(baseline[name]) for name in ('perspectives', 'stakeholders', 'cities', 'familiarity')}
 
     def allowed(self, engine):
+        if getattr(engine, 'chat', None):
+            return ['reset'] + (['chat_message'] if engine.chat.stage != 'ended' else [])
         result = ['reset']
         state = engine.state
         if state in {'general_welcome', 'general_context'}:
@@ -182,7 +189,7 @@ class ControllerAdapter:
         changed = False
         for key in {'start_assessment': ('use_case','area','organisation_or_unit','responsibilities','technical_object','object_version','intended_environment','materials_or_service','use_case_purpose','origin_destination_types_or_unknown','significant_unknowns'),
                     'indicator_scope': ('organisation_or_unit','responsibilities','technical_object','object_version','intended_environment'),
-                    'indicator_add_information': ('text',), 'set_context': ('place', 'function'), 'answer': ('text',),
+                    'chat_message': ('text',), 'indicator_add_information': ('text',), 'set_context': ('place', 'function'), 'answer': ('text',),
                     'correct_interpretation': ('text',), 'ask_information': ('question',),
                     'select_indicators': ('use_case','area','organisation_or_unit','responsibilities','technical_object','object_version','intended_environment'), 'indicator_answer': ('text',),
                     'indicator_correct': ('text',), 'indicator_review': ('explanation',)}.get(action, ()):
@@ -256,7 +263,12 @@ class ControllerAdapter:
                 raise APIError('invalid_action', 409)
 
     def clients(self, engine, deadline):
-        if self.clients_factory:
+        if getattr(engine, 'chat', None) and not self.clients_factory:
+            from ..chat_client import ChatClient
+            from ..indicator_client import IndicatorClient
+            from ..chat_score import ChatScoreClient
+            clients = {'chat': ChatClient(), 'indicator': IndicatorClient(), 'chat_score': ChatScoreClient()}
+        elif self.clients_factory:
             clients = self.clients_factory(engine)
         else:
             from ..baseline_client import BaselineClient
@@ -281,7 +293,19 @@ class ControllerAdapter:
         clients = self.clients(engine, deadline)
         returned = None
         try:
-            if action == 'set_context':
+            if action == 'chat_message':
+                from ..chat_session import direct_intent
+                if direct_intent(data['text'])=='example':
+                    from ..conversation_corpus import retrieve_scenarios
+                    city=(engine.chat.context['city'] or '').lower()
+                    locality=next((c for c in ('madrid','milan','coimbra') if c in city),'other')
+                    context={'perspective':'organisation' if engine.chat.profile=='organisational' else 'personal',
+                             'stakeholder_category':'withheld','language':'en','city':locality}
+                    cards=retrieve_scenarios(engine.collection,context)
+                    engine.chat.show_case(data['text'],cards[0] if cards else None)
+                else:
+                    engine.chat.send(data['text'], clients.get('chat'), clients.get('indicator'), clients.get('chat_score'))
+            elif action == 'set_context':
                 engine.set_context(**data)
             elif action == 'answer':
                 engine.answer(data['text'], clients['baseline'], clients.get('planner'), data['control'])
@@ -330,6 +354,9 @@ class ControllerAdapter:
                             setattr(client, key, None if key == '_accepted_wire' else {} if 'cache' in key or key == 'last_settings' else [])
 
     def present(self, engine, session_id, version):
+        if getattr(engine, 'chat', None):
+            return screened_export({'id': session_id, 'version': version, 'state': 'chat',
+                'allowed_actions': self.allowed(engine), 'chat': engine.chat.view()}, engine)
         pending = engine.pending
         q = question(engine.current_question)
         if q and q.get('format') == 'selection':
@@ -359,6 +386,9 @@ class ControllerAdapter:
         return screened_export(value, engine)
 
     def export(self, engine):
+        if getattr(engine, 'chat', None):
+            return screened_export({'export_profile': 'browser_evidence', 'api_version': API_VERSION,
+                'session_id': engine.session_id, 'conversation': engine.chat.export()}, engine)
         # Screen the engine's authoritative export first, then project its assessment
         # evidence. No operational diagnostics, paths or prompts enter the download.
         raw = engine.export()

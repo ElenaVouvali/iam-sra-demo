@@ -10,7 +10,7 @@ const pause = (signal) => new Promise((resolve, reject) => {
 })
 
 /** Controller state and CSRF remain in memory; the HttpOnly cookie owns the server session. */
-export function useAssessment() {
+export function useAssessment(options = {}) {
   const session = shallowRef(null)
   const capabilities = shallowRef(null)
   const expired = ref(false)
@@ -55,7 +55,7 @@ export function useAssessment() {
     if (!active || signal.aborted || mine !== epoch) return
     csrf = data.csrf_token
     capabilities.value = data
-    const last = data.sessions.at(-1)
+    const last = data.sessions.filter((s) => (s.mode || 'legacy') === (options.mode || 'legacy')).at(-1)
     if (last) {
       const result = await api(TOOL, `/v1/sessions/${last.id}`, { signal })
       accept(result.session, signal, mine)
@@ -67,7 +67,7 @@ export function useAssessment() {
     const headers = { 'X-CSRF-Token': csrf }
     try {
       if (kind === 'new') {
-        const result = await api(TOOL, '/v1/sessions', { method: 'POST', body: {}, headers, signal })
+        const result = await api(TOOL, '/v1/sessions', { method: 'POST', body: options, headers, signal })
         if (mine === epoch && !signal.aborted) { expired.value = false; ended.value = false }
         accept(result.session, signal, mine)
       } else if (kind === 'refresh') {
@@ -111,14 +111,14 @@ export function useAssessment() {
     if (session.value?.busy_job) await operation.run('refresh')
   }
   async function act(action, data) {
-    if (working.value && action !== 'reset' && action !== 'refresh') return
+    if (working.value && action !== 'reset' && action !== 'refresh' && action !== 'end') return
     return operation.run(action, data)
   }
   async function reset() {
     epoch++
     operation.reset()
     jobStatus.value = ''
-    await operation.run('reset')
+    return operation.run('reset')
   }
   function retry() {
     const draft = session.value?.retry_draft

@@ -1,0 +1,46 @@
+{
+  "version": "eva-interviews-2026-11-04-v1",
+  "status": "supplied_examples_prototype_pending_partner_review",
+  "sources": {
+    "citizen_short": {
+      "document": "SRAA Citizen interview example 20min.pdf",
+      "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+      "scale_pdf_pages": [
+        12,
+        13
+      ],
+      "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+    },
+    "citizen_extended": {
+      "document": "SRAA Citizen interview example 35min.pdf",
+      "sha256": "75953ae14e76566238cd1914b17a147bd51d9c5dfba24db3ec9fb46da224f091",
+      "scale_pdf_pages": [
+        17,
+        18
+      ],
+      "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+    },
+    "organisational": {
+      "document": "SRAA Organisation interview example.pdf",
+      "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+      "scale_pdf_pages": [
+        16
+      ],
+      "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+    },
+    "technical": {
+      "document": "SRAA Technology interview example.pdf",
+      "sha256": "7d7ac7865fe846ca36b8c281444acc14edc06cca6ff367ac1492a81d131aa071",
+      "scale_pdf_pages": [
+        17,
+        18
+      ],
+      "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+    }
+  },
+  "derived": {
+    "path": "references/private/chat-rubrics-v1.json",
+    "sha256": "12e926bde6074d98a74022865adb6386b2463fffbeec61023ddf9c4afba81f77",
+    "normalisation": "PDF layout line wraps joined with spaces. No wording replacement."
+  }
+}

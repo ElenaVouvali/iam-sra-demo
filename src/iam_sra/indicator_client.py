@@ -87,7 +87,7 @@ def validate_reading(raw, answer, candidates=None):
     return value.model_dump()
 
 
-def validate_match(raw, statements, evidence, scope=None):
+def validate_match(raw, statements, evidence, scope=None, evidence_contract='confirmed'):
     value = Match.model_validate_json(raw) if isinstance(raw, str) else Match.model_validate(raw)
     sources = {s['id']: s for s in statements}
     from .readiness_bank import PROFILES
@@ -98,7 +98,8 @@ def validate_match(raw, statements, evidence, scope=None):
         raise AssessmentError('Exactly nine statements from one indicator and response profile are required.', code='evidence')
     if {r.statement_id for r in value.assessments} != set(sources):
         raise AssessmentError('Assess each supplied statement once; unknown or duplicate IDs are invalid.', code='evidence')
-    indexed = {e['evidence_id']: e for e in evidence if e.get('active', True) and e.get('confirmed', True)}
+    indexed = {e['evidence_id']: e for e in evidence if e.get('active', True) and (
+        e.get('evidence_status') == 'respondent_provided' if evidence_contract == 'respondent_provided' else e.get('confirmed', True))}
     if len(indexed) != len(evidence):
         raise AssessmentError('Only distinct active confirmed evidence is admissible.', code='evidence')
     if any(e.get('scope', {}).get('response_profile', profile) != profile for e in evidence):
@@ -163,7 +164,7 @@ class IndicatorClient(ConversationClient):
                 return self._request(http, 'indicator_interpretation', system, payload, schema,
                                      lambda raw: validate_reading(raw, answer, candidates))
 
-    def match(self, indicator, scope, statements, evidence):
+    def match(self, indicator, scope, statements, evidence, evidence_contract='confirmed'):
         profile = scope.get('response_profile', 'citizen')
         if any(s['profile'] != profile for s in statements):
             raise AssessmentError('Statement profile differs from the chosen capacity.', code='evidence')
@@ -171,9 +172,10 @@ class IndicatorClient(ConversationClient):
             raise AssessmentError('Identify the relevant technical object before matching.', code='evidence')
         if profile == 'organisational' and not all(scope.get(k, '').strip() for k in ('organisation_or_unit','responsibilities')):
             raise AssessmentError('Identify the organisational unit and responsibility before matching.', code='evidence')
-        if any(e.get('scope',scope)!=scope or not e.get('active',True) or not e.get('confirmed',True) for e in evidence):
+        if any(e.get('scope',scope)!=scope or not e.get('active',True) or not (e.get('evidence_status')=='respondent_provided' if evidence_contract=='respondent_provided' else e.get('confirmed',True)) for e in evidence):
             raise AssessmentError('Use active confirmed answers from this profile and object scope.', code='evidence')
-        system = ('Make a draft semantic match against all nine exact supplied statements for this indicator/profile. '
+        system = ('Evidence contract: '+evidence_contract+'. Respondent_provided means screened original words with interpretations UNREVIEWED, never participant-confirmed interpretations. '
+            'Make a draft semantic match against all nine exact supplied statements for this indicator/profile. '
             'The full screened answers and their question/context are authoritative. Earlier interpretations and categories are fallible annotations: '
             'reconsider them from the original words and confirmed clarification history. An absent category or observation is not absent evidence. '
             'Return assessments keyed by all nine IDs with status and exact answer quotations/evidence IDs. Missing evidence is insufficient, not false. '
@@ -229,7 +231,7 @@ class IndicatorClient(ConversationClient):
             if any(not isinstance(r, dict) or 'statement_id' in r for r in assessments.values()):
                 raise AssessmentError('Statement IDs must be the trusted assessment keys.', code='evidence')
             value['assessments'] = [dict(statement_id=key, **assessments[key]) for key in ids]
-            return validate_match(value, statements, evidence, scope)
+            return validate_match(value, statements, evidence, scope, evidence_contract)
         with _LOCK:
             self._start()
             with httpx.Client(trust_env=False) as http:
