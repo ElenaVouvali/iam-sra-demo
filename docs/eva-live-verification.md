@@ -53,3 +53,24 @@ PYTHONPATH=src .venv-api/bin/python scripts/rehearse-chat.py \
 ```
 
 Use a new output directory each time. Never set `--allow-live` against a production participant API.
+
+## Open-conversation harness follow-up (2026-11-09)
+
+This checkout is on `feat/open-conversation-harness` at base
+`2a6ca0272ce6d5d0d6ee0d2b3b81dfb2e246d7f3`; the implementation is still
+uncommitted. The live endpoint check to `http://127.0.0.1:18000/v1/models`
+failed with connection refused. Read-only inspection showed no local vLLM,
+Gunicorn or Vite process in this execution environment. No service was started
+or restarted. Therefore none of the new code has been exercised with live Qwen
+in this checkout, and the older 2026-11-04 live runs above do not count as
+verification of this implementation.
+
+Current checks: chat/controller/retrieval/QR/API integration suite **104
+passed, 1 warning** (before the final trace-source/depth-preference edits); the
+latest chat/controller/retrieval rerun is recorded below; targeted synthetic
+privacy boundary subset **24 passed**; Vue production build passed (58 modules,
+589 ms); `git diff --check` passed.
+The final chat/controller/retrieval rerun passed **75 tests, 1 warning**. The
+full privacy suite did not complete within the observation window and was
+interrupted; do not treat the targeted subset as a complete privacy benchmark.
+No live browser run was performed. Human semantic review remains pending.

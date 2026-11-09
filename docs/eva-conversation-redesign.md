@@ -52,7 +52,7 @@ blanket past-participation gate is added.
 |---|---|
 | Warm free-text chat, fewer controls | `/chat`, one labelled multiline composer and Send. No indicator forms, counters, skip/unsure buttons or routine interpretation gates. Existing tool URL redirects to chat; `/legacy` preserves the old journey |
 | Gentle context and familiarity | Explicit answering capacity, optional broad area, profile scope, familiarity and healthcare awareness. Profession never chooses capacity. Organisation/technical objectives are distinct |
-| Selective depth, no examination | Spontaneous concerns first; then two/three priorities. Eligible objective shortlist and grounded coverage avoid compulsory traversal of fifteen indicators. Short/extended limits are engineering limits, not time guarantees |
+| Selective depth, no examination | The welcome asks only for perspective. Qwen can follow any respondent-raised concern; source-located objectives are soft interviewer guidance, not an eligible-question shortlist or compulsory traversal. Short/extended limits are engineering limits, not time guarantees |
 | Corrections/uncertainty/withdrawal | Original screened words are respondent-provided evidence, interpretations remain unreviewed. Targeted corrections preserve supersession; results are archived/invalidated. Natural commands handle pause, skip, back, finish and withdrawal; negated/quoted stop is not a command |
 | End-scale/result/review | All nine exact PDF anchors at wrap-up; semantic generic match with original quotations or abstention; preferred level/review/additional facts separate; no automatic upgrade after disagreement |
 | Optional “1 or 2?” | Explicit request, frozen objective/context, randomised variants and recorded mapping. Preference/reason are not evidence, preferred level or training permission. Mixed substantive answer is retained separately |
@@ -69,13 +69,16 @@ the unchanged default API creation mode; the new frontend explicitly creates
 `mode=chat`. The sibling evaluator's `APIAdapter` is reused by the fixed rehearsal
 script; its respondent agents/persona banks are unchanged.
 
-Code owns scope, stages, allowed objectives, quotations, references, supersession,
-exposures, preferences and limits. The LLM annotates original meaning, proposes an
-eligible objective and natural wording in one bounded call. Pydantic and local
-checks reject invented citations/objectives, malformed output and leaked level
-language during elicitation. These structural checks cannot prove semantic
-neutrality or correctness. Authored questions provide a safe fallback; malformed
-requests retain the screened original and offer finish/download recovery.
+Code owns profile, stages, scope, quotations, references, supersession,
+exposures, preferences, permissions and limits. Qwen proposes a typed
+participant-facing action and natural wording. The model request contains no
+eligible-objective window; source-located interview guidance is retrieved as
+optional context. Python validates action permissions, exact evidence/source
+membership, question quality and safe state transitions. Invalid optional
+annotations are dropped without blocking an otherwise valid turn. These checks
+cannot prove semantic neutrality or correctness. Authored questions are recovery
+only; malformed model output retains the screened original and uses a safe
+fallback or honest partial stop.
 
 Authoritative turns are retained outside prompts. Navigation sends selected
 originals, the current answer once, and the last selected priority within a combined
@@ -201,11 +204,13 @@ configuration (do not put secrets/session IDs in the URL):
 
 ## Reliability repair review (2026-11-04)
 
-The short-turn Qwen contract now requires only the participant-facing message;
-dialogue act and routing are optional advisory fields. Controller-owned profile,
-city, scope, evidence quotations, objective coverage and lifecycle are never
-dependent on redundant model extraction. Unrecognised objectives and malformed
-optional indicator hints are discarded with field-only routing diagnostics.
+The short-turn Qwen contract requires a participant-facing message and a typed
+proposed action. Topic, evidence, context, source and indicator annotations are
+optional and validated independently. Controller-owned profile, city, scope,
+evidence quotations, objective coverage and lifecycle are never dependent on
+redundant model extraction. The controller records a clear city answer when the
+prior message asks for a city/area; unrecognised action values fail closed and
+malformed optional annotations are discarded with field-only diagnostics.
 Original screened respondent words remain authoritative and interpretations are
 unreviewed. A failed inference preserves the answer once and moves to a
 source-mapped authored question (or an honest partial stop at budget exhaustion).
@@ -213,15 +218,18 @@ source-mapped authored question (or an honest partial stop at budget exhaustion)
 The observed live `Madrid` failure was reproduced against Qwen3-8B: the turn
 failed local evidence validation on `evidence_quote`, because Qwen generated a
 private indicator relevance ID without a quotation exactly present in the city
-answer. The city is now controller-admitted and does not invoke Qwen. This
-diagnosis is structural metadata; rejected model text was neither logged nor
-preserved. The two direct attempts took 4.72/4.46 seconds and 4.60/4.72 seconds
+answer. The controller now records a clear answer when the previous assistant
+turn asked for a broad city/area; that context capture does not depend on
+Qwen's optional extraction, although Qwen may still generate the next turn.
+This diagnosis is structural metadata; rejected model text was neither logged
+nor preserved. The two direct attempts took 4.72/4.46 seconds and 4.60/4.72 seconds
 respectively, including tokenization/generation phases. These are one probe's
 latencies, not a general model benchmark.
 
-Chat generation retains the configured 1,100-token output reservation (not the
-original 650), 4,096-token context preflight, vLLM 0.8.5 `guided_json`, thinking
-disabled, temperature 0.2 and top-p 0.8. The smaller schema is the intended
+Chat generation retains the configured 1,100-token output reservation (the
+original 650-token setting was insufficient), 4,096-token context preflight,
+vLLM 0.8.5 `guided_json`, thinking disabled, temperature 0.2 and top-p 0.8. The
+typed action contract and permissive optional-annotation fields are intended
 reliability measure; no sampling or model settings were changed. Diagnostics
 retain error category, field path, attempts, completion and timing only. Input
 privacy rejects before session mutation; generated output is screened before

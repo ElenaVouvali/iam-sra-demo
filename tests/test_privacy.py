@@ -25,7 +25,12 @@ BENIGN = ['60 meters; 15 flights a day; reference 2026 and project 101271620.',
           'The industrial park and central hospital.', 'Meetings conflict with caring responsibilities.',
           'I prefer a quiet route and do not know whether I can participate.',
           'The year is 1846, not a credential.',
-          'A bank account is unnecessary for this discussion.']
+          'A bank account is unnecessary for this discussion.',
+          'Madrid, Milan and Coimbra are broad city examples.',
+          'Battery capacity 12 Ah; altitude 60 m; flight duration 24 minutes.',
+          'Prototype model X-17, controller v1.2, configuration L3.',
+          'JSON is the report format; there may be 3 flights per hour.',
+          'The planning unit coordinates public consultations.']
 
 
 @pytest.mark.parametrize('text', SECRETS)

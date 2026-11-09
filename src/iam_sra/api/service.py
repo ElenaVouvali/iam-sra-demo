@@ -165,7 +165,8 @@ class AssessmentService:
             from ..chat_session import ChatSession
             from ..readiness_bank import load_bank
             bank = engine.indicators.bank if getattr(engine, 'indicators', None) else load_bank()
-            try: engine.chat = ChatSession(bank, depth, self.adapter.fixture or os.getenv('IAM_CHAT_SYNTHETIC_REHEARSAL')=='1', assisted)
+            try: engine.chat = ChatSession(bank, depth, self.adapter.fixture or os.getenv('IAM_CHAT_SYNTHETIC_REHEARSAL')=='1', assisted,
+                                          getattr(engine, 'collection', None))
             except (ValueError, OSError): raise APIError('source_unavailable',503) from None
         sid = str(uuid4())
         view = self.adapter.present(engine, sid, 0)
@@ -183,6 +184,22 @@ class AssessmentService:
             self._prune()
             return [{'id': record.id, 'version': record.version, 'state': record.view['state'], 'mode': 'chat' if getattr(record.engine, 'chat', None) else 'legacy'}
                     for record in self.records.values() if record.owner == owner]
+
+    def developer_trace(self, sid):
+        """Return only the safe, non-participant trace for a dev-authorised caller."""
+        with self.lock:
+            self._prune()
+            record = self.records.get(sid)
+            if not record or not getattr(record.engine, 'chat', None):
+                raise APIError('not_found', 404)
+            if record.busy:
+                raise APIError('session_busy', 409)
+            from ..privacy import screened_export
+            return screened_export({'session_id': sid,
+                'trace_schema': 'iam-sra-chat-decision-trace-1.0.0',
+                'turns': deepcopy(record.engine.chat.decision_traces),
+                'assessment': deepcopy(next((row['assessment'] for row in reversed(record.engine.chat.decision_traces)
+                    if row.get('assessment') is not None), None))})
 
     def _view(self, record):
         value = deepcopy(record.view)
@@ -292,7 +309,7 @@ class AssessmentService:
         if getattr(record.engine, 'chat', None):
             from ..chat_session import ChatSession
             old = record.engine.chat
-            engine.chat = ChatSession(old.bank, old.depth, old.synthetic, old.assisted)
+            engine.chat = ChatSession(old.bank, old.depth, old.synthetic, old.assisted, old.corpus)
         new_view = self.adapter.present(engine, sid, 0)
         with self.lock:
             record = self._record(sid, owner)

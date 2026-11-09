@@ -147,6 +147,21 @@ def create_app(config=None, *, service=None):
             raise APIError('invalid_request') from None
         return jsonify(session=manager.create(owner(), **options.model_dump())), 201
 
+    @app.get('/v1/dev/sessions/<sid>/trace')
+    def developer_trace(sid):
+        # This endpoint is absent unless explicitly enabled and separately
+        # authenticated. Participant owner cookies do not grant developer access.
+        token = os.getenv('IAM_CHAT_DEV_TRACE_TOKEN', '')
+        development = app.testing or os.getenv('IAM_CHAT_ENV') == 'development'
+        if (not development or os.getenv('IAM_CHAT_DEV_TRACE_ENABLED') != '1'
+                or len(token) < 32):
+            raise APIError('not_found', 404)
+        supplied = request.headers.get('Authorization', '')
+        expected = 'Bearer ' + token
+        if not secrets.compare_digest(supplied, expected):
+            raise APIError('csrf', 403)
+        return jsonify(trace=manager.developer_trace(sid))
+
     @app.get('/v1/sessions/<sid>')
     def read_session(sid):
         return jsonify(session=manager.read(sid, owner()))

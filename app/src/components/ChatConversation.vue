@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useAssessment } from '@/composables/useAssessment'
 const flow = useAssessment({ mode: 'chat', depth: 'short', assisted: new URLSearchParams(location.search).get('assisted') === '1' })
-const { session, capabilities, boot, operation, working, ended: sessionEnded } = flow
+const { session, boot, operation, working, ended: sessionEnded } = flow
 const chat = computed(() => session.value?.chat)
 const draft = ref(''), notice = ref(''), endDialog = ref(null), ending = ref(false)
 const ended = computed(() => chat.value?.stage === 'ended')
@@ -51,7 +51,6 @@ onMounted(start)
    <RouterLink to="/privacy">Full privacy and retention details</RouterLink>
    <div class="row"><button class="btn secondary sm" :disabled="working" @click="restart">New conversation</button><button v-if="session" class="btn secondary sm" :disabled="ending" @click="endDialog.showModal()">End and clear session</button></div>
   </details>
-  <p v-if="capabilities?.synthetic_fixture || chat?.synthetic" class="alert warning">SYNTHETIC TEST DATA · {{ capabilities?.synthetic_fixture ? 'Fixture conversation; no live assessment.' : 'Authored rehearsal; semantic review required.' }}</p>
   <p v-if="sessionEnded" role="status">Your temporary session has ended. Downloaded copies remain with you.</p>
   <p v-if="boot.state.value === 'loading'" role="status">Opening the conversation…</p>
   <div v-if="boot.error.value" role="alert"><p>{{ boot.error.value.userMessage }}</p><button class="btn secondary" @click="start">Retry opening</button></div>

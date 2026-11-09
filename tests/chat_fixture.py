@@ -4,28 +4,37 @@ from copy import deepcopy
 
 class ChatFixture:
     def turn(self, request):
-        text = request['answer']; lower = text.lower(); current = request['current_objective']
-        profile = ('organisational' if 'organisation' in lower else 'technical' if 'technology' in lower or 'subsystem' in lower else 'citizen') if current == 'perspective' else 'unknown'
-        chosen = next((r for r in request['eligible'] if r['id'] != current), request['eligible'][0] if request['eligible'] else None)
-        result = {'message': chosen['question'] if chosen else 'Would you like to finish?',
-            'act': 'continue', 'profile': profile, 'profile_quote': text if profile!='unknown' else '',
-            'context': [], 'covered': [{'objective_id': current, 'quote': text}] if text else [],
-            'next_objective': chosen['id'] if chosen else None, 'indicator_ids': [], 'evidence_quote': '',
-            'correction_target': None, 'variants': []}
-        if current == 'area': result['context'] = [{'field':'city', 'quote':text}]
-        if current == 'scope':
-            fields = ['organisation_or_unit','responsibilities'] if request['profile']=='organisational' else ['technical_object','object_version','intended_environment']
-            result['context'] = [{'field':f,'quote':text} for f in fields]
+        text = request['answer']; lower = text.lower()
+        result = {'message': 'What would you want people planning a possible service to understand about this?',
+            'proposed_action':'ask_question', 'act':'continue', 'topic':'healthcare drone service',
+            'respondent_intent':'expressing a view', 'question_goal':'understand the concern',
+            'justification':'The respondent raised a point that can be explored further.',
+            'considered_alternatives':['Ask about safeguards','Move to another concern'],
+            'evidence_ids':[request['current_answer_id']] if request.get('current_answer_id') else [],
+            'context_facts':[], 'source_ids':[], 'uncertainty':'', 'indicator_ids':[], 'variants':[]}
+        if 'madrid' in lower:
+            result['context_facts']=[{'field':'city','quote':'Madrid'}]
+            result['topic']='local context'
+            result['message']='Thanks. No local operation is assumed. What comes to mind about possible healthcare deliveries?'
+        if 'our test unit' in lower:
+            result['context_facts']=[{'field':'organisation_or_unit','quote':'test unit'},
+                {'field':'responsibilities','quote':'our responsibility only'}]
+        if 'safety subsystem' in lower:
+            result['context_facts'] += [{'field':'technical_object','quote':'safety subsystem'},
+                {'field':'object_version','quote':'v1'}, {'field':'intended_environment','quote':'laboratory'}]
+        if any(term in lower for term in ('wildlife','bird','nest')):
+            result.update(topic='wildlife impacts',message='That is a concern people may want to understand. What effects on wildlife would worry you most?')
+        elif any(term in lower for term in ('noise','sleep','sound')):
+            result.update(topic='noise and rest',message='When or where might noise matter most to people?')
+        elif 'privacy' in lower:
+            result.update(topic='privacy',message='What information would you want before judging the privacy implications?')
+        elif 'no idea what a drone' in lower:
+            result['act']='explanation_offer'
+        elif request.get('comparison'):
+            result['variants']=['Which part of this concern matters most to you?','What would you most want planners to understand about this concern?']
         if 'noise' in lower or 'rest' in lower: result.update(indicator_ids=['indicator-07'], evidence_quote=text)
         if 'privacy' in lower: result.update(indicator_ids=['indicator-09'], evidence_quote=text)
         if 'safety' in lower: result.update(indicator_ids=['indicator-10'], evidence_quote=text)
-        if 'no idea what a drone' in lower: result['act']='explanation_offer'
-        if 'correction' in lower or 'actually' in lower:
-            target=next((m['id'] for m in request['original_context'] if m['objective_id']=='area'),None) if 'city' in lower or 'locality' in lower else next((i for i in request['prior_ids'] if i!=request['prior_ids'][-1]),None)
-            result.update(act='correction', correction_target=target, covered=[])
-        if 'change scope' in lower: result['act']='scope_change'
-        if request['comparison']:
-            result['variants']=[chosen['question'], 'In your own words, '+chosen['question'][0].lower()+chosen['question'][1:]]
         return result
 
 
