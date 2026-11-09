@@ -9,6 +9,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from hashlib import sha256
 import json
+import logging
 import os
 import sqlite3
 from pathlib import Path
@@ -22,6 +23,8 @@ from .errors import APIError
 from .schemas import ActionRequest, JobView
 from ..assessment import AssessmentError
 from ..privacy import PrivacyError, require_safe_data
+
+_log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -342,12 +345,19 @@ class AssessmentService:
                     candidate, data = job.candidate, deepcopy(job.data)
                 failure = None
                 returned = None
+                phase = 'controller_action'
                 try:
                     returned = self.adapter.apply(candidate, job.action, data, job.deadline)
+                    phase = 'response_view_export'
                     view = self.adapter.present(candidate, job.session_id, job.version + 1)
                 except APIError as exc:
                     failure = exc
                 except PrivacyError as exc:
+                    category = ('generated_output_privacy' if exc.boundary == 'model_output' else
+                                'response_view_export_privacy' if phase == 'response_view_export' else 'controller_state_privacy')
+                    _log.warning('assessment_privacy_failure stage=%s category=%s entity_types=%s field_paths=%s',
+                                 phase, category, sorted(exc.entity_types),
+                                 sorted({row.get('field_path', 'root') for row in exc.findings}))
                     failure = APIError(exc.code, 503 if exc.code == 'privacy_unavailable' else 422)
                 except AssessmentError as exc:
                     failure = APIError('timeout' if exc.code == 'timeout' else 'model_failure', 503)
@@ -421,7 +431,12 @@ class AssessmentService:
             if record.engine.state != 'final' and not getattr(record.engine, 'chat', None):
                 raise APIError('invalid_action', 409)
             candidate, generation, version = deepcopy(record.engine), record.generation, record.version
-        value = self.adapter.export(candidate)
+        try:
+            value = self.adapter.export(candidate)
+        except PrivacyError as exc:
+            _log.warning('assessment_privacy_failure stage=response_export category=response_view_export_privacy entity_types=%s field_paths=%s',
+                         sorted(exc.entity_types), sorted({row.get('field_path', 'root') for row in exc.findings}))
+            raise
         with self.lock:
             record = self._record(sid, owner)
             if record.generation != generation or record.version != version or record.busy:

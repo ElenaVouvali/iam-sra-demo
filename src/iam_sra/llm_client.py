@@ -22,12 +22,8 @@ def guided_schema(value):
 
 def schema_error(exc):
     if isinstance(exc,ValidationError):
-        fields=", ".join(".".join(map(str,e['loc']))+":"+e['type'] for e in exc.errors()[:3])
-        bounds=[".".join(map(str,e['loc']))+" must contain at most "+str(e['ctx']['max_length'])+" items; select the most relevant evidence IDs" for e in exc.errors()[:3] if e['type']=='too_long' and 'max_length' in e.get('ctx',{})]
-        if bounds:fields+='; '+ '; '.join(bounds)
-        rules=[str(e.get('ctx',{}).get('error','')) for e in exc.errors()[:3] if e['type']=='value_error']
-        if rules:fields+='; '+ '; '.join(r for r in rules if r)
-        return AssessmentError("Model schema failure at "+fields+"; no assessment saved.",code="schema")
+        field='.'.join(str(v) for v in exc.errors()[0]['loc']) or 'response'
+        return AssessmentError("The model response did not match its expected structure.",code="schema",field=field)
     return AssessmentError("Model JSON/schema checks failed; no assessment saved.",code="schema")
 
 class LLMTransport:
@@ -99,7 +95,7 @@ class LLMTransport:
             except PrivacyError as exc:
                 self.last_diagnostics.append({'stage':stage,'attempt':attempt,'failure':'privacy',
                     'privacy_boundary':'model_output','entity_types':list(exc.entity_types),
-                    'privacy_findings':list(exc.findings),
+                    'field_paths':[row.get('field_path','root') for row in exc.findings],
                     'latency_seconds':round(time.monotonic()-attempt_start,4)})
                 body=None  # Rejected content must never enter traces or retry feedback.
                 if attempt==0 and exc.code!='privacy_unavailable':
@@ -120,18 +116,20 @@ class LLMTransport:
             self.last_trace.append(trace)
             if choice['finish_reason']!='stop' or thinking:
                 error=AssessmentError("Truncated output or visible thinking rejected; no result saved.",code="thinking" if thinking else "truncated")
+                completion_status=choice['finish_reason']
             else:
+                completion_status='stop'
                 try:
                     result=validator(content)
-                    self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"usage":body.get('usage'),"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":True,"evidence_pass":True,"eligibility_pass":True,"thinking_detected":False})
+                    self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"usage":body.get('usage'),"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":True,"evidence_pass":True,"eligibility_pass":True,"completion_status":completion_status,"thinking_detected":False})
                     self._accepted_wire = content
                     return result
                 except ValidationError as exc:
                     error=schema_error(exc)
-                    self.last_diagnostics.append({'stage':stage,'attempt':attempt,'validation_fields':[{'location':list(e['loc']),'type':e['type']} for e in exc.errors()[:3]]})
+                    self.last_diagnostics.append({'stage':stage,'attempt':attempt,'validation_fields':[{'location':list(e['loc']),'type':e['type']} for e in exc.errors()[:3]],'validation_field':error.field})
                 except PrivacyError: raise
-                except AssessmentError as exc:error=AssessmentError(safe_message(exc),code=exc.code)
-            self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"failure":error.code,"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":error.code in {'evidence','eligibility'},"evidence_pass":False if error.code=='evidence' else None,"eligibility_pass":False if error.code=='eligibility' else None,"thinking_detected":thinking})
+                except AssessmentError as exc:error=AssessmentError(safe_message(exc),code=exc.code,field=exc.field)
+            self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"failure":error.code,"validation_field":error.field,"completion_status":completion_status,"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":error.code in {'evidence','eligibility'},"evidence_pass":False if error.code=='evidence' else None,"eligibility_pass":False if error.code=='eligibility' else None,"thinking_detected":thinking})
             if attempt==1:raise error
             # No previous citizen/model output is copied into feedback. Recount
             # the whole message before every retry; do not truncate evidence.

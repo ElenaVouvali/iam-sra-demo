@@ -1,7 +1,7 @@
 # Eva conversational prototype
 
-Implementation on `feature/indicator-assisted-self-assessment`, starting clean at
-`80ccba023cc088bab9d274453d64c6c94976dab3`. No deployment or push. Existing snapshot
+Implementation on `fix/eva-sra2-live-reliability`, based on
+`eb67254585a89d1f9771f9c1b781530e36f40d43`. No deployment or push. Existing snapshot
 scaffolding is preserved, remains unwired, and is not used by this mode.
 
 ## Sources and methodological decision
@@ -33,7 +33,7 @@ The questionnaire's documented missing July/workshop originals remain unresolved
 new PDFs are now present. Their illustrative respondent answers and example
 results (6/6/7) are not production evidence or target outcomes.
 
-Policy `eva-conversation-prototype-1.0.0`, chat schema `iam-sra-chat-1.0.0`, PDF
+Policy `eva-conversation-prototype-1.2.0`, chat schema `iam-sra-chat-1.2.0`, PDF
 rubric `eva-interviews-2026-11-04-v1` are distinct from the legacy matching policy.
 Short mode uses the 20-minute citizen scale; extended mode uses the 35-minute
 scale. The mapping is level-to-corresponding-level for comparison only: descriptions
@@ -84,7 +84,7 @@ claim omitted originals were considered. Generic reporting uses all active
 originals up to a 5,000-character preflight bound; larger complete records abstain
 rather than silently omit contradictory evidence. Existing tokenization enforces
 the actual 4,096-token transport ceiling, including schema/output reservations.
-Output reserves: 650 chat tokens, 1,250 generic matching tokens; the existing
+Output reserves: 1,100 chat tokens for the bounded response contract, 1,250 generic matching tokens; the existing
 indicator matching reserve remains 1,550. Actual transport budgeting can abstain
 below the character bound. There is no evidence replacement by generated summary.
 
@@ -198,6 +198,50 @@ cookie; the actual browser chat can be watched directly when used in the browser
 No canonical `PUBLIC_CHAT_URL` is configured in this checkout. QR setup is
 incomplete until an authorised reachable origin exists. Generate locally after
 configuration (do not put secrets/session IDs in the URL):
+
+## Reliability repair review (2026-11-04)
+
+The short-turn Qwen contract now requires only the participant-facing message;
+dialogue act and routing are optional advisory fields. Controller-owned profile,
+city, scope, evidence quotations, objective coverage and lifecycle are never
+dependent on redundant model extraction. Unrecognised objectives and malformed
+optional indicator hints are discarded with field-only routing diagnostics.
+Original screened respondent words remain authoritative and interpretations are
+unreviewed. A failed inference preserves the answer once and moves to a
+source-mapped authored question (or an honest partial stop at budget exhaustion).
+
+The observed live `Madrid` failure was reproduced against Qwen3-8B: the turn
+failed local evidence validation on `evidence_quote`, because Qwen generated a
+private indicator relevance ID without a quotation exactly present in the city
+answer. The city is now controller-admitted and does not invoke Qwen. This
+diagnosis is structural metadata; rejected model text was neither logged nor
+preserved. The two direct attempts took 4.72/4.46 seconds and 4.60/4.72 seconds
+respectively, including tokenization/generation phases. These are one probe's
+latencies, not a general model benchmark.
+
+Chat generation retains the configured 1,100-token output reservation (not the
+original 650), 4,096-token context preflight, vLLM 0.8.5 `guided_json`, thinking
+disabled, temperature 0.2 and top-p 0.8. The smaller schema is the intended
+reliability measure; no sampling or model settings were changed. Diagnostics
+retain error category, field path, attempts, completion and timing only. Input
+privacy rejects before session mutation; generated output is screened before
+validation; view/export is screened again. A narrow contextual `my name is …`
+pattern supplements local NER; it is not perfect name detection and does not
+replace privacy guidance or screening.
+
+The profile-judgment output is also bounded: one selected anchor or abstention,
+up to four exact citations, a meaningful alternative anchor when selected,
+explanation/boundary, and conflict/completeness flags. The server validates every
+citation against the complete original evidence. It does not request nine
+separate anchor records; all nine full anchors remain in the scoring prompt and
+the model must compare their full meanings before selecting or abstaining. This
+reduces output structure without adding a numerical rule. The generic result is
+still provisional and the same model may interview and score.
+
+Extended citizen mode now has conditional probes for affected groups, evidence
+quality, trade-offs, influence mechanisms, escalation/accountability, changed
+conditions and monitoring, in addition to continued involvement. The controller
+can route selectively; those probes do not force a fixed longer checklist.
 
 ```bash
 .venv-api/bin/python -m pip install -r requirements-chat-tools.txt

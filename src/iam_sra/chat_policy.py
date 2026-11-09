@@ -9,8 +9,8 @@ from pathlib import Path
 import json
 from .settings import ROOT
 
-POLICY = 'eva-conversation-prototype-1.0.0'
-SCHEMA = 'iam-sra-chat-1.0.0'
+POLICY = 'eva-conversation-prototype-1.2.0'
+SCHEMA = 'iam-sra-chat-1.2.0'
 PDFS = ['SRAA Citizen interview example 20min.pdf', 'SRAA Citizen interview example 35min.pdf',
         'SRAA Organisation interview example.pdf', 'SRAA Technology interview example.pdf']
 WELCOME = ("Hello! I'm an AI assistant for an IAM-CC research conversation about healthcare drone deliveries. "
@@ -38,6 +38,15 @@ CITIZEN = [
  ('accountability', 'Understanding mechanisms versus actual use; sustained involvement distinct', 'How could people find out whether agreed safeguards are working and raise a concern?'),
  ('continued', 'Extended probe about continued involvement, without claiming it happened', 'What would help you stay involved as plans and services change?'),
  ('opinion', 'Separate stance from readiness evidence', 'Separately from your experience, how do you feel about the idea of healthcare drone deliveries? You may leave this out.'),
+]
+CITIZEN_EXTENDED = [
+ ('affected_groups', 'Explore different effects across affected groups when fairness or access is a priority', 'Who might experience different benefits or burdens, and what would you want decision-makers to consider?'),
+ ('evidence_quality', 'Explore how evidence can be checked and whose information is trustworthy', 'How would you judge whether information about noise, safety or delivery benefits is reliable?'),
+ ('tradeoffs', 'Probe a concrete comparison of options and competing impacts', 'If two options had different benefits and burdens, what would you compare before recommending one?'),
+ ('influence_mechanisms', 'Explore meaningful mechanisms and limits on public influence', 'What would make a way to comment meaningful while the decision can still change?'),
+ ('accountability_escalation', 'Explore acknowledgement, response, escalation and remedy', 'If a concern was not resolved, what response or next step would you expect?'),
+ ('changing_conditions', 'Explore review when scale, route, purpose or impacts change', 'If the service changed or its impacts increased, what should trigger another review?'),
+ ('monitoring', 'Explore continued access to monitoring and follow-up without assuming actual use', 'What information should remain available so people can see whether agreed conditions are working?'),
 ]
 ORGANISATION = [
  ('scope', 'Broad organisation type, own responsibilities and limits; no name needed', 'What kind of organisation or team are you speaking about, and what responsibilities could it have for healthcare deliveries? Please use a general description.'),
@@ -71,10 +80,17 @@ def objectives(profile, depth):
     rows = COMMON + ({'citizen': CITIZEN, 'organisational': ORGANISATION, 'technical': TECHNICAL}.get(profile, []))
     if depth == 'short':
         rows = [r for r in rows if r[0] not in {'continued'}]
+    elif profile == 'citizen':
+        # Conditional extended probes deepen the respondent-selected issues;
+        # controller routing may skip any probe that is not relevant.
+        rows = COMMON + CITIZEN[:-2] + CITIZEN_EXTENDED + CITIZEN[-2:]
     document = PDFS[(1 if depth == 'extended' else 0) if profile == 'citizen' else 2 if profile == 'organisational' else 3]
     locators = {'perspective':'pp.1–2', 'area':'pp.2–3', 'scope':'pp.2–4', 'familiarity':'pp.2–4', 'healthcare':'pp.3–4'}
     if profile=='citizen':
-        locators.update({'open_priorities':'pp.4–5', 'priorities':'pp.5–6', 'understanding':'pp.6–8', 'conditions':'pp.8–11', 'comparison':'pp.9–12', 'opportunity':'pp.9–10', 'capability':'pp.10–14', 'influence':'pp.13–14' if depth=='extended' else 'pp.10,13–14', 'accountability':'pp.14–15' if depth=='extended' else 'p.11', 'continued':'pp.15–16', 'opinion':'p.16' if depth=='extended' else 'p.12'})
+        locators.update({'open_priorities':'pp.4–5', 'priorities':'pp.5–6', 'understanding':'pp.6–8', 'conditions':'pp.8–11', 'comparison':'pp.9–12', 'opportunity':'pp.9–10', 'capability':'pp.10–14', 'influence':'pp.13–14' if depth=='extended' else 'pp.10,13–14', 'accountability':'pp.14–15' if depth=='extended' else 'p.11', 'continued':'pp.15–16', 'opinion':'p.16' if depth=='extended' else 'p.12',
+                          'affected_groups':'pp.7–9', 'evidence_quality':'pp.10–12', 'tradeoffs':'pp.7–12',
+                          'influence_mechanisms':'pp.8–9,13–14', 'accountability_escalation':'pp.14–15',
+                          'changing_conditions':'p.15', 'monitoring':'pp.14–15'})
     elif profile=='organisational':
         locators.update({'org_context':'pp.3–6','open_priorities':'p.6','priorities':'p.7','requirements':'pp.8–9','plans':'pp.9–10','arrangements':'pp.10–11','testing':'pp.11–12','integration':'pp.12–13','operations':'pp.13–14','monitoring':'pp.14–15'})
     elif profile=='technical':

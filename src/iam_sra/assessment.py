@@ -2,9 +2,11 @@
 from .settings import MAX_INPUT_BYTES
 
 class AssessmentError(ValueError):
-    def __init__(self, message, code="input"):
+    def __init__(self, message, code="input", field=None):
         super().__init__(message)
         self.code=code
+        # Safe structural path only; never attach rejected values here.
+        self.field=field
 
 
 def check_input(text):

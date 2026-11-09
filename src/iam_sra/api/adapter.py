@@ -3,6 +3,7 @@ from copy import deepcopy
 from pathlib import Path, PurePath
 from hashlib import sha256
 import json
+import logging
 import os
 import re
 import subprocess
@@ -13,6 +14,8 @@ from ..assessment import AssessmentError
 from ..conversation_session import ConversationSession
 from ..privacy import NOTICE, PrivacyError, detector, require_clean, require_safe_data, screened_export
 from ..settings import config, ROOT
+
+_log = logging.getLogger(__name__)
 
 CLAIM_FIELDS = ('evidence_id', 'event_id', 'dimension', 'kind', 'interpretation',
                 'span_quote', 'subject', 'temporality', 'domain', 'information_context',
@@ -196,6 +199,8 @@ class ControllerAdapter:
             try:
                 require_clean(data[key])
             except PrivacyError as exc:
+                _log.warning('assessment_privacy_failure stage=input_screening category=input_privacy field_paths=%s entity_types=%s',
+                             [key], sorted(exc.entity_types))
                 if exc.preview is None:
                     raise APIError(exc.code, 503 if exc.code == 'privacy_unavailable' else 422) from None
                 cleaned[key] = exc.preview
@@ -220,6 +225,8 @@ class ControllerAdapter:
         try:
             require_safe_data(cleaned)
         except PrivacyError as exc:
+            _log.warning('assessment_privacy_failure stage=input_screening category=input_privacy entity_types=%s field_paths=%s',
+                         sorted(exc.entity_types), sorted({row.get('field_path', 'root') for row in exc.findings}))
             raise APIError(exc.code, 503 if exc.code == 'privacy_unavailable' else 422) from None
         return cleaned, changed
 

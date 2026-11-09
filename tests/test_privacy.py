@@ -20,7 +20,7 @@ SECRETS = [
     'My patient number is SYNTHETIC123.',
 ]
 PRIVATE = ['Email me at alice@example.com.', 'Call +1 202-555-0123.',
-           'I am Alice Example.', 'I live at 42 Example Street.']
+           'I am Alice Example.', 'I live at 42 Example Street.', 'My name is Alice.']
 BENIGN = ['60 meters; 15 flights a day; reference 2026 and project 101271620.',
           'The industrial park and central hospital.', 'Meetings conflict with caring responsibilities.',
           'I prefer a quiet route and do not know whether I can participate.',
@@ -397,6 +397,22 @@ def test_questionnaire_module_metadata_does_not_exempt_prose_or_arbitrary_ids(mo
         for text in ('Alice Example', 'Email alice@example.com', 'password=synthetic-private-key',
                      'indicator-16-crl', 'indicator-01-crl Alice Example'):
             with pytest.raises(PrivacyError): require_safe_data({field: text})
+
+
+def test_generated_preview_id_exemption_is_structural_only(monkeypatch):
+    from iam_sra import privacy
+    original = privacy.detector()
+    token = 'cfeded24ace4904e5668950f2b43f710566c8684e69dda17'
+    class PreviewFalsePositive:
+        def analyze(self, *, text, **kwargs):
+            findings = list(original.analyze(text=text, **kwargs))
+            if text == token:
+                findings.append(privacy.Finding('PERSON', 0, len(text)))
+            return findings
+    monkeypatch.setattr(privacy, 'detector', lambda: PreviewFalsePositive())
+    require_safe_data({'preview_id': token})
+    with pytest.raises(PrivacyError): require_safe_data({'answer': token})
+    with pytest.raises(PrivacyError): require_safe_data({'preview_id': 'Alice Example'})
 
 
 @pytest.mark.presidio_live

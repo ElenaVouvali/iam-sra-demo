@@ -32,7 +32,7 @@ class ChatFixture:
 class ScoreFixture:
     """Schema/citation double. Authored result is NOT a semantic assessor."""
     def match_profile(self,payload):
-        return {'assessments':[{'anchor_id':a['id'],'status':'insufficient','citations':[]} for a in payload['anchors']],
-                'selected_anchor_id':None, 'explanation':'Synthetic fixture abstains; human semantic review required.',
+        return {'citations':[], 'selected_anchor_id':None,
+                'explanation':'Synthetic fixture abstains; human semantic review required.',
                 'boundary':'This fixture tests the journey, not readiness accuracy.', 'alternative_anchor_id':None,
                 'material_conflict':False,'evidence_incomplete':True}

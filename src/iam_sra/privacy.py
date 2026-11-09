@@ -59,6 +59,9 @@ PATTERNS = {
     'IDENTIFIABLE_MEDICAL': r'\b(?:patient (?:ID|number|name)|medical record (?:ID|number)|NHS number|diagnosed patient)\s*(?:is\b|[:=])\s*[^\n.;]+',
     'CONTACT_PHONE': r'\b(?:call|phone|telephone|mobile|tel)\s*(?:me\s*)?(?:at\s*)?(?:(?:is|[:=])\s*)?\+?\d(?:[ ().-]*\d){9,14}\b',
     'CONTACT_EMAIL': r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',
+    # A narrow self-identification cue catches first names even when the NER
+    # model would not recognise a single-token name in otherwise ordinary text.
+    'SELF_IDENTIFICATION_NAME': r'\bmy\s+name\s+is\s+[A-Z][\w\'-]{1,30}\b',
 }
 BLOCK = {'CONTEXTUAL_PIN', 'AUTH_SECRET', 'AUTH_SECRET_BLOCK', 'FINANCIAL_DETAIL', 'CREDIT_CARD',
          'IBAN_CODE', 'US_BANK_NUMBER', 'CRYPTO', 'IDENTIFIABLE_MEDICAL'}
@@ -246,6 +249,12 @@ def require_safe_data(value):
             # otherwise identical model calls fail randomly at audit retention.
             generated_request_id=(path.endswith('.request_id') and
                 re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}',item) is not None)
+            # Privacy-cleaning preview IDs are server-generated token_hex(24)
+            # values, not participant text or authorization credentials. Exempt
+            # only the request field and exact encoding; the same value in a
+            # message is still screened.
+            generated_preview_id=(path == 'root.preview_id' and
+                re.fullmatch(r'[0-9a-f]{48}',item) is not None)
             # Public controller/transport session IDs can suffer the same
             # substring PERSON false positive. Only known generated record
             # locations are metadata; UUIDs in answers or nested user JSON
@@ -281,9 +290,18 @@ def require_safe_data(value):
                 (path.endswith('.module_id') or path.endswith('.anchor_context_module_id'))
                 and re.fullmatch(r'indicator-(?:0[1-9]|1[0-5])-(?:crl|orl|trl)', item) is not None
             )
-            chat_schema_reference = (item == 'iam-sra-chat-1.0.0' and path in {
+            chat_schema_reference = (item in {'iam-sra-chat-1.0.0', 'iam-sra-chat-1.1.0', 'iam-sra-chat-1.2.0'} and path in {
                 'root.mode','root.schema_version','root.chat.mode','root.conversation.mode','root.conversation.schema_version'})
-            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference:
+            # Controller-generated chat message IDs use m<N>. The NLP model
+            # tags some values (for example m16) as PERSON. Exempt only this
+            # narrow syntax in application-owned reference fields; respondent
+            # prose containing the same token remains screened.
+            generated_chat_message_reference = (
+                item.startswith('m') and item[1:].isdigit() and
+                path.startswith(('root.chat.', 'root.conversation.')) and
+                re.search(r'\.(?:id|evidence_id|supersedes|response_id|evidence_ids\[\d+\])$', path) is not None
+            )
+            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not generated_chat_message_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():
