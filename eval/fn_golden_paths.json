@@ -1,0 +1,1405 @@
+{
+  "classification": "FN-authored fictional examples; never participant data or target scores",
+  "flows": {
+    "citizen_short": [
+      {
+        "id": "area",
+        "question": "Which EU city or urban area would you like your answers to refer to?",
+        "answer": "Madrid.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "drone_recognition",
+        "question": "Do you know what a drone is?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "drone_description",
+        "question": "In your own words, what is a drone?",
+        "answer": "An aircraft that can fly without a pilot sitting inside it.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "drone_uses",
+        "question": "What kinds of services or uses involving drones have you heard about?",
+        "answer": "Photography, deliveries and maybe emergency services.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "healthcare_awareness",
+        "question": "Before today, had you heard about drones being used to transport healthcare items such as medicines, blood, laboratory samples or other medical supplies?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "healthcare_detail",
+        "question": "What had you heard about them?",
+        "answer": "That they can transport samples between hospitals.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "local_awareness",
+        "question": "As far as you know, is this type of service—or something similar—already happening in your city?",
+        "answer": "I think there have been tests, but I'm not sure.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "local_basis",
+        "question": "What makes you think that?",
+        "answer": "I remember hearing something about a demonstration.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "open_priorities",
+        "question": "Thinking about drones transporting healthcare items in your city, what comes to mind?",
+        "answer": "They might make urgent deliveries faster, but I would worry about noise, safety and privacy.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "noise",
+          "privacy",
+          "safety"
+        ]
+      },
+      {
+        "id": "open_more",
+        "question": "Anything else?",
+        "answer": "I would want to know whether they are actually better than using vans and where they would fly.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "transport"
+        ]
+      },
+      {
+        "id": "different_impacts",
+        "question": "Do you think the service could affect some people or places differently from others?",
+        "answer": "Yes. Some neighbourhoods might experience more noise while other people get the benefits.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "fairness"
+        ]
+      },
+      {
+        "id": "priorities",
+        "question": "Which two or three issues matter most to you?",
+        "answer": "Noise, privacy and fairness.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "noise",
+          "privacy",
+          "fairness"
+        ]
+      },
+      {
+        "id": "noise_understanding",
+        "question": "What do you think could affect how much drone noise bothers people?",
+        "answer": "How loud it is, how often drones fly, what time they fly and where they fly.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [],
+        "preface": "You mentioned noise."
+      },
+      {
+        "id": "noise_information",
+        "question": "What would you want to know before deciding whether the noise from the healthcare drone service was reasonable?",
+        "answer": "I would want to hear the drone and know how many flights there would be.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "fairness_understanding",
+        "question": "What would make this healthcare drone service fair or unfair in your view?",
+        "answer": "It would be unfair if one neighbourhood got most of the noise while people elsewhere got the benefits.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [],
+        "preface": "You also mentioned fairness."
+      },
+      {
+        "id": "fairness_changes",
+        "question": "What do you think should be done if that happened?",
+        "answer": "The route or location should probably be changed so that the burden is not always on the same people.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "decisions",
+        "question": "How are decisions about drone services taken in your city?",
+        "answer": "I don't know exactly how they are taken. I think the city and the companies probably decide.",
+        "answer_origin": "FN_example",
+        "answer_kind": "uncertain",
+        "topics": []
+      },
+      {
+        "id": "decisions_should",
+        "question": "How should they be taken?",
+        "answer": "The city and experts should be involved, but people who are affected should also have a chance to give their views.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "meaningful",
+        "question": "What would meaningful involvement look like to you?",
+        "answer": "People should be able to see the proposal before the final decision and suggest changes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "conditions",
+        "question": "What, if anything, would you want to change, add or require before it operates regularly?",
+        "answer": "Limits on flight times, routes that avoid residential areas where possible, privacy rules and a way to report problems.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "conditions_why",
+        "question": "Why are those important to you?",
+        "answer": "Because the service might be useful, but that doesn't mean people should have to accept unnecessary noise or not know what information is being collected.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "evaluation_evidence",
+        "question": "What information or experience would help you decide whether the healthcare drone service we are talking about works well enough for your city?",
+        "answer": "Noise measurements, safety information, how often it flies, whether deliveries are actually faster and whether it replaces road journeys.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "demonstration",
+        "question": "Have you ever seen, heard or experienced a drone demonstration, simulation or similar activity that helped you judge any of these things?",
+        "answer": "Yes. I took part in a simulation where we compared different routes and sounds.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "demonstration_view",
+        "question": "Did it affect your view in any way?",
+        "answer": "Yes. I preferred a slightly longer route that avoided repeated flights over residential areas.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "tradeoff",
+        "question": "Why?",
+        "answer": "Because the extra travel time seemed small compared with reducing the noise for many residents.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "opportunity",
+        "question": "Have you ever had a chance to give your views about drones, a new transport service, a new facility or another decision affecting your area?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "participation",
+        "question": "What did you do?",
+        "answer": "I attended a community meeting and gave feedback.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "feedback_outcome",
+        "question": "Do you know whether your feedback, or feedback from other people, led to any change?",
+        "answer": "I don't know.",
+        "answer_origin": "FN_example",
+        "answer_kind": "uncertain",
+        "topics": []
+      },
+      {
+        "id": "influence_evidence",
+        "question": "What would you expect to see before you could say that people had genuinely influenced a decision?",
+        "answer": "The city should explain what people suggested, what changed and why.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "problem_action",
+        "question": "What would you do?",
+        "answer": "I would report it to the city or the company operating the drones.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "problem_response",
+        "question": "What would you expect to happen after you reported it?",
+        "answer": "They should investigate it and tell me what they found.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "escalation",
+        "question": "If the problem continued or you thought the response was not adequate, what would you do?",
+        "answer": "I would contact the responsible authority or maybe a residents' group.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "ongoing_role",
+        "question": "If drone services became a regular part of the city, should citizens continue to have a role over time? What should that role be?",
+        "answer": "They should see monitoring results, report problems and be involved again if the service changes significantly.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "opinion",
+        "question": "Overall, what do you currently think about using drones to transport healthcare items in your city?",
+        "answer": "I am somewhat negative.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "opinion_why",
+        "question": "Why?",
+        "answer": "I understand why they might be useful, but I'm not convinced yet that the benefits justify regular noise over residential areas.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      }
+    ],
+    "citizen_extended": [
+      {
+        "id": "area",
+        "question": "Which EU city or urban area would you like your answers to refer to?",
+        "answer": "Madrid.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "drone_recognition",
+        "question": "Do you know what a drone is?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "drone_description",
+        "question": "In your own words, what is a drone?",
+        "answer": "An aircraft that flies without a pilot sitting inside it.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "drone_uses",
+        "question": "What kinds of things have you seen or heard drones being used for?",
+        "answer": "Photography, filming, deliveries and maybe emergency services.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "drone_other_uses",
+        "question": "Are there any other drone services you know about?",
+        "answer": "Not really.",
+        "answer_origin": "FN_example",
+        "answer_kind": "no",
+        "topics": []
+      },
+      {
+        "id": "healthcare_awareness",
+        "question": "Before today, had you heard about drones being used to transport healthcare items such as medicines, blood, laboratory samples or other medical supplies?",
+        "answer": "Yes, I had heard something about it.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "healthcare_detail",
+        "question": "What had you heard?",
+        "answer": "That drones could move samples between hospitals or deliver medicines.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "local_awareness",
+        "question": "As far as you know, is this kind of service—or something similar—already happening in your city?",
+        "answer": "I think there have been some tests, but I don't think it is a normal service yet.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "local_basis",
+        "question": "What makes you think that?",
+        "answer": "I remember hearing something about a demonstration, but I'm not sure.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "open_priorities",
+        "question": "Thinking about drones transporting healthcare items in your city, what comes to mind?",
+        "answer": "It could make urgent deliveries faster, but I would worry about noise, crashes and privacy. I would also want to know whether it is really better than using vans.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "noise",
+          "privacy",
+          "safety"
+        ]
+      },
+      {
+        "id": "open_more",
+        "question": "Is there anything else that you think could affect whether this service is good or bad for the city?",
+        "answer": "Maybe where they fly and where they land.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "landing"
+        ]
+      },
+      {
+        "id": "different_impacts",
+        "question": "Do you think the effects would be the same for everybody?",
+        "answer": "Probably not. Some people might get the benefits while other neighbourhoods get more noise.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "fairness"
+        ]
+      },
+      {
+        "id": "suggested_topics",
+        "question": "Are there any of these that are particularly important to you?",
+        "answer": "Noise, privacy, fairness and where they land.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "noise",
+          "privacy",
+          "fairness",
+          "landing"
+        ]
+      },
+      {
+        "id": "priorities",
+        "question": "Which of these matter most to you?",
+        "answer": "Noise and fairness.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "noise",
+          "fairness"
+        ]
+      },
+      {
+        "id": "noise_understanding",
+        "question": "What do you think could affect how much drone noise bothers people?",
+        "answer": "How loud it is, how often drones pass, what time they fly and whether they keep flying over the same houses.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [],
+        "preface": "You mentioned noise."
+      },
+      {
+        "id": "noise_context",
+        "question": "Could anything besides the sound itself affect how people react to it?",
+        "answer": "Yes. If it is an emergency or something important, people might tolerate it more.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "noise_information",
+        "question": "What would you want to know before deciding whether the noise from the healthcare drone service was reasonable?",
+        "answer": "I would want to hear the drone, know how many flights there would be and at what times.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "fairness_understanding",
+        "question": "What would make this healthcare drone service fair or unfair in your view?",
+        "answer": "It would be unfair if one neighbourhood had all the drone noise while people somewhere else got the benefit.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [],
+        "preface": "You also mentioned fairness."
+      },
+      {
+        "id": "fairness_tradeoff",
+        "question": "Would that affect your view?",
+        "answer": "Yes. Something doesn't have to benefit everybody equally, especially for healthcare. But the negative effects shouldn't always fall on the same people.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "decisions",
+        "question": "How are decisions about drone services taken in your city?",
+        "answer": "I don't really know how they are taken now. I think the city and the companies probably decide.",
+        "answer_origin": "FN_example",
+        "answer_kind": "uncertain",
+        "topics": []
+      },
+      {
+        "id": "decisions_should",
+        "question": "How do you think they should be taken?",
+        "answer": "The city and experts should be involved, but people who are affected should also have a chance to comment.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "meaningful",
+        "question": "What would being involved mean to you?",
+        "answer": "People should see the proposal before the final decision and have a chance to raise concerns or suggest changes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "informing",
+        "question": "Would simply informing people after the decision has already been made be enough?",
+        "answer": "No.",
+        "answer_origin": "FN_example",
+        "answer_kind": "no",
+        "topics": []
+      },
+      {
+        "id": "informing_why",
+        "question": "Why not?",
+        "answer": "Because then they can't really influence anything.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "opportunity",
+        "question": "Have you ever had a chance to give your views about drones, a new transport service, a new facility or another decision affecting your area?",
+        "answer": "Yes. I have answered surveys and attended one community meeting.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "participation",
+        "question": "What happened at the meeting?",
+        "answer": "They explained a proposal and people could ask questions and comment.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "express_views",
+        "question": "Did you feel that you could express your own concerns or suggestions?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "conditions",
+        "question": "What, if anything, would you want to change, add or require before it operates regularly?",
+        "answer": "I would want limits on flight times, routes that avoid heavily residential areas where possible, clear privacy rules and some way to report problems.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "noise_safeguards",
+        "question": "What conditions or safeguards would you suggest?",
+        "answer": "No unnecessary flights late at night, limits on how many flights pass the same area and actual noise monitoring.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [],
+        "preface": "You mentioned noise earlier."
+      },
+      {
+        "id": "fairness_assessment",
+        "question": "What would you want the city to look at?",
+        "answer": "Which neighbourhoods receive the benefits and which ones experience the noise.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [],
+        "preface": "And you also mentioned fairness."
+      },
+      {
+        "id": "fairness_response",
+        "question": "If those impacts were very uneven, what would you suggest?",
+        "answer": "Change the routes or landing locations, or find another way to reduce the burden.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "evaluation_evidence",
+        "question": "What information or experience would help you decide whether the healthcare drone service we are discussing works well enough for your city?",
+        "answer": "Real noise measurements, safety information, how often it flies, how much faster deliveries are and whether it actually replaces road journeys.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "demonstration",
+        "question": "Have you ever seen, heard or experienced a drone demonstration, simulation or similar activity that helped you judge any of those things?",
+        "answer": "Yes. I attended a simulation where we could hear different drone sounds and compare possible routes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "demonstration_view",
+        "question": "What did you take from that experience?",
+        "answer": "I preferred a slightly longer route that avoided repeatedly flying over residential areas.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "tradeoff",
+        "question": "Why?",
+        "answer": "Because the extra delivery time seemed small compared with reducing noise for a lot of people.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "air_awareness",
+        "question": "Have you ever thought about whether the air movement created by a drone during take-off or landing could affect people or objects nearby?",
+        "answer": "No.",
+        "answer_origin": "FN_example",
+        "answer_kind": "no",
+        "topics": []
+      },
+      {
+        "id": "air_explanation",
+        "question": "Would you like a short explanation?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "air_safety",
+        "question": "What would you want to know before deciding whether such a location was safe?",
+        "answer": "How strong the air is, how far people have to stay away and whether there are barriers or safety zones.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "feedback_outcome",
+        "question": "Thinking about any public consultation or decision you have been involved in, have you ever been able to see what happened after people gave their views?",
+        "answer": "Sometimes, but usually not.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "drone_influence",
+        "question": "For drone services specifically, do you know whether people's views have changed any proposal, route, location, safeguard or other decision?",
+        "answer": "No, I don't know.",
+        "answer_origin": "FN_example",
+        "answer_kind": "uncertain",
+        "topics": []
+      },
+      {
+        "id": "influence_evidence",
+        "question": "What would you expect to see before you could say that citizens had genuinely influenced the decision?",
+        "answer": "The city should explain what people said, what they changed because of it and why they didn't accept some suggestions.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "problem_action",
+        "question": "What would you do?",
+        "answer": "I would contact the city or the company and report it.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "problem_response",
+        "question": "How would you expect them to respond?",
+        "answer": "They should confirm that they received it, investigate and tell me what happened.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "escalation",
+        "question": "If you felt their response was not adequate, what would you do next?",
+        "answer": "I would contact the responsible authority or perhaps a residents' organisation.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "formal_channel",
+        "question": "Are you currently aware of any formal way to report or follow up concerns specifically about drone services?",
+        "answer": "No.",
+        "answer_origin": "FN_example",
+        "answer_kind": "no",
+        "topics": []
+      },
+      {
+        "id": "ongoing_role",
+        "question": "If healthcare drone services became a regular part of the city, do you think citizens should continue to have a role after the initial decision has been made?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "ongoing_detail",
+        "question": "What role should they have?",
+        "answer": "They should be able to report problems, see monitoring results and ask for changes to routes or operating times if problems continue.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "changing_conditions",
+        "question": "What should happen then?",
+        "answer": "There should be another review. What is acceptable for a few healthcare flights might not be acceptable for hundreds of flights or different uses.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "opinion",
+        "question": "Overall, what do you currently think about using drones to transport healthcare items in your city?",
+        "answer": "I am somewhat negative.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "opinion_why",
+        "question": "Why?",
+        "answer": "I can see that they could be useful, but I'm not convinced yet that the benefits justify regular noise over residential areas.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      }
+    ],
+    "organisational": [
+      {
+        "id": "area",
+        "question": "Which EU city or urban area would you like your answers to refer to?",
+        "answer": "Madrid.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "organisation_context",
+        "question": "What organisation do you work for?",
+        "answer": "I work for a city authority responsible for mobility planning.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "remit",
+        "question": "What role does your organisation currently have—or could it potentially have—in relation to drone services?",
+        "answer": "We could be involved in transport planning, coordination with other authorities and decisions about how drone services fit into the wider mobility system.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "drone_recognition",
+        "question": "Are you familiar with drone technology?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "drone_description",
+        "question": "In your own words, how would you describe a drone?",
+        "answer": "An unmanned aircraft that can be remotely controlled or operate automatically.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "drone_uses",
+        "question": "What kinds of services or uses involving drones are you familiar with?",
+        "answer": "Photography, inspections, emergency services and deliveries.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "local_awareness",
+        "question": "As far as you know, are drones already being used in your city?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "local_uses",
+        "question": "What are they being used for?",
+        "answer": "I know they are used for some inspections and by emergency services, and there have also been some demonstrations.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "local_organisations",
+        "question": "Do you know which organisations are involved?",
+        "answer": "Some city departments and emergency services, but I'm not sure who else.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "relevance",
+        "question": "Could this type of healthcare drone service be relevant to your organisation?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "relevance_detail",
+        "question": "In what way?",
+        "answer": "It could affect mobility planning and require coordination between healthcare services, drone operators and the city.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "open_priorities",
+        "question": "What possible opportunities, challenges or responsibilities come to mind for your organisation?",
+        "answer": "Possible benefits could be faster healthcare deliveries. Challenges would include where the drones operate, noise, public concerns, regulation and coordination between different authorities.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "noise",
+          "regulation",
+          "coordination"
+        ]
+      },
+      {
+        "id": "requirements_open",
+        "question": "If this healthcare drone service were proposed for your city, what would your organisation need to consider before deciding what role to play or what position to take?",
+        "answer": "We would need to consider transport planning, landing locations, safety, regulation, noise and public concerns.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "transport planning",
+          "landing",
+          "safety",
+          "regulation",
+          "noise"
+        ]
+      },
+      {
+        "id": "open_more",
+        "question": "Anything else?",
+        "answer": "Probably funding and coordination with healthcare organisations.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "funding",
+          "coordination"
+        ]
+      },
+      {
+        "id": "priorities",
+        "question": "Which two or three are most important for your organisation?",
+        "answer": "Integration with transport planning, noise and public engagement.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "transport planning",
+          "noise",
+          "public engagement"
+        ]
+      },
+      {
+        "id": "requirements",
+        "question": "Thinking about the issues you identified as most important, what would your organisation need to have in place to deal with the healthcare drone service properly?",
+        "answer": "We would need clear responsibilities, data about the flights and noise, coordination with the aviation authorities and a process for involving residents.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "requirements_understanding",
+        "question": "How well does your organisation currently understand what would be required?",
+        "answer": "We understand some of it, but there are still gaps.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "gaps",
+        "question": "What are the main gaps?",
+        "answer": "Internal expertise, regulatory clarity and coordination between departments.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "planning",
+        "question": "Has your organisation started planning how it would deal with the healthcare drone service we are discussing?",
+        "answer": "Yes, but only at an early stage.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "planning_detail",
+        "question": "What has been planned so far?",
+        "answer": "We have identified which departments would probably need to be involved and started discussing how the service could fit into mobility planning.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "assigned",
+        "question": "Have responsibilities already been assigned?",
+        "answer": "Some, but not formally.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "external_coordination",
+        "question": "What about coordination with organisations outside your organisation?",
+        "answer": "We have identified some of them but haven't established a formal structure yet.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "preparation",
+        "question": "Has your organisation moved beyond planning and started putting arrangements in place for testing or potentially implementing this healthcare drone service?",
+        "answer": "Yes. We have started preparing for a pilot.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "arrangements",
+        "question": "What has been put in place?",
+        "answer": "There is a working group, cooperation with the operator and healthcare organisation, and we have started discussing locations and permissions.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "resources",
+        "question": "What about staff, expertise and other resources?",
+        "answer": "Some people have been assigned, but we still depend heavily on external experts.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "procedures",
+        "question": "Are the necessary procedures or approval processes clear?",
+        "answer": "Mostly for the pilot, but not for a permanent service.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "testing",
+        "question": "Have your organisation's plans, procedures or coordination arrangements actually been tested through a pilot, demonstration, simulation or another realistic activity?",
+        "answer": "Yes. We participated in a demonstration.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "testing_role",
+        "question": "What parts of your organisation's role were tested?",
+        "answer": "Coordination with the operator, the healthcare organisation and several city departments.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "lessons",
+        "question": "What did your organisation learn?",
+        "answer": "Communication between departments was too slow and it wasn't always clear who should respond to public questions.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "improvements",
+        "question": "Were any changes identified as a result?",
+        "answer": "Yes. We decided that we need one coordination point and clearer responsibilities for public communication.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "permissions",
+        "question": "Were any relevant permissions, approval procedures or compliance processes also tested or used?",
+        "answer": "Yes. The permissions needed for the demonstration were obtained.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "integration",
+        "question": "Have those lessons now been incorporated into your organisation's regular plans, policies or procedures?",
+        "answer": "Partly.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "integration_changes",
+        "question": "What has changed?",
+        "answer": "We now have clearer responsibilities and a draft coordination procedure, but drone services are not yet formally part of our mobility planning.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "routine",
+        "question": "Are these responsibilities and procedures now part of the organisation's regular way of working, or are they still mainly connected to the pilot?",
+        "answer": "Mostly still connected to the pilot.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "operational",
+        "question": "Would your organisation currently be able to fulfil its role?",
+        "answer": "Not completely.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "in_place",
+        "question": "What is already in place?",
+        "answer": "We know who should be involved and we have procedures based on the pilot.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "missing",
+        "question": "What is still missing?",
+        "answer": "Long-term staff resources, formal integration into planning, permanent public-engagement procedures and some regulatory clarity.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "monitoring",
+        "question": "If healthcare drone services became a normal part of the city's activities, how would your organisation know whether its arrangements were still working well over time?",
+        "answer": "We would monitor performance, complaints and changes in regulation and review the procedures periodically.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "adaptation",
+        "question": "What would happen if, for example, the number of flights increased significantly, the service changed, or new requirements were introduced?",
+        "answer": "We would need to review the arrangements and adjust responsibilities or procedures.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "established",
+        "question": "Does your organisation already have an established process for doing this, or is this what you think should happen?",
+        "answer": "At the moment, it is what we think should happen. We do not yet have a permanent process.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      }
+    ],
+    "technical": [
+      {
+        "id": "area",
+        "question": "Which EU city or urban area would you like your answers to refer to?",
+        "answer": "Madrid.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "organisation_context",
+        "question": "What organisation do you work for?",
+        "answer": "I work for a company developing and operating delivery drones.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "technical_role",
+        "question": "What is your technical role in relation to drones?",
+        "answer": "I work on flight operations and system integration.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "technical_object",
+        "question": "What drone technology, system, component or technical service are you most familiar with?",
+        "answer": "It is an electric multicopter designed to carry small medical payloads. It includes the aircraft, payload box, ground-control system and communications link.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "expertise",
+        "question": "Which parts of that system can you speak about with confidence?",
+        "answer": "The aircraft, flight-control system, payload integration and flight operations.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "local_awareness",
+        "question": "As far as you know, are drones already being used or tested in this city?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "local_uses",
+        "question": "For what purposes?",
+        "answer": "Mostly inspections, some emergency-service applications and experimental deliveries.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "similar",
+        "question": "Are any of these applications technically similar to the system you have just described?",
+        "answer": "The delivery demonstrations are the closest.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "concept",
+        "question": "How would the technology you described be used for this healthcare delivery service?",
+        "answer": "The drone would transport a medical payload between healthcare facilities along predefined routes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "functions",
+        "question": "What are the main technical functions that would need to work for the service to be possible?",
+        "answer": "Payload handling, flight control, navigation, communications, safe take-off and landing and monitoring of the aircraft.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "defined",
+        "question": "Which of these are already technically defined, and which are still conceptual?",
+        "answer": "Most of them are technically defined. Some parts of the payload monitoring still need development.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "experimental",
+        "question": "Has the technical concept been tested experimentally?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "experimental_detail",
+        "question": "What has actually been demonstrated?",
+        "answer": "We have flown the aircraft with representative payload weights and tested navigation and communications.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "experimental_integration",
+        "question": "Were these separate technical experiments, or had the main functions already been integrated?",
+        "answer": "Initially they were separate. We later combined them into an early prototype.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "experimental_evidence",
+        "question": "What evidence was produced?",
+        "answer": "Test reports, flight logs and payload-performance data.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "controlled",
+        "question": "Has the integrated technology been tested in a controlled environment?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "controlled_configuration",
+        "question": "What parts of the system were integrated at that stage?",
+        "answer": "Aircraft, payload box, ground-control station, communications and basic monitoring.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "controlled_conditions",
+        "question": "What conditions were tested?",
+        "answer": "Different payload weights, flight durations, communication ranges and some failure cases.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "controlled_environment",
+        "question": "Were the tests based mainly on laboratory or controlled test conditions, or did they already represent the intended operating environment?",
+        "answer": "Mostly controlled test conditions.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "open_priorities",
+        "question": "For the healthcare drone service we are discussing, what do you see as the main technical challenges or uncertainties that still need to be addressed?",
+        "answer": "Flight reliability, payload integrity, communications and noise.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "safety",
+          "noise",
+          "communications"
+        ]
+      },
+      {
+        "id": "open_more",
+        "question": "Anything else?",
+        "answer": "Integration with the landing locations and airspace-management systems.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "landing",
+          "airspace integration"
+        ]
+      },
+      {
+        "id": "priorities",
+        "question": "Here are some other technical areas that may be relevant. Which two or three are most important for the system you are assessing?",
+        "answer": "Safety, noise and airspace integration.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [
+          "safety",
+          "noise",
+          "airspace integration"
+        ]
+      },
+      {
+        "id": "representative",
+        "question": "Has the system been tested in conditions that realistically represent the healthcare service we are discussing?",
+        "answer": "Yes. We have flown representative routes with the intended payload type.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "representative_basis",
+        "question": "What made those tests representative of the intended service?",
+        "answer": "The distances, payload mass, communications environment and landing-site conditions were similar to the intended operation.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "interfaces",
+        "question": "Were the actual interfaces needed for the healthcare logistics chain also tested?",
+        "answer": "Some of them. The payload handover process was tested, but integration with hospital systems was still simulated.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "noise_test",
+        "question": "How has the aircraft's noise been assessed?",
+        "answer": "We have measured sound levels during representative flight profiles and compared different operating conditions.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [],
+        "preface": "You identified noise as an important technical issue."
+      },
+      {
+        "id": "noise_changes",
+        "question": "Have the results been used to modify the aircraft or flight procedures?",
+        "answer": "Yes. We changed some flight profiles to reduce the most noticeable noise.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "demonstrated",
+        "question": "Has the integrated technical system been demonstrated as a whole in a relevant environment?",
+        "answer": "Yes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "demonstrated_configuration",
+        "question": "What was operating together during the demonstration?",
+        "answer": "The drone, payload, control station, communications, landing sites and monitoring system.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "realistic",
+        "question": "Was the healthcare logistics process represented realistically?",
+        "answer": "Yes. We used representative medical payloads and realistic origin and destination sites.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "measurements",
+        "question": "What technical performance was measured?",
+        "answer": "Flight reliability, delivery time, battery consumption, communications, payload conditions and noise.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "limitations",
+        "question": "What technical issues remained after the demonstration?",
+        "answer": "Some redundancy features and monitoring functions still needed improvement.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "operational_prototype",
+        "question": "Has a system prototype been demonstrated in the actual environment in which the healthcare service is intended to operate?",
+        "answer": "Yes. We completed flights between healthcare facilities.",
+        "answer_origin": "FN_example",
+        "answer_kind": "yes",
+        "topics": []
+      },
+      {
+        "id": "operational_configuration",
+        "question": "Were these technically representative of the intended operation?",
+        "answer": "Yes. They used the intended aircraft configuration, payload procedure, routes and ground systems.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "operational_interfaces",
+        "question": "Were the real operational interfaces involved—for example healthcare staff, take-off and landing sites, communications systems or airspace services?",
+        "answer": "Yes, although some monitoring functions were still prototypes.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "operational_evidence",
+        "question": "What evidence was collected?",
+        "answer": "Flight logs, operational performance data, communications data, battery performance and payload-condition data.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "safety_demonstrated",
+        "question": "Which safety and failure-management functions were demonstrated under those operational conditions?",
+        "answer": "Emergency landing procedures, loss-of-link behaviour and some redundancy functions.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": [],
+        "preface": "You identified technical safety as particularly important."
+      },
+      {
+        "id": "safety_complete",
+        "question": "Were all of the intended safety functions complete and qualified?",
+        "answer": "No. Some still needed final validation.",
+        "answer_origin": "FN_example",
+        "answer_kind": "no",
+        "topics": []
+      },
+      {
+        "id": "complete",
+        "question": "Is the technical system now complete in the configuration intended for regular healthcare operations?",
+        "answer": "Not completely.",
+        "answer_origin": "FN_example",
+        "answer_kind": "partial",
+        "topics": []
+      },
+      {
+        "id": "outstanding",
+        "question": "What remains to be completed?",
+        "answer": "Some monitoring functions, final software integration and qualification of some safety functions.",
+        "answer_origin": "FN_example",
+        "answer_kind": "substantive",
+        "topics": []
+      },
+      {
+        "id": "routine_operation",
+        "question": "Has the completed system been used in actual operational service under the conditions for which it was designed?",
+        "answer": "Not yet. It has completed operational demonstrations but is not in routine service.",
+        "answer_origin": "FN_example",
+        "answer_kind": "no",
+        "topics": []
+      }
+    ]
+  }
+}

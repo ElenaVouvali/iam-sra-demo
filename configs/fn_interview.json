@@ -1,0 +1,2306 @@
+{
+  "version": "fn-adaptive-interview-1.0.0",
+  "status": "prototype_pending_FN_review",
+  "flows": {
+    "citizen_short": [
+      {
+        "id": "context",
+        "purpose": "Explicit perspective and optional broad locality",
+        "source_locator": "pages 2",
+        "questions": [
+          {
+            "id": "area",
+            "canonical_question": "Which EU city or urban area would you like your answers to refer to?",
+            "response_type": "city",
+            "evidence_goal": "area",
+            "source_locator": "page 2",
+            "context_field": "city"
+          }
+        ],
+        "evidence_goals": [
+          "area"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "recognition",
+        "purpose": "Recognition and prior knowledge before information exposure",
+        "source_locator": "pages 2,3",
+        "questions": [
+          {
+            "id": "drone_recognition",
+            "canonical_question": "Do you know what a drone is?",
+            "response_type": "yes_no",
+            "evidence_goal": "drone_recognition",
+            "source_locator": "page 2"
+          },
+          {
+            "id": "drone_description",
+            "canonical_question": "In your own words, what is a drone?",
+            "response_type": "open",
+            "evidence_goal": "drone_description",
+            "source_locator": "page 2",
+            "when": "drone_recognition:yes"
+          },
+          {
+            "id": "drone_uses",
+            "canonical_question": "What kinds of services or uses involving drones have you heard about?",
+            "response_type": "open",
+            "evidence_goal": "drone_uses",
+            "source_locator": "page 3",
+            "when": "drone_recognition:yes"
+          },
+          {
+            "id": "drone_explanation",
+            "canonical_question": "That's completely fine. Would you like a short explanation?",
+            "response_type": "permission",
+            "evidence_goal": "drone_explanation",
+            "source_locator": "page 3",
+            "when": "drone_recognition:no"
+          }
+        ],
+        "evidence_goals": [
+          "drone_recognition",
+          "drone_description",
+          "drone_uses",
+          "drone_explanation"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "awareness",
+        "purpose": "Prior healthcare awareness and unverified local awareness",
+        "source_locator": "pages 3,4",
+        "questions": [
+          {
+            "id": "healthcare_awareness",
+            "canonical_question": "Before today, had you heard about drones being used to transport healthcare items such as medicines, blood, laboratory samples or other medical supplies?",
+            "response_type": "yes_no",
+            "evidence_goal": "healthcare_awareness",
+            "source_locator": "page 3"
+          },
+          {
+            "id": "healthcare_detail",
+            "canonical_question": "What had you heard about them?",
+            "response_type": "open",
+            "evidence_goal": "healthcare_detail",
+            "source_locator": "page 3",
+            "when": "healthcare_awareness:yes"
+          },
+          {
+            "id": "local_awareness",
+            "canonical_question": "As far as you know, is this type of service—or something similar—already happening in your city?",
+            "response_type": "yes_no",
+            "evidence_goal": "local_awareness",
+            "source_locator": "page 4"
+          },
+          {
+            "id": "local_basis",
+            "canonical_question": "What makes you think that?",
+            "response_type": "open",
+            "evidence_goal": "local_basis",
+            "source_locator": "page 4",
+            "when": "local_awareness:yes"
+          }
+        ],
+        "evidence_goals": [
+          "healthcare_awareness",
+          "healthcare_detail",
+          "local_awareness",
+          "local_basis"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "topics",
+        "purpose": "Open concerns before suggestions and explicit priority selection",
+        "source_locator": "pages 4,5",
+        "questions": [
+          {
+            "id": "open_priorities",
+            "canonical_question": "Thinking about drones transporting healthcare items in your city, what comes to mind?",
+            "response_type": "open",
+            "evidence_goal": "open_priorities",
+            "source_locator": "page 4"
+          },
+          {
+            "id": "open_more",
+            "canonical_question": "Anything else?",
+            "response_type": "open",
+            "evidence_goal": "open_more",
+            "source_locator": "page 4"
+          },
+          {
+            "id": "different_impacts",
+            "canonical_question": "Do you think the service could affect some people or places differently from others?",
+            "response_type": "open",
+            "evidence_goal": "different_impacts",
+            "source_locator": "page 4"
+          },
+          {
+            "id": "suggested_topics",
+            "canonical_question": "Here are some other things people may think about when discussing healthcare drone services. Which, if any, are important to you?",
+            "response_type": "display",
+            "evidence_goal": "suggested_topics",
+            "source_locator": "page 5"
+          },
+          {
+            "id": "priorities",
+            "canonical_question": "Which two or three issues matter most to you?",
+            "response_type": "priorities",
+            "evidence_goal": "priorities",
+            "source_locator": "page 5"
+          }
+        ],
+        "evidence_goals": [
+          "open_priorities",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "understanding",
+        "purpose": "Explain selected issues, contextual effects and information needs",
+        "source_locator": "pages 6",
+        "questions": [
+          {
+            "id": "noise_understanding",
+            "canonical_question": "What do you think could affect how much drone noise bothers people?",
+            "response_type": "open",
+            "evidence_goal": "noise_understanding",
+            "source_locator": "page 6",
+            "when": "topic:noise",
+            "preface": "You mentioned noise."
+          },
+          {
+            "id": "noise_information",
+            "canonical_question": "What would you want to know before deciding whether the noise from the healthcare drone service was reasonable?",
+            "response_type": "open",
+            "evidence_goal": "noise_information",
+            "source_locator": "page 6",
+            "when": "topic:noise"
+          },
+          {
+            "id": "fairness_understanding",
+            "canonical_question": "What would make this healthcare drone service fair or unfair in your view?",
+            "response_type": "open",
+            "evidence_goal": "fairness_understanding",
+            "source_locator": "page 6",
+            "when": "topic:fairness",
+            "preface": "You also mentioned fairness."
+          },
+          {
+            "id": "fairness_changes",
+            "canonical_question": "What do you think should be done if that happened?",
+            "response_type": "open",
+            "evidence_goal": "fairness_changes",
+            "source_locator": "page 6",
+            "when": "topic:fairness"
+          },
+          {
+            "id": "priority_understanding",
+            "canonical_question": "What would you want decision-makers to understand about the issue you selected?",
+            "response_type": "open",
+            "evidence_goal": "priority_understanding",
+            "source_locator": "section 7; authored adaptation",
+            "when": "other_priority",
+            "optional": false
+          }
+        ],
+        "evidence_goals": [
+          "noise_understanding",
+          "noise_information",
+          "fairness_understanding",
+          "fairness_changes",
+          "priority_understanding"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "engagement",
+        "purpose": "Decision-making and meaningful participation, distinct from receiving information",
+        "source_locator": "pages 7",
+        "questions": [
+          {
+            "id": "decisions",
+            "canonical_question": "How are decisions about drone services taken in your city?",
+            "response_type": "open",
+            "evidence_goal": "decisions",
+            "source_locator": "page 7"
+          },
+          {
+            "id": "decisions_should",
+            "canonical_question": "How should they be taken?",
+            "response_type": "open",
+            "evidence_goal": "decisions_should",
+            "source_locator": "page 7",
+            "when": "decisions:no"
+          },
+          {
+            "id": "meaningful",
+            "canonical_question": "What would meaningful involvement look like to you?",
+            "response_type": "open",
+            "evidence_goal": "meaningful",
+            "source_locator": "page 7"
+          },
+          {
+            "id": "informing",
+            "canonical_question": "Would informing people after a decision has already been made be enough?",
+            "response_type": "yes_no",
+            "evidence_goal": "informing",
+            "source_locator": "page 7",
+            "optional": true
+          }
+        ],
+        "evidence_goals": [
+          "decisions",
+          "decisions_should",
+          "meaningful"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "co_design",
+        "purpose": "Proposed changes, safeguards and their reasons; not completed action",
+        "source_locator": "pages 8",
+        "questions": [
+          {
+            "id": "conditions",
+            "canonical_question": "What, if anything, would you want to change, add or require before it operates regularly?",
+            "response_type": "open",
+            "evidence_goal": "conditions",
+            "source_locator": "page 8",
+            "preface": "Imagine your city is considering introducing the healthcare drone service we have been discussing."
+          },
+          {
+            "id": "conditions_why",
+            "canonical_question": "Why are those important to you?",
+            "response_type": "open",
+            "evidence_goal": "conditions_why",
+            "source_locator": "page 8"
+          }
+        ],
+        "evidence_goals": [
+          "conditions",
+          "conditions_why"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "evaluation",
+        "purpose": "Use evidence and compare alternatives; lack of opportunity is not inability",
+        "source_locator": "pages 8–10",
+        "questions": [
+          {
+            "id": "evaluation_evidence",
+            "canonical_question": "What information or experience would help you decide whether the healthcare drone service we are talking about works well enough for your city?",
+            "response_type": "open",
+            "evidence_goal": "evaluation_evidence",
+            "source_locator": "page 8"
+          },
+          {
+            "id": "demonstration",
+            "canonical_question": "Have you ever seen, heard or experienced a drone demonstration, simulation or similar activity that helped you judge any of these things?",
+            "response_type": "yes_no",
+            "evidence_goal": "demonstration",
+            "source_locator": "page 8"
+          },
+          {
+            "id": "demonstration_view",
+            "canonical_question": "Did it affect your view in any way?",
+            "response_type": "open",
+            "evidence_goal": "demonstration_view",
+            "source_locator": "page 9",
+            "when": "demonstration:yes"
+          },
+          {
+            "id": "tradeoff",
+            "canonical_question": "Why?",
+            "response_type": "open",
+            "evidence_goal": "tradeoff",
+            "source_locator": "page 9",
+            "when": "demonstration:yes"
+          },
+          {
+            "id": "hypothetical_comparison",
+            "canonical_question": "What information would you need before recommending one route rather than the other?",
+            "response_type": "open",
+            "evidence_goal": "hypothetical_comparison",
+            "source_locator": "page 9",
+            "when": "demonstration:no",
+            "preface": "Imagine you were shown two possible routes for the same healthcare drone service."
+          }
+        ],
+        "evidence_goals": [
+          "evaluation_evidence",
+          "demonstration",
+          "demonstration_view",
+          "tradeoff",
+          "hypothetical_comparison"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "influence",
+        "purpose": "Separate opportunity, capability, actual participation and demonstrated influence",
+        "source_locator": "pages 9,10",
+        "questions": [
+          {
+            "id": "opportunity",
+            "canonical_question": "Have you ever had a chance to give your views about drones, a new transport service, a new facility or another decision affecting your area?",
+            "response_type": "yes_no",
+            "evidence_goal": "opportunity",
+            "source_locator": "page 9"
+          },
+          {
+            "id": "participation",
+            "canonical_question": "What did you do?",
+            "response_type": "open",
+            "evidence_goal": "participation",
+            "source_locator": "page 10",
+            "when": "opportunity:yes"
+          },
+          {
+            "id": "participation_capability",
+            "canonical_question": "If you were given the opportunity to comment on a proposed healthcare drone route that affected your area, how would you make your views known?",
+            "response_type": "open",
+            "evidence_goal": "participation_capability",
+            "source_locator": "page 10",
+            "when": "opportunity:no"
+          },
+          {
+            "id": "feedback_outcome",
+            "canonical_question": "Do you know whether your feedback, or feedback from other people, led to any change?",
+            "response_type": "yes_no",
+            "evidence_goal": "feedback_outcome",
+            "source_locator": "page 10",
+            "when": "opportunity:yes"
+          },
+          {
+            "id": "influence_evidence",
+            "canonical_question": "What would you expect to see before you could say that people had genuinely influenced a decision?",
+            "response_type": "open",
+            "evidence_goal": "influence_evidence",
+            "source_locator": "page 10"
+          }
+        ],
+        "evidence_goals": [
+          "opportunity",
+          "participation",
+          "participation_capability",
+          "feedback_outcome",
+          "influence_evidence"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "accountability",
+        "purpose": "Ways to raise problems, seek answers and escalate without assuming mechanisms exist",
+        "source_locator": "pages 11",
+        "questions": [
+          {
+            "id": "problem_action",
+            "canonical_question": "What would you do?",
+            "response_type": "open",
+            "evidence_goal": "problem_action",
+            "source_locator": "page 11",
+            "preface": "Imagine the healthcare drone service we have been discussing was already operating and you noticed a problem—for example repeated noise, a safety issue or a privacy concern."
+          },
+          {
+            "id": "problem_response",
+            "canonical_question": "What would you expect to happen after you reported it?",
+            "response_type": "open",
+            "evidence_goal": "problem_response",
+            "source_locator": "page 11"
+          },
+          {
+            "id": "escalation",
+            "canonical_question": "If the problem continued or you thought the response was not adequate, what would you do?",
+            "response_type": "open",
+            "evidence_goal": "escalation",
+            "source_locator": "page 11"
+          }
+        ],
+        "evidence_goals": [
+          "problem_action",
+          "problem_response",
+          "escalation"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "sustained",
+        "purpose": "Continued role, changing conditions and monitoring; proposals are not sustained activity",
+        "source_locator": "pages 11",
+        "questions": [
+          {
+            "id": "ongoing_role",
+            "canonical_question": "If drone services became a regular part of the city, should citizens continue to have a role over time? What should that role be?",
+            "response_type": "open",
+            "evidence_goal": "ongoing_role",
+            "source_locator": "page 11",
+            "optional": true,
+            "when": "boundary"
+          }
+        ],
+        "evidence_goals": [],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "opinion",
+        "purpose": "Separate personal opinion; never readiness evidence",
+        "source_locator": "page 12",
+        "questions": [
+          {
+            "id": "opinion",
+            "canonical_question": "Overall, what do you currently think about using drones to transport healthcare items in your city?",
+            "response_type": "opinion",
+            "evidence_goal": "opinion",
+            "source_locator": "page 12"
+          },
+          {
+            "id": "opinion_why",
+            "canonical_question": "Why?",
+            "response_type": "opinion",
+            "evidence_goal": "opinion_why",
+            "source_locator": "page 12"
+          }
+        ],
+        "evidence_goals": [
+          "opinion",
+          "opinion_why"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      }
+    ],
+    "citizen_extended": [
+      {
+        "id": "context",
+        "purpose": "Explicit perspective and optional broad locality",
+        "source_locator": "pages 2",
+        "questions": [
+          {
+            "id": "area",
+            "canonical_question": "Which EU city or urban area would you like your answers to refer to?",
+            "response_type": "city",
+            "evidence_goal": "area",
+            "source_locator": "page 2",
+            "context_field": "city"
+          }
+        ],
+        "evidence_goals": [
+          "area"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "recognition",
+        "purpose": "Recognition and prior knowledge before information exposure",
+        "source_locator": "pages 2,3",
+        "questions": [
+          {
+            "id": "drone_recognition",
+            "canonical_question": "Do you know what a drone is?",
+            "response_type": "yes_no",
+            "evidence_goal": "drone_recognition",
+            "source_locator": "page 2"
+          },
+          {
+            "id": "drone_description",
+            "canonical_question": "In your own words, what is a drone?",
+            "response_type": "open",
+            "evidence_goal": "drone_description",
+            "source_locator": "page 3",
+            "when": "drone_recognition:yes"
+          },
+          {
+            "id": "drone_uses",
+            "canonical_question": "What kinds of things have you seen or heard drones being used for?",
+            "response_type": "open",
+            "evidence_goal": "drone_uses",
+            "source_locator": "page 3",
+            "when": "drone_recognition:yes"
+          },
+          {
+            "id": "drone_other_uses",
+            "canonical_question": "Are there any other drone services you know about?",
+            "response_type": "open",
+            "evidence_goal": "drone_other_uses",
+            "source_locator": "page 3"
+          },
+          {
+            "id": "drone_explanation",
+            "canonical_question": "Would you like a short explanation before we continue?",
+            "response_type": "permission",
+            "evidence_goal": "drone_explanation",
+            "source_locator": "page 3",
+            "when": "drone_recognition:no"
+          }
+        ],
+        "evidence_goals": [
+          "drone_recognition",
+          "drone_description",
+          "drone_uses",
+          "drone_other_uses",
+          "drone_explanation"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "awareness",
+        "purpose": "Prior healthcare awareness and unverified local awareness",
+        "source_locator": "pages 4",
+        "questions": [
+          {
+            "id": "healthcare_awareness",
+            "canonical_question": "Before today, had you heard about drones being used to transport healthcare items such as medicines, blood, laboratory samples or other medical supplies?",
+            "response_type": "yes_no",
+            "evidence_goal": "healthcare_awareness",
+            "source_locator": "page 4"
+          },
+          {
+            "id": "healthcare_detail",
+            "canonical_question": "What had you heard?",
+            "response_type": "open",
+            "evidence_goal": "healthcare_detail",
+            "source_locator": "page 4",
+            "when": "healthcare_awareness:yes"
+          },
+          {
+            "id": "local_awareness",
+            "canonical_question": "As far as you know, is this kind of service—or something similar—already happening in your city?",
+            "response_type": "yes_no",
+            "evidence_goal": "local_awareness",
+            "source_locator": "page 4"
+          },
+          {
+            "id": "local_basis",
+            "canonical_question": "What makes you think that?",
+            "response_type": "open",
+            "evidence_goal": "local_basis",
+            "source_locator": "page 4",
+            "when": "local_awareness:yes"
+          }
+        ],
+        "evidence_goals": [
+          "healthcare_awareness",
+          "healthcare_detail",
+          "local_awareness",
+          "local_basis"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "topics",
+        "purpose": "Open concerns before suggestions and explicit priority selection",
+        "source_locator": "pages 4,5,6",
+        "questions": [
+          {
+            "id": "open_priorities",
+            "canonical_question": "Thinking about drones transporting healthcare items in your city, what comes to mind?",
+            "response_type": "open",
+            "evidence_goal": "open_priorities",
+            "source_locator": "page 4"
+          },
+          {
+            "id": "open_more",
+            "canonical_question": "Is there anything else that you think could affect whether this service is good or bad for the city?",
+            "response_type": "open",
+            "evidence_goal": "open_more",
+            "source_locator": "page 5"
+          },
+          {
+            "id": "different_impacts",
+            "canonical_question": "Do you think the effects would be the same for everybody?",
+            "response_type": "open",
+            "evidence_goal": "different_impacts",
+            "source_locator": "page 5"
+          },
+          {
+            "id": "suggested_topics",
+            "canonical_question": "Are there any of these that are particularly important to you?",
+            "response_type": "suggested_topics",
+            "evidence_goal": "suggested_topics",
+            "source_locator": "page 6"
+          },
+          {
+            "id": "priorities",
+            "canonical_question": "Which of these matter most to you?",
+            "response_type": "priorities",
+            "evidence_goal": "priorities",
+            "source_locator": "page 6"
+          }
+        ],
+        "evidence_goals": [
+          "open_priorities",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "understanding",
+        "purpose": "Explain selected issues, contextual effects and information needs",
+        "source_locator": "pages 6,7,8",
+        "questions": [
+          {
+            "id": "noise_understanding",
+            "canonical_question": "What do you think could affect how much drone noise bothers people?",
+            "response_type": "open",
+            "evidence_goal": "noise_understanding",
+            "source_locator": "page 6",
+            "when": "topic:noise",
+            "preface": "You mentioned noise."
+          },
+          {
+            "id": "noise_context",
+            "canonical_question": "Could anything besides the sound itself affect how people react to it?",
+            "response_type": "open",
+            "evidence_goal": "noise_context",
+            "source_locator": "page 7",
+            "when": "topic:noise"
+          },
+          {
+            "id": "noise_information",
+            "canonical_question": "What would you want to know before deciding whether the noise from the healthcare drone service was reasonable?",
+            "response_type": "open",
+            "evidence_goal": "noise_information",
+            "source_locator": "page 7",
+            "when": "topic:noise"
+          },
+          {
+            "id": "fairness_understanding",
+            "canonical_question": "What would make this healthcare drone service fair or unfair in your view?",
+            "response_type": "open",
+            "evidence_goal": "fairness_understanding",
+            "source_locator": "page 7",
+            "when": "topic:fairness",
+            "preface": "You also mentioned fairness."
+          },
+          {
+            "id": "fairness_tradeoff",
+            "canonical_question": "Would that affect your view?",
+            "response_type": "open",
+            "evidence_goal": "fairness_tradeoff",
+            "source_locator": "page 7",
+            "when": "topic:fairness",
+            "preface": "Imagine the service mainly helped a relatively small group of people—for example people who have difficulty getting healthcare supplies quickly."
+          },
+          {
+            "id": "landing_siting",
+            "canonical_question": "What do you think should be considered when choosing such a location?",
+            "response_type": "open",
+            "evidence_goal": "landing_siting",
+            "source_locator": "page 8",
+            "when": "topic:landing",
+            "optional": true
+          },
+          {
+            "id": "landing_decisions",
+            "canonical_question": "Who do you think should be involved in choosing the location?",
+            "response_type": "open",
+            "evidence_goal": "landing_decisions",
+            "source_locator": "page 8",
+            "when": "topic:landing",
+            "optional": true
+          },
+          {
+            "id": "priority_understanding",
+            "canonical_question": "What would you want decision-makers to understand about the issue you selected?",
+            "response_type": "open",
+            "evidence_goal": "priority_understanding",
+            "source_locator": "section 7; authored adaptation",
+            "when": "other_priority",
+            "optional": false
+          }
+        ],
+        "evidence_goals": [
+          "noise_understanding",
+          "noise_context",
+          "noise_information",
+          "fairness_understanding",
+          "fairness_tradeoff",
+          "priority_understanding"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "engagement",
+        "purpose": "Decision-making and meaningful participation, distinct from receiving information",
+        "source_locator": "pages 8,9,10",
+        "questions": [
+          {
+            "id": "decisions",
+            "canonical_question": "How are decisions about drone services taken in your city?",
+            "response_type": "open",
+            "evidence_goal": "decisions",
+            "source_locator": "page 8"
+          },
+          {
+            "id": "decisions_should",
+            "canonical_question": "How do you think they should be taken?",
+            "response_type": "open",
+            "evidence_goal": "decisions_should",
+            "source_locator": "page 8",
+            "when": "decisions:no"
+          },
+          {
+            "id": "meaningful",
+            "canonical_question": "What would being involved mean to you?",
+            "response_type": "open",
+            "evidence_goal": "meaningful",
+            "source_locator": "page 9"
+          },
+          {
+            "id": "informing",
+            "canonical_question": "Would simply informing people after the decision has already been made be enough?",
+            "response_type": "yes_no",
+            "evidence_goal": "informing",
+            "source_locator": "page 9"
+          },
+          {
+            "id": "informing_why",
+            "canonical_question": "Why not?",
+            "response_type": "open",
+            "evidence_goal": "informing_why",
+            "source_locator": "page 9",
+            "when": "informing:no"
+          },
+          {
+            "id": "opportunity",
+            "canonical_question": "Have you ever had a chance to give your views about drones, a new transport service, a new facility or another decision affecting your area?",
+            "response_type": "yes_no",
+            "evidence_goal": "opportunity",
+            "source_locator": "page 9"
+          },
+          {
+            "id": "participation",
+            "canonical_question": "What happened at the meeting?",
+            "response_type": "open",
+            "evidence_goal": "participation",
+            "source_locator": "page 9",
+            "when": "opportunity:yes"
+          },
+          {
+            "id": "express_views",
+            "canonical_question": "Did you feel that you could express your own concerns or suggestions?",
+            "response_type": "yes_no",
+            "evidence_goal": "express_views",
+            "source_locator": "page 9",
+            "when": "opportunity:yes"
+          },
+          {
+            "id": "participation_capability",
+            "canonical_question": "If you were given the opportunity, how would you want to take part in a decision about a healthcare drone service affecting your area?",
+            "response_type": "open",
+            "evidence_goal": "participation_capability",
+            "source_locator": "page 10",
+            "when": "opportunity:no"
+          }
+        ],
+        "evidence_goals": [
+          "decisions",
+          "decisions_should",
+          "meaningful",
+          "informing",
+          "informing_why",
+          "opportunity",
+          "participation",
+          "express_views",
+          "participation_capability"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "co_design",
+        "purpose": "Proposed changes, safeguards and their reasons; not completed action",
+        "source_locator": "pages 10,11",
+        "questions": [
+          {
+            "id": "conditions",
+            "canonical_question": "What, if anything, would you want to change, add or require before it operates regularly?",
+            "response_type": "open",
+            "evidence_goal": "conditions",
+            "source_locator": "page 10",
+            "preface": "Imagine your city is considering introducing the healthcare drone service we have been discussing."
+          },
+          {
+            "id": "noise_safeguards",
+            "canonical_question": "What conditions or safeguards would you suggest?",
+            "response_type": "open",
+            "evidence_goal": "noise_safeguards",
+            "source_locator": "page 10",
+            "when": "topic:noise",
+            "preface": "You mentioned noise earlier."
+          },
+          {
+            "id": "fairness_assessment",
+            "canonical_question": "What would you want the city to look at?",
+            "response_type": "open",
+            "evidence_goal": "fairness_assessment",
+            "source_locator": "page 10",
+            "when": "topic:fairness",
+            "preface": "And you also mentioned fairness."
+          },
+          {
+            "id": "fairness_response",
+            "canonical_question": "If those impacts were very uneven, what would you suggest?",
+            "response_type": "open",
+            "evidence_goal": "fairness_response",
+            "source_locator": "page 11",
+            "when": "topic:fairness"
+          }
+        ],
+        "evidence_goals": [
+          "conditions",
+          "noise_safeguards",
+          "fairness_assessment",
+          "fairness_response"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "evaluation",
+        "purpose": "Use evidence and compare alternatives; lack of opportunity is not inability",
+        "source_locator": "pages 10–11",
+        "questions": [
+          {
+            "id": "evaluation_evidence",
+            "canonical_question": "What information or experience would help you decide whether the healthcare drone service we are discussing works well enough for your city?",
+            "response_type": "open",
+            "evidence_goal": "evaluation_evidence",
+            "source_locator": "page 11"
+          },
+          {
+            "id": "demonstration",
+            "canonical_question": "Have you ever seen, heard or experienced a drone demonstration, simulation or similar activity that helped you judge any of those things?",
+            "response_type": "yes_no",
+            "evidence_goal": "demonstration",
+            "source_locator": "page 11"
+          },
+          {
+            "id": "demonstration_view",
+            "canonical_question": "What did you take from that experience?",
+            "response_type": "open",
+            "evidence_goal": "demonstration_view",
+            "source_locator": "page 11",
+            "when": "demonstration:yes"
+          },
+          {
+            "id": "tradeoff",
+            "canonical_question": "Why?",
+            "response_type": "open",
+            "evidence_goal": "tradeoff",
+            "source_locator": "page 11",
+            "when": "demonstration:yes"
+          },
+          {
+            "id": "hypothetical_comparison",
+            "canonical_question": "What information would you need before recommending one route rather than the other?",
+            "response_type": "open",
+            "evidence_goal": "hypothetical_comparison",
+            "source_locator": "page 12",
+            "when": "demonstration:no",
+            "preface": "Imagine you were shown two possible routes for the same healthcare drone service."
+          }
+        ],
+        "evidence_goals": [
+          "evaluation_evidence",
+          "demonstration",
+          "demonstration_view",
+          "tradeoff",
+          "hypothetical_comparison"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "unfamiliar_issue",
+        "purpose": "Optional unfamiliar technical issue, permission and separate exposure",
+        "source_locator": "pages 12,13",
+        "questions": [
+          {
+            "id": "air_awareness",
+            "canonical_question": "Have you ever thought about whether the air movement created by a drone during take-off or landing could affect people or objects nearby?",
+            "response_type": "yes_no",
+            "evidence_goal": "air_awareness",
+            "source_locator": "page 12",
+            "when": "raised:landing",
+            "optional": true
+          },
+          {
+            "id": "air_explanation",
+            "canonical_question": "Would you like a short explanation?",
+            "response_type": "permission",
+            "evidence_goal": "air_explanation",
+            "source_locator": "page 12",
+            "when": "air_awareness:no",
+            "optional": true
+          },
+          {
+            "id": "air_safety",
+            "canonical_question": "What would you want to know before deciding whether such a location was safe?",
+            "response_type": "open",
+            "evidence_goal": "air_safety",
+            "source_locator": "page 13",
+            "when": "air_explanation:yes",
+            "optional": true
+          }
+        ],
+        "evidence_goals": [],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "influence",
+        "purpose": "Separate opportunity, capability, actual participation and demonstrated influence",
+        "source_locator": "pages 13",
+        "questions": [
+          {
+            "id": "feedback_outcome",
+            "canonical_question": "Thinking about any public consultation or decision you have been involved in, have you ever been able to see what happened after people gave their views?",
+            "response_type": "yes_no",
+            "evidence_goal": "feedback_outcome",
+            "source_locator": "page 13",
+            "when": "opportunity:yes"
+          },
+          {
+            "id": "drone_influence",
+            "canonical_question": "For drone services specifically, do you know whether people's views have changed any proposal, route, location, safeguard or other decision?",
+            "response_type": "yes_no",
+            "evidence_goal": "drone_influence",
+            "source_locator": "page 13"
+          },
+          {
+            "id": "influence_evidence",
+            "canonical_question": "What would you expect to see before you could say that citizens had genuinely influenced the decision?",
+            "response_type": "open",
+            "evidence_goal": "influence_evidence",
+            "source_locator": "page 13"
+          },
+          {
+            "id": "influence_capability",
+            "canonical_question": "How would you explain your concerns if you wanted the route reconsidered?",
+            "preface": "Imagine that the city asked for your opinion about a proposed healthcare drone route that would repeatedly pass over homes.",
+            "response_type": "open",
+            "evidence_goal": "influence_capability",
+            "source_locator": "page 14",
+            "when": "opportunity:no"
+          }
+        ],
+        "evidence_goals": [
+          "feedback_outcome",
+          "drone_influence",
+          "influence_evidence",
+          "influence_capability"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "accountability",
+        "purpose": "Ways to raise problems, seek answers and escalate without assuming mechanisms exist",
+        "source_locator": "pages 14,15",
+        "questions": [
+          {
+            "id": "problem_action",
+            "canonical_question": "What would you do?",
+            "response_type": "open",
+            "evidence_goal": "problem_action",
+            "source_locator": "page 14",
+            "preface": "Imagine the healthcare drone service we have been discussing was already operating and you noticed a problem—for example repeated noise, a safety concern or a privacy issue."
+          },
+          {
+            "id": "problem_response",
+            "canonical_question": "How would you expect them to respond?",
+            "response_type": "open",
+            "evidence_goal": "problem_response",
+            "source_locator": "page 14"
+          },
+          {
+            "id": "escalation",
+            "canonical_question": "If you felt their response was not adequate, what would you do next?",
+            "response_type": "open",
+            "evidence_goal": "escalation",
+            "source_locator": "page 15"
+          },
+          {
+            "id": "formal_channel",
+            "canonical_question": "Are you currently aware of any formal way to report or follow up concerns specifically about drone services?",
+            "response_type": "yes_no",
+            "evidence_goal": "formal_channel",
+            "source_locator": "page 15"
+          }
+        ],
+        "evidence_goals": [
+          "problem_action",
+          "problem_response",
+          "escalation",
+          "formal_channel"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "sustained",
+        "purpose": "Continued role, changing conditions and monitoring; proposals are not sustained activity",
+        "source_locator": "pages 15,16",
+        "questions": [
+          {
+            "id": "ongoing_role",
+            "canonical_question": "If healthcare drone services became a regular part of the city, do you think citizens should continue to have a role after the initial decision has been made?",
+            "response_type": "yes_no",
+            "evidence_goal": "ongoing_role",
+            "source_locator": "page 15"
+          },
+          {
+            "id": "ongoing_detail",
+            "canonical_question": "What role should they have?",
+            "response_type": "open",
+            "evidence_goal": "ongoing_detail",
+            "source_locator": "page 15",
+            "when": "ongoing_role:yes"
+          },
+          {
+            "id": "changing_conditions",
+            "canonical_question": "What should happen then?",
+            "response_type": "open",
+            "evidence_goal": "changing_conditions",
+            "source_locator": "page 16",
+            "preface": "Suppose the service changed over time—for example there were many more flights or drones started being used for other purposes."
+          }
+        ],
+        "evidence_goals": [
+          "ongoing_role",
+          "ongoing_detail",
+          "changing_conditions"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "opinion",
+        "purpose": "Separate personal opinion; never readiness evidence",
+        "source_locator": "page 16",
+        "questions": [
+          {
+            "id": "opinion",
+            "canonical_question": "Overall, what do you currently think about using drones to transport healthcare items in your city?",
+            "response_type": "opinion",
+            "evidence_goal": "opinion",
+            "source_locator": "page 16"
+          },
+          {
+            "id": "opinion_why",
+            "canonical_question": "Why?",
+            "response_type": "opinion",
+            "evidence_goal": "opinion_why",
+            "source_locator": "page 16"
+          }
+        ],
+        "evidence_goals": [
+          "opinion",
+          "opinion_why"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      }
+    ],
+    "organisational": [
+      {
+        "id": "context",
+        "purpose": "Organisation/unit and its own remit, never all responsibilities of the service",
+        "source_locator": "pages 2,3",
+        "questions": [
+          {
+            "id": "area",
+            "canonical_question": "Which EU city or urban area would you like your answers to refer to?",
+            "response_type": "city",
+            "evidence_goal": "area",
+            "source_locator": "page 2",
+            "context_field": "city"
+          },
+          {
+            "id": "organisation_context",
+            "canonical_question": "What organisation do you work for?",
+            "response_type": "open",
+            "evidence_goal": "organisation_context",
+            "source_locator": "page 2",
+            "context_field": "organisation_or_unit",
+            "preface": "You do not need to name it. If you prefer not to name it, please briefly describe what kind of organisation it is and what it does."
+          },
+          {
+            "id": "remit",
+            "canonical_question": "What role does your organisation currently have—or could it potentially have—in relation to drone services?",
+            "response_type": "open",
+            "evidence_goal": "remit",
+            "source_locator": "page 3",
+            "context_field": "responsibilities"
+          }
+        ],
+        "evidence_goals": [
+          "area",
+          "organisation_context",
+          "remit"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "recognition",
+        "purpose": "Prior drone familiarity; no supplied explanation counted as previous knowledge",
+        "source_locator": "pages 3,4",
+        "questions": [
+          {
+            "id": "drone_recognition",
+            "canonical_question": "Are you familiar with drone technology?",
+            "response_type": "yes_no",
+            "evidence_goal": "drone_recognition",
+            "source_locator": "page 3"
+          },
+          {
+            "id": "drone_description",
+            "canonical_question": "In your own words, how would you describe a drone?",
+            "response_type": "open",
+            "evidence_goal": "drone_description",
+            "source_locator": "page 3",
+            "when": "drone_recognition:yes"
+          },
+          {
+            "id": "drone_uses",
+            "canonical_question": "What kinds of services or uses involving drones are you familiar with?",
+            "response_type": "open",
+            "evidence_goal": "drone_uses",
+            "source_locator": "page 3",
+            "when": "drone_recognition:yes"
+          },
+          {
+            "id": "drone_explanation",
+            "canonical_question": "Would you like a short explanation before we continue?",
+            "response_type": "permission",
+            "evidence_goal": "drone_explanation",
+            "source_locator": "page 4",
+            "when": "drone_recognition:no"
+          },
+          {
+            "id": "local_awareness",
+            "canonical_question": "As far as you know, are drones already being used in your city?",
+            "response_type": "yes_no",
+            "evidence_goal": "local_awareness",
+            "source_locator": "page 4"
+          },
+          {
+            "id": "local_uses",
+            "canonical_question": "What are they being used for?",
+            "response_type": "open",
+            "evidence_goal": "local_uses",
+            "source_locator": "page 4",
+            "when": "local_awareness:yes"
+          },
+          {
+            "id": "local_organisations",
+            "canonical_question": "Do you know which organisations are involved?",
+            "response_type": "open",
+            "evidence_goal": "local_organisations",
+            "source_locator": "page 4",
+            "when": "local_awareness:yes"
+          }
+        ],
+        "evidence_goals": [
+          "drone_recognition",
+          "drone_description",
+          "drone_uses",
+          "drone_explanation",
+          "local_awareness",
+          "local_uses",
+          "local_organisations"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "awareness",
+        "purpose": "Healthcare-service relevance and open organisational requirements",
+        "source_locator": "pages 5,6,7",
+        "questions": [
+          {
+            "id": "relevance",
+            "canonical_question": "Could this type of healthcare drone service be relevant to your organisation?",
+            "response_type": "yes_no",
+            "evidence_goal": "relevance",
+            "source_locator": "page 5",
+            "preface": "For the rest of the interview, I would like you to think about one specific type of drone service: drones transporting healthcare items such as medicines, blood, laboratory samples or other medical supplies."
+          },
+          {
+            "id": "relevance_detail",
+            "canonical_question": "In what way?",
+            "response_type": "open",
+            "evidence_goal": "relevance_detail",
+            "source_locator": "page 5",
+            "when": "relevance:yes"
+          },
+          {
+            "id": "outside_remit",
+            "canonical_question": "Why do you think it would not be relevant to your organisation?",
+            "response_type": "open",
+            "evidence_goal": "outside_remit",
+            "source_locator": "page 6",
+            "when": "relevance:no"
+          },
+          {
+            "id": "open_priorities",
+            "canonical_question": "What possible opportunities, challenges or responsibilities come to mind for your organisation?",
+            "response_type": "open",
+            "evidence_goal": "open_priorities",
+            "source_locator": "page 6"
+          },
+          {
+            "id": "requirements_open",
+            "canonical_question": "If this healthcare drone service were proposed for your city, what would your organisation need to consider before deciding what role to play or what position to take?",
+            "response_type": "open",
+            "evidence_goal": "requirements_open",
+            "source_locator": "page 6"
+          },
+          {
+            "id": "open_more",
+            "canonical_question": "Anything else?",
+            "response_type": "open",
+            "evidence_goal": "open_more",
+            "source_locator": "page 6"
+          },
+          {
+            "id": "suggested_topics",
+            "canonical_question": "Are any of these particularly relevant to your organisation's role?",
+            "response_type": "display",
+            "evidence_goal": "suggested_topics",
+            "source_locator": "page 7"
+          },
+          {
+            "id": "priorities",
+            "canonical_question": "Which two or three are most important for your organisation?",
+            "response_type": "priorities",
+            "evidence_goal": "priorities",
+            "source_locator": "page 7"
+          }
+        ],
+        "evidence_goals": [
+          "relevance",
+          "relevance_detail",
+          "outside_remit",
+          "open_priorities",
+          "requirements_open",
+          "open_more",
+          "suggested_topics",
+          "priorities"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "assessment",
+        "purpose": "Requirements, identified gaps and applicable regulatory responsibilities",
+        "source_locator": "pages 8",
+        "questions": [
+          {
+            "id": "requirements",
+            "canonical_question": "Thinking about the issues you identified as most important, what would your organisation need to have in place to deal with the healthcare drone service properly?",
+            "response_type": "open",
+            "evidence_goal": "requirements",
+            "source_locator": "page 8"
+          },
+          {
+            "id": "requirements_understanding",
+            "canonical_question": "How well does your organisation currently understand what would be required?",
+            "response_type": "open",
+            "evidence_goal": "requirements_understanding",
+            "source_locator": "page 8"
+          },
+          {
+            "id": "gaps",
+            "canonical_question": "What are the main gaps?",
+            "response_type": "open",
+            "evidence_goal": "gaps",
+            "source_locator": "page 8"
+          },
+          {
+            "id": "regulatory_authorities",
+            "canonical_question": "Are there any laws, regulations, permissions or public authorities that your organisation thinks would be relevant to this service?",
+            "response_type": "open",
+            "evidence_goal": "regulatory_authorities",
+            "source_locator": "page 8",
+            "when": "gap:regulatory_authorities",
+            "optional": true
+          },
+          {
+            "id": "regulatory_remit",
+            "canonical_question": "Has your organisation already identified which requirements or responsibilities apply specifically to it?",
+            "response_type": "open",
+            "evidence_goal": "regulatory_remit",
+            "source_locator": "page 8",
+            "when": "gap:regulatory_remit",
+            "optional": true
+          }
+        ],
+        "evidence_goals": [
+          "requirements",
+          "requirements_understanding",
+          "gaps"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "planning",
+        "purpose": "Distinguish draft plans from formally adopted plans, assigned responsibilities and external coordination.",
+        "source_locator": "pages 9",
+        "questions": [
+          {
+            "id": "planning",
+            "canonical_question": "Has your organisation started planning how it would deal with the healthcare drone service we are discussing?",
+            "response_type": "yes_no",
+            "evidence_goal": "planning",
+            "source_locator": "page 9"
+          },
+          {
+            "id": "planning_detail",
+            "canonical_question": "What has been planned so far?",
+            "response_type": "open",
+            "evidence_goal": "planning_detail",
+            "source_locator": "page 9",
+            "when": "planning:yes"
+          },
+          {
+            "id": "assigned",
+            "canonical_question": "Have responsibilities already been assigned?",
+            "response_type": "yes_no",
+            "evidence_goal": "assigned",
+            "source_locator": "page 9",
+            "when": "planning:yes"
+          },
+          {
+            "id": "external_coordination",
+            "canonical_question": "What about coordination with organisations outside your organisation?",
+            "response_type": "open",
+            "evidence_goal": "external_coordination",
+            "source_locator": "page 9",
+            "when": "planning:yes"
+          }
+        ],
+        "evidence_goals": [
+          "planning",
+          "planning_detail",
+          "assigned",
+          "external_coordination"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "preparation",
+        "purpose": "Existing arrangements, resources and pilot versus permanent approval pathways",
+        "source_locator": "pages 10,11",
+        "questions": [
+          {
+            "id": "preparation",
+            "canonical_question": "Has your organisation moved beyond planning and started putting arrangements in place for testing or potentially implementing this healthcare drone service?",
+            "response_type": "yes_no",
+            "evidence_goal": "preparation",
+            "source_locator": "page 10"
+          },
+          {
+            "id": "arrangements",
+            "canonical_question": "What has been put in place?",
+            "response_type": "open",
+            "evidence_goal": "arrangements",
+            "source_locator": "page 10",
+            "when": "preparation:yes"
+          },
+          {
+            "id": "resources",
+            "canonical_question": "What about staff, expertise and other resources?",
+            "response_type": "open",
+            "evidence_goal": "resources",
+            "source_locator": "page 10",
+            "when": "preparation:yes"
+          },
+          {
+            "id": "procedures",
+            "canonical_question": "Are the necessary procedures or approval processes clear?",
+            "response_type": "yes_no",
+            "evidence_goal": "procedures",
+            "source_locator": "page 11",
+            "when": "preparation:yes"
+          }
+        ],
+        "evidence_goals": [
+          "preparation",
+          "arrangements",
+          "resources",
+          "procedures"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "validation",
+        "purpose": "Arrangements actually tested, evidence, lessons and changes identified",
+        "source_locator": "pages 11,12",
+        "questions": [
+          {
+            "id": "testing",
+            "canonical_question": "Have your organisation's plans, procedures or coordination arrangements actually been tested through a pilot, demonstration, simulation or another realistic activity?",
+            "response_type": "yes_no",
+            "evidence_goal": "testing",
+            "source_locator": "page 11"
+          },
+          {
+            "id": "testing_role",
+            "canonical_question": "What parts of your organisation's role were tested?",
+            "response_type": "open",
+            "evidence_goal": "testing_role",
+            "source_locator": "page 11",
+            "when": "testing:yes"
+          },
+          {
+            "id": "lessons",
+            "canonical_question": "What did your organisation learn?",
+            "response_type": "open",
+            "evidence_goal": "lessons",
+            "source_locator": "page 12",
+            "when": "testing:yes"
+          },
+          {
+            "id": "improvements",
+            "canonical_question": "Were any changes identified as a result?",
+            "response_type": "open",
+            "evidence_goal": "improvements",
+            "source_locator": "page 12",
+            "when": "testing:yes"
+          },
+          {
+            "id": "permissions",
+            "canonical_question": "Were any relevant permissions, approval procedures or compliance processes also tested or used?",
+            "response_type": "open",
+            "evidence_goal": "permissions",
+            "source_locator": "page 12",
+            "when": "testing:yes"
+          }
+        ],
+        "evidence_goals": [
+          "testing",
+          "testing_role",
+          "lessons",
+          "improvements",
+          "permissions"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "integration",
+        "purpose": "Lessons formally incorporated into normal processes versus pilot-only arrangements",
+        "source_locator": "pages 12,13",
+        "questions": [
+          {
+            "id": "integration",
+            "canonical_question": "Have those lessons now been incorporated into your organisation's regular plans, policies or procedures?",
+            "response_type": "yes_no",
+            "evidence_goal": "integration",
+            "source_locator": "page 12",
+            "when": "testing:yes"
+          },
+          {
+            "id": "integration_changes",
+            "canonical_question": "What has changed?",
+            "response_type": "open",
+            "evidence_goal": "integration_changes",
+            "source_locator": "page 13",
+            "when": "integration:yes"
+          },
+          {
+            "id": "routine",
+            "canonical_question": "Are these responsibilities and procedures now part of the organisation's regular way of working, or are they still mainly connected to the pilot?",
+            "response_type": "open",
+            "evidence_goal": "routine",
+            "source_locator": "page 13",
+            "when": "integration:yes"
+          },
+          {
+            "id": "regulatory_integration",
+            "canonical_question": "Have the relevant regulatory requirements and approval processes also been incorporated into your organisation's normal procedures?",
+            "response_type": "open",
+            "evidence_goal": "regulatory_integration",
+            "source_locator": "page 13",
+            "when": "gap:regulatory_integration",
+            "optional": true
+          }
+        ],
+        "evidence_goals": [
+          "integration",
+          "integration_changes",
+          "routine"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "operational",
+        "purpose": "Evidence of capacity for own remit under regular operating conditions",
+        "source_locator": "pages 13,14",
+        "questions": [
+          {
+            "id": "operational",
+            "canonical_question": "Would your organisation currently be able to fulfil its role?",
+            "response_type": "yes_no",
+            "evidence_goal": "operational",
+            "source_locator": "page 13",
+            "preface": "Imagine the healthcare drone service was ready to move from a pilot to regular operation."
+          },
+          {
+            "id": "in_place",
+            "canonical_question": "What is already in place?",
+            "response_type": "open",
+            "evidence_goal": "in_place",
+            "source_locator": "page 13",
+            "when": "operational:no"
+          },
+          {
+            "id": "missing",
+            "canonical_question": "What is still missing?",
+            "response_type": "open",
+            "evidence_goal": "missing",
+            "source_locator": "page 14",
+            "when": "operational:no"
+          },
+          {
+            "id": "operational_evidence",
+            "canonical_question": "What gives you confidence that the organisation could fulfil its responsibilities under regular operating conditions?",
+            "response_type": "open",
+            "evidence_goal": "operational_evidence",
+            "source_locator": "page 14",
+            "when": "operational:yes_only"
+          }
+        ],
+        "evidence_goals": [
+          "operational",
+          "in_place",
+          "missing",
+          "operational_evidence"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "sustained",
+        "purpose": "Established monitoring and adaptation versus intended processes",
+        "source_locator": "pages 15",
+        "questions": [
+          {
+            "id": "monitoring",
+            "canonical_question": "If healthcare drone services became a normal part of the city's activities, how would your organisation know whether its arrangements were still working well over time?",
+            "response_type": "open",
+            "evidence_goal": "monitoring",
+            "source_locator": "page 15",
+            "when": "boundary",
+            "optional": true
+          },
+          {
+            "id": "adaptation",
+            "canonical_question": "What would happen if, for example, the number of flights increased significantly, the service changed, or new requirements were introduced?",
+            "response_type": "open",
+            "evidence_goal": "adaptation",
+            "source_locator": "page 15",
+            "when": "asked:monitoring",
+            "optional": true
+          },
+          {
+            "id": "established",
+            "canonical_question": "Does your organisation already have an established process for doing this, or is this what you think should happen?",
+            "response_type": "open",
+            "evidence_goal": "established",
+            "source_locator": "page 15",
+            "when": "asked:monitoring",
+            "optional": true
+          }
+        ],
+        "evidence_goals": [],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      }
+    ],
+    "technical": [
+      {
+        "id": "context",
+        "purpose": "Specific assessed object, organisation type, technical role and expertise limits",
+        "source_locator": "pages 2,3",
+        "questions": [
+          {
+            "id": "area",
+            "canonical_question": "Which EU city or urban area would you like your answers to refer to?",
+            "response_type": "city",
+            "evidence_goal": "area",
+            "source_locator": "page 2",
+            "context_field": "city"
+          },
+          {
+            "id": "organisation_context",
+            "canonical_question": "What organisation do you work for?",
+            "response_type": "open",
+            "evidence_goal": "organisation_context",
+            "source_locator": "page 2",
+            "context_field": "organisation_or_unit",
+            "preface": "You do not need to name it. If you prefer not to name it, please describe what kind of organisation it is and what it does."
+          },
+          {
+            "id": "technical_role",
+            "canonical_question": "What is your technical role in relation to drones?",
+            "response_type": "open",
+            "evidence_goal": "technical_role",
+            "source_locator": "page 3",
+            "context_field": "technical_role"
+          },
+          {
+            "id": "technical_object",
+            "canonical_question": "What drone technology, system, component or technical service are you most familiar with?",
+            "response_type": "open",
+            "evidence_goal": "technical_object",
+            "source_locator": "page 3",
+            "context_field": "technical_object",
+            "preface": "Please describe it in your own words."
+          },
+          {
+            "id": "expertise",
+            "canonical_question": "Which parts of that system can you speak about with confidence?",
+            "response_type": "open",
+            "evidence_goal": "expertise",
+            "source_locator": "page 3",
+            "context_field": "expertise"
+          },
+          {
+            "id": "configuration",
+            "canonical_question": "Which version or configuration and intended operating environment should this assessment refer to? You can say if these are not defined yet.",
+            "response_type": "open",
+            "evidence_goal": "configuration",
+            "source_locator": "technical interviewer guidance, pages 21–22; authored clarification",
+            "when": "gap:configuration",
+            "optional": true
+          }
+        ],
+        "evidence_goals": [
+          "area",
+          "organisation_context",
+          "technical_role",
+          "technical_object",
+          "expertise"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "awareness",
+        "purpose": "Unverified local use, no transfer of maturity from another system",
+        "source_locator": "pages 4",
+        "questions": [
+          {
+            "id": "local_awareness",
+            "canonical_question": "As far as you know, are drones already being used or tested in this city?",
+            "response_type": "yes_no",
+            "evidence_goal": "local_awareness",
+            "source_locator": "page 4"
+          },
+          {
+            "id": "local_uses",
+            "canonical_question": "For what purposes?",
+            "response_type": "open",
+            "evidence_goal": "local_uses",
+            "source_locator": "page 4",
+            "when": "local_awareness:yes"
+          },
+          {
+            "id": "similar",
+            "canonical_question": "Are any of these applications technically similar to the system you have just described?",
+            "response_type": "open",
+            "evidence_goal": "similar",
+            "source_locator": "page 4",
+            "when": "local_awareness:yes"
+          }
+        ],
+        "evidence_goals": [
+          "local_awareness",
+          "local_uses",
+          "similar"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "concept",
+        "purpose": "Basic principles, intended use, functions and defined versus conceptual work",
+        "source_locator": "pages 5",
+        "questions": [
+          {
+            "id": "concept",
+            "canonical_question": "How would the technology you described be used for this healthcare delivery service?",
+            "response_type": "open",
+            "evidence_goal": "concept",
+            "source_locator": "page 5",
+            "context_field": "intended_environment",
+            "preface": "For the rest of the interview, please think specifically about using drones to transport healthcare items such as medicines, blood, laboratory samples or other medical supplies. Please answer in relation to the technical system or component you described."
+          },
+          {
+            "id": "functions",
+            "canonical_question": "What are the main technical functions that would need to work for the service to be possible?",
+            "response_type": "open",
+            "evidence_goal": "functions",
+            "source_locator": "page 5"
+          },
+          {
+            "id": "defined",
+            "canonical_question": "Which of these are already technically defined, and which are still conceptual?",
+            "response_type": "open",
+            "evidence_goal": "defined",
+            "source_locator": "page 5"
+          }
+        ],
+        "evidence_goals": [
+          "concept",
+          "functions",
+          "defined"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "proof",
+        "purpose": "Actual experimental proof, integration and evidence produced",
+        "source_locator": "pages 6",
+        "questions": [
+          {
+            "id": "experimental",
+            "canonical_question": "Has the technical concept been tested experimentally?",
+            "response_type": "yes_no",
+            "evidence_goal": "experimental",
+            "source_locator": "page 6"
+          },
+          {
+            "id": "experimental_detail",
+            "canonical_question": "What has actually been demonstrated?",
+            "response_type": "open",
+            "evidence_goal": "experimental_detail",
+            "source_locator": "page 6",
+            "when": "experimental:yes"
+          },
+          {
+            "id": "experimental_integration",
+            "canonical_question": "Were these separate technical experiments, or had the main functions already been integrated?",
+            "response_type": "open",
+            "evidence_goal": "experimental_integration",
+            "source_locator": "page 6",
+            "when": "experimental:yes"
+          },
+          {
+            "id": "experimental_evidence",
+            "canonical_question": "What evidence was produced?",
+            "response_type": "open",
+            "evidence_goal": "experimental_evidence",
+            "source_locator": "page 6",
+            "when": "experimental:yes"
+          }
+        ],
+        "evidence_goals": [
+          "experimental",
+          "experimental_detail",
+          "experimental_integration",
+          "experimental_evidence"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "controlled",
+        "purpose": "Integrated controlled validation, conditions and environment",
+        "source_locator": "pages 7",
+        "questions": [
+          {
+            "id": "controlled",
+            "canonical_question": "Has the integrated technology been tested in a controlled environment?",
+            "response_type": "yes_no",
+            "evidence_goal": "controlled",
+            "source_locator": "page 7",
+            "when": "experimental:not_no"
+          },
+          {
+            "id": "controlled_configuration",
+            "canonical_question": "What parts of the system were integrated at that stage?",
+            "response_type": "open",
+            "evidence_goal": "controlled_configuration",
+            "source_locator": "page 7",
+            "when": "controlled:yes"
+          },
+          {
+            "id": "controlled_conditions",
+            "canonical_question": "What conditions were tested?",
+            "response_type": "open",
+            "evidence_goal": "controlled_conditions",
+            "source_locator": "page 7",
+            "when": "controlled:yes"
+          },
+          {
+            "id": "controlled_environment",
+            "canonical_question": "Were the tests based mainly on laboratory or controlled test conditions, or did they already represent the intended operating environment?",
+            "response_type": "open",
+            "evidence_goal": "controlled_environment",
+            "source_locator": "page 7",
+            "when": "controlled:yes"
+          }
+        ],
+        "evidence_goals": [
+          "controlled",
+          "controlled_configuration",
+          "controlled_conditions",
+          "controlled_environment"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "topics",
+        "purpose": "Open technical uncertainties before optional suggestions and priorities",
+        "source_locator": "pages 8",
+        "questions": [
+          {
+            "id": "open_priorities",
+            "canonical_question": "For the healthcare drone service we are discussing, what do you see as the main technical challenges or uncertainties that still need to be addressed?",
+            "response_type": "open",
+            "evidence_goal": "open_priorities",
+            "source_locator": "page 8"
+          },
+          {
+            "id": "open_more",
+            "canonical_question": "Anything else?",
+            "response_type": "open",
+            "evidence_goal": "open_more",
+            "source_locator": "page 8"
+          },
+          {
+            "id": "priorities",
+            "canonical_question": "Here are some other technical areas that may be relevant. Which two or three are most important for the system you are assessing?",
+            "response_type": "priorities",
+            "evidence_goal": "priorities",
+            "source_locator": "page 8"
+          }
+        ],
+        "evidence_goals": [
+          "open_priorities",
+          "open_more",
+          "priorities"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "relevant_validation",
+        "purpose": "Representative validation, actual versus simulated interfaces, selected technical probes",
+        "source_locator": "pages 9,10",
+        "questions": [
+          {
+            "id": "representative",
+            "canonical_question": "Has the system been tested in conditions that realistically represent the healthcare service we are discussing?",
+            "response_type": "yes_no",
+            "evidence_goal": "representative",
+            "source_locator": "page 9",
+            "when": "experimental:not_no"
+          },
+          {
+            "id": "representative_basis",
+            "canonical_question": "What made those tests representative of the intended service?",
+            "response_type": "open",
+            "evidence_goal": "representative_basis",
+            "source_locator": "page 9",
+            "when": "representative:yes"
+          },
+          {
+            "id": "interfaces",
+            "canonical_question": "Were the actual interfaces needed for the healthcare logistics chain also tested?",
+            "response_type": "open",
+            "evidence_goal": "interfaces",
+            "source_locator": "page 10",
+            "when": "representative:yes"
+          },
+          {
+            "id": "noise_test",
+            "canonical_question": "How has the aircraft's noise been assessed?",
+            "response_type": "open",
+            "evidence_goal": "noise_test",
+            "source_locator": "page 10",
+            "when": [
+              "topic:noise",
+              "aircraft_scope"
+            ],
+            "optional": true,
+            "preface": "You identified noise as an important technical issue."
+          },
+          {
+            "id": "noise_changes",
+            "canonical_question": "Have the results been used to modify the aircraft or flight procedures?",
+            "response_type": "open",
+            "evidence_goal": "noise_changes",
+            "source_locator": "page 10",
+            "when": "asked:noise_test",
+            "optional": true
+          }
+        ],
+        "evidence_goals": [
+          "representative",
+          "representative_basis",
+          "interfaces"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "relevant_demonstration",
+        "purpose": "Integrated demonstration as a whole, measured results and unresolved limitations",
+        "source_locator": "pages 11",
+        "questions": [
+          {
+            "id": "demonstrated",
+            "canonical_question": "Has the integrated technical system been demonstrated as a whole in a relevant environment?",
+            "response_type": "yes_no",
+            "evidence_goal": "demonstrated",
+            "source_locator": "page 11",
+            "when": "experimental:not_no"
+          },
+          {
+            "id": "demonstrated_configuration",
+            "canonical_question": "What was operating together during the demonstration?",
+            "response_type": "open",
+            "evidence_goal": "demonstrated_configuration",
+            "source_locator": "page 11",
+            "when": "demonstrated:yes"
+          },
+          {
+            "id": "realistic",
+            "canonical_question": "Was the healthcare logistics process represented realistically?",
+            "response_type": "open",
+            "evidence_goal": "realistic",
+            "source_locator": "page 11",
+            "when": "demonstrated:yes"
+          },
+          {
+            "id": "measurements",
+            "canonical_question": "What technical performance was measured?",
+            "response_type": "open",
+            "evidence_goal": "measurements",
+            "source_locator": "page 11",
+            "when": "demonstrated:yes"
+          },
+          {
+            "id": "limitations",
+            "canonical_question": "What technical issues remained after the demonstration?",
+            "response_type": "open",
+            "evidence_goal": "limitations",
+            "source_locator": "page 11",
+            "when": "demonstrated:yes"
+          }
+        ],
+        "evidence_goals": [
+          "demonstrated",
+          "demonstrated_configuration",
+          "realistic",
+          "measurements",
+          "limitations"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "operational_prototype",
+        "purpose": "Actual intended operating environment, same configuration and real operational interfaces",
+        "source_locator": "pages 12,13",
+        "questions": [
+          {
+            "id": "operational_prototype",
+            "canonical_question": "Has a system prototype been demonstrated in the actual environment in which the healthcare service is intended to operate?",
+            "response_type": "yes_no",
+            "evidence_goal": "operational_prototype",
+            "source_locator": "page 12",
+            "when": "experimental:not_no"
+          },
+          {
+            "id": "operational_configuration",
+            "canonical_question": "Were these technically representative of the intended operation?",
+            "response_type": "open",
+            "evidence_goal": "operational_configuration",
+            "source_locator": "page 12",
+            "when": "operational_prototype:yes",
+            "context_field": "object_version"
+          },
+          {
+            "id": "operational_interfaces",
+            "canonical_question": "Were the real operational interfaces involved—for example healthcare staff, take-off and landing sites, communications systems or airspace services?",
+            "response_type": "open",
+            "evidence_goal": "operational_interfaces",
+            "source_locator": "page 12",
+            "when": "operational_prototype:yes"
+          },
+          {
+            "id": "operational_evidence",
+            "canonical_question": "What evidence was collected?",
+            "response_type": "open",
+            "evidence_goal": "operational_evidence",
+            "source_locator": "page 12",
+            "when": "operational_prototype:yes"
+          },
+          {
+            "id": "safety_demonstrated",
+            "canonical_question": "Which safety and failure-management functions were demonstrated under those operational conditions?",
+            "response_type": "open",
+            "evidence_goal": "safety_demonstrated",
+            "source_locator": "page 13",
+            "when": [
+              "topic:safety",
+              "operational_prototype:yes"
+            ],
+            "optional": true,
+            "preface": "You identified technical safety as particularly important."
+          },
+          {
+            "id": "safety_complete",
+            "canonical_question": "Were all of the intended safety functions complete and qualified?",
+            "response_type": "yes_no",
+            "evidence_goal": "safety_complete",
+            "source_locator": "page 13",
+            "when": "asked:safety_demonstrated",
+            "optional": true
+          }
+        ],
+        "evidence_goals": [
+          "operational_prototype",
+          "operational_configuration",
+          "operational_interfaces",
+          "operational_evidence"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "qualification",
+        "purpose": "Complete final configuration and qualification, not permissions or a successful flight",
+        "source_locator": "pages 13,14",
+        "questions": [
+          {
+            "id": "complete",
+            "canonical_question": "Is the technical system now complete in the configuration intended for regular healthcare operations?",
+            "response_type": "yes_no",
+            "evidence_goal": "complete",
+            "source_locator": "page 13",
+            "when": "experimental:not_no"
+          },
+          {
+            "id": "outstanding",
+            "canonical_question": "What remains to be completed?",
+            "response_type": "open",
+            "evidence_goal": "outstanding",
+            "source_locator": "page 13",
+            "when": "complete:no"
+          },
+          {
+            "id": "qualification_evidence",
+            "canonical_question": "What evidence shows that the system is complete and qualified?",
+            "response_type": "open",
+            "evidence_goal": "qualification_evidence",
+            "source_locator": "page 14",
+            "when": "complete:yes_only"
+          }
+        ],
+        "evidence_goals": [
+          "complete",
+          "outstanding",
+          "qualification_evidence"
+        ],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      },
+      {
+        "id": "operational",
+        "purpose": "Completed actual system proven repeatedly, not isolated prototype demonstrations",
+        "source_locator": "pages 14,15",
+        "questions": [
+          {
+            "id": "routine_operation",
+            "canonical_question": "Has the completed system been used in actual operational service under the conditions for which it was designed?",
+            "response_type": "yes_no",
+            "evidence_goal": "routine_operation",
+            "source_locator": "page 14",
+            "when": "boundary",
+            "optional": true
+          },
+          {
+            "id": "routine_performance",
+            "canonical_question": "How has the system performed during operational use?",
+            "response_type": "open",
+            "evidence_goal": "routine_performance",
+            "source_locator": "page 15",
+            "when": "routine_operation:yes",
+            "optional": true
+          },
+          {
+            "id": "routine_evidence",
+            "canonical_question": "What evidence shows that it performs reliably over time rather than only during individual demonstrations?",
+            "response_type": "open",
+            "evidence_goal": "routine_evidence",
+            "source_locator": "page 15",
+            "when": "routine_operation:yes",
+            "optional": true
+          }
+        ],
+        "evidence_goals": [],
+        "optional_followup_guidance": "Clarify only unresolved evidence; reuse respondent priorities and stay within the selected scope.",
+        "completion": "Applicable evidence goals explored, explicitly unknown, inapplicable or declined. Coverage does not establish readiness."
+      }
+    ]
+  },
+  "topic_suggestions": {
+    "citizen_short": [
+      "where drones take off and land",
+      "effects on other transport and traffic",
+      "noise",
+      "safety",
+      "privacy and use of information",
+      "energy use and environmental effects",
+      "costs and who pays",
+      "access to services for people who live far away or face other barriers",
+      "how drones or landing areas affect how places look",
+      "the number of drones and where they fly",
+      "whether benefits and negative effects are shared fairly",
+      "whether people receive clear and trustworthy information",
+      "how citizens can take part in decisions"
+    ],
+    "citizen_extended": [
+      "how drone services fit with other transport in the city",
+      "where drones take off and land",
+      "energy use and environmental effects",
+      "costs, funding and who pays",
+      "whether people in remote areas or people who face barriers can benefit from the service",
+      "effects on road traffic",
+      "noise",
+      "how drones and their take-off and landing areas affect how places look",
+      "feeling safe",
+      "privacy",
+      "protection from technical failures, hacking or misuse of information",
+      "strong air movement around take-off and landing areas",
+      "the number of drones and where they fly",
+      "whether benefits and negative impacts are shared fairly",
+      "whether people receive clear and trustworthy information",
+      "whether people have enough information and support to take part in decisions"
+    ],
+    "organisational": [
+      "how the service fits with existing transport and city plans",
+      "where drones take off and land and how land is used",
+      "energy use and environmental effects",
+      "costs, funding and long-term financial arrangements",
+      "access for remote areas or people who may face barriers",
+      "interaction with other transport and traffic",
+      "noise",
+      "visual impacts",
+      "public concerns about safety and privacy",
+      "technical safety, security and protection of information",
+      "wind and strong air movement around take-off and landing areas",
+      "the number of drones and use of airspace",
+      "how benefits and negative effects are distributed",
+      "public information and engagement",
+      "staff knowledge, expertise and training"
+    ],
+    "technical": [
+      "compatibility with take-off, landing and supporting infrastructure",
+      "energy use, range and emissions",
+      "operating cost and technical efficiency",
+      "ability to serve the intended routes and users reliably",
+      "integration with the wider healthcare and logistics chain",
+      "noise measurement, prediction and mitigation",
+      "visibility of aircraft and infrastructure",
+      "technical features supporting public safety or privacy",
+      "aircraft safety, failure management, cybersecurity and data protection",
+      "wind, turbulence and air movement around take-off and landing areas",
+      "capacity to operate alongside other airspace users and traffic-management systems",
+      "monitoring and performance data",
+      "technical documentation, training and maintenance support"
+    ]
+  },
+  "review": {
+    "citizen_short": {
+      "question": "Now that you have seen the scale and the explanation, how well do you think Level {level} describes your situation?",
+      "choices": [
+        "It describes me well",
+        "It mostly describes me, but something important is missing",
+        "I think my level should be higher",
+        "I think my level should be lower",
+        "I am not sure"
+      ],
+      "higher": "Thank you. Why do you think your level should be higher? Is there anything we have missed or any experience or information that you think should be considered?",
+      "detail": "Could you briefly explain what happened?"
+    },
+    "citizen_extended": {
+      "question": "Now that you have seen the whole scale and the explanation, how well do you think Level {level} describes your situation?",
+      "choices": [
+        "It describes me well",
+        "It mostly describes me, but something important is missing",
+        "I think my level should be higher",
+        "I think my level should be lower",
+        "I am not sure"
+      ],
+      "higher": "Why do you think the level should be higher? Please tell me anything you think we have missed. You can also describe any experience or information that you think should be considered.",
+      "detail": "Thank you. Could you briefly explain what feedback was provided and what changed?"
+    },
+    "organisational": {
+      "question": "Now that you have seen the scale and the explanation, how well do you think Level {level} describes your organisation's current situation?",
+      "choices": [
+        "It describes the organisation well",
+        "It mostly describes the organisation, but something important is missing",
+        "I think the organisation should be at a higher level",
+        "I think the organisation should be at a lower level",
+        "I am not sure"
+      ],
+      "higher": "Why do you think the level should be higher? Is there anything we have missed, or any plans, procedures, resources, activities or other evidence that you think should be considered?",
+      "detail": "Are the responsibilities and procedures now part of the organisation's normal processes, rather than being used only for the pilot?"
+    },
+    "technical": {
+      "question": "Now that you have seen the scale and the explanation, how well do you think Level {level} describes the current technical maturity of the system?",
+      "choices": [
+        "It describes the system well",
+        "It mostly describes the system, but something important is missing",
+        "I think the system should be at a higher level",
+        "I think the system should be at a lower level",
+        "I am not sure"
+      ],
+      "higher": "Why do you think the level should be higher? Is there any technical evidence, testing, qualification or system capability that we have not considered?",
+      "detail": "Was that testing performed on the same system configuration intended for regular operation?",
+      "outstanding": "Were there any major technical functions or validation activities still outstanding after that testing?"
+    }
+  }
+}

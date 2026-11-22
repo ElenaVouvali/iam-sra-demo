@@ -1,5 +1,7 @@
 """SYNTHETIC_TEST_DATA: deterministic navigation double, never live semantics."""
 from copy import deepcopy
+from fn_fixture import reply
+from iam_sra.fn_interview import literal_answer
 
 
 class ChatFixture:
@@ -43,6 +45,18 @@ class ChatFixture:
         if 'noise' in lower or 'rest' in lower: result.update(indicator_ids=['indicator-07'], evidence_quote=text)
         if 'privacy' in lower: result.update(indicator_ids=['indicator-09'], evidence_quote=text)
         if 'safety' in lower: result.update(indicator_ids=['indicator-10'], evidence_quote=text)
+        if request.get('fn'):
+            kind=literal_answer(text) or 'substantive'
+            if request['fn']['response_type'] in {'yes_no','permission'} and kind=='substantive':
+                kind='no' if lower.startswith(('no','i do not','i don\'t')) else 'yes'
+            topics=[t for t in ('noise','privacy','fairness','wildlife','safety','landing') if t in lower]
+            result.update(interpretation=reply(request,kind=kind,
+                status='unknown' if kind=='uncertain' else 'explored',topics=topics)['interpretation'])
+            goal=request['fn']['evidence_goal']
+            if goal=='drone_recognition' and 'aircraft' in lower and 'drone_description' in request['fn']['allowed_objectives']:
+                result['interpretation']['coverage'].append({'goal':'drone_description',
+                    'evidence_id':request['current_answer_id'],'quote':text[:180],
+                    'status':'explored','answer_kind':'substantive'})
         return result
 
 

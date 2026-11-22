@@ -6,13 +6,13 @@ Navigation uses bounded context; reporting never claims to have read omitted tex
 from copy import deepcopy
 from datetime import datetime, timezone
 import os
-import random
 import re
 import time
 import httpx
 from .assessment import AssessmentError
 from .privacy import require_safe_data
-from .chat_policy import POLICY, SCHEMA, WELCOME, objectives, rubric, load_rubrics, discussion_guidance
+from .chat_policy import POLICY, SCHEMA, WELCOME, objectives, rubric, load_rubrics
+from .fn_interview import FNInterview, specification, flow_key, literal_answer
 
 
 def direct_intent(text):
@@ -40,9 +40,11 @@ def direct_intent(text):
 def explicit_profile(text):
     """Recognise a plainly selected perspective; never infer it from occupation."""
     value = text.strip().casefold()
+    labels = {'a':'citizen','a. citizen':'citizen','b':'organisational','b. organisation or institution':'organisational','c':'technical','c. technology expert or researcher':'technical'}
+    if value.rstrip('.!?') in labels: return labels[value.rstrip('.!?')]
     choices = {
-        'citizen': r'\b(?:personal (?:view|views|perspective)|my own view|my own views|answer(?:ing)? as a citizen|as a resident|citizen perspective)\b',
-        'organisational': r'\b(?:our organisation responsibilities|our organization responsibilities|on behalf of (?:an )?organisation|on behalf of (?:an )?organization|representing (?:an )?organisation|representing (?:an )?organization|organisation(?:al)? perspective|organization perspective|our team responsibilities|team responsibilities)\b',
+        'citizen': r'\b(?:citizen|personal (?:view|views|perspective)|my own view|my own views|my own perspective|for myself|answer(?:ing)? as a citizen|as a resident|citizen perspective)\b',
+        'organisational': r'\b(?:organisation or institution|organization or institution|our organisation responsibilities|our organization responsibilities|(?:on behalf of|representing|speaking for|answering for) (?:an? |my |our )?(?:organisation|organization|institution|municipality|team)|representing (?:an )?organisation|representing (?:an )?organization|organisation(?:al)? perspective|organization perspective|our team responsibilities|team responsibilities)\b',
         'technical': r'\b(?:technology subsystem|technical system|technical perspective|technology perspective|technology expert|technical object|technology component)\b',
     }
     matches = [profile for profile, pattern in choices.items() if re.search(pattern, value)]
@@ -84,10 +86,14 @@ class ChatSession:
         self.profile = None
         self.context = {'city': None, 'city_status': 'not_established', 'organisation_or_unit': '', 'responsibilities': '',
                         'technical_object': '', 'object_version': '', 'intended_environment': '',
-                        'scope_status': 'not_established', 'technical_role': '', 'language': 'en'}
+                        'scope_status': 'not_established', 'technical_role': '', 'expertise': '', 'language': 'en'}
         self.stage = 'conversation'
         self.objective = 'perspective'
         self.covered = {}
+        self.fn = FNInterview()
+        self.partial = False
+        self.review_step = None
+        self._paused_stage = None
         self.messages = []
         self.annotations = []
         self.priorities = []
@@ -95,8 +101,6 @@ class ChatSession:
         self.preferences = []
         self.pending_comparison = None
         self.pending_explanation = False
-        self.knowledge_focus = ''
-        self._opening_row = None
         self.pending_correction = None
         self.visits = {}
         self.revision = 0
@@ -125,7 +129,7 @@ class ChatSession:
 
     @property
     def limits(self):
-        return {'turns': 30 if self.depth == 'short' else 50,
+        return {'turns': int(os.getenv('IAM_CHAT_MAX_TURNS', '96')),
                 'calls': int(os.getenv('IAM_CHAT_MAX_CALLS', '64')),
                 'processing_seconds': int(os.getenv('IAM_CHAT_PROCESSING_SECONDS', '600'))}
 
@@ -155,7 +159,8 @@ class ChatSession:
     def _invalidate(self, reason):
         if self.suggestion or self.indicator_results:
             self.initial_results.append({'suggestion': deepcopy(self.suggestion),
-                'indicator_results': deepcopy(self.indicator_results), 'reason': reason, 'revision': self.revision})
+                'indicator_results': deepcopy(self.indicator_results), 'reason': reason,
+                'revision': (self.suggestion or {}).get('revision',self.revision), 'invalidated_at_revision':self.revision})
         self.suggestion = None
         self.indicator_results = []
         if self.participant_review: self.participant_review['status'] = 'pending_after_new_evidence'
@@ -164,65 +169,30 @@ class ChatSession:
         return objectives(self.profile, self.depth)
 
     def _fallback_question(self, answer=''):
-        """Recovery only: choose a distinct neutral probe, never repeat a loop."""
-        from .chat_client import questions_repeat
-        knowledge={'prior_uses':'What uses of drones have you already come across?',
-            'further_uses':'Are there any other uses you already know about?',
-            'healthcare':'Before today, had you heard of drones transporting healthcare supplies?',
-            'healthcare_detail':'What had you heard about those healthcare uses before this conversation?',
-            'local_awareness':'As far as you know, is anything similar being used or tested in the area you are thinking about? It is fine not to know.',
-            'local_basis':'What led you to that impression? It is fine if you are unsure.',
-            'open_concerns':'What benefits, concerns or questions come to mind about possible healthcare drone deliveries?'}
-        if self.knowledge_focus in knowledge and (self.knowledge_focus!='open_concerns' or not answer):return knowledge[self.knowledge_focus]
-        preferred=[]
-        if re.search(r'\b(?:bird|wildlife|nest|animal|habitat)\w*\b', answer, re.I):
-            preferred.append('What effects on wildlife would you most want decision-makers to understand?')
-        if re.search(r'\b(?:noise|loud|sound|sleep)\w*\b', answer, re.I):
-            preferred.append('When or where might noise matter most to people, and what would you want considered?')
-        if re.search(r'\b(?:privacy|camera|record)\w*\b', answer, re.I):
-            preferred.append('What would you want to know about information collection and privacy safeguards?')
-        if self.profile=='organisational':preferred.append('What is already established within your unit, and what is still only proposed?')
-        elif self.profile=='technical':preferred.append('What has been tested on this specific component or system, and what remains untested?')
-        elif not self.concerns:preferred.append('What would you most want people planning a possible service to understand about this concern?')
-        excluded={'perspective','area','scope','familiarity','healthcare','priorities','tech_context','org_context'}
-        if self.concerns:excluded |= {'open_priorities','understanding'}
-        preferred += [row['question'] for row in self._all_objectives() if row['id'] not in excluded]
-        asked=[m['text'] for m in self.messages if m['role']=='assistant' and m.get('act') in {'question','authored_fallback'}]
-        for question in preferred:
-            if not any(questions_repeat(question,old,self.context.get('city') or '') for old in asked):return question
-        return 'Is there anything different you want included in your summary before we finish?'
+        node = self.fn.current(self.profile, self.depth, self.objective)
+        if node:
+            return 'Could you clarify your answer to this question: '+node['canonical_question']
+        return 'Which point would you like to clarify before we finish?'
 
     def _fallback_source(self, answer=''):
-        objective_id = ('understanding' if re.search(r'\b(?:bird|wildlife|nest|animal|habitat|noise|loud|sound|sleep|privacy|camera)\w*\b',answer,re.I)
-                        else 'open_priorities')
-        selected=self._fallback_question(answer)
-        row=next((item for item in self._all_objectives() if item['question']==selected),None)
-        row = row or next((item for item in self._all_objectives() if item['id']==objective_id), None)
-        return deepcopy((row or {}).get('source'))
-
-    def _followup_objective(self, question):
-        if self.knowledge_focus=='prior_uses':return 'drone_uses'
-        if self.knowledge_focus=='further_uses':
-            return 'healthcare_awareness' if re.search(r'healthcare|medical|medicine|sample|blood',question,re.I) else 'drone_other_uses'
-        if self.knowledge_focus=='healthcare':return 'healthcare_awareness'
-        if self.knowledge_focus in {'healthcare_detail','local_awareness','local_basis'}:return self.knowledge_focus
-        return 'open_conversation'
+        stage = self.fn.stage_for(self.profile, self.depth, self.objective)
+        return {**deepcopy(self._rubric()['source']), 'locator':(stage or {}).get('source_locator'),
+                'specification_version':self.fn.version} if self.profile else None
 
     def _discussion_progress(self):
-        opening = {'perspective','area','drone_recognition','organisation_context','technical_role'}
-        count = sum(m['objective_id'] not in opening for m in self.active_evidence())
-        minimum = 16 if self.depth == 'extended' else 10
-        target = 22 if self.depth == 'extended' else 14
-        return {'substantive_answers': count, 'earliest_model_wrap_after': minimum,
-                'may_propose_conclusion': count >= minimum, 'target_answers':target, 'target_reached':count>=target,
-                'guidance': discussion_guidance(self.profile, self.depth),
-                'meaning': 'Engineering pacing guard only; turn count is not readiness or evidence sufficiency. Respondent may stop at any time.'}
+        remaining = self.fn.next(self.profile, self.depth, self.concerns)
+        return {'may_propose_conclusion': self.profile is not None and remaining is None,
+                'remaining_evidence_goal': (remaining or {}).get('id'),
+                'meaning':'Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard.'}
 
     def _request(self, answer, comparison=False):
         # Preserve every original outside the prompt. Include bounded ORIGINALS;
         # omitted IDs are explicit and never claimed as considered at judgment.
         originals = self.active_evidence()
-        current_id = originals[-1]['id'] if originals and originals[-1]['text']==answer else None
+        latest = self.messages[-1] if self.messages else {}
+        if latest.get('act')=='retry_request':
+            latest=next((m for m in originals if m['id']==self.failed_turn_id),latest)
+        current_id = latest.get('id') if latest.get('role')=='respondent' and latest.get('text')==answer else None
         active_ids = {m['id'] for m in originals}
         priority = next((p for p in reversed(self.priorities) if p['evidence_id'] in active_ids and p['evidence_id']!=current_id), None)
         priority_ids = {priority['evidence_id']} if priority else set()
@@ -242,7 +212,7 @@ class ChatSession:
             question=messages_by_id.get(row.get('in_reply_to'))
             if question and row['id']!=current_id:
                 exchanges.append({'answer_id':row['id'],'answer':row['text'],'question':question['text']})
-        current=next((row for row in originals if row['id']==current_id),None)
+        current=next((row for row in self.messages if row['id']==current_id),None)
         last_question=messages_by_id.get((current or {}).get('in_reply_to'),{})
         from .chat_retrieval import retrieve_chat_context
         query = (' '.join([answer[:900]] + [m['text'][:300] for m in originals[-3:]]))[:1800]
@@ -250,7 +220,8 @@ class ChatSession:
         self._last_decision['retrieval'] = retrieval
         return {'answer': answer, 'profile': self.profile, 'context': self.context,
                 'current_topic': self._current_topic(), 'depth': self.depth,
-                'discussion_progress': self._discussion_progress(), 'knowledge_focus':self.knowledge_focus,
+                'discussion_progress': self._discussion_progress(),
+                'fn': self.fn.snapshot(self.profile,self.depth,self.objective,self.context,self.concerns),
                 'retrieved_context': retrieval,
                 'indicator_ids': [r['id'] for r in self.bank['indicators']],
                 'original_context': list(reversed(selected)), 'priority_context': deepcopy(priority), 'current_answer_id': current_id, 'omitted_context_ids': [m['id'] for m in self.active_evidence() if m['id'] not in ids],
@@ -260,10 +231,10 @@ class ChatSession:
                 'comparison': comparison}
 
     def _current_topic(self):
-        if self.concerns:
-            return self.concerns[-1]['topic']
         active = self.active_evidence()
-        return active[-1].get('topic', 'opening') if active else 'opening'
+        if active and active[-1].get('topic'):return active[-1]['topic']
+        mentioned=[c for c in self.concerns if c['evidence_ids']]
+        return mentioned[-1]['topic'] if mentioned else 'opening'
 
     def _apply_context_facts(self, result, answer, evidence_id):
         """Accept optional scope annotations only when their quote is exact."""
@@ -271,6 +242,9 @@ class ChatSession:
         for fact in result.get('context_facts', []):
             value, field = fact['quote'].strip(), fact['field']
             if not value or value not in answer:
+                continue
+            if field in {'technical_object','object_version','responsibilities','organisation_or_unit'} and self.context.get(field) and value != self.context[field]:
+                self._last_decision.setdefault('rejected_scope_annotations', []).append(field)
                 continue
             if field == 'city':
                 self.context['city'] = value
@@ -286,70 +260,6 @@ class ChatSession:
                 row['context_fields'] = [item['field'] for item in accepted]
         return accepted
 
-    def _record_plain_context(self, answer, row):
-        """Record an obvious answer to a context question without model extraction.
-
-        This is intentionally narrow: the previous assistant turn must have
-        asked for a broad city/area, and the reply must be a short, non-address
-        value. A locality never implies that a service operates there.
-        """
-        previous = next((m for m in reversed(self.messages[:-1]) if m['role'] == 'assistant'), None)
-        if not previous or self.context.get('city'):
-            return []
-        asked_area = bool(re.search(r'\b(?:which|what|your)\s+(?:city|town|area|region|locality)\b',
-                                    previous['text'], re.I))
-        if not asked_area:
-            return []
-        if withheld_area(answer):
-            self.context['city'] = None
-            self.context['city_status'] = 'withheld_or_uncertain'
-            row.setdefault('context_fields', []).append('city')
-            return [{'field':'city','evidence_id':row['id'],'status':'withheld_or_uncertain'}]
-        value = answer.strip()
-        if (len(value) <= 80 and not re.search(r'\d|@|\b(?:street|road|avenue|postcode|zip)\b', value, re.I)
-                and not re.search(r'\b(?:i live at|my address|located at)\b', value, re.I)):
-            self.context['city'] = value
-            self.context['city_status'] = 'respondent_provided_unverified'
-            row.setdefault('context_fields', []).append('city')
-            return [{'field':'city','evidence_id':row['id'],'status':'respondent_provided_unverified'}]
-        return []
-
-    def _update_concern_ledger(self, row, result):
-        if (row.get('context_fields') and result.get('topic') in {'local context','respondent context'}
-                and set(row['context_fields']) <= {'city','organisation_or_unit','responsibilities','technical_object','object_version','intended_environment'}):
-            return 'context_only'
-        topic = (result.get('topic') or '').strip()
-        try:
-            require_safe_data({'topic': topic})
-        except Exception:
-            topic = ''
-        if not topic:
-            topic = 'Respondent-raised concern or question'
-        known = {i['id'] for i in self.bank['indicators']}
-        indicator_ids = [value for value in result.get('indicator_ids', []) if value in known]
-        intent = (result.get('respondent_intent') or '').casefold()
-        kind = ('information_request' if re.search(r'\b(?:what|how|explain|know|information)\b', intent)
-                else 'opinion_only' if self.objective == 'opinion' or re.search(r'\b(?:support|oppose|like|dislike)\b', intent)
-                else 'existing_indicator_topic' if indicator_ids else 'emerging_topic')
-        existing = next((item for item in self.concerns if item['topic'].casefold() == topic.casefold()), None)
-        if existing:
-            if row['id'] not in existing['evidence_ids']:
-                existing['evidence_ids'].append(row['id'])
-            existing['explored'] = True
-            existing['last_turn_id'] = row['id']
-            existing['indicator_ids'] = list(dict.fromkeys(existing['indicator_ids'] + indicator_ids))
-            if indicator_ids:
-                existing['mapping_status'] = 'candidate_unreviewed'
-        else:
-            self.concerns.append({'topic': topic, 'kind': kind, 'evidence_ids': [row['id']],
-                'explored': True, 'priority': len(self.concerns) < 3 or self.objective in {'open_priorities','priorities'},
-                'clarification_needed': result.get('act') == 'clarify',
-                'indicator_ids': indicator_ids,
-                'mapping_status': 'candidate_unreviewed' if indicator_ids else 'not_mapped',
-                'interpretation_status': 'unreviewed', 'last_turn_id': row['id']})
-        row['topic'] = topic
-        return kind
-
     def _trace(self, before_id, before_state, error=None):
         new_messages = self.messages[before_id:]
         respondents = [m for m in new_messages if m['role'] == 'respondent']
@@ -360,6 +270,7 @@ class ChatSession:
             'respondent_messages_added':len(respondents),
             'assistant_messages_added':len(assistants),
             'state_transition_applied':before_state != {'stage':self.stage,'objective':self.objective,'profile':self.profile,'revision':self.revision}}
+        postcondition['profile_unchanged'] = self.profile == before_state['profile'] or before_state['profile'] is None
         # Verify effects against authoritative in-memory state rather than
         # trusting the model's action label or its concise justification.
         postcondition_checks = {
@@ -401,7 +312,8 @@ class ChatSession:
                 'rejection_reasons':deepcopy(decision.get('rejected_action_reasons',[]))},
             'retrieval': retrieval_trace,
             'fallback_source':decision.get('fallback_source'),
-            'closing_policy':decision.get('closing_policy'),
+            'closing_policy':self._discussion_progress(),
+            'fn_stage':decision.get('fn_stage'), 'fn_coverage':decision.get('fn_coverage',[]),
             'assessment': deepcopy(decision.get('assessment')),
             'validated_context_facts': decision.get('validated_context_facts', []),
             'concerns': deepcopy(self.concerns),
@@ -443,95 +355,212 @@ class ChatSession:
                                  'priority_evidence_id':(request['priority_context'] or {}).get('evidence_id'),
                                  'omitted_context_ids': getattr(client,'last_context_selection',{}).get('omitted_context_ids',request['omitted_context_ids'])})
 
-    def _opening_question(self, text, objective):
-        """Versioned authored opening adapted from the registered PDF, pp.2–3."""
-        self.objective = objective
-        self._assistant(text, objective)
+    def _ask_fn(self, node, act='question'):
+        self.objective = node['id']
+        if node['id'] not in self.fn.asked: self.fn.asked.append(node['id'])
+        text = node.get('preface', '')
+        if text: text += '\n\n'
+        text += node['canonical_question']
+        if node['response_type'] == 'suggested_topics' or (node['id']=='priorities' and self.profile=='technical') or node['response_type']=='display':
+            topics=specification()['topic_suggestions'][flow_key(self.profile,self.depth)]
+            text += '\n' + '\n'.join('• '+topic for topic in topics)
+            self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'suggested_topics',
+                'topics':deepcopy(topics),'revision':self.revision,'prior_knowledge':False,'actual_activity':False})
+            for topic in topics:
+                existing=next((c for c in self.concerns if c['topic'].casefold()==topic.casefold()),None)
+                if existing:existing['suggested_by_interviewer']=True
+                else:self.concerns.append({'topic':topic,'kind':'suggested_topic','evidence_ids':[],
+                    'spontaneously_raised':False,'suggested_by_interviewer':True,'selected_priority':False,
+                    'explored':False,'priority':False,'indicator_ids':[],'mapping_status':'not_mapped','interpretation_status':'not_respondent_evidence'})
+        self._assistant(text, self.objective, act)
         self.messages[-1]['source'] = {**deepcopy(self._rubric()['source']),
-            'locator': 'pp.2–3', 'adaptation_version': 'eva-opening-1.0.0',
-            'source_use': 'authored opening adaptation; not a verbatim quotation'}
+            'locator':node['source_locator'], 'specification_version':self.fn.version,
+            'wording':'authored adaptation' if 'authored' in node['source_locator'] else 'canonical question'}
 
-    def _profile_opening(self):
-        question, objective = {
-            'citizen': ('Do you know what a drone is?', 'drone_recognition'),
-            'organisational': ('What kind of organisation or unit are you speaking for? You can describe it without giving its name.', 'organisation_context'),
-            'technical': ('What is your technical role in relation to drones? Please describe your responsibilities without personal or confidential details.', 'technical_role'),
-        }[self.profile]
-        self._opening_question(question, objective)
+    def _route_fn(self, indicator_client=None, score_client=None):
+        self.failed_turn_id=None
+        while True:
+            node = self.fn.next(self.profile,self.depth,self.concerns)
+            if not node:
+                self.fn.next_action='conclude'
+                self.stop_reason='fn_goals_explored_with_uncertainty' if self.fn.unresolved_gaps else 'fn_goals_explored'
+                self.partial = any(r['status']=='unresolved' for r in self.fn.coverage.values())
+                self._report(indicator_client,score_client)
+                return
+            self.fn.next_action='canonical'
+            self._ask_fn(node)
+            if node['response_type']!='display': return
+            self.fn.record(node['id'],None,'provided')
 
     def _onboarding_answer(self, text, skipped=False):
-        """Perspective, optional locality, then a profile-specific opening."""
-        if self.objective == 'area':
-            row = self._user(text, not skipped, 'skip' if skipped else 'context_answer')
-            unknown = skipped or withheld_area(text)
-            value = text.strip()
-            usable = len(value) <= 80 and not re.search(r'\d|@|\b(?:street|road|avenue|postcode|zip)\b', value, re.I)
-            self.context['city'] = value if usable and not unknown else None
-            self.context['city_status'] = ('withheld_or_uncertain' if unknown else
-                'respondent_provided_unverified' if usable else 'not_established')
-            row['context_fields'] = ['city']
-            self._last_decision['validated_context_facts'] = [{'field':'city','evidence_id':row['id'],'status':self.context['city_status']}]
-            self.covered['area'] = [row['id']] if not skipped else []
-            self._profile_opening()
+        if self.objective != 'perspective': return False
+        row=self._user(text,not skipped,'profile_selection')
+        profile=explicit_profile(text)
+        if profile is None:
+            self._assistant('Please choose the perspective you want to use today: A. Citizen, B. Organisation or institution, or C. Technology expert or researcher. A profession alone does not select a perspective.','perspective')
             return True
-        if self.objective in {'drone_recognition','organisation_context','technical_role'}:
-            objective = self.objective
-            row = self._user(text, not skipped, 'skip' if skipped else 'opening_answer')
-            self.covered[objective] = [row['id']] if not skipped else []
-            self.objective = 'open_conversation'
-            if objective == 'drone_recognition':
-                if not skipped and re.fullmatch(r'(?:yes|yes i do|i do|yes indeed)[.! ]*', text, re.I):
-                    self._opening_question('In your own words, what is a drone?', 'drone_description')
-                elif not skipped and (withheld_area(text) or re.fullmatch(r'(?:no|not really|unsure)[.! ]*', text, re.I)):
-                    self.pending_explanation = 'drone'
-                    self._assistant("That is fine. Would you like a short explanation before we continue?", act='explanation_permission')
-                else:
-                    self.knowledge_focus='prior_uses'
-                    self._opening_row=row  # Already-screened original, retained exactly once.
-                    return False
-            elif objective == 'organisation_context':
-                if not skipped and not withheld_area(text):
-                    self.context['organisation_or_unit'] = text
-                    self.context['scope_status'] = 'respondent_described'
-                    row['context_fields'] = ['organisation_or_unit']
-                self._assistant('What role does your organisation or unit have, or could it have, in relation to healthcare drone services?', 'open_conversation')
+        self.profile=profile;row['profile']=profile
+        self.covered['perspective']=[row['id']]
+        self._route_fn()
+        return True
+
+    def _fn_topics(self, row, interpretation):
+        stage=self.fn.stage_for(self.profile,self.depth,self.objective)
+        spontaneous=self.objective in {'open_priorities','open_more','different_impacts','requirements_open'}
+        explicit_earlier=any(e['goal']=='priorities' and re.search(r'priorit|matter most|focus on|choos|select|most important',e['quote'],re.I) for e in interpretation.get('coverage',[]))
+        selecting=((self.objective=='priorities' or explicit_earlier) and self.fn.coverage.get('priorities',{}).get('status')=='explored'
+                   and interpretation['answer_kind'] not in {'uncertain','declined'}
+                   and len(interpretation.get('topics',[]))<=3)
+        for item in interpretation.get('topics',[]):
+            topic=item['topic'].strip()
+            old=next((c for c in self.concerns if c['topic'].casefold()==topic.casefold()),None)
+            if old is None:
+                old={'topic':topic,'kind':'emerging_topic','evidence_ids':[],
+                     'spontaneously_raised':False,'suggested_by_interviewer':False,
+                     'selected_priority':False,'explored':False,'priority':False,
+                     'indicator_ids':[],'mapping_status':'not_mapped','interpretation_status':'unreviewed'}
+                self.concerns.append(old)
+            old['evidence_ids']=list(dict.fromkeys(old['evidence_ids']+[row['id']]))
+            old['spontaneously_raised'] |= spontaneous
+            old['suggested_by_interviewer'] |= self.objective=='suggested_topics'
+            if selecting and len([c for c in self.concerns if c['selected_priority']])<3:
+                old['selected_priority']=True;old['priority']=True
+                if not any(p['topic']==topic for p in self.priorities):
+                    self.priorities.append({'topic':topic,'evidence_id':row['id'],'text':row['text'],'origin':'respondent_selected'})
+            if (stage or {}).get('id') not in {'context','recognition','awareness','topics'}:
+                old['explored'] |= self.fn.coverage.get(self.objective,{}).get('status')=='explored'
+            old['last_turn_id']=row['id']
+            row['topic']=topic
+
+    def _fn_turn(self, text, client, indicator_client=None, score_client=None, skipped=False, retry_row=None):
+        node=self.fn.current(self.profile,self.depth,self.objective)
+        if node is None:
+            self._route_fn(indicator_client,score_client)
+            return
+        row=retry_row or self._user(text,not skipped and node['response_type'] not in {'opinion','permission'},'advance_request' if skipped and direct_intent(text)=='advance' else 'skip' if skipped else 'opinion' if node['response_type']=='opinion' else 'answer')
+        goal=node['id']
+        self._last_decision['fn_stage']=self.fn.stage_for(self.profile,self.depth,goal)['id']
+        if skipped:
+            self.fn.record(goal,row['id'],'declined','declined')
+            if goal=='area':
+                self.context['city']=None
+                self.context['city_status']='withheld_or_uncertain'
+        elif node['response_type']=='city':
+            unknown=withheld_area(text)
+            self.context['city']=None if unknown else text.strip()
+            self.context['city_status']='withheld_or_uncertain' if unknown else 'respondent_provided_unverified'
+            row['context_fields']=['city']
+            self.fn.record(goal,row['id'],'unknown' if unknown else 'explored')
+            self._last_decision['validated_context_facts']=[{'field':'city','evidence_id':row['id'],'status':self.context['city_status']}]
+        elif node['response_type']=='opinion':
+            # This is administration of a separate opinion, not an inferred
+            # readiness capability. It cannot nominate other goals or a score.
+            self.fn.record(goal,row['id'],'unknown' if literal_answer(text)=='uncertain' else 'explored')
+        else:
+            # Exact explicit choices need no model. Qualified/nonliteral answers
+            # use the same single inference that interprets and proposes wording.
+            kind=literal_answer(text) if node['response_type'] in {'yes_no','permission'} else None
+            result=None
+            if kind is not None:
+                self.fn.record(goal,row['id'],'unknown' if kind=='uncertain' else 'explored',kind)
             else:
-                if not skipped and not withheld_area(text):
-                    self.context['technical_role'] = text
-                    row['context_fields'] = ['technical_role']
-                self._assistant('What technology, system or component would you like to discuss? You can include its version if known.', 'open_conversation')
-            return True
-        if self.objective in {'drone_description','drone_uses','drone_other_uses','healthcare_awareness','healthcare_detail','local_awareness','local_basis'}:
-            previous=self.objective
-            if previous=='drone_description':self.knowledge_focus='prior_uses'
-            elif previous=='drone_uses' and not (withheld_area(text) or re.match(r'^(?:no|not really|none|nothing)\b',text,re.I)):
-                self.knowledge_focus='further_uses'
-            elif previous in {'drone_uses','drone_other_uses'}:self.knowledge_focus='healthcare'
-            elif previous=='healthcare_awareness':
-                self.knowledge_focus='healthcare_detail' if re.fullmatch(r'(?:yes|yes i have|i have|yes a little)[.! ]*',text,re.I) else 'local_awareness'
-            elif previous=='healthcare_detail':self.knowledge_focus='local_awareness'
-            elif previous=='local_awareness' and not withheld_area(text) and re.search(r'\b(?:yes|heard|seen|test|testing|demonstration|pilot|think)\b',text,re.I):
-                self.knowledge_focus='local_basis'
-            else:self.knowledge_focus='open_concerns'
-            self.objective = 'open_conversation'
-            return False
-        if self.objective == 'perspective':
-            row = self._user(text, True, 'profile_selection' if explicit_profile(text) else 'profile_clarification')
-            profile = explicit_profile(text)
-            if not profile:
-                self.visits['perspective'] = self.visits.get('perspective', 0) + 1
-                if self.visits['perspective'] >= 2:
-                    self.finish('capacity_not_established_partial')
-                else:
-                    self._assistant('Which perspective would you like to use: your personal views, an organisation’s responsibilities, or a technology you work with?', 'perspective')
-                return True
-            self.profile = profile
-            row['profile'] = profile
-            self.covered['perspective'] = [row['id']]
-            self.visits['perspective'] = 1
-            self._opening_question('Which city or urban area would you like your answers to refer to? Please give only a broad area, without an address or postcode; you can also keep this general.', 'area')
-            return True
-        return False
+                try:
+                    request=self._request(text)
+                    result=self._generate(client,request)
+                    if result.get('_quality_issues'):
+                        self.routing_events.append({'event':'question_fallback','issues':result['_quality_issues'],'evidence_id':row['id']})
+                    interpretation=result.get('interpretation')
+                    if not interpretation: raise AssessmentError('Grounded interpretation unavailable.',code='evidence',field='interpretation')
+                    for entry in interpretation['coverage']:
+                        if entry['goal']=='priorities' and goal!='priorities' and not re.search(r'priorit|matter most|focus on|choos|select|most important',entry['quote'],re.I):
+                            continue
+                        self.fn.record(entry['goal'],entry['evidence_id'],entry['status'],entry['answer_kind'])
+                        self.covered[entry['goal']]=list(self.fn.coverage[entry['goal']]['evidence_ids'])
+                    if goal in self.fn.coverage and node['response_type'] in {'yes_no','permission'}:
+                        self.fn.facts[goal]=interpretation['answer_kind']
+                    accepted=self._apply_context_facts(result,text,row['id'])
+                    self._last_decision['validated_context_facts']=accepted
+                    self._fn_topics(row,interpretation)
+                    if self.profile=='organisational' and goal in {'remit','outside_remit'} and interpretation.get('scope_disposition')=='outside_remit':
+                        self.context['scope_status']='outside_remit'
+                        self.partial=True
+                        self.stop_reason='outside_organisation_remit'
+                        self._assistant('This service falls outside the responsibilities you described. I will not assess your organisation against those activities.',act='scope_clarification')
+                        self._report(indicator_client,score_client)
+                        return
+                    if goal=='priorities' and len(interpretation['topics'])>3:
+                        self.fn.coverage.pop(goal,None)
+                        self.fn.followups[goal]=self.fn.followups.get(goal,0)+1
+                        if self.fn.followups[goal]<=1:
+                            self._assistant('I noted those issues. Which two or three would you most like us to focus on?',goal)
+                            return
+                        self.fn.record(goal,row['id'],'unknown','uncertain')
+                    for boundary in interpretation.get('boundary_goals',[]):
+                        if boundary not in self.fn.boundary_uncertainty and self.fn.boundary_probes<2:
+                            self.fn.boundary_uncertainty.append(boundary);self.fn.boundary_probes+=1
+                    self.annotations.append({'evidence_id':row['id'],'indicator_ids':result['indicator_ids'],
+                        'dialogue_act':result['act'],'covered_objectives':[e['goal'] for e in interpretation['coverage']],
+                        'quote':None,'status':'interpretation_unreviewed','revision':self.revision})
+                    self._last_decision.update({key:deepcopy(result.get(key)) for key in ('proposed_action','act','topic','justification','evidence_ids','source_ids','uncertainty')})
+                    self._last_decision['validated_action']=interpretation['action']
+                    self._last_decision['rejected_optional_annotations']=result.get('_annotation_warnings',[])
+                    self._last_decision['fn_coverage']=[{k:v for k,v in e.items() if k!='quote'} for e in interpretation['coverage']]
+                    if result['act']=='explanation_offer' or interpretation['action']=='explain' or result['proposed_action']=='provide_information':
+                        passages=request.get('retrieved_context',{}).get('passages',[])
+                        passage=next((p for p in passages if p['id'] in result['source_ids']),None)
+                        requested=text.strip().endswith('?') or bool(re.search(r'\b(?:what|how|explain|tell me|information|understand)\b',text,re.I))
+                        if not passage or not requested or result['act']=='explanation_offer':
+                            self.pending_explanation={'goal':goal,'text':passage['text'] if passage else 'A drone is an aircraft that can fly without a pilot sitting inside it. Drones can be different sizes and can be used for many different purposes.',
+                                'source':deepcopy(passage.get('source',{})) if passage else deepcopy(self._rubric()['source'])}
+                            self._assistant('Would you like a short explanation before we continue?',goal,'explanation_permission')
+                            return
+                        if passage:
+                            self._assistant(passage['text']+' This is general information; it does not establish local operations.',act='supplied_information')
+                            self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'retrieved_source_information','source':deepcopy(passage.get('source',{})),
+                                'source_id':passage['id'],'text':passage['text'],'prior_knowledge':False,'actual_activity':False,'revision':self.revision})
+                            self._last_decision.update(accepted_action='provide_information',postcondition={'exposure_recorded':True,
+                                'exposure_id':self.exposures[-1]['id'],'participant_text_from_source':passage['id']})
+                    if goal not in self.fn.coverage:
+                        count=self.fn.followups.get(goal,0)
+                        if count<1 and not result.get('_quality_issues'):
+                            self.fn.followups[goal]=count+1;self.fn.next_action=interpretation['action']
+                            self._assistant(result['message'],goal)
+                            return
+                        self.fn.record(goal,row['id'],'unresolved','uncertain')
+                except (AssessmentError,httpx.HTTPError,ValueError) as exc:
+                    code=getattr(exc,'code','model_failure')
+                    category='action_contract' if code=='schema' else 'context_budget' if code=='budget' else 'interpretation_unavailable'
+                    self.failures.append({'stage':'chat_turn','code':code,'category':category,'revision':self.revision})
+                    self._last_decision.update(fallback_used=True,error=code,accepted_action='authored_fallback')
+                    self.failed_turn_id=row['id']
+                    if code=='budget' and getattr(exc,'field',None)!='prompt_context':
+                        self.partial=True
+                        self.finish('call_or_context_budget_partial')
+                        return
+                    if self.fn.followups.get(goal,0)<1:
+                        self.fn.followups[goal]=1
+                        self._assistant('I kept your answer. '+self._fallback_question(text),goal,'authored_fallback')
+                        return
+                    self.fn.record(goal,row['id'],'unresolved','uncertain')
+                    self._assistant('I kept your words, but this point remains uncertain. We can leave it open and continue.',act='uncertainty')
+            field=node.get('context_field')
+            if field and not self.context.get(field) and not withheld_area(text) and self.fn.coverage.get(goal,{}).get('status')=='explored':
+                self.context[field]=text;row.setdefault('context_fields',[]).append(field)
+                self.context['scope_status']='respondent_described'
+            if goal=='technical_object':
+                obj=self.context['technical_object']
+                # The FN worked-example aircraft noise question is optional.
+                # Do not apply its aircraft wording to an explicitly separate
+                # component. This is applicability, never a maturity judgment.
+                self.fn.facts['aircraft_scope']=bool(re.search(r'\b(?:aircraft|multicopter|drone)\b',obj,re.I)
+                    and not re.search(r'\bnot (?:the |an |a )?(?:aircraft|drone)|\b(?:component|subsystem)\b',obj,re.I))
+            if node['response_type']=='permission' and self.fn.facts.get(goal)=='yes':
+                explanation=('Some drones or other aircraft can create strong air movement when taking off or landing. This can matter when deciding how close people, objects or buildings can safely be to the take-off and landing area.' if goal=='air_explanation' else 'A drone is an aircraft that can fly without a pilot sitting inside it. Drones can be different sizes and can be used for many different purposes.')
+                self._assistant(explanation,act='supplied_information')
+                self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'FN_explanation','text':explanation,
+                    'source':deepcopy(self._rubric()['source']),'prior_knowledge':False,'revision':self.revision})
+        if goal in self.fn.coverage:self.covered[goal]=list(self.fn.coverage[goal]['evidence_ids'])
+        self._route_fn(indicator_client,score_client)
 
     def _correction_target(self, text):
         cues = {
@@ -549,7 +578,7 @@ class ChatSession:
         row = self._user(text, True, 'correction')
         row['objective_id'] = target['objective_id']
         for key, value in list(self.context.items()):
-            if key not in {'city','organisation_or_unit','responsibilities','technical_object','object_version','intended_environment','technical_role'}: continue
+            if key not in {'city','organisation_or_unit','responsibilities','technical_object','object_version','intended_environment','technical_role','expertise'}: continue
             if isinstance(value, str) and value and value in target['text']:
                 self.context[key] = None if key == 'city' else ''
         if target['objective_id']=='area' or 'city' in target.get('context_fields',[]):
@@ -565,15 +594,29 @@ class ChatSession:
             if target['id'] in self.covered[objective]: del self.covered[objective]
         self.pending_correction = None
         self._invalidate('Respondent corrected evidence')
-        if target['objective_id'] in {'perspective','scope'}:
+        self.fn.invalidate({m['id'] for m in self.active_evidence()})
+        for concern in self.concerns:
+            if target['id'] in concern['evidence_ids']:
+                concern['evidence_ids']=[i for i in concern['evidence_ids'] if i!=target['id']]
+                concern['selected_priority']=False;concern['priority']=False;concern['explored']=False
+        self.priorities=[p for p in self.priorities if p['evidence_id']!=target['id']]
+        if target['objective_id'] in {'perspective','scope','technical_object'}:
             row['evidence_status'] = 'scope_change_unresolved'
             self.stage = 'scope_change'
             self._assistant('This changes the assessed perspective or object. Download this record, then use New conversation so incompatible scopes remain separate.', act='scope_clarification')
         elif self.stage == 'summary':
             self._assistant('Your corrected words are in the summary. Say “no changes” when you are ready to continue.', act='summary')
+        elif self.stage in {'review','review_addition'}:
+            self.stage='review_addition'
+            self.participant_review=self.participant_review or {'text':text,'response_id':row['id'],
+                'status':'pending_after_new_evidence','validation':'correction_pending','independent_validation':False,
+                'preferred_level':None,'model_result_revision':self.initial_results[-1]['revision'] if self.initial_results else None}
+            self.review_step='correction'
+            self._assistant('Your correction is recorded. The initial result is preserved for review and is no longer a current judgment of the corrected evidence. No reassessment is automatic. Write “no changes” to finish.',act='review_recorded')
         else:
-            self.objective = 'open_conversation'
-            self._assistant('Your correction is recorded. What else would you like to discuss?', self.objective, 'authored_fallback')
+            self._assistant('Your correction is recorded. I will revisit any evidence goals that depended on the replaced answer.',act='correction')
+            if target['objective_id']=='area': self.fn.record('area',row['id'],'unknown' if self.context['city'] is None else 'explored')
+            self._route_fn()
 
     def _summary(self):
         """Compact exact-passages overview; scoring always uses all originals."""
@@ -599,7 +642,7 @@ class ChatSession:
         ordered += [next((m for m in originals if m['id']==eid),None) for eid in priority_ids]
         ordered += [groups[key] for key in groups if key.startswith('topic:') or key=='uncertainty']
         for message in ordered:
-            if message and message['id'] not in selected and size+len(message['text'])<=3200:
+            if message and message['id'] not in selected and len(selected)<8 and size+len(message['text'])<=3200:
                 selected[message['id']]=message;size+=len(message['text'])
         return [{'evidence_id':m['id'],'quote':m['text'],'objective_id':m['objective_id'],'topic':m.get('topic')}
                 for m in originals if m['id'] in selected]
@@ -614,6 +657,7 @@ class ChatSession:
         """At most two scoped matches, never fifteen calls per turn or score averaging."""
         self.indicator_results = []
         if client is None or not self.profile: return
+        if self.context['scope_status']=='outside_remit':return
         from .indicator_client import validate_match
         scope = {**self.context, 'response_profile': self.profile, 'context': 'healthcare_drone_conversation',
                  'use_case': 'Healthcare drones in general'}
@@ -675,21 +719,27 @@ class ChatSession:
 
     def _report(self, indicator_client=None, score_client=None):
         self.stage = 'review'
+        self._assistant('Thank you. We have finished the main questions.' if not self.partial else 'We stopped before exploring every part of the interview. This is a partial record.',act='scale_disclosure')
+        self._assistant('I will now show you the scale used to understand your answers. The judgment is provisional and based on self-report.',act='scale_notice')
+        if self.fn.unresolved_gaps:
+            self._assistant('Some points were left uncertain or skipped. They remain explicit gaps; they do not automatically lower readiness.',act='uncertainty')
         from .chat_score import validate_profile_match
         scale = self._rubric() if self.profile else None
         self.suggestion = {'status': 'abstained', 'level': None, 'anchor_id': None,
-            'policy_version': POLICY, 'revision': self.revision, 'rubric_version': (scale or {}).get('rubric_version'),
+            'policy_version': POLICY, 'revision': self.revision, 'result_version':1, 'partial_interview':self.partial, 'rubric_version': (scale or {}).get('rubric_version'),
             'explanation': 'There is not enough usable scoped evidence for an overall level.',
             'gaps': [], 'considered_evidence_ids': [], 'evidence_sufficiency': 'insufficient', 'external_verification': 'not_performed'}
         originals = [{'id': m['id'], 'text': m['text'], 'objective': m['objective_id'],
                       'information_exposure_ids': m['information_exposure_ids']} for m in self.active_evidence()]
         scope_ready = self.profile=='citizen' or (self.profile=='organisational' and self.context['organisation_or_unit'] and self.context['responsibilities']) or (self.profile=='technical' and self.context['technical_object'])
+        scope_ready=scope_ready and self.context['scope_status']!='outside_remit'
         if score_client and scale and scope_ready and originals and self.calls + 4 <= self.limits['calls']:
             if sum(len(m['text']) for m in originals) > 5000:
                 self.suggestion['gaps'] = ['Complete original evidence exceeds this bounded judgment request. No evidence was silently omitted.']
             else:
                 payload = {'profile': self.profile, 'scope': self.context, 'anchors': scale['anchors'],
-                           'guidance': scale['guidance'], 'originals': originals, 'supplied_information': self.exposures}
+                           'guidance': scale['guidance'], 'originals': originals, 'supplied_information': self.exposures,
+                           'exploration_gaps': self.fn.unresolved_gaps, 'partial_interview': self.partial}
                 started = time.monotonic()
                 try:
                     value = score_client.match_profile(payload)
@@ -754,10 +804,82 @@ class ChatSession:
             'status':self.suggestion.get('status'),
             'validation':'exact_quote_and_active_evidence_checked' if self.suggestion.get('status')=='suggested' else 'abstained_or_unavailable',
             'uncertainty':self.suggestion.get('evidence_sufficiency')}
-        if self._has_model_score():
-            self._assistant('The model’s provisional score and the scale are shown below. You can now give your own level or explain any disagreement. If nothing needs changing, write “no changes”.', act='result_review')
-        else:
-            self._assistant('A defensible model score is not available yet. You can review the explanation below and add factual information before another assessment, or finish. If you have nothing to add, write “no changes”. Your own level choice remains unavailable until the model has a valid score.', act='assessment_gap')
+        self._review_prompt()
+
+    def _review_prompt(self):
+        if not self._has_model_score():
+            self._assistant('There is not enough consistent evidence for a defensible numeric level. You may comment, say “I am not sure”, or write “no changes” to finish without a score. No level is invented.',act='assessment_gap')
+            return
+        config=specification()['review'][flow_key(self.profile,self.depth)]
+        text=config['question'].format(level=self.suggestion['level'])
+        text+='\n\n'+'\n'.join(f'{letter}. {label}' for letter,label in zip('ABCDE',config['choices']))
+        self._assistant(text,act='result_review')
+
+    def _fn_review(self, text):
+        value=text.strip().casefold().rstrip('.!')
+        empty=value in {'no changes','nothing to add','no additional facts','nothing','no'}
+        if self.stage=='review_addition':
+            if empty:
+                self._user(text,False,'review_completion')
+                self.stage='ended';self.stop_reason='respondent_review_complete'
+                self._assistant('Thank you. Your comments are recorded with review pending. The initial model suggestion is unchanged. Contact follow-up is unavailable; download a copy to keep your record.',act='end')
+                return
+            row=self._user(text,True,'additional_evidence')
+            self.participant_review.setdefault('additional_evidence_ids',[]).append(row['id'])
+            if not self.initial_results:
+                self.initial_results.append({'suggestion':deepcopy(self.suggestion),'indicator_results':deepcopy(self.indicator_results),
+                    'reason':'Additional evidence after result; no automatic reassessment','revision':(self.suggestion or {}).get('revision')})
+            config=specification()['review'][flow_key(self.profile,self.depth)]
+            if self.review_step=='explanation' and self.participant_review.get('choice') in {'B','C','D'}:
+                self.review_step='detail'
+                self._assistant(config['detail'],act='review_addition')
+                return
+            if self.profile=='technical' and self.review_step=='detail':
+                self.review_step='outstanding'
+                self._assistant(config['outstanding'],act='review_addition')
+                return
+            self.stage='ended';self.stop_reason='respondent_review_pending'
+            self._assistant('Thank you. I recorded the additional information for review. The initial provisional result has not changed. No contact follow-up service is available; download a copy to keep it.',act='end')
+            return
+        # Literal A–E and their conversational meanings are interaction choices,
+        # never readiness evidence. A number is a separate participant preference.
+        match=re.fullmatch(r'([a-e])(?:[. :]\s*(.*))?',value)
+        if match and match[2] and (re.search(r'\b(?:or|maybe)\s+[a-e]\b',match[2]) or
+                (match[1]=='a' and re.search(r'\b(?:but|however|missing|disagree|not)\b',match[2]))):
+            self._user(text,False,'review_clarification')
+            self._assistant('Which choice best fits your view: A, B, C, D or E? You can also explain what leaves you uncertain.',act='review_clarification')
+            return
+        choice=match[1].upper() if match else None
+        preferred=re.search(r'\b(?:prefer|level|CRL|ORL|TRL|choose)\s*(?:level\s*)?([1-9])\b',text,re.I) or re.fullmatch(r'\s*([1-9])[.! ]*',text)
+        if not choice:
+            if re.search(r'\b(?:higher|too low)\b',value):choice='C'
+            elif re.search(r'\b(?:lower|too high)\b',value):choice='D'
+            elif re.search(r'\b(?:missing|mostly|disagree)\b',value):choice='B'
+            elif re.search(r'\b(?:not sure|unsure|uncertain)\b',value):choice='E'
+            elif empty or re.search(r'^(?:i agree|agrees?|it describes (?:me|the organisation|the system) well|that fits|looks right)',value):choice='A'
+            elif preferred and self._has_model_score():choice='C' if int(preferred[1])>self.suggestion['level'] else 'D' if int(preferred[1])<self.suggestion['level'] else 'A'
+        if preferred and not self._has_model_score():
+            self._user(text,False,'self_assessment_unavailable')
+            self._assistant('There is no valid numeric model result to validate. You can leave a comment or write “no changes” to finish without a score.',act='assessment_gap')
+            return
+        row=self._user(text,False,'result_review')
+        self.participant_review={'text':text,'response_id':row['id'],'choice':choice or 'comment',
+            'validation':'agrees' if choice=='A' and self._has_model_score() else 'uncertain' if choice=='E' else 'pending_review',
+            'status':'agreed' if choice=='A' and self._has_model_score() else 'pending_human_review',
+            'preferred_level':int(preferred[1]) if preferred else None,'independent_validation':False,
+            'model_result_revision':(self.suggestion or {}).get('revision'),'automatic_reassessment':False}
+        if choice=='A' or (not self._has_model_score() and empty):
+            self.stage='ended';self.stop_reason='respondent_validation_recorded'
+            if not self._has_model_score():self.participant_review.update(validation='completed_without_numeric_result',status='completed_without_numeric_result')
+            self._assistant('Thank you. Your validation is recorded separately from the provisional result. Download a copy if you would like to keep it.',act='end')
+            return
+        config=specification()['review'][flow_key(self.profile,self.depth)]
+        question=(config['higher'] if choice=='C' else
+            'Why do you think the level should be lower? What evidence or limitation should be considered?' if choice=='D' else
+            'What important information is missing from the explanation?' if choice=='B' else
+            'Which part of the explanation or scale leaves you uncertain? You can also say you have nothing to add.')
+        self.stage='review_addition';self.review_step='explanation'
+        self._assistant(question,act='review_addition')
 
     def show_case(self, text, card):
         self.revision += 1
@@ -813,6 +935,7 @@ class ChatSession:
             return
         if intent == 'pause':
             self._user(text, False, 'pause')
+            self._paused_stage = self.stage
             self.stage = 'paused'
             self._assistant('We can pause here. Progress remains temporary; download a copy if you need to leave. Say “continue” when you are ready.', act='pause')
             return
@@ -822,15 +945,18 @@ class ChatSession:
             return
         if self.stage == 'paused':
             self._user(text, False, 'resume')
-            self.stage = 'conversation'
-            self._assistant('Welcome back. What would you like to continue discussing?', self.objective)
+            self.stage = self._paused_stage or 'conversation'
+            node=self.fn.current(self.profile,self.depth,self.objective)
+            self._assistant('Welcome back. '+(node['canonical_question'] if node else 'You can continue the review or stop.'), self.objective)
             return
         if intent == 'stop':
             self._user(text, False, 'stop')
             if self.stage in {'summary', 'review', 'review_addition'}:
                 self.stage = 'ended'
                 self._assistant('We can stop here. Download a copy if you would like to keep it.', act='end')
-            else: self.finish()
+            else:
+                self.partial=True
+                self.finish('respondent_finish_partial')
             return
         if self.pending_comparison:
             match = re.match(r'^\s*(?:(?:i prefer|option|wording)\s+)?(?:the\s+)?(1|2|first|second|neither|no preference|either)\b(?:\s+(?:one|wording|option))?[.!,:;\s]*(.*)$', text, re.I | re.S)
@@ -861,28 +987,35 @@ class ChatSession:
                 rest=rest[cut+len('my answer:'):].strip()
             text = rest
         if self.pending_explanation:
-            explanation_kind = self.pending_explanation
-            self._user(text, False, 'explanation_permission')
-            self.pending_explanation = False
-            if re.fullmatch(r'(yes|yes please|please explain|go ahead|ok|okay)[.! ]*', text, re.I):
-                explanation = ('Some drones can create strong air movement near take-off and landing areas. Its strength and safe separation depend on the aircraft and conditions.' if explanation_kind=='air_movement' else 'A drone is an aircraft without a pilot on board. Drones vary in size and can be used for different purposes.')
-                self._assistant(explanation, act='supplied_information')
-                self.exposures.append({'id': f'x{len(self.exposures)+1}', 'text': explanation, 'revision': self.revision,
-                    'origin': 'authored_neutral_explanation', 'prior_knowledge': False})
-            if explanation_kind=='air_movement':
-                self._assistant('What would you want to know before judging whether such a landing location was safe?', self.objective)
-                return
-            self.objective='drone_uses'
-            self._assistant('Before this conversation, what uses of drones had you come across, if any?',self.objective)
+            pending=self.pending_explanation
+            self._user(text,False,'explanation_permission')
+            kind=literal_answer(text)
+            if kind is None and intent not in {'skip','advance'}:
+                request=self._request(text);request['fn']['response_type']='permission';request['fn']['allowed_objectives']={}
+                try:
+                    response=self._generate(client,request)
+                    kind=(response.get('interpretation') or {}).get('answer_kind')
+                except (AssessmentError,httpx.HTTPError):kind='uncertain'
+            if kind=='yes':
+                self._assistant(pending['text'],act='supplied_information')
+                self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'permissioned_explanation','text':pending['text'],
+                    'source':pending['source'],'prior_knowledge':False,'revision':self.revision})
+            self.pending_explanation=False
+            current=self.fn.current(self.profile,self.depth,pending['goal'])
+            if current and pending['goal'] not in self.fn.coverage:self._ask_fn(current)
+            else:self._route_fn(indicator_client,score_client)
             return
         if intent in {'short', 'extended'}:
-            self._user(text, False, 'depth_preference'); self.depth = intent
-            wording = ('We can keep this brief and focus on what matters most to you. '
-                       if intent == 'short' else
-                       'We can explore the issues you choose in more depth. ')
-            opening = self.objective in {'perspective','area','drone_recognition','drone_description','organisation_context','technical_role'}
-            question = self.messages[-2]['text'] if opening else 'What would you like to discuss next?'
-            self._assistant(wording + question, self.objective if opening else 'open_conversation')
+            self._user(text,False,'depth_preference')
+            if self.stage!='conversation' or self.profile not in {None,'citizen'}:
+                self._assistant('The interview version and result scale stay with this record. You can continue the current question or review; use New conversation to choose a different citizen interview version.',act='depth_notice')
+                return
+            self.depth=intent
+            if self.profile:
+                node=self.fn.current(self.profile,self.depth,self.objective)
+                if node: self._ask_fn(node)
+                else: self._route_fn(indicator_client,score_client)
+            else: self._assistant(WELCOME,'perspective')
             return
         if intent == 'scale':
             self._user(text, False, 'methodology_request')
@@ -894,8 +1027,7 @@ class ChatSession:
             return
         if intent == 'topic':
             self._user(text, False, 'change_topic')
-            self.objective = 'open_conversation'
-            self._assistant('Of course. What would you prefer to talk about?', self.objective)
+            self._assistant('Of course. What issue would you prefer to use as an example for this point?', self.objective)
             return
         if intent == 'back':
             self._user(text, False, 'back')
@@ -935,55 +1067,18 @@ class ChatSession:
             self.pending_correction = 'clarify'
             self._assistant('Which earlier point should I correct, and what should it say? You can also say “no changes” to continue.', act='correction')
             return
-        if self.stage == 'review' and not self._has_model_score():
-            if re.fullmatch(r'[1-9][.! ]*',text) or re.search(r'\b(?:prefer|level|CRL|ORL|TRL|choose)\s*(?:level\s*)?[1-9]\b',text,re.I):
-                self._user(text,False,'self_assessment_unavailable')
-                self._assistant('The model has not supplied a valid score yet, so I have not recorded a level choice. You can add factual information, or write “no changes” to finish without a score.',act='assessment_gap')
-                return
-            if re.match(r'^(?:additional (?:facts|information)|add evidence)\s*:',text,re.I):
-                self._user(text,True,'additional_evidence')
-                self._invalidate('Additional evidence before self-assessment')
-                self.finish('additional_evidence_for_model_assessment')
-                return
-        if self.stage == 'review':
-            message = self._user(text, False, 'result_review')
-            self.participant_review = {'text': text, 'response_id': message['id'], 'status': 'pending_human_review',
-                'preferred_level': None, 'independent_validation': False}
-            preferred = re.search(r'\b(?:prefer|level|CRL|ORL|TRL|choose)\s*(?:level\s*)?([1-9])\b', text, re.I) or re.fullmatch(r'\s*([1-9])[.! ]*',text)
-            if preferred: self.participant_review['preferred_level'] = int(preferred[1])
-            if re.fullmatch(r'(no changes|nothing to add|no changes needed)[.! ]*', text, re.I):
-                self.stage = 'ended'
-                self.stop_reason = 'respondent_review_no_changes'
-                self._assistant('Thank you. Your review is recorded separately from the provisional result. Download a copy if you would like to keep this conversation.', act='end')
-                return
-            self._assistant('Your response is recorded separately from the model result. What additional facts, if any, would you like considered? If there are none, write “no changes” to finish. No follow-up service is available; download your feedback to keep it.', act='review_addition')
-            self.stage = 'review_addition'
+        if self.pending_correction and self.pending_correction!='clarify':
+            target=next((m for m in self.active_evidence() if m['id']==self.pending_correction),None)
+            if target:self._apply_correction(target,text)
+            else:self.pending_correction=None
             return
-        if self.stage == 'review_addition' and re.fullmatch(r'(no changes|nothing to add|no additional facts|nothing|no)[.! ]*',text,re.I):
-            self._user(text,False,'review_completion')
-            self.stage='ended'
-            self.stop_reason='respondent_review_complete'
-            self._assistant('Thank you. The model result and your own review remain separate. Download a copy if you would like to keep them.',act='end')
-            return
-        if self.stage == 'review_addition':
-            row = self._user(text, True, 'additional_evidence')
-            self._invalidate('Additional evidence after result')
-            self.stage = 'review_addition'
-            self._assistant('I recorded that as additional information, with review pending. The initial result is preserved; I will not automatically change it. You can add anything else or say stop.', act='review_recorded')
+        if self.stage in {'review','review_addition'}:
+            self._fn_review(text)
             return
         if self.pending_correction == 'clarify' and re.fullmatch(r'(no changes|continue)[.! ]*', text, re.I):
             self.pending_correction = None
             self._user(text, False, 'summary_review')
             self._report(indicator_client, score_client)
-            return
-        if self.pending_correction and self.pending_correction != 'clarify':
-            target = next((m for m in self.active_evidence() if m['id'] == self.pending_correction), None)
-            if target:
-                self._apply_correction(target, text)
-            else:
-                self.pending_correction = None
-                self._user(text, False, 'correction_clarification')
-                self._assistant('I could not find that earlier answer. Your existing answers remain unchanged; use “go back” to select one.', act='correction')
             return
         if intent == 'simplify' and self.objective in {'perspective','area','drone_recognition','drone_description','organisation_context','technical_role'}:
             self._user(text, False, 'simplification')
@@ -1011,213 +1106,29 @@ class ChatSession:
                 self._last_decision['fallback_used'] = True
                 self._assistant('I could not rephrase that just now. You can leave this question open, change topic or finish.', act='failure')
             return
-        if intent in {'skip','advance'} and self.objective in {'drone_description','drone_uses','drone_other_uses','healthcare_awareness','healthcare_detail','local_awareness','local_basis'}:
-            self._user(text,False,'advance_request')
-            self.knowledge_focus=({'drone_description':'prior_uses','drone_uses':'healthcare',
-                'drone_other_uses':'healthcare','healthcare_awareness':'local_awareness',
-                'healthcare_detail':'local_awareness','local_awareness':'open_concerns',
-                'local_basis':'open_concerns'})[self.objective]
-            question=self._fallback_question()
-            self.objective=self._followup_objective(question)
-            self._assistant(question,self.objective,'authored_fallback')
+        if self._onboarding_answer(text): return
+        if intent in {'skip','advance'}:
+            self._fn_turn(text,client,indicator_client,score_client,skipped=True)
             return
-        if intent == 'advance':
-            self._user(text, False, 'advance_request')
-            if self.stage=='conversation' and self.profile:
-                self.objective='open_conversation'
-                self._assistant(self._fallback_question(),self.objective,'authored_fallback')
-                self._last_decision.update(accepted_action='advance_question',fallback_used=True)
-            else:
-                self._assistant('You can say “no changes” to continue from the summary, or “stop” to finish.',act='navigation')
-            return
-        if intent == 'skip' and self.objective in {'area','drone_recognition','organisation_context','technical_role'}:
-            self._onboarding_answer(text, skipped=True)
-            return
-        if intent == 'skip':
-            self._user(text, False, 'skip')
-            self._assistant('No problem; we can leave that open. What else would you like to discuss?', 'open_conversation')
-            return
-        if len(self.active_evidence()) >= self.limits['turns'] or sum(m['wall_seconds'] for m in self.metrics) >= self.limits['processing_seconds']:
-            self._user(text, True)
+        if len(self.active_evidence()) >= self.limits['turns'] or sum(m['wall_seconds'] for m in self.metrics) >= self.limits['processing_seconds'] or self.calls+4>self.limits['calls']:
+            self._user(text,True)
+            self.failures.append({'stage':'chat_turn','code':'budget','category':'operational_limit','revision':self.revision})
+            self.partial=True
             self.finish('operational_limit_partial')
             return
         if intent == 'comparison':
-            self._user(text, False, 'comparison_request')
-            request = self._request('', comparison=True)
-            try: result = self._generate(client, request)
-            except AssessmentError as exc:
-                self.failures.append({'code': exc.code, 'revision': self.revision})
-                self._assistant('Two wordings are unavailable right now. You can answer the current question or finish.', act='failure')
-                return
-            question = next((m['text'] for m in reversed(self.messages) if m['role']=='assistant' and m.get('act')=='question'),
-                            'What would you like to explore about this topic?')
-            variant_texts = result['variants'] if result['variants'] and not result.get('_quality_issues') else [question, 'What part of this topic matters most to you, and why?']
-            variants = [{'response_id': f'v{self.revision}-{i}', 'text': t} for i, t in enumerate(variant_texts)]
-            random.SystemRandom().shuffle(variants)
-            self.pending_comparison = {'objective_id': self.objective, 'context_revision': self.revision,
-                'variants': variants, 'display_order': [v['response_id'] for v in variants], 'semantic_review': 'pending', 'training_eligible': False}
-            self._assistant('Which wording do you prefer, 1 or 2? You can also say neither or no preference.', act='preference')
+            self._user(text,False,'comparison_request')
+            request=self._request('',comparison=True)
+            try: result=self._generate(client,request)
+            except (AssessmentError,httpx.HTTPError):result={}
+            node=self.fn.current(self.profile,self.depth,self.objective)
+            variants=result.get('variants') or [node['canonical_question'], 'What would you want me to understand about this point?']
+            self.pending_comparison={'objective_id':self.objective,'context_revision':self.revision,
+                'variants':[{'response_id':f'v{self.revision}-{i}','text':t} for i,t in enumerate(variants)],
+                'display_order':[f'v{self.revision}-{i}' for i in range(2)],'semantic_review':'pending','training_eligible':False}
+            self._assistant('Which wording do you prefer, 1 or 2? You can also say neither or no preference.',act='preference')
             return
-        if self.objective=='open_conversation' and self.knowledge_focus=='open_concerns':
-            self.knowledge_focus=''
-        if self._onboarding_answer(text):
-            return
-        row = self._opening_row or retry_row or self._user(text)
-        self._opening_row=None
-        self._invalidate('New respondent evidence')
-        if self._discussion_progress()['target_reached']:
-            self.finish('discussion_target_reached')
-            self._last_decision['accepted_action']='summary_after_discussion'
-            self._last_decision['closing_policy']=self._discussion_progress()
-            return
-        self._last_decision['validated_context_facts'] = self._record_plain_context(text, row)
-        request = self._request(text)
-        try:
-            result = self._generate(client, request)
-        except (AssessmentError, OSError, httpx.HTTPError) as exc:
-            code = getattr(exc, 'code', 'transport')
-            diagnostics = getattr(client, 'last_diagnostics', []) if client is not None else []
-            last = diagnostics[-1] if diagnostics else {}
-            category = ('context_budget' if code == 'budget' else 'model_schema' if code == 'schema' else
-                        'evidence_integrity' if code == 'evidence' else 'conversation_quality' if code == 'eligibility' else 'model_transport' if code in {'timeout','transport','service_busy','service_request'} else
-                        'generated_output_privacy' if code in {'privacy','privacy_unavailable'} and last.get('privacy_boundary') == 'model_output' else
-                        'response_view_export_privacy' if code in {'privacy','privacy_unavailable'} and last.get('privacy_boundary') == 'assessment_record' else
-                        'controller_state' if code in {'state','stale','conflict'} else
-                        'input_privacy' if code in {'privacy','privacy_unavailable'} else 'model_failure')
-            failure = {'stage':'chat_turn','category':category,'code':code,'revision':self.revision,
-                       'attempts':sum(1 for d in diagnostics if d.get('stage')=='chat_turn' and 'attempt' in d),
-                       'generation_calls':getattr(client, 'last_metrics', {}).get('generation_calls'),
-                       'transport_attempts':sum(1 for d in diagnostics if d.get('stage')=='chat_turn' and 'transport_attempt' in d),
-                       'completion_status':last.get('completion_status'),
-                       'validation_field':getattr(exc,'field',None) or last.get('validation_field'),
-                       'wall_seconds':round(sum(d.get('latency_seconds',0) for d in diagnostics if d.get('stage')=='chat_turn'),3)}
-            if last.get('privacy_boundary'):
-                failure['privacy_boundary'] = last['privacy_boundary']
-                failure['entity_types'] = last.get('entity_types', [])
-                failure['field_paths'] = last.get('field_paths', [])
-            self.failures.append(failure)
-            self._last_decision.update(validation={'model_action':'rejected','reason':category,
-                'original_evidence':'retained_once','controller_action':'authored_fallback'}, fallback_used=True,
-                model_calls=self._last_decision.get('model_calls',failure['generation_calls'] or 0),
-                latency_seconds=self._last_decision.get('latency_seconds',failure['wall_seconds']), error=category)
-            if getattr(exc,'code',None)=='budget' and getattr(exc,'field',None)!='prompt_context':
-                self.finish('call_or_context_budget_partial')
-                return
-            self.failed_turn_id = None
-            self.routing_events.append({'event':'authored_fallback','evidence_id':row['id'],'reason':category})
-            self._last_decision['fallback_source'] = self._fallback_source(text)
-            question=self._fallback_question(text)
-            self.objective=self._followup_objective(question)
-            self._assistant('I kept your answer. ' + question, self.objective, 'authored_fallback')
-            self._last_decision['postcondition'] = {'evidence_retained_once': row['id'] in {m['id'] for m in self.active_evidence()},
-                                                     'fallback_added': self.messages[-1]['act']=='authored_fallback'}
-            return
-        self.failed_turn_id = None
-        unauthorized_scope_change = result['act'] == 'scope_change'
-        if result['act'] == 'scope_change':
-            self._last_decision['model_scope_change'] = 'rejected_model_cannot_change_scope'
-        if self.objective in {'open_priorities','priorities'}:
-            self.priorities.append({'evidence_id':row['id'],'text':text,'origin':'spontaneous' if self.objective=='open_priorities' else 'selected_after_open_question'})
-        self._last_decision.update({key:deepcopy(result.get(key)) for key in
-            ('source_ids','act','topic','respondent_intent','question_goal','justification','considered_alternatives','evidence_ids','uncertainty')})
-        self._last_decision['proposed_action'] = result.get('_model_proposed_action', result['proposed_action'])
-        self._last_decision['validated_action'] = result['proposed_action']
-        self._last_decision.setdefault('validated_context_facts', [])
-        self._last_decision['validated_context_facts'] += self._apply_context_facts(result, text, row['id'])
-        kind = self._update_concern_ledger(row, result)
-        if kind != 'context_only' and row.get('topic') and len(self.priorities) < 3 and not any(p['evidence_id']==row['id'] for p in self.priorities):
-            self.priorities.append({'evidence_id':row['id'],'text':text,
-                'origin':'spontaneous_topic_in_open_conversation','topic':row['topic']})
-        self.annotations.append({'evidence_id': row['id'], 'indicator_ids': result['indicator_ids'],
-            'dialogue_act':result['act'], 'covered_objectives':[], 'quote': None,
-            'status': 'interpretation_unreviewed',
-            'elicitation': 'spontaneous' if self.objective == 'open_priorities' else 'prompted',
-            'evidence_type':kind, 'revision': self.revision})
-        warnings = result.get('_annotation_warnings', [])
-        self._last_decision['rejected_optional_annotations'] = list(warnings)
-        issues = result.get('_quality_issues', [])
-        self._last_decision['rejected_action_reasons'] = list(issues) if issues else []
-        if unauthorized_scope_change:
-            issues.append('unauthorized_scope_change')
-        self._last_decision['validation'] = {'privacy':'passed','question_quality':'rejected' if issues else 'passed',
-            'evidence_ids':'rejected_optional_annotation' if 'evidence_ids' in warnings else 'validated',
-            'indicator_ids':'rejected_optional_annotation' if 'indicator_ids' in warnings else 'candidate_only',
-            'context_facts':'rejected_optional_annotation' if 'context_facts' in warnings else 'exact_quote_checked',
-            'source_ids':'rejected_optional_annotation' if 'source_ids' in warnings else 'membership_checked',
-            'retrieved_sources':'read_only_context'}
-        if result['act'] == 'correction':
-            self.pending_correction = 'clarify'
-            self._assistant('Which earlier point would you like to correct? You can name the topic, such as your city, and tell me what should replace it.', act='correction')
-            return
-        if result['act'] == 'explanation_offer':
-            self.pending_explanation = 'air_movement' if re.search(r'downwash|outwash|air movement',text,re.I) else 'drone'
-            subject = 'air movement near landing areas' if self.pending_explanation=='air_movement' else 'what a drone is'
-            self._assistant('Would you like a brief explanation of '+subject+'? You can say no and continue.', act='explanation_permission')
-            return
-        if result['proposed_action'] == 'provide_information':
-            source_id = next((sid for sid in result['source_ids']
-                              if any(row['id']==sid for row in request['retrieved_context']['passages'])), None)
-            passage = next((row for row in request['retrieved_context']['passages'] if row['id']==source_id), None)
-            if passage:
-                source = passage.get('source', {})
-                text_out = (f"{passage.get('text','')} "
-                            "This is general information; it does not establish a service operating in your area.")
-                require_safe_data({'text': text_out})
-                exposure = {'id':f'x{len(self.exposures)+1}','kind':'retrieved_source_information',
-                    'source_id':source_id,'source':deepcopy(source),'text':text_out,'revision':self.revision,
-                    'prior_knowledge':False,'actual_activity':False,'permitted_use':'participant_information'}
-                self.exposures.append(exposure)
-                self._assistant(text_out, 'retrieved_information', 'supplied_information')
-                self._last_decision['validation']['information_action'] = 'accepted_source_text_rendered_by_controller'
-                self._assistant('What would you like to understand better about this information?', 'open_conversation', 'question')
-                self._last_decision['accepted_action'] = 'provide_information'
-                self._last_decision['postcondition'] = {'exposure_recorded': self.exposures[-1]['id']==exposure['id'],
-                    'exposure_id': exposure['id'],
-                    'source_membership_checked': True,'participant_text_from_source': source_id}
-                return
-            self._last_decision['validation']['information_action'] = 'rejected_no_valid_passage'
-        if result['proposed_action'] == 'offer_comparison' and len(result['variants']) == 2:
-            variants = [{'response_id':f'v{self.revision}-{i}','text':text_value}
-                        for i,text_value in enumerate(result['variants'])]
-            random.SystemRandom().shuffle(variants)
-            self.pending_comparison = {'topic':result.get('topic') or self._current_topic(),
-                'context_revision':self.revision,'variants':variants,
-                'display_order':[v['response_id'] for v in variants],
-                'semantic_review':'pending','training_eligible':False}
-            self._assistant('Would you like to compare these two ways of asking? Which wording do you prefer, 1 or 2? You can also say neither.', act='preference')
-            self._last_decision['accepted_action'] = 'offer_comparison'
-            return
-        self.objective = 'open_conversation'
-        if warnings:
-            self.routing_events.append({'event':'optional_annotation_rejected','fields':warnings,'evidence_id':row['id']})
-        if issues:
-            self.routing_events.append({'event':'question_fallback','issues':issues,'evidence_id':row['id']})
-        progress = self._discussion_progress()
-        closing_proposed = result['proposed_action']=='propose_conclusion' or result['act']=='finish'
-        self._last_decision['closing_policy'] = progress
-        if closing_proposed and not progress['may_propose_conclusion']:
-            issues = list(issues) + ['conclusion_below_minimum_evidence_turns']
-            self._last_decision['validation']['conclusion_action'] = 'rejected_insufficient_conversation_evidence'
-        if issues:
-            message, action = self._fallback_question(text), 'authored_fallback'
-            self._last_decision['fallback_used'] = True
-            self._last_decision['fallback_source'] = self._fallback_source(text)
-        elif closing_proposed and progress['may_propose_conclusion']:
-            self._assistant(result['message'], self.objective, 'wrap_offer')
-            self.finish('model_proposed_wrap_pending_respondent_review')
-            action = 'wrap_offer'
-            self._last_decision['accepted_action'] = 'propose_conclusion_pending_respondent_review'
-        else:
-            message, action = result['message'], 'question'
-        if action != 'wrap_offer':
-            self.objective=self._followup_objective(message)
-            self._assistant(message, self.objective, action)
-        if 'accepted_action' not in self._last_decision:
-            self._last_decision['accepted_action'] = ('authored_fallback' if action=='authored_fallback'
-                else 'record_concern' if result['proposed_action']=='record_concern' else 'ask_question')
-        self._last_decision['postcondition'] = {'respondent_evidence_retained': row['id'] in {m['id'] for m in self.active_evidence()},
-            'assistant_action': self.messages[-1].get('act'), 'profile_unchanged': self.profile in {'citizen','organisational','technical'},
-            'source_retrieval_read_only': True}
+        self._fn_turn(text,client,indicator_client,score_client,retry_row=retry_row)
 
     def view(self):
         participant_messages = [{key:message[key] for key in ('id','role','text','act') if key in message}
@@ -1229,19 +1140,20 @@ class ChatSession:
                 'suggestion': deepcopy(self.suggestion), 'self_assessment_available':self.stage=='review' and self._has_model_score(), 'participant_review': deepcopy(self.participant_review),
                 'initial_suggestion': deepcopy(self.initial_results[0]['suggestion']) if self.initial_results and self.participant_review else None,
                 'assisted': self.assisted,
-                'completion': {'conversation': self.stage == 'ended',
+                'completion': {'conversation': self.stage == 'ended', 'partial':self.partial,
+                               'methodological_progression':'incomplete' if not self.profile or self.fn.next(self.profile,self.depth,self.concerns) else 'goals_explored',
                                'evidence_sufficiency': (self.suggestion or {}).get('evidence_sufficiency', 'pending_after_new_evidence' if self.initial_results else 'not_judged'),
                                'participant_review': 'provided' if self.participant_review else 'not_provided',
                                'review': (self.participant_review or {}).get('status', 'not_reviewed')}}
 
     def export(self):
-        objective_coverage = []
-        for objective in self._all_objectives():
-            evidence_ids = list(self.covered.get(objective['id'], []))
-            status = 'respondent_provided' if evidence_ids else ('not_selected' if objective['id'] in self.covered else 'not_explored')
-            objective_coverage.append({'objective_id': objective['id'], 'status': status, 'evidence_ids': evidence_ids})
+        progression=self.fn.export(self.profile,self.depth,self.concerns)
+        objective_coverage=[{'objective_id':stage['id'],'status':stage['status'],
+            'evidence_ids':list(dict.fromkeys(eid for goal in stage['goals'] for eid in goal['evidence_ids'])),
+            'readiness_inferred':False} for stage in progression['stages']]
         return {**self.view(), 'messages':deepcopy(self.messages), 'schema_version': SCHEMA, 'policy_version': POLICY,
                 'classification': 'synthetic' if self.synthetic else 'unlabelled_not_verified',
+                'fn_interview':progression,
                 'objective_coverage':objective_coverage,'routing_events':deepcopy(self.routing_events),
                 'training_eligible': False, 'context': deepcopy(self.context),
                 'evidence_revision': self.revision, 'annotations': deepcopy(self.annotations), 'priorities':deepcopy(self.priorities),

@@ -311,7 +311,7 @@ def require_safe_data(value):
                 (path.endswith('.module_id') or path.endswith('.anchor_context_module_id'))
                 and re.fullmatch(r'indicator-(?:0[1-9]|1[0-5])-(?:crl|orl|trl)', item) is not None
             )
-            chat_schema_reference = (item in {'iam-sra-chat-1.0.0', 'iam-sra-chat-1.1.0', 'iam-sra-chat-1.2.0'} and path in {
+            chat_schema_reference = (item in {'iam-sra-chat-1.0.0', 'iam-sra-chat-1.1.0', 'iam-sra-chat-1.2.0', 'iam-sra-chat-2.0.0'} and path in {
                 'root.mode','root.schema_version','root.chat.mode','root.conversation.mode','root.conversation.schema_version'})
             # Fixed server-owned trace schema identifier. The NLP model tags
             # its spelling as PERSON; prose containing it still gets screened.

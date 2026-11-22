@@ -6,6 +6,8 @@ and technical perspectives, source-grounded follow-up, privacy screening,
 evidence review and a provisional profile-specific CRL, ORL or TRL judgment.
 The model proposes actions; the Python controller validates them and owns the
 interview lifecycle. The instrument remains a prototype pending partner review.
+The FN-guided refinement uses four source-checked adaptive interview flows and
+evidence-aware progression; see [flow mappings, verification and launch commands](docs/fn-adaptive-interview.md).
 
 ## Run the current web application
 

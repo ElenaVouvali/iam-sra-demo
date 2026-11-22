@@ -1,5 +1,9 @@
 # Open conversation and enforceable harness
 
+This is the historical open-conversation design. The FN-guided controller
+replaces its soft-only navigation and answer-count completion; see
+[the current FN interview specification and verification](fn-adaptive-interview.md).
+
 Status: prototype implementation on `feat/open-conversation-harness`. The four
 Eva/Future Needs PDFs are source-authored interview examples, not an approved
 automated scoring policy. Their registered hashes are unchanged.

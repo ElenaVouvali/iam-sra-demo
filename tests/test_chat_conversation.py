@@ -20,11 +20,18 @@ def chat(profile='citizen', depth='short'):
     s=ChatSession(bank(),depth,synthetic=True);c=ChatFixture()
     s.send({'citizen':'My personal views','organisational':'Our organisation responsibilities','technical':'A technology subsystem'}[profile],c)
     s.send('Madrid',c)
-    s.send({'citizen':'An aircraft without a pilot on board.', 'organisational':'test unit', 'technical':'Flight safety testing'}[profile],c)
-    if profile=='citizen':
-        for answer in ('Photography and inspections.','No other uses.','No, I had not heard of medical deliveries.','I do not know of a local operation.'):
-            s.send(answer,c)
-    if profile!='citizen':s.send('Our test unit: safety subsystem v1, laboratory, hospital logistics; our responsibility only.',c)
+    answers={'drone_recognition':'An aircraft without a pilot on board.','drone_description':'An aircraft without a pilot on board.',
+        'drone_uses':'Photography and inspections.','drone_other_uses':'No other uses.',
+        'healthcare_awareness':'no','local_awareness':'unknown','organisation_context':'test unit',
+        'remit':'our responsibility only','technical_role':'Flight safety testing',
+        'technical_object':'Our test unit: safety subsystem v1, laboratory, hospital logistics; our responsibility only.',
+        'expertise':'The safety subsystem only.','concept':'Hospital logistics in a laboratory.',
+        'functions':'A loss-of-link safety controller.','defined':'The laboratory concept is defined.',
+        'experimental':'no','controlled':'no','relevance':'yes','relevance_detail':'Our own planning responsibility.'}
+    for _ in range(24):
+        if s.objective=='open_priorities': break
+        s.send(answers.get(s.objective,'The scoped details are unknown.'),c)
+    assert s.objective=='open_priorities'
     return s,c
 
 
@@ -96,9 +103,9 @@ def test_natural_retry_phrase_and_negation_are_separated():
 def test_depth_preference_keeps_open_conversation_without_question_bank_lookup(input_text,depth):
     s,c=chat()
     s.send(input_text,c)
-    assert s.depth==depth and s.objective=='open_conversation'
+    assert s.depth==depth and s.objective=='open_priorities'
     assert s.messages[-1]['act']=='question'
-    assert s.messages[-1]['text'].endswith('What would you like to discuss next?')
+    assert s.messages[-1]['text']=='Thinking about drones transporting healthcare items in your city, what comes to mind?'
 
 
 def test_bad_generated_question_uses_authored_fallback_without_losing_answer():
@@ -149,7 +156,7 @@ def test_unregistered_model_action_is_rejected_and_answer_survives():
     s,c=chat();s.send('Nesting birds could be disturbed.',Unauthorized())
     assert s.active_evidence()[-1]['text']=='Nesting birds could be disturbed.'
     assert s.messages[-1]['act']=='authored_fallback'
-    assert s.failures[-1]['category']=='model_schema'
+    assert s.failures[-1]['category']=='action_contract'
 
 
 def test_retrieved_prompt_injection_cannot_authorize_an_action(monkeypatch):
@@ -203,7 +210,7 @@ def test_model_cannot_change_scope_or_claim_conclusion_postcondition():
     assert s.stage=='conversation'
     trace=s.decision_traces[-1]
     assert trace['controller_execution']['state_after']['stage']=='conversation'
-    assert trace['validation']['conclusion_action']=='rejected_insufficient_conversation_evidence'
+    assert trace['closing_policy']['may_propose_conclusion'] is False
     assert trace['controller_execution']['all_observed_postconditions_passed']
 
 
@@ -216,9 +223,11 @@ def test_source_information_action_uses_only_controller_rendered_retrieval(monke
         {'guidance':[],'passages':[passage],'status':'retrieved'})
     class Information:
         def turn(self,request):
-            return {'message':'This means operations are harmless. What do you think?',
-                    'proposed_action':'provide_information','source_ids':['safe-passage'],
-                    'topic':'noise','respondent_intent':'requesting information'}
+            from fn_fixture import reply
+            result=reply(request,action='explain')
+            result.update(message='This means operations are harmless. What do you think?',
+                          proposed_action='provide_information',source_ids=['safe-passage'])
+            return result
     s.send('Can noise impacts be measured?',Information())
     supplied=[m['text'] for m in s.messages if m.get('act')=='supplied_information']
     assert supplied and 'Noise measurements depend on location' in supplied[0]
@@ -267,11 +276,13 @@ def test_storage_is_not_exposed_without_governance_configuration(api):
 
 def test_free_conversation_records_priorities_without_question_bank_traversal():
     s,c=chat()
-    for answer in ['I know drones carry things.','I heard they can carry medicines.','Noise, privacy and fairness matter to me.','Noise and privacy first.']:
+    for answer in ['Noise, privacy and fairness matter.','No other topics.','Some people may be affected more.','Noise and privacy first.']:
         s.send(answer,c)
     assert len(s.bank['indicators'])==15
-    assert len(s.concerns)<15 and len(s.priorities)<=3
-    assert all(m.get('objective_id') in {'perspective','area','drone_recognition','drone_uses','drone_other_uses','healthcare_awareness','local_awareness','open_conversation'} for m in s.messages if m['role']=='assistant')
+    assert {p['topic'] for p in s.priorities}=={'noise','privacy'}
+    assert all(p['origin']=='respondent_selected' for p in s.priorities)
+    assert not any('indicator-' in m['text'] for m in s.messages if m['role']=='assistant')
+    assert all(not r['selected_priority'] for r in s.concerns if r['topic']=='fairness')
 
 
 def test_opportunity_capability_and_influence_remain_original_unreviewed_evidence():
@@ -284,17 +295,19 @@ def test_opportunity_capability_and_influence_remain_original_unreviewed_evidenc
 
 def test_fallback_question_remains_source_mapped_without_becoming_normal_router():
     s,c=chat()
-    assert 'wildlife' in s._fallback_question('Nesting birds could be disturbed.').casefold()
-    assert s._fallback_source('Nesting birds could be disturbed.')['document'].startswith('SRAA Citizen')
+    assert s.fn.current(s.profile,s.depth,s.objective)['canonical_question'] in s._fallback_question()
+    assert s._fallback_source()['document'].startswith('SRAA Citizen')
+    assert s._fallback_source()['specification_version']==s.fn.version
 
 
 def test_open_chat_does_not_route_through_question_bank():
     s,c=chat()
-    assert s.objective=='open_conversation'
-    assert s.covered.keys() <= {'perspective','area','drone_recognition'}
-    request=s._request('A concern not represented in the indicators is wildlife disturbance.')
+    assert s.objective=='open_priorities'
+    request=s._request('An emerging issue is wildlife disturbance.')
     assert 'eligible' not in request and 'objective_ids' not in request
-    assert request['indicator_ids']  # private map is available, not a question shortlist
+    assert request['fn']['evidence_goal']=='open_priorities'
+    assert request['indicator_ids']
+    assert all(not i.startswith('indicator-') for i in request['fn']['allowed_objectives'])
 
 
 @pytest.mark.parametrize('text',["I didn't stop attending", 'They said "stop"', 'I do not want to stop', 'The motor can stop unexpectedly'])
@@ -304,7 +317,7 @@ def test_no_false_withdrawal(text):assert direct_intent(text) is None
 @pytest.mark.parametrize('text',['stop','I want to stop','finish for now','please stop the interview'])
 def test_explicit_stop_keeps_partial_report(text):
     s,c=chat();s.send(text,c)
-    assert s.stage=='summary' and s.stop_reason=='respondent_finish'
+    assert s.stage=='summary' and s.stop_reason=='respondent_finish_partial' and s.partial
     assert s.export()['completion']['conversation'] is False
 
 
@@ -358,7 +371,7 @@ def test_disagreement_preserves_initial_suggestion_and_preferred_level_separate(
     assert s.suggestion==initial
     assert s.participant_review['preferred_level']==7 and s.participant_review['status']=='pending_human_review'
     s.send('I had an opportunity to comment but no decision change was reported.',c)
-    assert s.initial_results[-1]['suggestion']==initial and s.suggestion is None
+    assert s.initial_results[-1]['suggestion']==initial and s.suggestion==initial
     assert not s.export()['indicator_projection']['participant_reviewed']
 
 
@@ -605,10 +618,14 @@ def test_supplied_case_is_source_qualified_information_not_respondent_experience
 
 
 def test_authored_fallbacks_have_one_substantive_question():
-    from iam_sra.chat_policy import objectives
-    for profile in ['citizen','organisational','technical']:
-        for depth in ['short','extended']:
-            assert all(r['question'].count('?')==1 for r in objectives(profile,depth))
+    from iam_sra.fn_interview import specification
+    for key,stages in specification()['flows'].items():
+        for stage in stages:
+            for node in stage['questions']:
+                count=node['canonical_question'].count('?')
+                assert count==1 or (key=='citizen_short' and node['id']=='ongoing_role' and count==2)
+    s,c=chat()
+    assert s._fallback_question().count('?')==1
 
 
 def test_version_metadata_exception_does_not_allow_arbitrary_respondent_text(monkeypatch):
@@ -680,7 +697,7 @@ def test_additional_facts_never_trigger_automatic_reassessment():
     original=deepcopy(s.suggestion)
     s.send('I think something is missing.',c)
     s.send('I was later told a route changed after a consultation.',c)
-    assert s.stage=='review_addition' and s.suggestion is None
+    assert s.stage=='review_addition' and s.suggestion==original
     assert s.view()['initial_suggestion']==original
     s.send('stop',c)
     assert s.stage=='ended' and s.initial_results[-1]['suggestion']==original
@@ -736,8 +753,8 @@ def test_summary_is_compact_original_passages_not_a_replacement_for_evidence():
 @pytest.mark.parametrize('depth',['short','extended'])
 @pytest.mark.parametrize(('profile','answer','objective','question'),[
     ('citizen','personal','drone_recognition','Do you know what a drone is?'),
-    ('organisational','organisation','organisation_context','What kind of organisation'),
-    ('technical','technical','technical_role','What is your technical role'),
+    ('organisational','organisation','organisation_context','What organisation do you work for?'),
+    ('technical','technical','organisation_context','What organisation do you work for?'),
 ])
 def test_eva_first_three_questions_are_controller_owned(depth,profile,answer,objective,question):
     class NeverCalled:
@@ -745,22 +762,22 @@ def test_eva_first_three_questions_are_controller_owned(depth,profile,answer,obj
     s=ChatSession(bank(),depth,synthetic=True);c=NeverCalled()
     s.send(answer,c)
     assert s.profile==profile and s.objective=='area'
-    assert 'Which city or urban area' in s.messages[-1]['text']
+    assert 'Which EU city or urban area' in s.messages[-1]['text']
     s.send('Madrid',c)
     assert s.context['city']=='Madrid' and s.objective==objective
     assert question in s.messages[-1]['text']
-    assert s.messages[-1]['source']['adaptation_version']=='eva-opening-1.0.0'
+    assert s.messages[-1]['source']['specification_version']=='fn-adaptive-interview-1.0.0'
     assert not s.calls
 
 
 def test_citizen_no_explanation_requires_permission_and_records_exposure():
     s=ChatSession(bank(),synthetic=True);c=ChatFixture()
     for text in ('personal','Madrid','No'):s.send(text,c)
-    assert s.pending_explanation=='drone' and not s.exposures and not s.calls
+    assert s.objective=='drone_explanation' and not s.exposures and not s.calls
     s.send('yes please',c)
     assert s.exposures[-1]['prior_knowledge'] is False
     assert not any('A drone is an aircraft' in e['text'] for e in s.active_evidence())
-    assert s.objective=='drone_uses'
+    assert s.objective=='healthcare_awareness'
 
 
 def test_citizen_yes_asks_for_own_description_without_awarding_knowledge():
@@ -778,21 +795,21 @@ def test_city_and_third_question_can_be_skipped(profile):
     s.send(profile,c);s.send('skip this question',c)
     assert s.context['city'] is None and s.context['city_status']=='withheld_or_uncertain'
     s.send('skip this question',c)
-    assert s.objective=='open_conversation' and not s.calls
+    assert s.objective==('drone_explanation' if profile=='personal' else 'remit' if profile=='organisation' else 'technical_role') and not s.calls
     assert not s.context['organisation_or_unit'] and not s.context['technical_role']
 
 
 def test_technical_role_does_not_invent_assessed_object():
     s=ChatSession(bank(),synthetic=True);c=ChatFixture()
-    for text in ('technical','Madrid','Flight control testing'):s.send(text,c)
+    for text in ('technical','Madrid','A technology company','Flight control testing'):s.send(text,c)
     assert s.context['technical_role']=='Flight control testing'
-    assert s.context['technical_object']=='' and s.objective=='open_conversation'
-    assert 'What technology, system or component' in s.messages[-1]['text']
+    assert s.context['technical_object']=='' and s.objective=='technical_object'
+    assert 'What drone technology, system, component or technical service' in s.messages[-1]['text']
 
 
 def test_technical_role_correction_replaces_context_and_keeps_original():
     s=ChatSession(bank(),synthetic=True);c=ChatFixture()
-    for text in ('technical','Madrid','Flight control testing','go back','Actually my technical role is simulation only.'):
+    for text in ('technical','Madrid','A technology company','Flight control testing','go back','Actually my technical role is simulation only.'):
         s.send(text,c)
     assert s.context['technical_role']=='Actually my technical role is simulation only.'
     assert any(m.get('supersedes') for m in s.active_evidence())
@@ -829,12 +846,11 @@ def test_model_cannot_wrap_early_but_can_propose_after_discussion(profile,depth)
     s,c=chat(profile,depth)
     s.send('There are several impacts to consider.',Close())
     assert s.stage=='conversation' and s.messages[-1]['act']=='authored_fallback'
-    minimum=16 if depth=='extended' else 10
-    assert s._discussion_progress()['earliest_model_wrap_after']==minimum
-    for i in range(minimum-2):s._user('Further discussion of a concern and its uncertainty.')
-    s.send('I have explained the remaining uncertainty.',Close())
-    assert s.stage=='summary' and 'no changes' in s.messages[-1]['text']
-    assert s.suggestion is None  # duration never awards a score
+    assert not s._discussion_progress()['may_propose_conclusion']
+    for i in range(18):s._user('A topic mention is not a demonstrated capability.')
+    s.send('I have explained some uncertainty.',Close())
+    assert s.stage=='conversation' and not s._discussion_progress()['may_propose_conclusion']
+    assert s.suggestion is None and s.fn.next(s.profile,s.depth,s.concerns) is not None
 
 
 def test_finish_act_also_cannot_bypass_discussion_pacing():
@@ -981,15 +997,17 @@ def test_question_memory_pairs_each_retained_answer_with_its_actual_question():
 def test_repeated_invalid_model_questions_use_distinct_recovery_then_reach_review():
     class Repeat:
         def turn(self,request):return {'message':'How might drone noise affect daily life in Madrid?'}
-    s,c=chat();s.knowledge_focus=''
-    for i in range(20):
+    s,c=chat()
+    for _ in range(90):
         if s.stage!='conversation':break
-        s.send('A proposed flight time restriction is one condition I would consider.',Repeat())
-    assert s.stage=='summary' and s.stop_reason=='discussion_target_reached'
+        s.send('The meaning is still uncertain.',Repeat())
+    assert s.stage in {'summary','review'} and s.partial
+    assert s.stop_reason!='discussion_target_reached'
     recovery=[m['text'] for m in s.messages if m.get('act')=='authored_fallback']
     assert len(recovery)==len(set(recovery))
-    s.send('no changes',c)
-    assert s.stage=='review' and s.suggestion['status']=='abstained'
+    assert s.fn.unresolved_gaps
+    if s.stage=='summary':s.send('no changes',c)
+    assert s.stage=='review' and s.suggestion['level'] is None
 
 
 @pytest.mark.parametrize('text',['Lunaro 11, Madrid','Lunaro11, Madrid','I stay in Madrid and more specifically Lunaro 11'])
@@ -1019,11 +1037,10 @@ def test_city_extraction_cannot_discard_a_secret_or_apply_to_technical_answers(a
 
 
 def test_citizen_knowledge_progression_does_not_repeat_definition_or_supply_uses():
-    s=ChatSession(bank(),synthetic=True);c=ChatFixture()
+    s=ChatSession(bank(),depth='extended',synthetic=True);c=ChatFixture()
     for text in ('personal','Madrid','yes','An aircraft without a pilot on board.'):
         s.send(text,c)
-    assert s.objective=='drone_uses'
-    assert 'uses' in s.messages[-1]['text'] and not s.exposures
+    assert s.objective=='drone_uses' and not s.exposures
     s.send('Photography and filming.',c)
     assert s.objective=='drone_other_uses'
     s.send('Not really.',c)
@@ -1033,10 +1050,9 @@ def test_citizen_knowledge_progression_does_not_repeat_definition_or_supply_uses
     s.send('I heard about medical supply deliveries.',c)
     assert s.objective=='local_awareness'
     s.send('I do not know.',c)
-    assert s.objective=='open_conversation'
+    assert s.objective=='open_priorities'
     s.send('Noise and fair access matter to me.',c)
-    assert s.knowledge_focus=='' and s.objective=='open_conversation'
-    assert not s.exposures
+    assert s.objective=='open_more' and not s.exposures
 
 
 @pytest.mark.parametrize('choice',['7','I prefer level 7'])
@@ -1067,7 +1083,7 @@ def test_model_score_occurs_before_personal_choice_and_remains_separate():
     s.send('7',c)
     assert s.participant_review['preferred_level']==7 and s.suggestion['level']==1
     assert len(calls)==1 and not s.participant_review['independent_validation']
-    assert 'no changes' in s.messages[-1]['text']
+    assert 'higher' in s.messages[-1]['text']
     before=deepcopy(s.suggestion);evidence=len(s.active_evidence())
     s.send('no changes',c)
     assert s.stage=='ended' and s.suggestion==before and s.participant_review['preferred_level']==7
@@ -1079,7 +1095,7 @@ def test_address_city_cleanup_is_screened_before_confirmed_question_two(api):
     b.act('chat_message',{'text':'personal'})
     b.act('chat_message',{'text':'Fictional 11, Madrid'})
     assert b.view['preview']['fields']['text']=='Madrid'
-    assert b.view['chat']['messages'][-1]['text'].startswith('Which city')
+    assert b.view['chat']['messages'][-1]['text'].startswith('Which EU city')
     assert not any(m['text']=='Madrid' for m in b.view['chat']['messages'])
     b.act('confirm_cleaned',{'preview_id':b.view['preview']['id']})
     assert b.view['chat']['messages'][-1]['text']=='Do you know what a drone is?'
