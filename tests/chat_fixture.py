@@ -32,6 +32,14 @@ class ChatFixture:
             result['act']='explanation_offer'
         elif request.get('comparison'):
             result['variants']=['Which part of this concern matters most to you?','What would you most want planners to understand about this concern?']
+        focus=request.get('knowledge_focus')
+        if focus=='prior_uses':result['message']='What uses of drones have you heard of before today?'
+        elif focus=='further_uses':result['message']='Are there any other uses you know about?'
+        elif focus=='healthcare':result['message']='Before today, had you heard of healthcare drone deliveries?'
+        if focus=='healthcare_detail':result['message']='What had you heard about these healthcare uses?'
+        elif focus=='local_awareness':result['message']='As far as you know, is anything similar being used or tested in your area?'
+        elif focus=='local_basis':result['message']='What led you to that impression?'
+        elif focus=='open_concerns':result['message']='What benefits, concerns or questions come to mind about possible healthcare drone deliveries?'
         if 'noise' in lower or 'rest' in lower: result.update(indicator_ids=['indicator-07'], evidence_quote=text)
         if 'privacy' in lower: result.update(indicator_ids=['indicator-09'], evidence_quote=text)
         if 'safety' in lower: result.update(indicator_ids=['indicator-10'], evidence_quote=text)

@@ -427,3 +427,12 @@ def test_real_privacy_questionnaire_module_reference_false_positive():
         'question': {'anchor_context_module_id': 'indicator-01-crl'}}}})
     with pytest.raises(PrivacyError): require_safe_data({'answer': 'indicator-01-crl'})
     with pytest.raises(PrivacyError): require_safe_data({'module_id': 'Alice Example'})
+
+
+def test_precise_residential_detail_after_city_requires_cleaning():
+    text='I stay in Madrid and more specifically Lunaro 11'
+    assert any(f.entity_type=='PRIVATE_ADDRESS_DETAIL' for f in contextual_findings(text))
+    with pytest.raises(PrivacyError) as failure:require_clean(text)
+    assert failure.value.preview and 'Lunaro' not in failure.value.preview
+    assert require_clean('I stay in Madrid')=='I stay in Madrid'
+    assert require_clean('The controller version is 11')=='The controller version is 11'

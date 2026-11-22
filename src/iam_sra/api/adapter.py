@@ -186,7 +186,7 @@ class ControllerAdapter:
                     if row['state'] != 'interpretation': result.append('indicator_edit')
         return result
 
-    def prepare(self, action, data):
+    def prepare(self, action, data, *, city_answer=False):
         """Screen BEFORE retention, retry hashing, controller mutation or queueing."""
         cleaned = deepcopy(data)
         changed = False
@@ -205,6 +205,16 @@ class ControllerAdapter:
                     raise APIError(exc.code, 503 if exc.code == 'privacy_unavailable' else 422) from None
                 cleaned[key] = exc.preview
                 changed = True
+        if city_answer and action=='chat_message':
+            # Full input already passed screening or produced a safe preview;
+            # block/unavailable failures above cannot reach this extraction.
+            from ..privacy import broad_city_preview
+            try: city = broad_city_preview(data['text'])
+            except PrivacyError as exc:
+                raise APIError(exc.code,503 if exc.code=='privacy_unavailable' else 422) from None
+            if city is not None and city != data['text']:
+                cleaned['text']=city
+                changed=True
         if action=='select_indicators':
             for key,text in data.get('use_case_fields',{}).items():
                 try: require_clean(text)

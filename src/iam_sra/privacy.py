@@ -53,6 +53,9 @@ PATTERNS = {
         r"|\b[Α-Ωα-ωΆ-ώ]+(?:ίων|ιων|ους|ού|ου|ας|ης)\s+\d{1,4}\b"
         r"|\b(?:my|home|private) address\s*(?:is|[:=])\s*[^\n.;]+"
     ),
+    # Narrow first-person locality-plus-precise-address wording; city-only
+    # answers and ordinary technical quantities are not matched.
+    'PRIVATE_ADDRESS_DETAIL': r'\bI\s+(?:live|stay)\s+in\b[^.\n]{1,80}?\bmore\s+specifically\s+(?:[^\W\d_]+[ -]*){1,4}\d{1,5}\b',
     'PRIVATE_ADDRESS_UNIT': r"\b(?:apartment|apt\.?|flat|unit|piso|puerta|andar|interno|διαμέρισμα)\s*[:#-]?\s*\d{1,4}[a-z]?\b",
     'PRIVATE_ADDRESS_POSTCODE': r"\b(?:postcode|postal code|código postal|codigo postal|codice postale|código-postal|ταχυδρομικός κώδικας|τκ|cap)\s*[:=]?\s*\d{3,5}(?:[ -]\d{2,4})?\b",
 
@@ -213,6 +216,24 @@ def reviewed_bibliographic_values():
     return frozenset(values)
 
 
+def broad_city_preview(text):
+    """Extract a literal broad area from a numbered-address city response.
+
+    Caller must screen the full original first. The returned city is screened
+    again, and needs the existing explicit cleaned-preview confirmation.
+    """
+    forms = (
+        r"[^,\n]{1,120}\d{1,5}[A-Za-z]?\s*,\s*(?P<city>[^\W\d_][^\d@,\n]{0,79})",
+        r"I\s+(?:live|stay)\s+in\s+(?P<city>[^,\d@\n]{1,80}?)\s+and\s+more\s+specifically\s+[^\n]{1,120}\d{1,5}[A-Za-z]?",
+    )
+    for pattern in forms:
+        match=re.fullmatch(pattern,text.strip(),re.I)
+        if match:
+            candidate=match['city'].strip(' .')
+            return require_clean(candidate) if candidate else None
+    return None
+
+
 def require_safe_data(value):
     """Batch strings through the local NLP engine; no content-result cache."""
     strings = []
@@ -292,16 +313,24 @@ def require_safe_data(value):
             )
             chat_schema_reference = (item in {'iam-sra-chat-1.0.0', 'iam-sra-chat-1.1.0', 'iam-sra-chat-1.2.0'} and path in {
                 'root.mode','root.schema_version','root.chat.mode','root.conversation.mode','root.conversation.schema_version'})
+            # Fixed server-owned trace schema identifier. The NLP model tags
+            # its spelling as PERSON; prose containing it still gets screened.
+            trace_schema_reference = (path == 'root.trace_schema' and
+                item == 'iam-sra-chat-decision-trace-1.0.0')
             # Controller-generated chat message IDs use m<N>. The NLP model
             # tags some values (for example m16) as PERSON. Exempt only this
             # narrow syntax in application-owned reference fields; respondent
             # prose containing the same token remains screened.
-            generated_chat_message_reference = (
-                item.startswith('m') and item[1:].isdigit() and
-                path.startswith(('root.chat.', 'root.conversation.')) and
-                re.search(r'\.(?:id|evidence_id|supersedes|response_id|evidence_ids\[\d+\])$', path) is not None
+            chat_reference_container = (
+                path.startswith(('root.chat.','root.conversation.','root.assessment.'))
+                or re.match(r'root\.(?:turns|originals|original_context|answered_questions|citations)\[\d+\]\.',path) is not None
+                or re.fullmatch(r'root\.(?:current_answer_id|priority_evidence_id|(?:evidence_ids|omitted_context_ids)\[\d+\])',path) is not None
             )
-            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not generated_chat_message_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference:
+            generated_chat_message_reference = (
+                re.fullmatch(r'm[1-9]\d{0,5}',item) is not None and chat_reference_container
+                and re.search(r'\.(?:id|answer_id|evidence_id|supersedes|response_id|in_reply_to|message_id|last_turn_id|current_answer_id|priority_evidence_id|(?:evidence_ids|context_ids|omitted_context_ids|considered_evidence_ids|supporting_evidence_ids|respondent_evidence_ids)\[\d+\])$',path) is not None
+            )
+            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not trace_schema_reference and not generated_chat_message_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():

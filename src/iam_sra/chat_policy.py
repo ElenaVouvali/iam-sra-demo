@@ -76,6 +76,31 @@ TECHNICAL = [
 ]
 
 
+
+def discussion_guidance(profile, depth):
+    """Soft profile-specific depth guidance, not question IDs or a scoring rule."""
+    guidance = {
+        'citizen': ("Follow the person's own priorities, including emerging issues. Explore why impacts matter, "
+            'possible safeguards, alternatives and evidence they would compare. Distinguish their ability to '
+            'give meaningful feedback from opportunities, actual participation and demonstrated influence. '
+            'Explore accountability where relevant; keep their opinion separate from readiness.'),
+        'organisational': ("Stay within the represented unit's responsibilities. Follow its priorities through "
+            'requirements and gaps, plans versus assigned resources and established arrangements, realistic '
+            'testing and lessons, and whether those lessons are embedded in normal work. Explore regulatory '
+            'and partnership limits, routine preparedness and ongoing monitoring when relevant.'),
+        'technical': ('Keep the same technical object, version and intended environment. Follow the stated '
+            'maturity boundary: what was built or tested, conditions, measurements, interfaces, integration '
+            'and unresolved gaps. Distinguish laboratory from representative or operational validation, '
+            'a prototype from qualification, and repeated use from one demonstration. Do not transfer '
+            'component maturity to a complete system.'),
+    }.get(profile, '')
+    if depth == 'extended':
+        guidance += (' Explore selected priorities more deeply: affected groups or interfaces, reliability of '
+            'evidence, competing options, accountability or escalation, changing conditions and continued '
+            'monitoring. Follow already supplied evidence rather than repeating basics or visiting every topic.')
+    return guidance
+
+
 def objectives(profile, depth):
     rows = COMMON + ({'citizen': CITIZEN, 'organisational': ORGANISATION, 'technical': TECHNICAL}.get(profile, []))
     if depth == 'short':

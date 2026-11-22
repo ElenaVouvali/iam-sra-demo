@@ -74,3 +74,45 @@ The final chat/controller/retrieval rerun passed **75 tests, 1 warning**. The
 full privacy suite did not complete within the observation window and was
 interrupted; do not treat the targeted subset as a complete privacy benchmark.
 No live browser run was performed. Human semantic review remains pending.
+
+
+## Follow-up reliability check (2026-11-09, live Liono Qwen)
+
+The model was reachable outside the restricted sandbox at localhost:18000. An
+isolated in-process Flask API exercised the actual owner cookie, CSRF, actions,
+job polling, scoring, review and screened export with real Qwen; no production
+session or running service was restarted. Authored synthetic inputs only were
+used, never words from the supplied participant export. This is an API/model
+rehearsal, not a browser test or independent human assessment validation.
+
+The first run reached the summary after 17 respondent turns, but screened export
+failed because the NLP detector classified a controller-generated `in_reply_to`
+message ID as PERSON. Safe failure metadata is preserved in
+`.runtime/followup-live-20261109-115236/failed-metadata.json`. Raw rejected
+content was not retained. The exact message-reference syntax is now recognized
+only in trusted structural fields; the same text in respondent prose is still
+screened. Deterministic reference-boundary tests were added.
+
+The second run is preserved under
+`.runtime/followup-live-20261109-115728/`: screened export, authenticated trace,
+metrics and the probe script. It reached summary after 17 respondent turns.
+Qwen proposed CRL 6 before the simulated participant chose 6. The score was not
+a target; all nine anchors were available. This simulation deliberately checks
+ordering/separation and does not independently validate the model result.
+Observed combined generation calls: 23; generation wall time: 98.844 s; elapsed
+case time: 171.690 s. Eight generated-question failures exhausted bounded repair
+and used recovery questions. Successful JSON export and trace HTTP 200 were
+verified. The saved run stopped at `review_addition`; it is not claimed as a
+fully ended session. The final no-additional-facts closing behavior and stricter
+recovery filtering were then verified deterministically, not rerun live.
+
+The repeated-question filters and recovery prevent the visible loop, but the
+number of rejected generations shows that question quality still needs review.
+The model explanation and its alternative-anchor distinction require human
+semantic review. The shared Qwen interviewer/assessor creates correlated-error
+risk. No synthetic result is Living Lab evidence or FN approval.
+
+Checks before the last recovery/no-additional-facts refinements: 155 combined
+chat/retrieval/API tests passed (one existing warning), 25 targeted privacy tests
+passed, real-detector city-only preview checks passed, and the frontend build
+passed (58 modules). Latest focused results are recorded in the delivery report.

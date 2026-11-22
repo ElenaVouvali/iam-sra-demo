@@ -1,4 +1,56 @@
-# IAM-SRA2 citizen interviews
+# IAM-SRA2
+
+The current web application is a Vue conversational interface backed by a Flask
+API and the existing local Qwen3-8B service. It supports citizen, organisational
+and technical perspectives, source-grounded follow-up, privacy screening,
+evidence review and a provisional profile-specific CRL, ORL or TRL judgment.
+The model proposes actions; the Python controller validates them and owns the
+interview lifecycle. The instrument remains a prototype pending partner review.
+
+## Run the current web application
+
+Prepare the separate API/privacy environments and approved private sources using
+the [integration setup instructions](docs/iamcc-integration.md). Private source
+documents, derived corpora and model weights are not included in Git. Verify the
+existing model endpoint before starting; the current local configuration uses
+port 18000:
+
+```bash
+curl --fail http://127.0.0.1:18000/v1/models
+```
+
+From the repository root, start the API in one terminal:
+
+```bash
+IAM_BASE_URL=http://127.0.0.1:18000 \
+IAM_SRA_API_PORT=8001 \
+IAM_SRA_ALLOWED_ORIGINS=http://127.0.0.1:5001,http://localhost:5001 \
+bash scripts/start-api.sh
+```
+
+In another terminal, build the frontend with Node 22.12+ within Node 22 if
+`app/dist` is absent or frontend code has changed, then serve it:
+
+```bash
+cd app
+npm ci --no-audit --no-fund
+npm run build
+HOST=127.0.0.1 PORT=5001 IAM_SRA_API_TARGET=http://127.0.0.1:8001 \
+../.venv-api/bin/python serve_app.py
+```
+
+An existing current build can be served without Node by running only the last
+command from `app/`. Open
+**http://127.0.0.1:5001/tools/sra-assessment/app**. Keep both terminals running;
+Ctrl+C stops each service. API restart loses in-memory sessions. For remote
+access, forward port 5001 over SSH as described in the integration guide.
+
+See the [open conversation harness](docs/iam-sra2-open-conversation-harness.md)
+for prompting, retrieval, controller boundaries and the latest reliability
+changes, and the [verification record](docs/eva-live-verification.md) for observed
+results and limits.
+
+## Preserved Streamlit application
 
 Main contains the updated citizen app: a scenario-free baseline interview, an
 optional medical-drone scenario interview, source-grounded information, privacy

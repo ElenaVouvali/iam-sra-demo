@@ -257,7 +257,9 @@ class AssessmentService:
                 record.preview = None
                 record.version += 1
                 submission_version = record.version
-        cleaned, changed = self.adapter.prepare(action, data)
+            chat=getattr(record.engine,'chat',None)
+            city_answer=bool(chat and chat.objective=='area')
+        cleaned, changed = self.adapter.prepare(action, data, city_answer=city_answer)
         fingerprint = self._fingerprint(action, cleaned)
         with self.lock:
             record = self._record(sid, owner)
@@ -287,7 +289,7 @@ class AssessmentService:
                 action, cleaned = preview['action'], deepcopy(preview['data'])
                 # Re-screen the cleaned operation rather than treating a token
                 # as a privacy bypass. Confirmation cannot replace its payload.
-                cleaned, changed_again = self.adapter.prepare(action, cleaned)
+                cleaned, changed_again = self.adapter.prepare(action, cleaned, city_answer=bool(getattr(record.engine,'chat',None) and record.engine.chat.objective=='area'))
                 if changed_again:
                     raise APIError('privacy', 422)
             elif action == 'discard_preview':
