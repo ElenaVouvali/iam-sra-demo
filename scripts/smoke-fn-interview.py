@@ -85,7 +85,7 @@ def main():
             turns=sum(m['role']=='respondent' for m in c['messages'])
             fallbacks=sum(m.get('act')=='authored_fallback' for m in c['messages'])
             reports.append({'case':key,'stage':c['stage'],'partial':c['completion']['partial'],
-                'methodological_complete':all(s['status']=='explored' for s in c['fn_interview']['stages']),
+                'methodological_complete':all(s['status'] in {'explored','not_applicable'} for s in c['fn_interview']['stages']),
                 'unresolved_gaps':c['fn_interview']['unresolved_gaps'],'level':(c.get('suggestion') or {}).get('level'),
                 'score_status':(c.get('suggestion') or {}).get('status'),'validation':(c.get('participant_review') or {}).get('validation'),
                 'respondent_turns':turns,'generation_calls':sum(m.get('generation_calls') or 0 for m in metrics),

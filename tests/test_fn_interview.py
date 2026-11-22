@@ -388,6 +388,9 @@ def test_concept_only_technical_story_focuses_on_low_boundary_without_manufactur
     assert s.stage=='review' and s.suggestion['level'] is None
     assert 'controlled' not in s.fn.asked and 'operational_prototype' not in s.fn.asked
     assert s.fn.facts['experimental']=='no'
+    stages={row['id']:row for row in s.export()['fn_interview']['stages']}
+    assert stages['controlled']['status']=='not_applicable'
+    assert stages['controlled']['goals']==[]
 
 
 def test_outside_organisation_remit_finishes_partial_without_any_scoring_call():

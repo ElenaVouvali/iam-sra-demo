@@ -143,7 +143,7 @@ class FNInterview:
         for stage in self.stages(profile, depth):
             applicable=[q for q in stage['questions'] if self.applicable(q, concerns)]
             stages.append({'id':stage['id'],'source_locator':stage['source_locator'],
-                'status':'explored' if all(q['id'] in self.coverage for q in applicable) else 'not_fully_explored',
+                'status':('not_applicable' if not applicable else 'explored' if all(q['id'] in self.coverage for q in applicable) else 'not_fully_explored'),
                 'goals':[{'id':q['id'], **deepcopy(self.coverage.get(q['id'],{'status':'not_explored','evidence_ids':[]}))} for q in applicable]})
         return {'version': VERSION, 'stages': stages, 'unresolved_gaps':list(self.unresolved_gaps),
                 'boundary_uncertainty':list(self.boundary_uncertainty),
