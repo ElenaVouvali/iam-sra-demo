@@ -6,6 +6,7 @@ Navigation uses bounded context; reporting never claims to have read omitted tex
 from copy import deepcopy
 from datetime import datetime, timezone
 import os
+import logging
 import re
 import time
 import httpx
@@ -13,6 +14,8 @@ from .assessment import AssessmentError
 from .privacy import require_safe_data
 from .chat_policy import POLICY, SCHEMA, WELCOME, objectives, rubric, load_rubrics
 from .fn_interview import FNInterview, specification, flow_key, literal_answer
+
+_log = logging.getLogger(__name__)
 
 
 def direct_intent(text):
@@ -214,6 +217,9 @@ class ChatSession:
                 exchanges.append({'answer_id':row['id'],'answer':row['text'],'question':question['text']})
         current=next((row for row in self.messages if row['id']==current_id),None)
         last_question=messages_by_id.get((current or {}).get('in_reply_to'),{})
+        if last_question.get('act')=='failure':
+            last_question=next((m for m in reversed(self.messages) if m['role']=='assistant'
+                and m.get('objective_id')==self.objective and m.get('act') in {'question','authored_fallback'}),{})
         from .chat_retrieval import retrieve_chat_context
         query = (' '.join([answer[:900]] + [m['text'][:300] for m in originals[-3:]]))[:1800]
         retrieval = retrieve_chat_context(self.corpus, self.profile, self.depth, query)
@@ -350,6 +356,11 @@ class ChatSession:
             self._last_decision['model_calls'] = self._last_decision.get('model_calls',0) + calls
             self._last_decision['latency_seconds'] = round(self._last_decision.get('latency_seconds',0)+elapsed,3)
             self.metrics.append({'generation_calls': observed, 'wall_seconds': elapsed,
+                                 'tokenize_calls':metrics.get('tokenize_calls'),
+                                 'diagnostics': [{key:deepcopy(entry[key]) for key in (
+                                     'stage','phase','failure','http_status','prompt_tokens','max_output_tokens',
+                                     'completion_status','validation_field','thinking_detected','transport_attempt') if key in entry}
+                                     for entry in getattr(client,'last_diagnostics',[])[-6:]],
                                  'context_ids': getattr(client,'last_context_selection',{}).get('context_ids',[m['id'] for m in request['original_context']]),
                                  'prompt_context_selection':deepcopy(getattr(client,'last_context_selection',None)), 'current_answer_id':request['current_answer_id'],
                                  'priority_evidence_id':(request['priority_context'] or {}).get('evidence_id'),
@@ -471,6 +482,7 @@ class ChatSession:
                         self.routing_events.append({'event':'question_fallback','issues':result['_quality_issues'],'evidence_id':row['id']})
                     interpretation=result.get('interpretation')
                     if not interpretation: raise AssessmentError('Grounded interpretation unavailable.',code='evidence',field='interpretation')
+                    self.failed_turn_id=None
                     for entry in interpretation['coverage']:
                         if entry['goal']=='priorities' and goal!='priorities' and not re.search(r'priorit|matter most|focus on|choos|select|most important',entry['quote'],re.I):
                             continue
@@ -499,6 +511,8 @@ class ChatSession:
                         if boundary not in self.fn.boundary_uncertainty and self.fn.boundary_probes<2:
                             self.fn.boundary_uncertainty.append(boundary);self.fn.boundary_probes+=1
                     self.annotations.append({'evidence_id':row['id'],'indicator_ids':result['indicator_ids'],
+                        'answer_kind':interpretation['answer_kind'],
+                        'goal_evidence':[{key:value for key,value in entry.items() if key!='quote'} for entry in interpretation['coverage']],
                         'dialogue_act':result['act'],'covered_objectives':[e['goal'] for e in interpretation['coverage']],
                         'quote':None,'status':'interpretation_unreviewed','revision':self.revision})
                     self._last_decision.update({key:deepcopy(result.get(key)) for key in ('proposed_action','act','topic','justification','evidence_ids','source_ids','uncertainty')})
@@ -522,27 +536,29 @@ class ChatSession:
                                 'exposure_id':self.exposures[-1]['id'],'participant_text_from_source':passage['id']})
                     if goal not in self.fn.coverage:
                         count=self.fn.followups.get(goal,0)
-                        if count<1 and not result.get('_quality_issues'):
+                        if count<1:
                             self.fn.followups[goal]=count+1;self.fn.next_action=interpretation['action']
-                            self._assistant(result['message'],goal)
+                            self._assistant(self._fallback_question(text) if result.get('_quality_issues') else result['message'],goal)
                             return
                         self.fn.record(goal,row['id'],'unresolved','uncertain')
                 except (AssessmentError,httpx.HTTPError,ValueError) as exc:
                     code=getattr(exc,'code','model_failure')
                     category='action_contract' if code=='schema' else 'context_budget' if code=='budget' else 'interpretation_unavailable'
-                    self.failures.append({'stage':'chat_turn','code':code,'category':category,'revision':self.revision})
-                    self._last_decision.update(fallback_used=True,error=code,accepted_action='authored_fallback')
+                    field=getattr(exc,'field',None)
+                    self.failures.append({'stage':'chat_turn','code':code,'category':category,'field':field,'revision':self.revision,
+                        'inference_started':bool(getattr(client,'last_metrics',{}).get('generation_calls')),
+                        'privacy_entities':list(getattr(exc,'entity_types',()))})
+                    _log.warning('chat_interpretation_failure code=%s field=%s goal=%s',code,field,goal)
+                    self._last_decision.update(fallback_used=True,error=code,accepted_action='answer_processing_failed')
                     self.failed_turn_id=row['id']
                     if code=='budget' and getattr(exc,'field',None)!='prompt_context':
                         self.partial=True
                         self.finish('call_or_context_budget_partial')
                         return
-                    if self.fn.followups.get(goal,0)<1:
-                        self.fn.followups[goal]=1
-                        self._assistant('I kept your answer. '+self._fallback_question(text),goal,'authored_fallback')
-                        return
-                    self.fn.record(goal,row['id'],'unresolved','uncertain')
-                    self._assistant('I kept your words, but this point remains uncertain. We can leave it open and continue.',act='uncertainty')
+                    self._assistant('A technical problem prevented me from processing your answer. '
+                        'Your answer is saved; you do not need to reword it. '
+                        'Type retry to try again, or skip, pause or stop.',goal,'failure')
+                    return
             field=node.get('context_field')
             if field and not self.context.get(field) and not withheld_area(text) and self.fn.coverage.get(goal,{}).get('status')=='explored':
                 self.context[field]=text;row.setdefault('context_fields',[]).append(field)
@@ -918,12 +934,17 @@ class ChatSession:
         intent = direct_intent(text)
         retry_row = None
         if intent == 'retry':
-            retry_row=next((m for m in self.active_evidence() if m['id']==self.failed_turn_id),None)
+            retry_row=next((m for m in self.active_evidence()
+                            if m['id']==self.failed_turn_id and m['objective_id']==self.objective),None)
             self._user(text,False,'retry_request')
             if retry_row is None:
                 self._assistant('There is no failed answer waiting to retry. You can continue or finish.',act='recovery')
                 return
             text=retry_row['text']
+        elif self.failed_turn_id and intent is None:
+            # Resending the same retained answer is also an idempotent retry.
+            retry_row=next((m for m in self.active_evidence() if m['id']==self.failed_turn_id
+                            and m['objective_id']==self.objective and m['text']==text),None)
         if intent == 'withdraw':
             bank,depth,synthetic,assisted,corpus = self.bank,self.depth,self.synthetic,self.assisted,self.corpus
             self.__init__(bank,depth,synthetic,assisted,corpus)
@@ -1134,6 +1155,8 @@ class ChatSession:
         participant_messages = [{key:message[key] for key in ('id','role','text','act') if key in message}
                                 for message in self.messages]
         return {'mode': SCHEMA, 'stage': self.stage, 'depth': self.depth, 'profile': self.profile,
+                'answer_processing': {'status':'retry_required' if self.failed_turn_id else 'ready',
+                                      'evidence_id':self.failed_turn_id},
                 'messages': deepcopy(participant_messages), 'pending_comparison': deepcopy(self.pending_comparison),
                 'summary': self._summary() if self.stage != 'conversation' else [],
                 'scale': self._rubric() if self.profile and (self.stage in {'review','review_addition','ended'} or any(e.get('kind')=='reference_scale' for e in self.exposures)) else None,

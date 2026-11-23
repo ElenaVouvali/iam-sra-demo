@@ -131,6 +131,7 @@ curl --fail --noproxy '*' http://127.0.0.1:18002/health
 curl --fail --noproxy '*' http://127.0.0.1:18002/v1/models
 IAM_BASE_URL=http://127.0.0.1:18002 \
 IAM_MODEL_TIMEOUT_SECONDS=900 IAM_SRA_JOB_TIMEOUT=1800 \
+IAM_CHAT_PROCESSING_SECONDS=3600 \
 IAM_SRA_API_PORT=8016 \
 IAM_SRA_ALLOWED_ORIGINS=http://127.0.0.1:5016,http://localhost:5016 \
 bash scripts/start-api.sh

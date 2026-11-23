@@ -4,6 +4,10 @@ Prototype `fn-adaptive-interview-1.0.0`, chat/export contract `iam-sra-chat-2.0.
 Base: `cb892a8954e45b93746adce44c8403e2643f065a`; implementation branch:
 `feat/fn-adaptive-interview`. No automated scoring policy is represented as FN-approved.
 
+The subsequent [interpretation and recovery correction](fn-interpretation-recovery.md)
+addresses real privacy preflight false positives, independent validation of
+interpretation/wording, saved-answer retry and actual-model opening checks.
+
 ## Sources and progression
 
 All pages of the four PDFs, including interviewer guidance, alternative branches,
@@ -50,8 +54,10 @@ consent and separate opinion administration do not require model interpretation.
 Nonliteral/qualified answers use Qwen. A profession alone never selects a profile.
 
 Qwen can clarify an unresolved goal or propose a relevant neutral follow-up.
-Python allows one recovery/follow-up per unresolved question before explicitly
-retaining a gap and moving on. At most two model-nominated optional boundary
+Python allows one semantic follow-up per unresolved question before explicitly
+retaining a gap and moving on. Technical failures keep the answer and current
+goal pending for retry/skip/stop; they never imply respondent uncertainty or
+authorize advancement. At most two model-nominated optional boundary
 probes supplement the applicable progression. Canonical branches retain FN
 wording; emerging topics can be explored through neutral adaptations. Coverage
 means a question/evidence goal was explored, declined, inapplicable or left

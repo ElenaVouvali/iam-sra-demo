@@ -181,14 +181,16 @@ def test_all_five_profile_validation_choices_preserve_initial_result(profile,cho
     assert s.participant_review['model_result_revision']==initial['revision']
 
 
-def test_failures_preserve_answer_once_and_make_progress_with_explicit_gaps():
+def test_technical_failures_preserve_answer_and_wait_without_implying_respondent_uncertainty():
     s,c=start();s.send('yes',c)
     class Broken:
         def turn(self,request):raise AssessmentError('Synthetic transport failure',code='timeout')
     s.send('My synthetic original answer.',Broken())
-    assert s.messages[-1]['act']=='authored_fallback'
-    s.send('The point remains unclear.',Broken())
-    assert s.objective=='drone_uses' and 'drone_description' in s.fn.unresolved_gaps
+    assert s.messages[-1]['act']=='failure' and 'technical problem' in s.messages[-1]['text']
+    s.send('retry',Broken())
+    assert s.objective=='drone_description' and 'drone_description' not in s.fn.unresolved_gaps
+    assert 'drone_description' not in s.fn.coverage
+    assert s.view()['answer_processing']['status']=='retry_required'
     assert len([m for m in s.active_evidence() if m['text']=='My synthetic original answer.'])==1
     s.send('stop',c)
     assert s.partial and s.stage=='summary'

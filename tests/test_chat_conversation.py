@@ -108,13 +108,13 @@ def test_depth_preference_keeps_open_conversation_without_question_bank_lookup(i
     assert s.messages[-1]['text']=='Thinking about drones transporting healthcare items in your city, what comes to mind?'
 
 
-def test_bad_generated_question_uses_authored_fallback_without_losing_answer():
+def test_uninterpreted_answer_is_saved_with_explicit_processing_failure():
     class Echo:
         def turn(self,request):
             return {'message':request['answer'],'act':'continue'}
     s,c=chat();s.send('Drones may be useful but repeated noise worries me.',Echo())
     assert s.active_evidence()[-1]['text']=='Drones may be useful but repeated noise worries me.'
-    assert s.messages[-1]['act']=='authored_fallback'
+    assert s.messages[-1]['act']=='failure' and s.failed_turn_id==s.active_evidence()[-1]['id']
     assert any(e['event']=='question_fallback' and 'answer_echo' in e['issues'] for e in s.routing_events)
 
 
@@ -155,7 +155,7 @@ def test_unregistered_model_action_is_rejected_and_answer_survives():
                     'proposed_action':'write_database', 'act':'continue'}
     s,c=chat();s.send('Nesting birds could be disturbed.',Unauthorized())
     assert s.active_evidence()[-1]['text']=='Nesting birds could be disturbed.'
-    assert s.messages[-1]['act']=='authored_fallback'
+    assert s.messages[-1]['act']=='failure'
     assert s.failures[-1]['category']=='action_contract'
 
 
@@ -172,8 +172,8 @@ def test_retrieved_prompt_injection_cannot_authorize_an_action(monkeypatch):
     s,c=chat();before=deepcopy(s.context)
     s.send('I am worried about this source.',Injected())
     assert s.context==before and s.stage=='conversation'
-    assert s.messages[-1]['act']=='authored_fallback'
-    assert s.decision_traces[-1]['controller_execution']['accepted_action']=='authored_fallback'
+    assert s.messages[-1]['act']=='failure'
+    assert s.decision_traces[-1]['controller_execution']['accepted_action']=='answer_processing_failed'
     assert s.decision_traces[-1]['execution']['fallback_used'] is True
 
 
@@ -187,7 +187,7 @@ def test_invalid_optional_source_and_indicator_annotations_fall_back_without_los
     s,c=chat();s.send('Nesting birds could be disturbed.',InvalidAnnotations())
     assert s.active_evidence()[-1]['text']=='Nesting birds could be disturbed.'
     assert len([m for m in s.active_evidence() if 'Nesting birds could be disturbed.'==m['text']])==1
-    assert s.messages[-1]['act']=='authored_fallback'
+    assert s.messages[-1]['act']=='failure'
 
 
 def test_model_cannot_change_scope_or_claim_conclusion_postcondition():
@@ -198,7 +198,7 @@ def test_model_cannot_change_scope_or_claim_conclusion_postcondition():
     s,c=chat();profile=s.profile
     s.send('This is still a citizen conversation.',BadScope())
     assert s.profile==profile and s.stage=='conversation'
-    assert s.messages[-1]['act']=='authored_fallback'
+    assert s.messages[-1]['act']=='failure'
     assert s.decision_traces[-1]['controller_execution']['postcondition']['profile_unchanged']
     assert s.decision_traces[-1]['controller_execution']['all_observed_postconditions_passed']
 
@@ -845,7 +845,7 @@ def test_model_cannot_wrap_early_but_can_propose_after_discussion(profile,depth)
         def turn(self,request):return {'message':'We can review what you shared.', 'proposed_action':'propose_conclusion'}
     s,c=chat(profile,depth)
     s.send('There are several impacts to consider.',Close())
-    assert s.stage=='conversation' and s.messages[-1]['act']=='authored_fallback'
+    assert s.stage=='conversation' and s.messages[-1]['act']=='failure'
     assert not s._discussion_progress()['may_propose_conclusion']
     for i in range(18):s._user('A topic mention is not a demonstrated capability.')
     s.send('I have explained some uncertainty.',Close())
@@ -857,7 +857,7 @@ def test_finish_act_also_cannot_bypass_discussion_pacing():
     class Finish:
         def turn(self,request):return {'message':'Would you like to finish now?', 'act':'finish'}
     s,c=chat();s.send('Noise is my concern.',Finish())
-    assert s.stage=='conversation' and s.messages[-1]['act']=='authored_fallback'
+    assert s.stage=='conversation' and s.messages[-1]['act']=='failure'
 
 
 def test_prompt_context_budget_failure_does_not_end_conversation():
@@ -865,7 +865,7 @@ def test_prompt_context_budget_failure_does_not_end_conversation():
         def turn(self,request):raise AssessmentError('Context too large.',code='budget',field='prompt_context')
     s,c=chat();s.send('No, I had not heard of healthcare deliveries.',TooLarge())
     assert s.stage=='conversation' and s.suggestion is None
-    assert s.messages[-1]['act']=='authored_fallback'
+    assert s.messages[-1]['act']=='failure'
     assert len([m for m in s.active_evidence() if m['text']=='No, I had not heard of healthcare deliveries.'])==1
 
 
@@ -891,7 +891,10 @@ def test_chat_client_retries_budget_once_with_smaller_navigation_context(monkeyp
     def transport(self,client,stage,system,payload,schema,validator):
         attempts.append(payload)
         if len(attempts)==1:raise AssessmentError('Too large.',code='budget')
-        return validator({'message':'What impact would matter most to you?'})
+        from fn_fixture import reply
+        result=reply(payload,coverage=[],action='clarify')
+        result['message']='What impact would matter most to you?'
+        return validator(result)
     monkeypatch.setattr(ChatClient,'_request',transport)
     s,c=chat();request=s._request('Noise concerns me.')
     request['retrieved_context']={'guidance':[], 'passages':[{'id':'p1','text':'General information.'}]}
@@ -994,19 +997,20 @@ def test_question_memory_pairs_each_retained_answer_with_its_actual_question():
     assert len(compact['answered_questions'])<=2
 
 
-def test_repeated_invalid_model_questions_use_distinct_recovery_then_reach_review():
+def test_repeated_model_contract_failures_cannot_manufacture_progress_or_readiness_gaps():
     class Repeat:
         def turn(self,request):return {'message':'How might drone noise affect daily life in Madrid?'}
     s,c=chat()
-    for _ in range(90):
-        if s.stage!='conversation':break
+    goal=s.objective
+    for _ in range(3):
         s.send('The meaning is still uncertain.',Repeat())
-    assert s.stage in {'summary','review'} and s.partial
-    assert s.stop_reason!='discussion_target_reached'
-    recovery=[m['text'] for m in s.messages if m.get('act')=='authored_fallback']
-    assert len(recovery)==len(set(recovery))
-    assert s.fn.unresolved_gaps
-    if s.stage=='summary':s.send('no changes',c)
+    assert s.stage=='conversation' and s.objective==goal and goal not in s.fn.coverage
+    assert goal not in s.fn.unresolved_gaps
+    assert len([m for m in s.active_evidence() if m['text']=='The meaning is still uncertain.'])==1
+    assert s.view()['answer_processing']['status']=='retry_required'
+    s.send('stop',c)
+    assert s.stage=='summary' and s.partial
+    s.send('no changes',c)
     assert s.stage=='review' and s.suggestion['level'] is None
 
 

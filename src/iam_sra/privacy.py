@@ -323,8 +323,13 @@ def require_safe_data(value):
             # prose containing the same token remains screened.
             chat_reference_container = (
                 path.startswith(('root.chat.','root.conversation.','root.assessment.'))
-                or re.match(r'root\.(?:turns|originals|original_context|answered_questions|citations)\[\d+\]\.',path) is not None
-                or re.fullmatch(r'root\.(?:current_answer_id|priority_evidence_id|(?:evidence_ids|omitted_context_ids)\[\d+\])',path) is not None
+                or re.match(r'root(?:\.user)?\.(?:turns|originals|original_context|answered_questions|citations)\[\d+\]\.',path) is not None
+                or re.fullmatch(r'root(?:\.user)?\.(?:current_answer_id|priority_evidence_id|(?:evidence_ids|omitted_context_ids)\[\d+\])',path) is not None
+                # Same bounded controller IDs in FN annotations and the
+                # decoded vLLM response. Quotes/answers are never exempted;
+                # the client separately checks IDs against active originals.
+                or re.fullmatch(r'root(?:\.choices\[\d+\]\.message\.content)?\.interpretation\.coverage\[\d+\]\.evidence_id',path) is not None
+                or re.fullmatch(r'root\.coverage\[\d+\]\.evidence_id',path) is not None
             )
             generated_chat_message_reference = (
                 re.fullmatch(r'm[1-9]\d{0,5}',item) is not None and chat_reference_container

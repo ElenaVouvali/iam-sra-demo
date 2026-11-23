@@ -1,0 +1,25 @@
+{
+  "classification": "synthetic",
+  "purpose": "Independent citizen opening answers for live semantic regression, never production routing rules.",
+  "variants": {
+    "paraphrase": {
+      "answers": {
+        "drone_description": "A flying machine controlled from the ground, with nobody on board.",
+        "drone_uses": "I've seen them filming buildings and checking crops."
+      },
+      "expected_statuses": {"drone_description": "explored", "drone_uses": "explored"}
+    },
+    "uncertain": {
+      "answers": {
+        "drone_description": "I recognise them, but I don't know how to describe them.",
+        "drone_uses": "I can't think of any examples."
+      },
+      "expected_statuses": {"drone_description": "unknown", "drone_uses": "unknown"},
+      "accepted_readings": {
+        "drone_description": [{"status": "unknown", "answer_kind": "uncertain"}],
+        "drone_uses": [{"status": "unknown", "answer_kind": "uncertain"}, {"status": "explored", "answer_kind": "no"}]
+      },
+      "no_topics": ["drone_description", "drone_uses"]
+    }
+  }
+}
