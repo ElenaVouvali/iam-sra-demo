@@ -4,6 +4,11 @@ The application uses an isolated Python 3.10–3.12 environment and a separate l
 
 ## Model and device selection
 
+Named profiles support Liono V100S/A2 and Davinci V100/A30. See the
+[selectable GPU guide](gpu-hosts.md) for isolated Davinci preparation,
+`scripts/model-host.py`, SSH forwarding and the Vue/Flask launch. The original
+local scripts below remain supported.
+
 `configs/model.json` pins `Qwen/Qwen3-8B` to revision `b968826d9c46dd6066d109eabc6255188de91218`. `scripts/download-model.py` stores the snapshot under `.runtime/huggingface/`. Keep this cache; deleting it requires downloading the model again.
 
 Set `IAM_GPU_UUID` to the intended GPU for the host. The operational launcher verifies the UUID and selects its numeric physical index, because this pinned vLLM NVML path requires numeric device IDs. The V100-compatible launch uses `half`, V0 engine and XFormers. The selected device appears as logical GPU 0 to the worker.

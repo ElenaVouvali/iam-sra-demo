@@ -3,31 +3,70 @@
 import argparse
 import importlib.metadata
 import json
+import math
 import os
 from pathlib import Path
 import signal
+import re
 import socket
 import subprocess
 import sys
 ROOT=Path(__file__).resolve().parents[1]
 RUNTIME=ROOT/".runtime"
 UUID=os.getenv("IAM_GPU_UUID", "")
+PROFILE=os.getenv("IAM_GPU_PROFILE", "")
 VPORT=int(os.getenv("IAM_VLLM_PORT","8000"))
 UPORT=int(os.getenv("IAM_UI_PORT","8501"))
 BASE_URL=os.getenv("IAM_BASE_URL",f"http://127.0.0.1:{VPORT}").rstrip("/")
+def gpu_class(row):
+    """Match NVIDIA product tokens, not e.g. A2000 when requesting an A2."""
+    name,cap=row[2:4]
+    for product,compute in [("v100s","7.0"),("v100","7.0"),("a30","8.0"),("a2","8.6")]:
+        if re.search(r"(?<![A-Z0-9])"+product.upper()+r"(?![A-Z0-9])",name.upper()) and cap==compute:
+            return product
+    return None
+
 def gpu():
+    profile=None
+    if PROFILE:
+        profiles=json.loads((ROOT/"configs/gpu-profiles.json").read_text())["profiles"]
+        if PROFILE not in profiles: raise RuntimeError("Unknown IAM_GPU_PROFILE: "+PROFILE)
+        profile=profiles[PROFILE]
+        if socket.gethostname().split(".")[0].lower()!=profile["host"]:
+            raise RuntimeError(f"Profile {PROFILE} must run on {profile['host']}; use scripts/model-host.py")
     output=subprocess.check_output(["nvidia-smi","--query-gpu=index,uuid,name,compute_cap,memory.total,memory.used,driver_version","--format=csv,noheader,nounits"],text=True)
     rows=[list(map(str.strip,r.split(","))) for r in output.strip().splitlines()]
     selected=[r for r in rows if r[1]==UUID] if UUID else [r for r in rows
-        if (("V100" in r[2] and r[3]=="7.0") or ("A30" in r[2] and r[3]=="8.0")) and float(r[5])<=2048]
+        if gpu_class(r) and (not profile or gpu_class(r)==profile["gpu"]) and float(r[5])<=2048]
     if len(selected)!=1:
         raise RuntimeError("Configured IAM_GPU_UUID is absent from this host; run scripts/diagnose-model.py" if UUID else
             "No unique idle supported GPU is available. Existing workloads are retained. Run scripts/diagnose-model.py; set IAM_GPU_UUID only for an available GPU.")
     row=selected[0]
-    if not (("V100" in row[2] and row[3]=="7.0") or ("A30" in row[2] and row[3]=="8.0")):
-        raise RuntimeError("Selected GPU must be a V100 (7.0) or A30 (8.0); refusing launch")
+    if not gpu_class(row):
+        raise RuntimeError("Selected GPU must be a V100/V100S (7.0), A30 (8.0) or A2 (8.6); refusing launch")
+    if profile and gpu_class(row)!=profile["gpu"]:
+        raise RuntimeError("IAM_GPU_UUID does not match selected profile "+PROFILE)
+    if float(row[5])>2048:
+        raise RuntimeError(f"{row[2]} has an existing workload (>2 GiB); refusing to reserve GPU")
     print(output)
     return selected[0]
+
+def cpu_offload(row):
+    # FP16 Qwen3-8B plus KV/cache overhead does not fit a 16 GB card.
+    # Keep the same model/context; offload weights rather than quantize it.
+    value=float(os.getenv("IAM_CPU_OFFLOAD_GB", "8" if float(row[4])<=18432 else "0"))
+    if not math.isfinite(value) or not 0<=value<=16:
+        raise RuntimeError("IAM_CPU_OFFLOAD_GB must be between 0 and 16")
+    return value
+
+def check_offload_memory(row):
+    offload=cpu_offload(row)
+    if offload:
+        fields=dict(line.split(":",1) for line in Path("/proc/meminfo").read_text().splitlines())
+        available=int(fields["MemAvailable"].split()[0])*1024/1024**3
+        if available<offload+4:
+            raise RuntimeError(f"CPU offloading needs at least {offload+4:g} GiB available host RAM")
+        print(f"CPU weight offload: {offload:g} GiB; generation will be slower. Available host RAM: {available:.1f} GiB")
 def port_free(port):
     with socket.socket() as s:
         # Ignore closed connections in TIME_WAIT, while rejecting active listeners.
@@ -36,15 +75,24 @@ def port_free(port):
 def preflight(check_ui_port=True):
     print("Python",sys.version,"OS",Path('/etc/os-release').read_text())
     row=gpu()
-    if float(row[5])>2048: raise RuntimeError(f"{row[2]} has an existing workload (>2 GiB); refusing to reserve GPU")
+    check_offload_memory(row)
     stat=os.statvfs(ROOT)
     print("Home available GiB",stat.f_bavail*stat.f_frsize/1024**3)
     if stat.f_bavail*stat.f_frsize<30*1024**3: raise RuntimeError("Require 30 GiB /home headroom")
     port_free(VPORT)
     if check_ui_port: port_free(UPORT)
     print("Ports checked",[VPORT,UPORT] if check_ui_port else [VPORT])
-    for p in ["vllm","torch","xformers","transformers","streamlit","pydantic"]:
+    for p in ["vllm","torch","xformers","transformers","pydantic"]+(["streamlit"] if check_ui_port else []):
         print(p,importlib.metadata.version(p))
+    return row
+
+def vllm_command(row):
+    model=json.loads((ROOT/"configs/model.json").read_text())
+    snapshot=RUNTIME/"huggingface/hub/models--Qwen--Qwen3-8B/snapshots"/model['revision']
+    if not list(snapshot.glob("*.safetensors")): raise RuntimeError("Pinned model snapshot missing; run download-model.py")
+    utilization=float(os.getenv("IAM_GPU_MEMORY_UTILIZATION","0.80"))
+    if not 0.1<=utilization<=0.85: raise RuntimeError("Memory utilization must be 0.1–0.85")
+    return [sys.executable,"-m","vllm.entrypoints.openai.api_server","--model",str(snapshot),"--served-model-name","Qwen/Qwen3-8B","--dtype","half","--host","127.0.0.1","--port",str(VPORT),"--max-model-len","4096","--max-num-seqs","1","--tensor-parallel-size","1","--gpu-memory-utilization",str(utilization),"--cpu-offload-gb",str(cpu_offload(row)),"--enforce-eager","--disable-log-requests","--guided-decoding-backend","xgrammar"]
 def identity(pid):
     # start-time field protects against PID reuse.
     return Path(f"/proc/{pid}/stat").read_text().split(") ",1)[1].split()[19]
@@ -82,21 +130,16 @@ def start(kind):
     env.update({"PYTHONPATH":str(ROOT/"src"),"OMP_NUM_THREADS":"2","MKL_NUM_THREADS":"2","OPENBLAS_NUM_THREADS":"2","NUMEXPR_NUM_THREADS":"2","RAYON_NUM_THREADS":"2","TOKENIZERS_PARALLELISM":"false","HF_HOME":str(RUNTIME/"huggingface"),"TMPDIR":str(RUNTIME/"tmp"),"IAM_BASE_URL":BASE_URL,"VLLM_NO_USAGE_STATS":"1","DO_NOT_TRACK":"1"})
     (RUNTIME/"tmp").mkdir(exist_ok=True)
     if kind=="vllm":
-        preflight(check_ui_port=False)
-        env.update({"CUDA_VISIBLE_DEVICES":gpu()[0],"CUDA_DEVICE_ORDER":"PCI_BUS_ID","VLLM_USE_V1":"0","VLLM_ATTENTION_BACKEND":"XFORMERS"})
-        model=json.loads((ROOT/"configs/model.json").read_text())
-        snapshot=RUNTIME/"huggingface/hub/models--Qwen--Qwen3-8B/snapshots"/model['revision']
-        if not list(snapshot.glob("*.safetensors")): raise RuntimeError("Pinned model snapshot missing; run download-model.py")
-        utilization=float(os.getenv("IAM_GPU_MEMORY_UTILIZATION","0.80"))
-        if not 0.1<=utilization<=0.85: raise RuntimeError("Memory utilization must be 0.1–0.85")
-        cmd=[sys.executable,"-m","vllm.entrypoints.openai.api_server","--model",str(snapshot),"--served-model-name","Qwen/Qwen3-8B","--dtype","half","--host","127.0.0.1","--port",str(VPORT),"--max-model-len","4096","--max-num-seqs","1","--tensor-parallel-size","1","--gpu-memory-utilization",str(utilization),"--enforce-eager","--disable-log-requests","--guided-decoding-backend","xgrammar"]
+        row=preflight(check_ui_port=False)
+        env.update({"CUDA_VISIBLE_DEVICES":row[0],"CUDA_DEVICE_ORDER":"PCI_BUS_ID","VLLM_USE_V1":"0","VLLM_ATTENTION_BACKEND":"XFORMERS","IAM_GPU_PROFILE":PROFILE})
+        cmd=vllm_command(row)
     else:
         port_free(UPORT)
         cmd=[sys.executable,"-m","streamlit","run",str(ROOT/"app.py"),"--server.address","127.0.0.1","--server.port",str(UPORT),"--server.headless","true","--browser.gatherUsageStats","false"]
     # A supervisor rotates logs, handles signals, and owns a dedicated process group.
     supervisor=[sys.executable,str(ROOT/"scripts/supervise.py"),kind,json.dumps(cmd)]
     proc=subprocess.Popen(supervisor,cwd=ROOT,env=env,start_new_session=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-    record.write_text(json.dumps({"pid":proc.pid,"start_time":identity(proc.pid),"command":supervisor,"root":str(ROOT),"environment":{k:env[k] for k in ["OMP_NUM_THREADS","MKL_NUM_THREADS","OPENBLAS_NUM_THREADS","NUMEXPR_NUM_THREADS","RAYON_NUM_THREADS","TOKENIZERS_PARALLELISM","HF_HOME","TMPDIR","IAM_BASE_URL"]+(["CUDA_VISIBLE_DEVICES","CUDA_DEVICE_ORDER","VLLM_USE_V1","VLLM_ATTENTION_BACKEND"] if kind=="vllm" else [])}}))
+    record.write_text(json.dumps({"pid":proc.pid,"start_time":identity(proc.pid),"command":supervisor,"root":str(ROOT),"environment":{k:env[k] for k in ["OMP_NUM_THREADS","MKL_NUM_THREADS","OPENBLAS_NUM_THREADS","NUMEXPR_NUM_THREADS","RAYON_NUM_THREADS","TOKENIZERS_PARALLELISM","HF_HOME","TMPDIR","IAM_BASE_URL"]+(["CUDA_VISIBLE_DEVICES","CUDA_DEVICE_ORDER","VLLM_USE_V1","VLLM_ATTENTION_BACKEND","IAM_GPU_PROFILE"] if kind=="vllm" else [])}}))
     print(kind,"supervisor PID",proc.pid,"log",RUNTIME/(kind+".log"))
 def stop(kind):
     record=RUNTIME/(kind+".pid.json")
@@ -127,7 +170,7 @@ def health():
 if __name__=="__main__":
     p=argparse.ArgumentParser();p.add_argument("action",choices=["preflight","start","stop","health"]);p.add_argument("kind",nargs="?",choices=["vllm","ui"]);a=p.parse_args()
     try:
-        if a.action=="preflight":preflight()
+        if a.action=="preflight":preflight(check_ui_port=a.kind!="vllm")
         elif a.action=="health":health()
         elif not a.kind:p.error("start/stop requires vllm or ui")
         elif a.action=="start":start(a.kind)

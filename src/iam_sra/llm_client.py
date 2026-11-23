@@ -1,6 +1,7 @@
 """Bounded HTTP transport shared by the confirmed conversation client."""
 import json
 import hashlib
+import os
 import threading
 import time
 import httpx
@@ -27,7 +28,16 @@ def schema_error(exc):
     return AssessmentError("Model JSON/schema checks failed; no assessment saved.",code="schema")
 
 class LLMTransport:
-    def __init__(self,base_url=BASE_URL):self.base_url=base_url.rstrip('/')
+    def __init__(self,base_url=BASE_URL):
+        self.base_url=base_url.rstrip('/')
+        # CPU weight offloading may require longer bounded generation requests.
+        timeout=os.getenv('IAM_MODEL_TIMEOUT_SECONDS')
+        if timeout is not None:
+            timeout=int(timeout)
+            if not 15<=timeout<=1800:
+                raise ValueError('IAM_MODEL_TIMEOUT_SECONDS must be between 15 and 1800')
+        self.request_timeout=120 if timeout is None else timeout
+        self.stage_timeout=180 if timeout is None else timeout
 
     def _post_json(self,client,path,payload,stage,phase):
         """Retry a transient connection/status failure once; never expose bodies."""
@@ -36,7 +46,7 @@ class LLMTransport:
             if remaining<=0:raise AssessmentError('Model request timed out.',code='timeout')
             if hasattr(self,'last_metrics'):self.last_metrics['tokenize_calls' if phase=='tokenization' else 'generation_calls']+=1
             try:
-                response=client.post(self.base_url+path,json=payload,timeout=min(120,remaining))
+                response=client.post(self.base_url+path,json=payload,timeout=min(self.request_timeout,remaining))
                 response.raise_for_status()
             except httpx.TimeoutException:
                 code='timeout';status=None;transient=False

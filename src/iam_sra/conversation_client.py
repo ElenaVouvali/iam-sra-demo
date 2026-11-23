@@ -10,9 +10,10 @@ class ConversationClient(LLMTransport):
         self.last_diagnostics=[];self.last_trace=[]
         self.last_anchor_facts={};self.last_metrics={'generation_calls':0,'tokenize_calls':0,'cache_hits':0,'tokenize_cache_hits':0}
         if not hasattr(self,'session_metrics'):self.session_metrics={'generation_calls':0,'tokenize_calls':0,'latency_seconds':0.0}
-        self._deadline=min(time.monotonic()+180,getattr(self,'external_deadline',float('inf')))
+        self._deadline=min(time.monotonic()+self.stage_timeout,getattr(self,'external_deadline',float('inf')))
         self.last_settings={'enable_thinking':False,'backend':BACKEND,'context_tokens':4096,
-            'temperature':0.2,'top_p':0.8,'stage_deadline_seconds':180,'screened_requests':True,
+            'temperature':0.2,'top_p':0.8,'stage_deadline_seconds':self.stage_timeout,
+            'request_timeout_seconds':self.request_timeout,'screened_requests':True,
             'stage_output_limits':dict(STAGE_LIMITS),'maximum_attempts_per_call':2,
             'model':config('model'),'expected_deployment':{'dtype':'half','engine':'V0','attention':'XFORMERS','tensor_parallel_size':1,'max_num_seqs':1}}
 

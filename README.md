@@ -11,6 +11,18 @@ evidence-aware progression; see [flow mappings, verification and launch commands
 
 ## Run the current web application
 
+To select **Liono V100S/A2 or Davinci V100/A30**, use the
+[GPU selection and exact launch commands](docs/gpu-hosts.md). The app stays on
+Liono; Davinci inference is connected through a private SSH forward. For example:
+
+```bash
+python3 scripts/model-host.py prepare davinci-v100   # once
+python3 scripts/model-host.py start davinci-v100 --port 18002
+```
+
+Use `IAM_BASE_URL=http://127.0.0.1:18002` for that endpoint in the API commands
+below. The guide covers the smaller GPUs' CPU offload and longer timeouts.
+
 Prepare the separate API/privacy environments and approved private sources using
 the [integration setup instructions](docs/iamcc-integration.md). Private source
 documents, derived corpora and model weights are not included in Git. Verify the

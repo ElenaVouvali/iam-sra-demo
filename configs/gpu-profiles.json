@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "profiles": {
+    "liono-v100s": {"host": "liono", "gpu": "v100s"},
+    "liono-a2": {"host": "liono", "gpu": "a2"},
+    "davinci-v100": {"host": "davinci", "gpu": "v100", "ssh": "evouvali@davinci.microlab.ntua.gr"},
+    "davinci-a30": {"host": "davinci", "gpu": "a30", "ssh": "evouvali@davinci.microlab.ntua.gr"}
+  }
+}
