@@ -20,6 +20,7 @@ def chat(profile='citizen', depth='short'):
     s=ChatSession(bank(),depth,synthetic=True);c=ChatFixture()
     s.send({'citizen':'My personal views','organisational':'Our organisation responsibilities','technical':'A technology subsystem'}[profile],c)
     s.send('Madrid',c)
+    if s.profile=='citizen':s.send('35 minutes' if depth=='extended' else '20 minutes',c)
     answers={'drone_recognition':'An aircraft without a pilot on board.','drone_description':'An aircraft without a pilot on board.',
         'drone_uses':'Photography and inspections.','drone_other_uses':'No other uses.',
         'healthcare_awareness':'no','local_awareness':'unknown','organisation_context':'test unit',
@@ -57,6 +58,8 @@ def test_exact_city_is_optional_context_and_never_blocks_conversation():
     s.send('Madrid',c)
     assert s.context['city']=='Madrid'
     assert s.context['city_status']=='respondent_provided_unverified'
+    assert s.objective=='citizen_duration'
+    s.send('20 minutes',c)
     assert s.objective=='drone_recognition' and not s.failures
     assert 'healthcare' not in str(s.context).casefold()
 
@@ -584,7 +587,8 @@ def test_new_chat_busy_and_late_reset_results_use_existing_fence(api):
     app,manager=api;b=start_browser(app)
     b.act('chat_message',{'text':'My personal views'})
     b.act('chat_message',{'text':'Madrid'})
-    b.act('chat_message',{'text':'An aircraft without a pilot on board.'})
+    b.act('chat_message',{'text':'20 minutes'})
+    b.act('chat_message',{'text':'yes'})
     gate=threading.Event()
     class Slow(ChatFixture):
         def turn(self,request):gate.wait(1);return super().turn(request)
@@ -764,16 +768,19 @@ def test_eva_first_three_questions_are_controller_owned(depth,profile,answer,obj
     assert s.profile==profile and s.objective=='area'
     assert 'Which EU city or urban area' in s.messages[-1]['text']
     s.send('Madrid',c)
+    if profile=='citizen':
+        assert s.objective=='citizen_duration'
+        s.send('35 minutes' if depth=='extended' else '20 minutes',c)
     assert s.context['city']=='Madrid' and s.objective==objective
     assert question in s.messages[-1]['text']
-    assert s.messages[-1]['source']['specification_version']=='fn-adaptive-interview-1.0.0'
+    assert s.messages[-1]['source']['specification_version']=='fn-adaptive-interview-1.1.0'
     assert not s.calls
 
 
 def test_citizen_no_explanation_requires_permission_and_records_exposure():
     s=ChatSession(bank(),synthetic=True);c=ChatFixture()
-    for text in ('personal','Madrid','No'):s.send(text,c)
-    assert s.objective=='drone_explanation' and not s.exposures and not s.calls
+    for text in ('personal','Madrid','20 minutes','No'):s.send(text,c)
+    assert s.objective=='drone_explanation' and s.exposures[-1]['kind']=='external_resource_offered' and not s.calls
     s.send('yes please',c)
     assert s.exposures[-1]['prior_knowledge'] is False
     assert not any('A drone is an aircraft' in e['text'] for e in s.active_evidence())
@@ -782,7 +789,7 @@ def test_citizen_no_explanation_requires_permission_and_records_exposure():
 
 def test_citizen_yes_asks_for_own_description_without_awarding_knowledge():
     s=ChatSession(bank(),synthetic=True);c=ChatFixture()
-    for text in ('personal','Madrid','Yes'):s.send(text,c)
+    for text in ('personal','Madrid','20 minutes','Yes'):s.send(text,c)
     assert s.messages[-1]['text']=='In your own words, what is a drone?'
     assert s.suggestion is None and not s.annotations and not s.calls
     s.send('An aircraft without a pilot on board.',c)
@@ -794,6 +801,7 @@ def test_city_and_third_question_can_be_skipped(profile):
     s=ChatSession(bank(),synthetic=True);c=ChatFixture()
     s.send(profile,c);s.send('skip this question',c)
     assert s.context['city'] is None and s.context['city_status']=='withheld_or_uncertain'
+    if profile=='personal':s.send('20 minutes',c)
     s.send('skip this question',c)
     assert s.objective==('drone_explanation' if profile=='personal' else 'remit' if profile=='organisation' else 'technical_role') and not s.calls
     assert not s.context['organisation_or_unit'] and not s.context['technical_role']
@@ -1042,7 +1050,7 @@ def test_city_extraction_cannot_discard_a_secret_or_apply_to_technical_answers(a
 
 def test_citizen_knowledge_progression_does_not_repeat_definition_or_supply_uses():
     s=ChatSession(bank(),depth='extended',synthetic=True);c=ChatFixture()
-    for text in ('personal','Madrid','yes','An aircraft without a pilot on board.'):
+    for text in ('personal','Madrid','35 minutes','yes','An aircraft without a pilot on board.'):
         s.send(text,c)
     assert s.objective=='drone_uses' and not s.exposures
     s.send('Photography and filming.',c)
@@ -1102,6 +1110,8 @@ def test_address_city_cleanup_is_screened_before_confirmed_question_two(api):
     assert b.view['chat']['messages'][-1]['text'].startswith('Which EU city')
     assert not any(m['text']=='Madrid' for m in b.view['chat']['messages'])
     b.act('confirm_cleaned',{'preview_id':b.view['preview']['id']})
+    assert 'How much time' in b.view['chat']['messages'][-1]['text']
+    b.act('chat_message',{'text':'20 minutes'})
     assert b.view['chat']['messages'][-1]['text']=='Do you know what a drone is?'
 
 

@@ -122,7 +122,7 @@ cache into a writable directory; privacy screening stays enabled.
 ```bash
 cd /home/elvouvali/IAM_CC/iam-sra-demo
 TLDEXTRACT_CACHE=/tmp/iam-sra-fn-tldextract PYTHONPATH=src \
-  .venv-api/bin/python -m pytest -q tests/test_fn_interview.py
+  .venv-api/bin/python -m pytest -q tests/test_fn_interview.py tests/test_fn_onboarding.py tests/test_fn_interpretation.py
 
 # Existing chat/API/privacy/QR regressions; real detector tests require resources.
 TLDEXTRACT_CACHE=/tmp/iam-sra-fn-tldextract PYTHONPATH=src \
@@ -154,7 +154,7 @@ isolated in-process APIs and synthetic inputs, not a participant API:
 ```bash
 TLDEXTRACT_CACHE=/tmp/iam-sra-fn-tldextract PYTHONPATH=src \
   .venv-api/bin/python scripts/smoke-fn-interview.py \
-  --allow-live --base-url http://127.0.0.1:18000 \
+  --allow-live --base-url http://127.0.0.1:18002 \
   --case all --output .runtime/fn-live-NEW-UNIQUE-RUN
 ```
 
@@ -165,17 +165,30 @@ tokenization does not establish live Qwen quality.
 
 ## Manual launch on separate review ports
 
-Check ports 8016/5016 are free and verify the existing model first:
+The existing GPU selector is unchanged (see `docs/gpu-hosts.md`). If Davinci's
+V100 model is already running and only its tunnel is closed, open a separate
+Liono terminal and keep this command running:
 
 ```bash
-curl --fail http://127.0.0.1:18000/v1/models
+cd /home/elvouvali/IAM_CC/iam-sra-demo
+python3 scripts/model-host.py tunnel davinci-v100 --port 18002
+```
+
+If that model is stopped, use `start` instead of `tunnel`; preparation and the
+other three GPU profiles are documented in `gpu-hosts.md`. Do not start a second
+model on an occupied GPU. Check ports 8017/5017 are free and verify the endpoint:
+
+```bash
+curl --fail http://127.0.0.1:18002/v1/models
 ```
 
 Terminal 1, from the repository root:
 
 ```bash
-IAM_BASE_URL=http://127.0.0.1:18000 IAM_SRA_API_PORT=8016 \
-IAM_SRA_ALLOWED_ORIGINS=http://127.0.0.1:5016,http://localhost:5016 \
+TLDEXTRACT_CACHE=/tmp/iam-sra-publish-tldextract \
+IAM_MODEL_TIMEOUT_SECONDS=900 IAM_SRA_JOB_TIMEOUT=1800 IAM_CHAT_PROCESSING_SECONDS=3600 \
+IAM_BASE_URL=http://127.0.0.1:18002 IAM_SRA_API_PORT=8017 \
+IAM_SRA_ALLOWED_ORIGINS=http://127.0.0.1:5017,http://localhost:5017 \
 bash scripts/start-api.sh
 ```
 
@@ -183,18 +196,18 @@ Terminal 2, using the current frontend build:
 
 ```bash
 cd /home/elvouvali/IAM_CC/iam-sra-demo/app
-HOST=127.0.0.1 PORT=5016 IAM_SRA_API_TARGET=http://127.0.0.1:8016 \
+HOST=127.0.0.1 IAM_SRA_UI_PORT=5017 IAM_SRA_API_TARGET=http://127.0.0.1:8017 \
 ../.venv-api/bin/python serve_app.py
 ```
 
-Open `http://127.0.0.1:5016/tools/sra-assessment/app` or `/chat`. Short citizen mode
-is the default; the conversation options or “extended conversation” selects the
-longer mode. Choose A/B/C, give a broad city or skip it, and answer naturally.
+Open `http://127.0.0.1:5017/tools/sra-assessment/app` or `/chat`. Choose A/B/C and give a broad city or skip it. Citizens then choose A (20-minute
+style) or B (35-minute style); uncertainty defaults to short. The conversation
+options, “keep it short” or “more detail” can change the depth later. Answer naturally.
 Try an unfamiliar citizen, a draft organisational plan, or a laboratory component;
 none should manufacture experience or an overall SRL. Try stopping, correcting,
 A–E validation and both downloads. With abstention, use E/comments/no changes.
 Existing QR/direct entry and owner/CSRF/version/job protections remain intact.
-Remote browsers can forward port 5016 over SSH. No model launch or service
+Remote browsers can forward port 5017 over SSH. No model launch or service
 restart was performed by this implementation task.
 
 ## Verification record and FN decisions
@@ -255,7 +268,7 @@ engineering decisions, not readiness thresholds.
   executed in this socket-restricted sandbox. They need rerunning on the normal
   host; do not interpret their infrastructure errors as passing transport tests.
 - Live runner: **unavailable, zero cases executed**. The existing model origin
-  `http://127.0.0.1:18000` could not be reached from this environment. Live
+  `http://127.0.0.1:18002` could not be reached from this environment. Live
   generation calls, fallback frequency, semantic quality and scored interview
   completion therefore remain unmeasured for this implementation. The runner
   command above is reproducible; no production service was restarted to obtain
@@ -264,3 +277,132 @@ engineering decisions, not readiness thresholds.
   Original PDFs, extracted scales, source registers, v4 statements and model
   configuration were preserved. No service process was started/stopped or
   reconfigured, and nothing was pushed or deployed.
+
+
+### Refinement behaviour, 24 November 2026
+
+Policy/specification `fn-adaptive-interview-1.1.0` retains the existing session,
+client, retrieval and scorer. The additive export fields preserve the existing
+`iam-sra-chat-2.0.0` envelope.
+
+Source-derived behaviour: the complete friendly research introduction appears
+in its own message before the full explained perspective choices. Each profile
+gets its FN acknowledgement, then the EU city question. Citizen YES follows own
+words → known uses → (extended only) optional other known services → prior
+healthcare awareness. Unfamiliar participants are offered the selected PDF's
+exact explanation. Short uses “Drones can have different sizes”; extended uses
+“Drones can be different sizes”. The extra known-services question requires
+positive/partial recognition and cannot precede an unfamiliar participant's
+explanation. Organisation/technology retain their own remit/object sequence.
+
+Product adaptations, explicitly separate from FN:
+
+- After the citizen city answer, a conversational A/B duration choice selects
+  the 20/35-minute **depth policy**, not a deadline or a readiness factor.
+  `citizen_depth`, `depth_selection` and `depth_history` retain administrative
+  answer IDs, provenance, revision and the registered source/hash. Uncertainty
+  or skip chooses short with separate provenance. Organisation/technology never
+  receive this step. Changes retain coverage; newly introduced earlier probes
+  are marked inapplicable rather than retroactively retesting prior knowledge.
+  Already displayed scales retain their own PDF snapshot. Results cannot switch
+  versions after judgment.
+- Unfamiliar citizens may choose explanation/continue, decline/continue, or the
+  EASA educational resource/finish. FN originally continues after explanation;
+  this optional exit is a product adaptation. It records
+  `ended_early_after_recognition`, partial/unassessed, with no scorer, CRL or full
+  scale. Offered/selected external resources never assert that the participant
+  actually opened/read them. Supplied explanations remain information exposure,
+  separate from prior knowledge. The external link sends no referrer.
+- A single grounded concern gets a neutral named invitation to consider other
+  issues or focus on that one. Explicitly choosing one is sufficient. Multiple
+  concerns retain the source's initial open invitation unless the answer already
+  closes discussion; resolved invitations are never repeated. A grounded request
+  for suggestions displays the selected PDF's distinct examples. This preserves
+  the reference path while avoiding a compulsory minimum topic count.
+
+Qwen's **same inference** may supply `matches_topic` for a known concern and a
+`topic_intent` with an exact current-answer quotation (`no_more`, `main_only`,
+`suggestions`, `continue_open`). Python rejects unknown aliases/ungrounded quotes,
+keeps spontaneous/suggested/selected/explored flags distinct, and only an explicit
+sole-topic selection can skip a redundant priority question. Topic counts never
+use indicator mappings; unfamiliar themes remain admissible. Exact quotations
+constrain provenance, but do not independently prove a semantic annotation.
+
+The short and extended reference paths retain their distinct ordering, including
+extended participation before co-design and later separate influence exploration.
+Both retain all nine PDF-specific anchors and the original A–E validation;
+disagreement/additions remain separate from the initial provisional score.
+Administrative choices survive corrections while superseded substantive support
+still invalidates dependent coverage/results.
+
+Focused verification and the GPU rehearsal can be repeated with:
+
+```bash
+TLDEXTRACT_CACHE=/tmp/iam-sra-publish-tldextract PYTHONPATH=src \
+  .venv-api/bin/python -m pytest -q tests/test_fn_onboarding.py \
+  tests/test_fn_interview.py tests/test_fn_interpretation.py
+
+TLDEXTRACT_CACHE=/tmp/iam-sra-publish-tldextract IAM_MODEL_TIMEOUT_SECONDS=900 \
+IAM_SRA_JOB_TIMEOUT=1800 IAM_CHAT_PROCESSING_SECONDS=3600 \
+  .venv-api/bin/python scripts/smoke-fn-interview.py --allow-live \
+  --base-url http://127.0.0.1:18002 --case all \
+  --output .runtime/fn-refinement-GPU-UNIQUE
+
+# Optional bounded cached-model CPU check; needs the existing torch environment,
+# substantial RAM, and minutes per generation. This does not validate GPU/vLLM.
+TLDEXTRACT_CACHE=/tmp/iam-sra-publish-tldextract IAM_SRA_JOB_TIMEOUT=1800 \
+IAM_CHAT_PROCESSING_SECONDS=3600 \
+  .venv-api/bin/python scripts/smoke-fn-interview.py --allow-live \
+  --backend cpu --cpu-threads 4 --opening-only --case citizen_short \
+  --opening-variant all --output .runtime/fn-refinement-CPU-UNIQUE
+```
+
+FN review remains required for the duration/educational-exit adaptations,
+short/extended scale harmonisation, semantic sufficiency, optional probing,
+automated judgments, and reassessment after disagreement. No approved automated
+scoring algorithm or contact follow-up service has been invented.
+
+
+Observed checks for this refinement (24 November 2026):
+
+| FN reference replay | Canonical source turns (administrative depth selection excluded) | Session, owned API, scales, review and JSON/JSONL |
+| --- | ---: | --- |
+| Citizen 20-minute | 35 | Passed |
+| Citizen 35-minute | 50 | Passed |
+| Organisation | 40 | Passed |
+| Technology | 41 | Passed |
+
+The reference interpreter/scorer doubles prove question, branch and result
+plumbing; they do not establish real-model judgment quality or reproduce FN's
+illustrative levels. All private PDF and extracted-rubric hashes were checked
+again and remain identical; the v4 bank and statements were not edited.
+
+- Final chat/FN/interpretation/API regression: **278 passed**. The contained
+  onboarding/topic subset passed **43 tests**, including real Presidio/spaCy
+  educational exit/export and owned API JSON/JSONL. The broader first run passed
+  450 checks but found a real detector false positive on “A. Receive”. Rewording
+  this product option with an em dash fixed it; the privacy check passes without
+  a detector exemption or weakened screening.
+- Separate final QR/retrieval/legacy API/privacy/timeout/readiness-score checks:
+  **179 passed**. These are disjoint from the 278 interview/chat checks, giving
+  **457 relevant Python checks passed** in the final runs. The complete repository
+  suite and socket/browser transport tests were not rerun for this refinement.
+- Vue production build passed (**58 modules**, available Node 24.22.1), and the
+  current ignored `app/dist` contains the updated interface. No browser/socket
+  journey was executed in this restricted environment.
+- Existing vLLM origin `http://127.0.0.1:18002`: **unreachable here, zero full
+  GPU cases executed**. That does not establish whether it is running on the
+  normal host. Full GPU progression/scoring, adaptive semantics, fallback rate
+  and GPU latency still require the reproducible rehearsal above.
+- Actual pinned Qwen CPU check (`.runtime/fn-refinement-cpu-20261124/metrics.json`):
+  citizen short **reference opening passed**, 2 generation calls, 0 fallbacks,
+  0 technical failures, no unresolved opening gaps. The model correctly accepted
+  the drone definition and known uses and advanced to healthcare awareness;
+  no repeat/clarification loop occurred. Generation transport wall time was
+  477.380 seconds; total isolated API run 509.874 seconds. The two prompts used
+  1,329 and 1,345 tokens, each reserving 1,100 output tokens within 4,096. It deliberately did
+  not complete or score the interview. This CPU result is not a GPU performance
+  or full-interview semantic validation. The private CPU worker was terminated.
+- No production/GPU services were restarted, reconfigured or deployed. No source
+  PDF, registered hash, extracted scale, model pin or installed environment was
+  modified. The unrelated existing untracked `dev` and `vite` files were retained.

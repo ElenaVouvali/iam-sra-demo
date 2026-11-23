@@ -1,5 +1,5 @@
 {
-  "version": "fn-adaptive-interview-1.0.0",
+  "version": "fn-adaptive-interview-1.1.0",
   "status": "prototype_pending_FN_review",
   "flows": {
     "citizen_short": [
@@ -15,6 +15,14 @@
             "evidence_goal": "area",
             "source_locator": "page 2",
             "context_field": "city"
+          },
+          {
+            "id": "citizen_duration",
+            "canonical_question": "How much time would you like to spend on this conversation?",
+            "response_type": "citizen_depth",
+            "source_locator": "Product authored adaptation: explicit duration choice after FN city context",
+            "evidence_goal": "Record a citizen interview-depth preference; never readiness evidence.",
+            "advance_when": "A depth is selected, or the shorter default is accepted after uncertainty/skip."
           }
         ],
         "evidence_goals": [
@@ -57,7 +65,8 @@
             "response_type": "permission",
             "evidence_goal": "drone_explanation",
             "source_locator": "page 3",
-            "when": "drone_recognition:no"
+            "when": "drone_recognition:no",
+            "explanation": "A drone is an aircraft that can fly without a pilot sitting inside it. Drones can have different sizes and can be used for many different purposes."
           }
         ],
         "evidence_goals": [
@@ -501,6 +510,14 @@
             "evidence_goal": "area",
             "source_locator": "page 2",
             "context_field": "city"
+          },
+          {
+            "id": "citizen_duration",
+            "canonical_question": "How much time would you like to spend on this conversation?",
+            "response_type": "citizen_depth",
+            "source_locator": "Product authored adaptation: explicit duration choice after FN city context",
+            "evidence_goal": "Record a citizen interview-depth preference; never readiness evidence.",
+            "advance_when": "A depth is selected, or the shorter default is accepted after uncertainty/skip."
           }
         ],
         "evidence_goals": [
@@ -542,7 +559,8 @@
             "canonical_question": "Are there any other drone services you know about?",
             "response_type": "open",
             "evidence_goal": "drone_other_uses",
-            "source_locator": "page 3"
+            "source_locator": "page 3",
+            "when": "drone_recognition:yes"
           },
           {
             "id": "drone_explanation",
@@ -550,7 +568,8 @@
             "response_type": "permission",
             "evidence_goal": "drone_explanation",
             "source_locator": "page 3",
-            "when": "drone_recognition:no"
+            "when": "drone_recognition:no",
+            "explanation": "A drone is an aircraft that can fly without a pilot sitting inside it. Drones can be different sizes and can be used for many different purposes."
           }
         ],
         "evidence_goals": [

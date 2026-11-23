@@ -26,6 +26,7 @@ class GoalEvidence(Strict):
 class TopicEvidence(Strict):
     topic: str = Field(min_length=1, max_length=70)
     quote: str = Field(min_length=1, max_length=180)
+    matches_topic: str | None = Field(default=None,max_length=70)
 
 
 class FNInterpretation(Strict):
@@ -36,6 +37,8 @@ class FNInterpretation(Strict):
     topics: list[TopicEvidence] = Field(default_factory=list, max_length=5)
     boundary_goals: list[str] = Field(default_factory=list, max_length=2)
     scope_disposition: Literal['within_scope', 'outside_remit', 'not_established'] | None = None
+    topic_intent: Literal['continue_open','no_more','main_only','suggestions'] | None = None
+    topic_intent_quote: str = Field(default='',max_length=180)
 
 
 class ContextFact(Strict):
@@ -98,6 +101,12 @@ FN_SYSTEM = (
     'No participation opportunity is not inability; willingness is not actual influence. Support or opposition '
     'is not readiness. Distinguish previous knowledge from information supplied during this interview. '
     'Topics need an exact current-answer quote; mentioning a concern does not select it as a priority. '
+    'Use known_topics to keep synonymous concerns together: reuse a known label or set matches_topic to that label. '
+    'Do not count indicator mappings as distinct concerns. Keep new issues outside that bank admissible. '
+    'During open discussion, topic_intent may be no_more, main_only, suggestions or continue_open, only with an '
+    'exact topic_intent_quote supporting that choice. main_only means an explicit choice to focus on the sole '
+    'raised issue, not just mentioning one issue. no_more means no further topics; suggestions requests examples. '
+    'Do not repeat an anything-else probe when the answer has already closed that discussion. '
     'context_facts require exact current-answer quotes. Optional boundary_goals must come from optional_goals '
     'and be useful, not an exhaustive checklist. For an explicit information request use action=explain and '
     'source_ids from supplied passages; Python handles consent and displays the source text. '
@@ -349,6 +358,15 @@ def validate_reply(raw, request):
             interpretation['topics'] = [row for row in interpretation['topics'] if row['quote'] in answer
                 and not (row['topic'] in allowed and '_' in row['topic'] and row['topic'] not in answer)]
             if len(interpretation['topics']) != len(value.interpretation.topics):warnings.append('interpretation.topics')
+            known={row['topic'].casefold():row['topic'] for row in request['fn'].get('known_topics',[])}
+            for topic in interpretation['topics']:
+                match=topic.get('matches_topic')
+                topic['matches_topic']=known.get(match.casefold()) if match else None
+                if match and topic['matches_topic'] is None:warnings.append('interpretation.matches_topic')
+            if (request['fn'].get('evidence_goal') not in {'open_priorities','open_more','different_impacts','suggested_topics','priorities'}
+                    or not interpretation['topic_intent_quote'] or interpretation['topic_intent_quote'] not in answer):
+                interpretation['topic_intent']=None
+                interpretation['topic_intent_quote']=''
             # Boundary probes must be named by the server's current flow. They
             # are questions to explore, never a proposed numerical score.
             interpretation['boundary_goals'] = [g for g in interpretation['boundary_goals']

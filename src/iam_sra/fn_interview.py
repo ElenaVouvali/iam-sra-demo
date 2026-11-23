@@ -10,7 +10,7 @@ import json
 import re
 from .settings import ROOT
 
-VERSION = 'fn-adaptive-interview-1.0.0'
+VERSION = 'fn-adaptive-interview-1.1.0'
 
 
 @lru_cache(maxsize=1)
@@ -74,6 +74,8 @@ class FNInterview:
             self.unresolved_gaps.remove(goal)
 
     def applicable(self, node, concerns):
+        if node.get('id') in {'open_more','suggested_topics'} and self.facts.get('topic_scope_closed'):
+            return False
         condition = node.get('when')
         if isinstance(condition, list):
             return all(self.applicable({**node,'when':part},concerns) for part in condition)
@@ -120,6 +122,8 @@ class FNInterview:
                 'allowed_objectives': allowed,
                 'optional_goals': [q['id'] for s in stages for q in s['questions'] if q.get('optional')],
                 'selected_priorities': [r['topic'] for r in concerns if r.get('selected_priority')],
+                'known_topics': [{'topic':r['topic'],'selected':bool(r.get('selected_priority'))}
+                                 for r in concerns if r.get('evidence_ids')][-8:],
                 'covered_capabilities': {k: v['status'] for k,v in self.coverage.items() if k in allowed},
                 'unresolved_gaps': self.unresolved_gaps[-6:],
                 'boundary_uncertainty': self.boundary_uncertainty[:2],
@@ -129,6 +133,9 @@ class FNInterview:
     def invalidate(self, active_ids):
         """Corrections remove dependent coverage, never retain superseded support."""
         removed=[]
+        if self.facts.get('topic_scope_evidence_id') not in active_ids:
+            self.facts.pop('topic_scope_closed',None)
+            self.facts.pop('topic_scope_evidence_id',None)
         for goal, row in list(self.coverage.items()):
             if row['evidence_ids'] and not set(row['evidence_ids']) <= active_ids:
                 del self.coverage[goal]

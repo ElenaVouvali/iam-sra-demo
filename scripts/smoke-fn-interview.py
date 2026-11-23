@@ -57,6 +57,7 @@ def main():
         except (httpx.HTTPError,ValueError,AssertionError):
             print(json.dumps({'live_inference':'unavailable','cases_executed':0,'services_changed':False}));return 2
     from iam_sra.api import create_app
+    from iam_sra.chat_policy import CITIZEN_DURATION
     from iam_sra.privacy import screened_export
     fixture=json.loads((root/'eval/fn_golden_paths.json').read_text())['flows']
     variants=json.loads((root/'eval/fn_interpretation_cases.json').read_text())['variants']
@@ -131,9 +132,10 @@ def main():
                     goal=current.objective
                     if args.opening_only and goal=='healthcare_awareness':break
                     reference=next((row for row in fixture[key] if row['id']==goal),None)
-                    canonical=bool(reference and reference['question'] in current.messages[-1]['text'])
+                    canonical=(current.messages[-1]['text']==CITIZEN_DURATION if goal=='citizen_duration'
+                        else bool(reference and reference['question'] in current.messages[-1]['text']))
                     failures=len(current.failures)
-                    submit(answers.get(goal,'I do not know.'))
+                    submit(('35 minutes' if key=='citizen_extended' else '20 minutes') if goal=='citizen_duration' else answers.get(goal,'I do not know.'))
                     current=manager.records[sid].engine.chat
                     coverage=current.fn.coverage.get(goal,{})
                     expected=variant.get('expected_statuses',{}).get(goal,
@@ -163,7 +165,7 @@ def main():
             (output/(key+('' if variant_name=='reference' else '-'+variant_name)+'.json')).write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
             turns=sum(m['role']=='respondent' for m in c['messages'])
             fallbacks=sum(m.get('act') in {'authored_fallback','failure'} for m in c['messages'])
-            required_opening={'area','drone_recognition','drone_description','drone_uses'}
+            required_opening={'area','citizen_duration','drone_recognition','drone_description','drone_uses'}
             if key=='citizen_extended':required_opening.add('drone_other_uses')
             reports.append({'case':key,'stage':c['stage'],'partial':c['completion']['partial'],
                 'scope':'citizen_opening_only' if args.opening_only else 'full_interview',

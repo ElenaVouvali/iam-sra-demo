@@ -21,7 +21,7 @@ USES='Photography, deliveries and maybe emergency services.'
 
 def opening():
     session=ChatSession(bank(),synthetic=True)
-    for text in ('A','Madrid','yes'):session.send(text,SyntheticInterpreter())
+    for text in ('A','Madrid','20 minutes','yes'):session.send(text,SyntheticInterpreter())
     assert session.objective=='drone_description'
     return session
 

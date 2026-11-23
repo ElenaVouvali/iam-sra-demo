@@ -44,6 +44,7 @@ def replay(key):
         assert s.view()['scale'] is None and s.suggestion is None
         questions.append(row['id'])
         s.send(row['answer'],client,score_client=scorer)
+        if s.objective=='citizen_duration':s.send('35 minutes' if key=='citizen_extended' else '20 minutes',client)
     return s,client,scorer,questions
 
 
@@ -97,6 +98,7 @@ def test_explicit_choices_and_ambiguous_profession(text,expected):assert explici
 def start(profile='citizen',depth='short'):
     s=ChatSession(bank(),depth,synthetic=True);c=SyntheticInterpreter()
     s.send(profile,c);s.send('Madrid',c)
+    if s.profile=='citizen':s.send('35 minutes' if depth=='extended' else '20 minutes',c)
     return s,c
 
 
@@ -300,6 +302,8 @@ def test_all_fn_flows_through_owned_api_jobs_and_both_exports(key):
         for row in GOLDEN[key]:
             assert row['question'] in b.view['chat']['messages'][-1]['text']
             b.act('chat_message',{'text':row['answer']})
+            if 'How much time' in b.view['chat']['messages'][-1]['text']:
+                b.act('chat_message',{'text':'35 minutes' if key=='citizen_extended' else '20 minutes'})
         assert b.view['chat']['stage']=='review'
         b.act('chat_message',{'text':'A'})
         assert b.view['chat']['stage']=='ended' and b.view['chat']['participant_review']['validation']=='agrees'
@@ -447,6 +451,7 @@ def test_real_detector_fn_profile_city_opening_and_export(key):
     c=SyntheticInterpreter()
     s.send('A. Citizen' if key.startswith('citizen') else 'B. Organisation or institution' if key=='organisational' else 'C. Technology expert or researcher',c)
     s.send('Madrid',c)
+    if key.startswith('citizen'):s.send('35 minutes' if key=='citizen_extended' else '20 minutes',c)
     s.send('yes' if key.startswith('citizen') else 'A planning unit.' if key=='organisational' else 'A technical research unit.',c)
     assert s.profile==('citizen' if key.startswith('citizen') else key)
     assert s.context['city']=='Madrid' and s.stage=='conversation'
@@ -496,7 +501,9 @@ def test_last_asked_but_unanswered_goal_does_not_authorize_completion(key):
     assert s.view()['completion']['methodological_progression']=='incomplete'
     c=GoldenInterpreter(key);scorer=ScoreFixture()
     s.send('A' if key.startswith('citizen') else 'B' if key=='organisational' else 'C',c)
-    for row in GOLDEN[key][:-1]:s.send(row['answer'],c,score_client=scorer)
+    for row in GOLDEN[key][:-1]:
+        s.send(row['answer'],c,score_client=scorer)
+        if s.objective=='citizen_duration':s.send('35 minutes' if key=='citizen_extended' else '20 minutes',c)
     assert not s._discussion_progress()['may_propose_conclusion']
     assert s.view()['completion']['methodological_progression']=='incomplete'
     assert s.suggestion is None

@@ -44,11 +44,12 @@ onMounted(start)
  <article class="chat wrap" data-testid="chat-conversation">
   <header><h1>Let's talk about drones</h1><p>A conversation about healthcare deliveries, your experience and what matters to you.</p></header>
   <p v-if="chat?.completion?.partial" role="status">This is a partial interview. Unexplored or uncertain points do not automatically lower readiness.</p>
+  <p v-if="chat?.completion?.evidence_sufficiency === 'unassessed'" role="status">This interview ended without a readiness assessment.</p>
   <details class="sra-disclosure"><summary>Privacy, help and conversation options</summary>
    <p>Please avoid names, contact details and sensitive information. This AI-assisted research prototype screens messages before processing. Your words are self-reports; generated interpretations and results are provisional.</p>
    <p>Progress and wording preferences are held temporarily in memory. Download a copy to keep them. Saving, cross-day resume and contact follow-up are unavailable. Nothing here enables training.</p>
    <p>You can type “I don't know”, “skip this question”, “stop”, “simplify”, “go back”, “keep it short”, “more detail”, or ask to change topic. You do not need to remember commands; ordinary language is welcome. To see two alternative wordings, ask “show two ways of asking that”. English is the tested language.</p>
-   <button v-if="chat?.profile === null || (chat?.profile === 'citizen' && chat?.stage === 'conversation')" class="btn secondary sm" :disabled="working" @click="flow.act('chat_message', { text: chat?.depth === 'extended' ? 'keep it short' : 'extended conversation' })">{{ chat?.depth === 'extended' ? 'Use short citizen interview (~20 min)' : 'Use extended citizen interview (~35 min)' }}</button>
+   <button v-if="chat?.profile === 'citizen' && chat?.depth_selection && chat?.stage === 'conversation'" class="btn secondary sm" :disabled="working" @click="flow.act('chat_message', { text: chat?.depth === 'extended' ? 'keep it short' : 'extended conversation' })">{{ chat?.depth === 'extended' ? 'Use short citizen interview (~20 min)' : 'Use extended citizen interview (~35 min)' }}</button>
    <p v-if="chat?.assisted">Facilitator mode: type the respondent's own words. Do not supply answers for them. This assistance is recorded in the report.</p>
    <RouterLink to="/privacy">Full privacy and retention details</RouterLink>
    <div class="row"><button class="btn secondary sm" :disabled="working" @click="restart">New conversation</button><button v-if="session" class="btn secondary sm" :disabled="ending" @click="endDialog.showModal()">End and clear session</button></div>
@@ -62,7 +63,8 @@ onMounted(start)
     <b>{{ message.role === 'assistant' ? 'AI assistant' : 'You' }}</b>
   <section v-if="chat?.suggestion && ['result_review', 'assessment_gap'].includes(message.act)" aria-label="Provisional summary"><h2>Provisional summary</h2><p v-if="chat.suggestion.level"><b>Provisional {{ {citizen:'CRL',organisational:'ORL',technical:'TRL'}[chat.profile] }} {{ chat.suggestion.level }} · {{ chat.suggestion.anchor?.label }}</b></p><p v-else>No numeric level is suggested. You can comment, remain uncertain or finish without a score.</p><p>{{ chat.suggestion.explanation }}</p><p>{{ chat.suggestion.boundary }}</p><details v-if="chat.suggestion.citations?.length"><summary>Supporting words and uncertainty</summary><div v-for="citation in chat.suggestion.citations" :key="citation.evidence_id+ citation.quote">“{{ citation.quote }}”</div></details></section>
     <p>{{ message.text }}</p>
-  <section v-if="chat?.scale && ['scale_disclosure', 'methodology'].includes(message.act)" aria-label="Scale disclosure"><h2>Readiness scale</h2><p>This prototype scale supports a provisional summary of your self-reported situation. It does not independently verify your answers.</p><ol><li v-for="anchor in chat.scale.anchors" :key="anchor.level"><b>{{ anchor.level }} · {{ anchor.label }}</b><p>{{ anchor.description }}</p></li></ol></section>
+    <p v-if="message.resource?.id === 'easa_basics'"><a :href="message.resource.url" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{ message.resource.label }}</a></p>
+  <section v-if="(message.scale || chat?.scale) && ['scale_disclosure', 'methodology'].includes(message.act)" aria-label="Scale disclosure"><h2>Readiness scale</h2><p>This prototype scale supports a provisional summary of your self-reported situation. It does not independently verify your answers.</p><ol><li v-for="anchor in (message.scale || chat.scale).anchors" :key="anchor.level"><b>{{ anchor.level }} · {{ anchor.label }}</b><p>{{ anchor.description }}</p></li></ol></section>
 
    </li>
   </ol>

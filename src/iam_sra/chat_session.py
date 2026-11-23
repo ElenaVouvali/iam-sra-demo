@@ -12,7 +12,9 @@ import time
 import httpx
 from .assessment import AssessmentError
 from .privacy import require_safe_data
-from .chat_policy import POLICY, SCHEMA, WELCOME, objectives, rubric, load_rubrics
+from .chat_policy import (POLICY, SCHEMA, WELCOME, INTRODUCTION, PERSPECTIVE, ACKNOWLEDGEMENTS,
+                         CITIZEN_DURATION, EASA_BASICS, citizen_depth_choice, educational_choice,
+                         objectives, rubric, load_rubrics)
 from .fn_interview import FNInterview, specification, flow_key, literal_answer
 
 _log = logging.getLogger(__name__)
@@ -82,6 +84,8 @@ class ChatSession:
         self.source_scales, self.source_register = load_rubrics()
         self.bank = deepcopy(bank)
         self.depth = depth
+        self.depth_selection = None
+        self.depth_history = []
         self.synthetic = synthetic
         self.assisted = assisted
         self.corpus = deepcopy(corpus)
@@ -121,7 +125,8 @@ class ChatSession:
         self.indicator_results = []
         self.stop_reason = None
         self.started = time.monotonic()
-        self._assistant(WELCOME, 'perspective')
+        self._assistant(INTRODUCTION,act='introduction')
+        self._assistant(PERSPECTIVE,'perspective')
 
     def _rubric(self):
         value = rubric(self.bank, self.profile, self.depth)
@@ -140,6 +145,8 @@ class ChatSession:
         require_safe_data({'text': text})
         self.messages.append({'id': f'm{len(self.messages)+1}', 'role': 'assistant', 'text': text,
                               'objective_id': objective, 'act': act, 'revision': self.revision})
+        if self.profile and act in {'scale_disclosure','methodology'}:
+            self.messages[-1]['scale']=deepcopy(self._rubric())
 
     def _user(self, text, evidence=True, act='answer'):
         require_safe_data({'text': text})
@@ -320,6 +327,7 @@ class ChatSession:
             'fallback_source':decision.get('fallback_source'),
             'closing_policy':self._discussion_progress(),
             'fn_stage':decision.get('fn_stage'), 'fn_coverage':decision.get('fn_coverage',[]),
+            'depth_change':deepcopy(decision.get('depth_change')),
             'assessment': deepcopy(decision.get('assessment')),
             'validated_context_facts': decision.get('validated_context_facts', []),
             'concerns': deepcopy(self.concerns),
@@ -372,6 +380,15 @@ class ChatSession:
         text = node.get('preface', '')
         if text: text += '\n\n'
         text += node['canonical_question']
+        if node['id']=='citizen_duration':text=CITIZEN_DURATION
+        raised=self._raised_topics()
+        if self.profile=='citizen' and node['id']=='open_more' and len(raised)==1:
+            topic=raised[0]['topic']
+            text=f"You've mentioned {topic} so far. Is there anything else about healthcare drone services that matters to you, or is {topic} the main issue you'd like us to focus on?"
+        if node['id']=='priorities':text+='\nYou can choose just one issue if that is what matters to you.'
+        educational=self.profile=='citizen' and node['id']=='drone_explanation'
+        if educational:
+            text+='\n\nA — A short explanation, then continue.\n\nB — The educational resource, then finish for now.\n\nYou can also decline the explanation and continue.'
         if node['response_type'] == 'suggested_topics' or (node['id']=='priorities' and self.profile=='technical') or node['response_type']=='display':
             topics=specification()['topic_suggestions'][flow_key(self.profile,self.depth)]
             text += '\n' + '\n'.join('• '+topic for topic in topics)
@@ -387,6 +404,62 @@ class ChatSession:
         self.messages[-1]['source'] = {**deepcopy(self._rubric()['source']),
             'locator':node['source_locator'], 'specification_version':self.fn.version,
             'wording':'authored adaptation' if 'authored' in node['source_locator'] else 'canonical question'}
+        if educational:
+            self.messages[-1]['resource']=deepcopy(EASA_BASICS)
+            self.messages[-1]['source']['adaptation']='optional educational exit'
+            if not any(e.get('kind')=='external_resource_offered' for e in self.exposures):
+                self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'external_resource_offered',
+                    'resource':deepcopy(EASA_BASICS),'engagement':'offered_not_verified',
+                    'prior_knowledge':False,'actual_activity':False,'revision':self.revision})
+        if node['id']=='citizen_duration' or (node['id']=='open_more' and len(raised)==1) or node['id']=='priorities':
+            self.messages[-1]['source']['wording']='authored adaptation of FN question'
+
+    def _raised_topics(self):
+        return [row for row in self.concerns if row.get('evidence_ids') and (
+            row.get('spontaneously_raised') or row.get('selected_priority') or row.get('suggested_by_interviewer'))]
+
+    def _select_depth(self, depth, provenance, evidence_id):
+        previous=self.depth
+        old_ids={q['id'] for q in self.fn.nodes('citizen',previous)}
+        old_stage=self.fn.stage_for('citizen',previous,self.objective)
+        self.depth=depth
+        skipped=[]
+        if previous!=depth and old_stage:
+            for stage in self.fn.stages('citizen',depth):
+                if stage['id']==old_stage['id']:break
+                for q in stage['questions']:
+                    if q['id'] not in old_ids and q['id'] not in self.fn.coverage:
+                        self.fn.record(q['id'],None,'not_applicable');skipped.append(q['id'])
+        selection={'depth':depth,'previous_depth':previous,'provenance':provenance,
+                   'evidence_id':evidence_id,'source':deepcopy(self._rubric()['source']),
+                   'revision':self.revision,'readiness_inferred':False,
+                   'earlier_added_probes_not_reasked':skipped}
+        self.depth_selection=selection
+        self.depth_history.append(deepcopy(selection))
+        self._last_decision['depth_change']=deepcopy(selection)
+
+    def _duration_turn(self, text, skipped=False):
+        row=self._user(text,False,'duration_selection')
+        choice=('short','default_after_skip') if skipped else citizen_depth_choice(text,letters=True)
+        if choice is None:
+            self._assistant('Would you prefer around 20 minutes (A) or around 35 minutes (B)? If you are unsure, say so and we will use the shorter style.','citizen_duration')
+            return
+        self._select_depth(*choice,row['id'])
+        self.fn.record('citizen_duration',row['id'],'explored')
+        self._assistant('We will use the '+('shorter' if self.depth=='short' else 'more detailed')+' conversation. You can change the depth or stop later.',act='depth_acknowledgement')
+        self._route_fn()
+
+    def _educational_exit(self, text):
+        self._user(text,False,'educational_exit')
+        self.partial=True;self.stage='ended';self.stop_reason='ended_early_after_recognition'
+        self.failed_turn_id=None;self.fn.next_action='educational_exit'
+        self.suggestion=None;self.indicator_results=[]
+        self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'external_resource_selected',
+            'resource':deepcopy(EASA_BASICS),'engagement':'selected_not_verified',
+            'prior_knowledge':False,'actual_activity':False,'revision':self.revision})
+        self._assistant('Thank you for taking part. You can read the educational resource below and finish for now. '
+            'This is a partial, unassessed interview; no readiness level has been assigned.',act='educational_exit')
+        self.messages[-1]['resource']=deepcopy(EASA_BASICS)
 
     def _route_fn(self, indicator_client=None, score_client=None):
         self.failed_turn_id=None
@@ -412,6 +485,7 @@ class ChatSession:
             return True
         self.profile=profile;row['profile']=profile
         self.covered['perspective']=[row['id']]
+        self._assistant(ACKNOWLEDGEMENTS[profile],act='profile_acknowledgement')
         self._route_fn()
         return True
 
@@ -423,7 +497,7 @@ class ChatSession:
                    and interpretation['answer_kind'] not in {'uncertain','declined'}
                    and len(interpretation.get('topics',[]))<=3)
         for item in interpretation.get('topics',[]):
-            topic=item['topic'].strip()
+            topic=item.get('matches_topic') or item['topic'].strip()
             old=next((c for c in self.concerns if c['topic'].casefold()==topic.casefold()),None)
             if old is None:
                 old={'topic':topic,'kind':'emerging_topic','evidence_ids':[],
@@ -443,8 +517,35 @@ class ChatSession:
             old['last_turn_id']=row['id']
             row['topic']=topic
 
+    def _topic_disposition(self, row, interpretation):
+        if self.profile!='citizen' or self.objective not in {'open_priorities','open_more','different_impacts','suggested_topics','priorities'}:return False
+        intent=interpretation.get('topic_intent');quote=interpretation.get('topic_intent_quote','')
+        if not intent or not quote or quote not in row['text']:return False
+        if self.fn.coverage.get(self.objective,{}).get('status')!='explored':return False
+        if intent in {'no_more','main_only'}:
+            self.fn.facts['topic_scope_closed']=True
+            self.fn.facts['topic_scope_evidence_id']=row['id']
+            self.fn.record('open_more',row['id'],'explored')
+        raised=self._raised_topics()
+        if intent=='main_only' and len(raised)==1 and interpretation['answer_kind'] not in {'uncertain','declined'}:
+            topic=raised[0];topic['selected_priority']=topic['priority']=True
+            self.fn.record('priorities',row['id'],'explored')
+            if not any(p['topic']==topic['topic'] for p in self.priorities):
+                self.priorities.append({'topic':topic['topic'],'evidence_id':row['id'],'text':row['text'],'origin':'respondent_selected'})
+        if intent=='suggestions':
+            self.fn.facts['topic_scope_closed']=False
+            self.fn.facts.pop('topic_scope_evidence_id',None)
+            node=self.fn.current(self.profile,self.depth,'suggested_topics')
+            if node and 'suggested_topics' not in self.fn.coverage:
+                self._ask_fn(node)
+                return True
+        return False
+
     def _fn_turn(self, text, client, indicator_client=None, score_client=None, skipped=False, retry_row=None):
         node=self.fn.current(self.profile,self.depth,self.objective)
+        if node and node['response_type']=='citizen_depth':
+            self._duration_turn(text,skipped)
+            return
         if node is None:
             self._route_fn(indicator_client,score_client)
             return
@@ -463,6 +564,8 @@ class ChatSession:
             row['context_fields']=['city']
             self.fn.record(goal,row['id'],'unknown' if unknown else 'explored')
             self._last_decision['validated_context_facts']=[{'field':'city','evidence_id':row['id'],'status':self.context['city_status']}]
+            self._assistant('Thank you. We will keep the area general.' if unknown else
+                'Thank you. When I say “your city”, I will mean '+self.context['city']+'.',act='city_acknowledgement')
         elif node['response_type']=='opinion':
             # This is administration of a separate opinion, not an inferred
             # readiness capability. It cannot nominate other goals or a score.
@@ -471,6 +574,9 @@ class ChatSession:
             # Exact explicit choices need no model. Qualified/nonliteral answers
             # use the same single inference that interprets and proposes wording.
             kind=literal_answer(text) if node['response_type'] in {'yes_no','permission'} else None
+            if self.profile=='citizen' and goal=='drone_explanation':
+                action=educational_choice(text)
+                if action in {'explain','skip_explanation'}:kind='yes' if action=='explain' else 'no'
             result=None
             if kind is not None:
                 self.fn.record(goal,row['id'],'unknown' if kind=='uncertain' else 'explored',kind)
@@ -493,6 +599,7 @@ class ChatSession:
                     accepted=self._apply_context_facts(result,text,row['id'])
                     self._last_decision['validated_context_facts']=accepted
                     self._fn_topics(row,interpretation)
+                    if self._topic_disposition(row,interpretation):return
                     if self.profile=='organisational' and goal in {'remit','outside_remit'} and interpretation.get('scope_disposition')=='outside_remit':
                         self.context['scope_status']='outside_remit'
                         self.partial=True
@@ -571,7 +678,7 @@ class ChatSession:
                 self.fn.facts['aircraft_scope']=bool(re.search(r'\b(?:aircraft|multicopter|drone)\b',obj,re.I)
                     and not re.search(r'\bnot (?:the |an |a )?(?:aircraft|drone)|\b(?:component|subsystem)\b',obj,re.I))
             if node['response_type']=='permission' and self.fn.facts.get(goal)=='yes':
-                explanation=('Some drones or other aircraft can create strong air movement when taking off or landing. This can matter when deciding how close people, objects or buildings can safely be to the take-off and landing area.' if goal=='air_explanation' else 'A drone is an aircraft that can fly without a pilot sitting inside it. Drones can be different sizes and can be used for many different purposes.')
+                explanation=node.get('explanation') or ('Some drones or other aircraft can create strong air movement when taking off or landing. This can matter when deciding how close people, objects or buildings can safely be to the take-off and landing area.' if goal=='air_explanation' else 'A drone is an aircraft that can fly without a pilot sitting inside it. Drones can be different sizes and can be used for many different purposes.')
                 self._assistant(explanation,act='supplied_information')
                 self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'FN_explanation','text':explanation,
                     'source':deepcopy(self._rubric()['source']),'prior_knowledge':False,'revision':self.revision})
@@ -610,7 +717,9 @@ class ChatSession:
             if target['id'] in self.covered[objective]: del self.covered[objective]
         self.pending_correction = None
         self._invalidate('Respondent corrected evidence')
-        self.fn.invalidate({m['id'] for m in self.active_evidence()})
+        # Administrative choices and permission/skip decisions support routing,
+        # while remaining excluded from readiness evidence.
+        self.fn.invalidate({m['id'] for m in self.messages if m['role']=='respondent' and m['active']})
         for concern in self.concerns:
             if target['id'] in concern['evidence_ids']:
                 concern['evidence_ids']=[i for i in concern['evidence_ids'] if i!=target['id']]
@@ -932,6 +1041,11 @@ class ChatSession:
         if self.stage == 'ended': raise ValueError('This conversation has ended.')
         self.revision += 1
         intent = direct_intent(text)
+        if (intent is None and self.profile=='citizen' and self.stage=='conversation'
+                and self.objective!='citizen_duration' and re.search(
+                    r'\b(?:switch|change|shorten|lengthen)\b|\b(?:interview|conversation)\s+(?:style|depth)|\b(?:shorter|longer|extended) (?:interview|conversation)\b',text,re.I)):
+            preference=citizen_depth_choice(text)
+            if preference:intent=preference[0]
         retry_row = None
         if intent == 'retry':
             retry_row=next((m for m in self.active_evidence()
@@ -969,6 +1083,10 @@ class ChatSession:
             self.stage = self._paused_stage or 'conversation'
             node=self.fn.current(self.profile,self.depth,self.objective)
             self._assistant('Welcome back. '+(node['canonical_question'] if node else 'You can continue the review or stop.'), self.objective)
+            return
+        if (self.profile=='citizen' and self.objective=='drone_explanation' and self.stage=='conversation'
+                and (educational_choice(text)=='finish' or intent=='stop')):
+            self._educational_exit(text)
             return
         if intent == 'stop':
             self._user(text, False, 'stop')
@@ -1027,16 +1145,20 @@ class ChatSession:
             else:self._route_fn(indicator_client,score_client)
             return
         if intent in {'short', 'extended'}:
-            self._user(text,False,'depth_preference')
+            if self.objective=='citizen_duration':
+                self._duration_turn(text)
+                return
+            row=self._user(text,False,'depth_preference')
             if self.stage!='conversation' or self.profile not in {None,'citizen'}:
                 self._assistant('The interview version and result scale stay with this record. You can continue the current question or review; use New conversation to choose a different citizen interview version.',act='depth_notice')
                 return
-            self.depth=intent
             if self.profile:
-                node=self.fn.current(self.profile,self.depth,self.objective)
-                if node: self._ask_fn(node)
-                else: self._route_fn(indicator_client,score_client)
-            else: self._assistant(WELCOME,'perspective')
+                self._select_depth(intent,'participant_change',row['id'])
+                self._assistant('We will use the '+('shorter' if intent=='short' else 'more detailed')+' interview style. Earlier answers are retained.',act='depth_acknowledgement')
+                self._route_fn(indicator_client,score_client)
+            else:
+                self.depth=intent
+                self._assistant(PERSPECTIVE,'perspective')
             return
         if intent == 'scale':
             self._user(text, False, 'methodology_request')
@@ -1101,11 +1223,12 @@ class ChatSession:
             self._user(text, False, 'summary_review')
             self._report(indicator_client, score_client)
             return
-        if intent == 'simplify' and self.objective in {'perspective','area','drone_recognition','drone_description','organisation_context','technical_role'}:
+        if intent == 'simplify' and self.objective in {'perspective','area','citizen_duration','drone_recognition','drone_description','organisation_context','technical_role'}:
             self._user(text, False, 'simplification')
             question = {
                 'perspective': 'Are you answering for yourself, an organisation, or a technology?',
                 'area': 'Which city or broad area should we discuss? You can say you prefer not to answer.',
+                'citizen_duration': 'Would you prefer a shorter conversation, around 20 minutes (A), or more detail, around 35 minutes (B)? If unsure, we can start short.',
                 'drone_recognition': 'Do you know what a drone is?',
                 'drone_description': 'How would you describe a drone in your own words?',
                 'organisation_context': 'What kind of organisation are you speaking for? Its name is not needed.',
@@ -1152,20 +1275,24 @@ class ChatSession:
         self._fn_turn(text,client,indicator_client,score_client,retry_row=retry_row)
 
     def view(self):
-        participant_messages = [{key:message[key] for key in ('id','role','text','act') if key in message}
+        participant_messages = [{key:message[key] for key in ('id','role','text','act','resource','scale') if key in message}
                                 for message in self.messages]
+        educational_exit=self.stop_reason=='ended_early_after_recognition'
         return {'mode': SCHEMA, 'stage': self.stage, 'depth': self.depth, 'profile': self.profile,
+                'citizen_depth':self.depth if self.profile=='citizen' else None,
+                'depth_selection':deepcopy(self.depth_selection),'depth_history':deepcopy(self.depth_history),
                 'answer_processing': {'status':'retry_required' if self.failed_turn_id else 'ready',
                                       'evidence_id':self.failed_turn_id},
                 'messages': deepcopy(participant_messages), 'pending_comparison': deepcopy(self.pending_comparison),
                 'summary': self._summary() if self.stage != 'conversation' else [],
-                'scale': self._rubric() if self.profile and (self.stage in {'review','review_addition','ended'} or any(e.get('kind')=='reference_scale' for e in self.exposures)) else None,
+                'scale': self._rubric() if self.profile and not educational_exit and (self.stage in {'review','review_addition','ended'} or any(e.get('kind')=='reference_scale' for e in self.exposures)) else None,
                 'suggestion': deepcopy(self.suggestion), 'self_assessment_available':self.stage=='review' and self._has_model_score(), 'participant_review': deepcopy(self.participant_review),
                 'initial_suggestion': deepcopy(self.initial_results[0]['suggestion']) if self.initial_results and self.participant_review else None,
                 'assisted': self.assisted,
                 'completion': {'conversation': self.stage == 'ended', 'partial':self.partial,
+                               'termination_reason':self.stop_reason,
                                'methodological_progression':'incomplete' if not self.profile or self.fn.next(self.profile,self.depth,self.concerns) else 'goals_explored',
-                               'evidence_sufficiency': (self.suggestion or {}).get('evidence_sufficiency', 'pending_after_new_evidence' if self.initial_results else 'not_judged'),
+                               'evidence_sufficiency': 'unassessed' if educational_exit else (self.suggestion or {}).get('evidence_sufficiency', 'pending_after_new_evidence' if self.initial_results else 'not_judged'),
                                'participant_review': 'provided' if self.participant_review else 'not_provided',
                                'review': (self.participant_review or {}).get('status', 'not_reviewed')}}
 
