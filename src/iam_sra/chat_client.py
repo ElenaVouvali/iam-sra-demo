@@ -77,7 +77,7 @@ class FNReply(Strict):
     message: str = Field(default='Thank you.', min_length=1, max_length=700)
     context_facts: list[ContextFact] = Field(default_factory=list, max_length=4)
     source_ids: list[str] = Field(default_factory=list, max_length=2)
-    decision_summary: str = Field(default='',max_length=240)
+    decision_summary: Literal[''] = ''  # Restricted wire field: no unnecessary model prose.
 
 
 FN_SYSTEM = (
@@ -106,10 +106,10 @@ FN_SYSTEM = (
     'For explicit uncertainty use coverage status=unknown and answer_kind=uncertain; this is not low readiness. '
     'For refusal use status=declined. Never invent evidence. Quotes must be exact substrings of their cited original. '
     'Prefer one short complete clause per quote; a long valid quote is not an unclear answer. '
-    'Use decision_summary for one short explanation of the interpretation and evidence limits, not hidden deliberation. '
+    'Set decision_summary to an empty string. Evidence is carried in exact quoted coverage; do not generate narrative rationale. '
     'Only allowed_objectives may be covered. Other goals need their own explicit supporting evidence; a topic '
     'mention does not demonstrate a capability. '
-    'If an answer already supplies a definition or known applications while confirming recognition, cover those '
+    'For example, a recognition answer that already defines an aircraft without a pilot can also cover drone_description. '
     'allowed goals separately with their exact supporting clauses so Python need not ask them again. '
     'A covered answer may use action=follow_up with one relevant grounded question when a concrete unresolved '
     'detail would materially improve evidence. Do not repeat an answered question merely to reconfirm it. '
@@ -569,22 +569,6 @@ class ChatClient(ConversationClient):
                             'validation_context':request.get('validation_context',[])})
                         if interpret_answer:
                             interpretation = result.get('interpretation')
-                            if (interpretation and payload['fn'].get('evidence_goal')=='priorities'
-                                    and interpretation.get('action') in {'advance','conclude'}
-                                    and interpretation.get('answer_kind') in {'substantive','partial'}):
-                                from .adaptive_interview import enabled, explicit_priority_list
-                                warnings=result.get('_annotation_warnings',[])
-                                if enabled():
-                                    explicit=explicit_priority_list(payload.get('answer',''))
-                                    if explicit:
-                                        known={str(k['topic']).casefold():k['topic'] for k in
-                                               payload['fn'].get('known_topics',[])}
-                                        for item in explicit:
-                                            item['matches_topic']=known.get(item['topic'].casefold())
-                                        interpretation['topics']=explicit
-                                        result['_annotation_warnings']=[w for w in warnings
-                                            if not w.startswith('interpretation.topics')]
-                                        result.setdefault('_recovery_notes',[]).append('explicit_priority_clause')
                             if not interpretation:
                                 raise AssessmentError('Cite the current answer exactly in interpretation.answer_quote.',
                                                       code='evidence', field='interpretation.answer_quote')

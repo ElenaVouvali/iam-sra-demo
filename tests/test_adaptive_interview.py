@@ -1,7 +1,6 @@
 """Unit tests for conservative adaptive helpers (no live model required)."""
 from iam_sra.adaptive_interview import (explicit_priority_list, information_need_kinds,
-                                        new_background, optional_topic_probes_unneeded,
-                                        adaptive_goal)
+                                        new_background, adaptive_goal)
 
 
 def test_explicit_priority_repair_preserves_two_exact_issues():
@@ -23,15 +22,6 @@ def test_information_requests_are_specific_and_safely_bounded():
     kinds, background = new_background(x, [])
     assert kinds and 'does not establish' in background
     assert new_background(x, kinds) == ([], '')
-
-
-def test_two_real_topics_skip_generic_topic_inventory():
-    assert optional_topic_probes_unneeded([
-        {'topic':'noise','evidence_ids':['m8'],'spontaneously_raised':True},
-        {'topic':'wildlife','evidence_ids':['m9'],'spontaneously_raised':True}])
-    assert not optional_topic_probes_unneeded([
-        {'topic':'noise','evidence_ids':['m8'],'spontaneously_raised':True},
-        {'topic':'wildlife','evidence_ids':[],'suggested_by_interviewer':True}])
 
 
 def test_onboarding_cannot_be_rewritten():

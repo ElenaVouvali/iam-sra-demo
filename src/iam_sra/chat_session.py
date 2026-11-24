@@ -581,7 +581,10 @@ class ChatSession:
     def _fn_topics(self, row, interpretation):
         stage=self.fn.stage_for(self.profile,self.depth,self.objective)
         spontaneous=self.objective in {'open_priorities','open_more','different_impacts','requirements_open'}
-        explicit_earlier=any(e['goal']=='priorities' and re.search(r'priorit|matter most|focus on|choos|select|most important',e['quote'],re.I) for e in interpretation.get('coverage',[]))
+        from .adaptive_interview import explicit_priority_commitment
+        explicit_earlier=(explicit_priority_commitment(row['text']) and
+                          any(e['goal']=='priorities' and e['quote'] in row['text']
+                              for e in interpretation.get('coverage',[])))
         selecting=((self.objective=='priorities' or explicit_earlier) and self.fn.coverage.get('priorities',{}).get('status')=='explored'
                    and interpretation['answer_kind'] not in {'uncertain','declined'}
                    and len(interpretation.get('topics',[]))<=3)
@@ -680,10 +683,23 @@ class ChatSession:
                     if not interpretation: raise AssessmentError('Grounded interpretation unavailable.',code='evidence',field='interpretation')
                     self.failed_turn_id=None
                     for entry in interpretation['coverage']:
-                        if entry['goal']=='priorities' and goal!='priorities' and not re.search(r'priorit|matter most|focus on|choos|select|most important',entry['quote'],re.I):
+                        from .adaptive_interview import explicit_priority_commitment
+                        if entry['goal']=='priorities' and goal!='priorities' and not explicit_priority_commitment(row['text']):
                             continue
                         self.fn.record(entry['goal'],entry['evidence_id'],entry['status'],entry['answer_kind'])
                         self.covered[entry['goal']]=list(self.fn.coverage[entry['goal']]['evidence_ids'])
+                    # Limited, grounded reuse of clear baseline knowledge.
+                    # No numerical readiness inference and no invented quotations.
+                    from .adaptive_interview import enabled as adaptive_enabled
+                    if adaptive_enabled() and self.fn.coverage.get(goal,{}).get('status')=='explored':
+                        from .adaptive_interview import supplementary_recognition_coverage
+                        for extra_goal, extra_kind in supplementary_recognition_coverage(
+                                self.profile, goal, row['text'], interpretation['answer_kind'], self.exposures):
+                            if extra_goal not in self.fn.coverage and self.fn.current(self.profile,self.depth,extra_goal):
+                                self.fn.record(extra_goal,row['id'],'explored',extra_kind)
+                                self.covered[extra_goal]=[row['id']]
+                                self.routing_events.append({'event':'explicit_prior_evidence_reused',
+                                    'goal':extra_goal,'evidence_id':row['id'],'readiness_inferred':False})
                     if goal in self.fn.coverage and node['response_type'] in {'yes_no','permission'}:
                         self.fn.facts[goal]=interpretation['answer_kind']
                     accepted=self._apply_context_facts(result,text,row['id'])

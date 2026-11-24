@@ -20,18 +20,6 @@ def max_wordings(depth):
         return int(default)
 
 
-def optional_topic_probes_unneeded(concerns):
-    """Avoid suggested topic inventory after two real respondent-raised topics.
-
-    Suggestions with no original evidence are not respondent-raised concerns.
-    """
-    found = set()
-    for row in concerns:
-        if row.get('evidence_ids') and (row.get('spontaneously_raised') or row.get('selected_priority')):
-            found.add(row['topic'].casefold().strip())
-    return len(found) >= 2
-
-
 def explicit_priority_list(answer):
     """Conservative repair of plainly enumerated first-clause priority choices.
 
@@ -119,10 +107,53 @@ def new_background(answer, previously_supplied):
 
 def adaptive_goal(node):
     """Never rewrite source-critical onboarding, literal-choice or scale questions."""
-    if node.get('response_type') in {'city', 'citizen_depth', 'permission', 'yes_no',
+    if node.get('preface') or node.get('response_type') in {'city', 'citizen_depth', 'permission', 'yes_no',
                                      'display', 'opinion'}:
         return False
     return node.get('id') not in {'area', 'perspective', 'drone_recognition', 'drone_description',
                                   'drone_uses', 'drone_other_uses', 'healthcare_awareness',
                                   'healthcare_detail', 'local_awareness', 'local_basis',
-                                  'citizen_duration', 'drone_explanation'}
+                                  'citizen_duration', 'drone_explanation',
+                                  'open_priorities', 'open_more', 'different_impacts',
+                                  'priorities', 'decisions', 'participation'}
+
+def explicit_priority_commitment(answer):
+    """Only an overt personal selection can close prioritisation early.
+
+    'We should prioritise safety' is a proposal, not an individual's
+    choice of topics for the remainder of the interview.
+    """
+    return bool(re.search(
+        r'\b(?:my|our)\s+(?:(?:two|three|main|top|only|biggest|first)\s+){0,3}'
+        r'(?:priorities|concerns|issues)\s+(?:are|would be|is)\b|'
+        r'\b(?:i (?:only )?want to focus on|what matters most to me is|'
+        r'the (?:one|two|three) issues? i care most about)\b', answer, re.I))
+
+
+def supplementary_recognition_coverage(profile, current_goal, answer, answer_kind,
+                                       supplied_information=()):
+    """Conservative evidence reuse for two *factual awareness* goals only.
+
+    These are records of what was said, not claims of correctness, proficiency,
+    readiness level or local drone operation. Each is backed by the ORIGINAL
+    respondent answer ID in ChatSession, not an invented quote.
+    """
+    if profile != 'citizen' or answer_kind in {'no', 'uncertain', 'declined'}:
+        return []
+    text = answer.casefold()
+    if current_goal == 'drone_recognition':
+        aircraft = bool(re.search(r'\b(?:aircraft|flying (?:machine|vehicle)|unmanned aerial vehicle)\b', text))
+        pilot = bool(re.search(r'\b(?:without|no)\s+(?:(?:a|an|any|human|onboard)\s+){0,3}pilot\b', text))
+        if aircraft and pilot and not re.search(r'\b(?:i don.t know|i do not know|no idea|not sure what)\b', text):
+            return [('drone_description', 'substantive')]
+    if current_goal in {'drone_uses', 'drone_other_uses'}:
+        personal_prior = bool(re.search(r'\b(?:i (?:also )?(?:have |had )?heard|i (?:have |had )?(?:seen|read|known)|'
+                                        r'i (?:am|was) aware|i know)\b', text))
+        healthcare = bool(re.search(r'\b(?:healthcare|medical|medicin\w*|blood|laboratory samples?)\b', text))
+        negation = bool(re.search(r'\b(?:never heard|not heard|haven.t heard|hadn.t heard|don.t know|do not know)\b', text))
+        supplied = any(e.get('kind') in {'retrieved_source_information', 'authored_general_background'} and
+                       (not e.get('categories') or 'delivery_basics' in e.get('categories', []))
+                       for e in supplied_information)
+        if personal_prior and healthcare and not negation and not supplied:
+            return [('healthcare_awareness', 'yes')]
+    return []

@@ -302,3 +302,27 @@ def test_generated_fn_ids_are_metadata_but_names_and_answer_text_remain_screened
     with pytest.raises(privacy.PrivacyError):privacy.require_safe_data(container('Alice Example'))
     for value in ({'answer':'m16'},{'user':{'answer':'m16'}},{'quote':'m16'}):
         with pytest.raises(privacy.PrivacyError):privacy.require_safe_data(value)
+
+
+def test_priority_selection_with_two_iam_cc_indicator_concerns(monkeypatch):
+    """Preserve two citizen concerns related to actual IAM-CC indicators."""
+
+    def output(payload, attempt):
+        return reply(payload, topics=['noise', 'privacy'])
+
+    install_http(monkeypatch, output)
+
+    session = opening()
+    session._ask_fn(session.fn.current('citizen', 'short', 'priorities'))
+
+    session.send(
+        'Noise and privacy matter most to me.',
+        ChatClient()
+    )
+
+    assert {p['topic'] for p in session.priorities} == {
+        'noise',
+        'privacy',
+    }
+
+    assert not session.failures

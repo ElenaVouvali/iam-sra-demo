@@ -74,9 +74,6 @@ class FNInterview:
             self.unresolved_gaps.remove(goal)
 
     def applicable(self, node, concerns):
-        from .adaptive_interview import enabled, optional_topic_probes_unneeded
-        if enabled() and node.get('id') in {'suggested_topics','open_more'} and optional_topic_probes_unneeded(concerns):
-            return False
         if node.get('id') in {'open_more','suggested_topics'} and self.facts.get('topic_scope_closed'):
             return False
         condition = node.get('when')
@@ -112,13 +109,17 @@ class FNInterview:
         return None
 
     def snapshot(self, profile, depth, objective, scope, concerns):
+        from .adaptive_interview import enabled
         node = self.current(profile, depth, objective)
         stage = self.stage_for(profile, depth, objective)
         stages = self.stages(profile, depth)
         # Only current-stage goals plus the primary goal of later stages. The
         # model sees capability purposes, not the complete question bank/PDFs.
         allowed = {q['id']: s['id'] for s in stages for q in s['questions']
-                   if s is stage or q is s['questions'][0] or q['id']=='priorities'}
+                   if (not enabled() and (s is stage or q is s['questions'][0] or q['id']=='priorities'))
+                   or (enabled() and (s is stage or (profile=='citizen' and stage
+                       and stage['id']=='recognition' and q['id']=='healthcare_awareness')
+                       or (profile!='citizen' and q is s['questions'][0])))}
         return {'version': VERSION, 'stage': (stage or {}).get('id'),
                 'evidence_goal': (node or {}).get('id'), 'purpose': (stage or {}).get('purpose'),
                 'response_type': (node or {}).get('response_type'),
