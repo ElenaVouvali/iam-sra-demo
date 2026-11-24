@@ -9,9 +9,9 @@ messages resume directly; **New conversation** restores the welcome screen.
 
 Controller-owned A–C perspectives, citizen A/B duration, unfamiliar-citizen A/B
 explanation/exit, and profile-specific A–E result validation now provide radio
-choices and **Send selected answer**. Nothing is preselected. An optional
-**Answer in my own words** keeps natural replies, corrections and rights commands
-available. Other questions retain the current open-text composer. Suggestions
+choices and **Send selected answer**. Nothing is preselected. Choice questions
+show only selectable answers; there is no alternate text-reply toggle.
+Other questions retain the current open-text composer. Suggestions
 and thematic topic lists are not converted into compulsory choice forms.
 
 Each active candidate answer appears only once, inside its selectable card.
@@ -26,6 +26,14 @@ literal choice; the existing controller handles it. Model-generated text cannot
 create arbitrary buttons or select a response. Recovery, correction, review
 additions and abstentions retain appropriate open-text handling. The PDFs,
 registered identities, nine-level scales and scoring logic were not changed.
+
+Citizen depth can be changed during elicitation using the button under
+**Privacy, help and conversation options**, or `more detail` / `keep it short`
+in an open reply. The existing controller changes the FN flow, retains screened
+evidence and covered objectives, and records the depth/source history. The
+control is unavailable during result review, where the original scale remains
+fixed. The promise to change depth later is therefore retained. This changes
+probing depth, not a timed deadline or readiness level.
 
 ## Why the current A2 run is slow
 
@@ -134,3 +142,12 @@ and the production build (58 modules). It changes frontend presentation only;
 existing API/model services do not need restarting. Refresh the application to
 load the rebuilt frontend. No real-browser layout check was run in this
 socket-restricted environment.
+
+The later removal of the optional text-answer toggle passed **18 Vue interaction
+checks**, **130 Python onboarding/FN/choice checks** (including all four canonical
+replays and real privacy), and the production build (58 modules). The controller
+test switches short → extended → short, verifies the actual additional probe,
+preserves evidence/coverage, and checks exported depth/source history. Existing
+tests keep the scale fixed after result review begins. Vue checks/build used the
+available Node 24.22.1; the declared Node 22 runtime was not available here. The
+rebuilt frontend needs a browser refresh; no API or GPU restart is required.

@@ -95,19 +95,40 @@ for (const [name, options] of [
  try {
   assert.ok(!ui.button('Continue to the conversation'))
   assert.equal(ui.all().filter((n) => n.props.type === 'radio').length, options.length)
+  assert.equal(ui.all().filter((n) => n.type === 'textarea').length, 0)
+  assert.equal(ui.button('Answer in my own words'), undefined)
   const value = options.at(-1).value
   ui.all().find((n) => n.props.type === 'radio' && n.props.value === value).props.onChange()
   await Vue.nextTick(); await ui.click(ui.button('Send selected answer')); assert.equal(ui.calls[0].data.text, value)
  } finally { ui.unmount() }
 })
-test('choice questions keep an optional free-text answer', async () => {
+test('choice questions offer selection only, then restore open questions', async () => {
  const ui = await mount(snapshot(roles, true))
  try {
-  await ui.click(ui.button('Answer in my own words'))
+  assert.equal(ui.button('Answer in my own words'), undefined)
+  assert.equal(ui.button('Hide text reply'), undefined)
+  assert.equal(ui.all().filter((n) => n.type === 'textarea' || n.type === 'form').length, 0)
+  ui.all().find((n) => n.props.type === 'radio' && n.props.value === 'A').props.onChange()
+  await Vue.nextTick(); await ui.click(ui.button('Send selected answer'))
   const input = ui.all().find((n) => n.type === 'textarea')
-  input.value = 'I want to answer from my own perspective.'; input.listeners.input({ target: input }); await Vue.nextTick()
+  input.value = 'Madrid'; input.listeners.input({ target: input }); await Vue.nextTick()
   await ui.all().find((n) => n.type === 'form').props.onSubmit({ preventDefault() {} }); await Vue.nextTick()
-  assert.equal(ui.calls[0].data.text, 'I want to answer from my own perspective.')
+  assert.equal(ui.calls[0].data.text, 'A')
+  assert.equal(ui.calls[1].data.text, 'Madrid')
+ } finally { ui.unmount() }
+})
+for (const [depth, command, target] of [
+ ['short', 'extended conversation', 'Use extended citizen interview (~35 min)'],
+ ['extended', 'keep it short', 'Use short citizen interview (~20 min)'],
+]) test(`citizen ${depth} style has a working depth control until result review`, async () => {
+ const initial = snapshot([], true)
+ Object.assign(initial.chat, { profile: 'citizen', depth, depth_selection: { depth } })
+ const ui = await mount(initial)
+ try {
+  await ui.click(ui.button(target))
+  assert.equal(ui.calls[0].action, 'chat_message'); assert.equal(ui.calls[0].data.text, command)
+  ui.flow.session.value = { ...ui.flow.session.value, chat: { ...ui.flow.session.value.chat, stage: 'review' } }
+  await Vue.nextTick(); assert.equal(ui.button(target), undefined)
  } finally { ui.unmount() }
 })
 test('ordinary questions stay open-form and New conversation restores introduction', async () => {

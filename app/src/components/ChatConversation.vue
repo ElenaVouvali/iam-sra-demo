@@ -35,10 +35,9 @@ const choiceDisplay = computed(() => {
   prompt: lines.filter((_, i) => !hidden.has(i)).join('\n').replace(/\n{3,}/g, '\n\n').trim() }
 })
 const responseOptions = computed(() => choiceDisplay.value.options)
-const selectedChoice = ref(''), ownWords = ref(false)
+const selectedChoice = ref('')
 watch(() => `${session.value?.id}:${chat.value?.messages.at(-1)?.id}`, () => {
  selectedChoice.value = ''
- ownWords.value = false
 })
 async function beginConversation() {
  introducedSession.value = session.value.id
@@ -138,9 +137,9 @@ onMounted(start)
     <input type="radio" name="chat-answer" :value="option.value" :checked="selectedChoice === option.value" @change="selectedChoice = option.value" />
     <span><b>{{ option.value }}.</b> {{ option.label }}<small v-if="option.description" class="option-description">{{ option.description }}</small></span>
    </label>
-   <div class="row"><button class="btn accent" type="button" :disabled="working || !selectedChoice" @click="sendChoice">Send selected answer</button><button class="btn secondary" type="button" :disabled="working" @click="ownWords = !ownWords">{{ ownWords ? 'Hide text reply' : 'Answer in my own words' }}</button></div>
+   <div class="row"><button class="btn accent" type="button" :disabled="working || !selectedChoice" @click="sendChoice">Send selected answer</button></div>
   </fieldset>
-  <form v-if="chat && !ended && !session.preview && (!responseOptions.length || ownWords)" class="composer" @submit.prevent="send">
+  <form v-if="chat && !ended && !session.preview && !responseOptions.length" class="composer" @submit.prevent="send">
    <label for="chat-message">Your message</label><textarea id="chat-message" v-model="draft" class="input" rows="4" maxlength="1800" aria-describedby="chat-hint" />
    <p id="chat-hint" class="t-small">Write in your own words. Enter adds a new line; use Send when ready.</p>
    <button class="btn accent" :disabled="working || !draft.trim()">Send</button>

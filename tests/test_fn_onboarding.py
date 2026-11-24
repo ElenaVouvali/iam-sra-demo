@@ -176,6 +176,28 @@ def test_natural_mid_interview_depth_request_and_uncertain_duration():
     assert s.depth=='extended' and s.depth_selection['provenance']=='participant_change'
 
 
+def test_depth_switch_changes_actual_probes_both_ways_and_retains_evidence():
+    s,c=citizen()
+    s.send('yes',c)
+    s.send('An aircraft without an onboard pilot.',c)
+    assert s.objective=='drone_uses'
+    evidence=deepcopy(s.active_evidence());coverage=deepcopy(s.fn.coverage);calls=s.calls
+    s.send('extended conversation',c)
+    assert s.depth=='extended' and s.objective=='drone_uses'
+    assert s.active_evidence()==evidence and s.fn.coverage==coverage and s.calls==calls
+    assert s.depth_selection['source']['document'].endswith('35min.pdf')
+    s.send('Photography and inspection.',c)
+    assert s.objective=='drone_other_uses'
+    evidence=deepcopy(s.active_evidence());coverage=deepcopy(s.fn.coverage);calls=s.calls
+    s.send('keep it short',c)
+    assert s.depth=='short' and s.objective=='healthcare_awareness'
+    assert s.active_evidence()==evidence and s.fn.coverage==coverage and s.calls==calls
+    assert s.depth_selection['source']['document'].endswith('20min.pdf')
+    assert [selection['depth'] for selection in s.depth_history]==['short','extended','short']
+    assert all(not selection['readiness_inferred'] for selection in s.depth_history)
+    assert [selection['depth'] for selection in s.export()['depth_history']]==['short','extended','short']
+
+
 def test_untrusted_topic_metadata_cannot_select_priorities_or_invent_aliases():
     from iam_sra.chat_client import validate_reply
     s,c=open_topics();s.send('Noise matters.',Topics(['noise']))
