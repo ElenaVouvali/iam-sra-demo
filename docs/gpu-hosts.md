@@ -25,6 +25,12 @@ match. The existing >2 GiB occupied-memory guard, unique-device requirement,
 port checks and process ownership checks remain. A busy selected GPU is never
 replaced with a different GPU class.
 
+The table describes the original FP16 default. For faster Liono A2 inference,
+the [FN review launcher](a2-fast-inference.md) now defaults to pinned 4-bit AWQ,
+Marlin and **zero CPU offload**, retaining automatic idle release. A standalone
+model can use `--variant awq` on `liono-a2`; set `IAM_MODEL_VARIANT=awq` when
+starting its API too. Other host profiles retain FP16 and reject this AWQ option.
+
 ## One-time Davinci preparation
 
 First establish normal SSH access from Liono. If this is a first connection,
@@ -193,7 +199,7 @@ ssh evouvali@davinci.microlab.ntua.gr \
 tail -n 60 .runtime/vllm.log
 ```
 
-All profiles retain Qwen3-8B revision
+All profiles default to Qwen3-8B revision
 `b968826d9c46dd6066d109eabc6255188de91218`, FP16, V0/XFormers, XGrammar,
 4096 tokens and one active sequence. A2 has
 [16 GB GPU memory](https://www.nvidia.com/en-eu/data-center/products/a2/).

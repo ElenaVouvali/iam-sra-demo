@@ -1,0 +1,8 @@
+{
+  "version": "awq-1.0.0",
+  "model": "Qwen/Qwen3-8B-AWQ",
+  "revision": "4da05a8edb55c6046cce958586c33b61da07bb79",
+  "quantization": "awq_marlin",
+  "weight_bits": 4,
+  "cpu_offload_gb": 0
+}

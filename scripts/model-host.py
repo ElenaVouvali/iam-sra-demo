@@ -17,19 +17,23 @@ ROOT = Path(__file__).resolve().parents[1]
 PROFILES = json.loads((ROOT / 'configs/gpu-profiles.json').read_text())['profiles']
 # Explicit allowlist: never copy sources, transcripts, credentials or environments.
 INFERENCE_FILES = (
-    'configs/model.json', 'configs/gpu-profiles.json',
+    'configs/model.json', 'configs/model-awq.json', 'configs/gpu-profiles.json',
+    'scripts/model_spec.py',
     'requirements-vllm.txt', 'requirements-lock.txt',
     'scripts/ops.py', 'scripts/supervise.py', 'scripts/download-model.py',
     'scripts/setup-inference.sh', 'scripts/wait-model.py',
     'scripts/start-vllm.sh', 'scripts/stop-vllm.sh', 'scripts/diagnose-model.py',
 )
 
+# The same dependency-free specification helper is shipped as an inference script;
+# no application package or private source is copied to remote model hosts.
+INFERENCE_ALIASES = {'scripts/model_spec.py': 'src/iam_sra/model_spec.py'}
 
 def archive():
     content = io.BytesIO()
     with tarfile.open(fileobj=content, mode='w') as bundle:
         for name in INFERENCE_FILES:
-            path = ROOT / name
+            path = ROOT / INFERENCE_ALIASES.get(name, name)
             info = tarfile.TarInfo(name)
             data = path.read_bytes()
             info.size = len(data)
@@ -68,7 +72,7 @@ def ssh_command(target):
 
 
 def settings(args):
-    values = {'IAM_GPU_PROFILE': args.profile, 'IAM_VLLM_PORT': str(args.port),
+    values = {'IAM_GPU_PROFILE': args.profile, 'IAM_MODEL_VARIANT': args.variant, 'IAM_VLLM_PORT': str(args.port),
               'IAM_BASE_URL': f'http://127.0.0.1:{args.port}',
               # Ignore stale device/precision choices from previous launches.
               'IAM_GPU_UUID': args.gpu_uuid or '',
@@ -117,6 +121,8 @@ def port_free(port):
 
 def execute(args):
     profile = PROFILES[args.profile]
+    if args.variant == 'awq' and args.profile != 'liono-a2':
+        raise ValueError('The AWQ speed profile is currently supported on liono-a2; use fp16 for other host profiles.')
     remote = socket.gethostname().split('.')[0].lower() != profile['host']
     target = args.ssh or os.getenv('IAM_' + profile['host'].upper() + '_SSH') or profile.get('ssh')
     if remote and not target:
@@ -168,6 +174,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['list', 'prepare', 'check', 'start', 'tunnel'])
     parser.add_argument('profile', nargs='?', choices=PROFILES)
+    parser.add_argument('--variant', choices=['fp16','awq'], default='fp16', help='Explicit model artifact; original fp16 remains the default')
     parser.add_argument('--port', type=int, default=18000, help='Model and local forward port (default: 18000)')
     parser.add_argument('--remote-dir', default='iam-sra-inference', help='Separate directory relative to remote home')
     parser.add_argument('--ssh', help='Override SSH destination; existing SSH config/ProxyJump is honoured')

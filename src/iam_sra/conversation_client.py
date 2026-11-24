@@ -17,6 +17,9 @@ class ConversationClient(LLMTransport):
             'stage_output_limits':dict(STAGE_LIMITS),'maximum_attempts_per_call':2,
             'model':config('model'),'expected_deployment':{'dtype':'half','engine':'V0','attention':'XFORMERS','tensor_parallel_size':1,'max_num_seqs':1}}
 
+        if config('model').get('quantization'):
+            self.last_settings['expected_deployment'].update(quantization=config('model')['quantization'], cpu_offload_gb=0)
+
     def bind_session(self,session_id,edit_epoch):
         scope=(session_id,edit_epoch)
         if getattr(self,'_cache_scope',None)!=scope:

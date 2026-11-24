@@ -22,13 +22,15 @@ from uuid import uuid4
 
 from .assessment import AssessmentError
 from .settings import ROOT
+from .model_spec import model_variant
 
 _log = logging.getLogger(__name__)
 
 
 class ProjectA2:
-    def __init__(self, port, *, root=ROOT, gpu_uuid=None):
+    def __init__(self, port, *, root=ROOT, gpu_uuid=None, variant=None):
         self.port, self.root, self.gpu_uuid = port, Path(root), gpu_uuid
+        self.variant = model_variant(variant)
         self.record = self.root / '.runtime/vllm.pid.json'
         self.marker = self.root / '.runtime/fn-review/model-owner.json'
 
@@ -63,7 +65,8 @@ class ProjectA2:
             or (marker.get('record') and marker['record'] == row)))
 
     def owns_running_model(self):
-        return self._owns(self.verified_record(), self._marker())
+        row = self.verified_record()
+        return self._owns(row, self._marker()) and row['environment'].get('IAM_MODEL_VARIANT','fp16') == self.variant
 
     def _write_marker(self, data):
         self.marker.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -103,13 +106,14 @@ class ProjectA2:
             raise AssessmentError('Shared GPU unavailable; retry later.', code='gpu_unavailable') from None
         # A unique per-start marker prevents adopting another operator's model
         # if their launch wins a concurrent start race. It is never exported.
-        marker = {'port': self.port, 'lease_id': uuid4().hex}
+        marker = {'port': self.port, 'variant': self.variant, 'lease_id': uuid4().hex}
         self._write_marker(marker)
         env = os.environ.copy()
         env['IAM_SRA_MODEL_LEASE_ID'] = marker['lease_id']
+        env['IAM_MODEL_VARIANT'] = self.variant
         command = [sys.executable, str(self.root / 'scripts/model-host.py'),
                    'start', 'liono-a2', '--port', str(self.port)]
-        command += ['--gpu-uuid', selected_uuid]
+        command += ['--gpu-uuid', selected_uuid, '--variant', self.variant]
         try:
             remaining = min(610, deadline - time.monotonic())
             if remaining <= 0:
@@ -120,7 +124,7 @@ class ProjectA2:
                 raise AssessmentError('Shared GPU unavailable.', code='gpu_unavailable')
         except (OSError, subprocess.SubprocessError, AssessmentError):
             # A failed readiness wait may still have started a supervised model.
-            if self.owns_running_model():
+            if self._owns(self.verified_record(), self._marker()):
                 self.stop()
             else:
                 self._forget_marker(marker)

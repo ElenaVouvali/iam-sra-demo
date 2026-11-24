@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--opening-only',action='store_true',
         help='Check the citizen definition/uses against actual Qwen, without scoring or completing an interview.')
     parser.add_argument('--opening-variant',choices=['reference','paraphrase','uncertain','all'],default='reference')
+    parser.add_argument('--model-variant',choices=['fp16','awq'],default=os.getenv('IAM_MODEL_VARIANT','fp16'))
     parser.add_argument('--backend',choices=['vllm','cpu'],default='vllm',
         help='CPU uses the existing pinned CPU benchmark; it does not verify vLLM/GPU performance.')
     parser.add_argument('--cpu-threads',type=int,default=4)
@@ -37,6 +38,8 @@ def main():
         parser.error('--opening-only requires --case citizen_short or citizen_extended')
     if args.opening_variant!='reference' and not args.opening_only:
         parser.error('--opening-variant requires --opening-only')
+    if args.backend=='cpu' and args.model_variant!='fp16':
+        parser.error('The CPU benchmark supports the preserved fp16 checkpoint only.')
     if args.backend=='cpu' and not args.opening_only:
         parser.error('CPU verification is bounded to --opening-only; full interviews use the existing vLLM endpoint')
     origin=urlsplit(args.base_url)
@@ -45,15 +48,17 @@ def main():
     root=Path(__file__).resolve().parents[1];output=Path(args.output).resolve()
     if not output.is_relative_to((root/'.runtime').resolve()):parser.error('Keep exports under ignored .runtime/.')
     if output.exists():parser.error('Use a new output directory; preserve previous runs.')
+    os.environ['IAM_MODEL_VARIANT']=args.model_variant
     os.environ['IAM_BASE_URL']=args.base_url.rstrip('/')
     os.environ['IAM_CHAT_SYNTHETIC_REHEARSAL']='1'
     sys.path.insert(0,str(root/'src'))
     import httpx
+    from iam_sra.settings import MODEL
     if args.backend=='vllm':
         try:
             with httpx.Client(trust_env=False,timeout=5) as http:
                 r=http.get(args.base_url.rstrip('/')+'/v1/models');r.raise_for_status()
-                assert any(m['id']=='Qwen/Qwen3-8B' for m in r.json().get('data',[]))
+                assert any(m['id']==MODEL for m in r.json().get('data',[]))
         except (httpx.HTTPError,ValueError,AssertionError):
             print(json.dumps({'live_inference':'unavailable','cases_executed':0,'services_changed':False}));return 2
     from iam_sra.api import create_app
@@ -167,10 +172,15 @@ def main():
             fallbacks=sum(m.get('act') in {'authored_fallback','failure'} for m in c['messages'])
             required_opening={'area','citizen_duration','drone_recognition','drone_description','drone_uses'}
             if key=='citizen_extended':required_opening.add('drone_other_uses')
+            output_tokens=sum(m.get('generated_tokens') or 0 for m in metrics)
+            generation_seconds=sum(m.get('generation_http_seconds') or 0 for m in metrics)
             reports.append({'case':key,'stage':c['stage'],'partial':c['completion']['partial'],
                 'scope':'citizen_opening_only' if args.opening_only else 'full_interview',
                 'opening_variant':variant_name,
-                'backend':args.backend,'reference_checks':checks,
+                'backend':args.backend,'model':c.get('model_provenance'),'reference_checks':checks,
+                'generated_tokens':output_tokens or None,'generation_http_seconds':round(generation_seconds,3) or None,
+                'output_tokens_per_http_second':round(output_tokens/generation_seconds,3) if generation_seconds and output_tokens else None,
+                'model_wait_seconds':round(sum(m.get('model_wait_seconds') or 0 for m in metrics),3),
                 'interpretation_checks_passed':bool(checks) and all(
                     row['canonical_question'] and row['interpretation_matches'] and not row['new_failures'] for row in checks),
                 'opening_passed':bool(args.opening_only and not failure

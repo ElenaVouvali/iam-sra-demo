@@ -9,6 +9,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 import httpx
+try:
+    from iam_sra.model_spec import load_model
+except ModuleNotFoundError:
+    from model_spec import load_model  # Inference-only upload; no application package.
 
 def process_args(directory):
     return [part.decode(errors='replace') for part in (directory / 'cmdline').read_bytes().split(b'\0') if part]
@@ -135,12 +139,12 @@ def main():
                 models = response.json().get('data', [])
                 if not isinstance(models, list):
                     continue
-                compatible_name = any(isinstance(m, dict) and m.get('id') == 'Qwen/Qwen3-8B' for m in models)
+                compatible_name = any(isinstance(m, dict) and m.get('id') == load_model(ROOT)['model'] for m in models)
                 # Do not echo arbitrary server output or credential-bearing addresses.
                 from urllib.parse import urlsplit
                 parsed = urlsplit(base)
                 display = f'{parsed.scheme}://{parsed.hostname}:{parsed.port or 80}'
-                print('Model endpoint:', display, '| expected Qwen/Qwen3-8B alias:', compatible_name,
+                print('Model endpoint:', display, '| expected '+load_model(ROOT)['model']+' alias:', compatible_name,
                       '| health:', client.get(base + '/health').status_code)
                 found = True
             except (httpx.HTTPError, ValueError, TypeError, AttributeError):

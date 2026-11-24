@@ -15,6 +15,12 @@ cd ~/IAM_CC/iam-sra-demo
 .venv-api/bin/python scripts/share-fn-review.py --release-existing-a2
 ```
 
+The default is now the pinned **4-bit Qwen3-8B-AWQ** A2 profile with Marlin and
+zero CPU weight offload. First use downloads about 6.1 GB without reserving the
+GPU; subsequent starts reuse the validated cache. Original FP16 weights remain
+available with `--model-variant fp16`. See [activation, measurements and live
+checks](a2-fast-inference.md). Restart the old launcher to activate this change.
+
 `--release-existing-a2` explicitly releases the previous always-on review A2
 model at the configured model port (default 18003), after checking its exact
 checkout, A2 profile, endpoint, owner UID, PID start time, command and process
@@ -86,7 +92,7 @@ this review does not stop it to make room.
 - `GET /v1/inference-status` and capabilities expose only mode/state/idle seconds.
   The browser displays loading/unavailability and polls status without waking
   the GPU. These GET routes cannot start or stop a model.
-- Private sources/hashes, inference pins/environments, screening, ownership,
+- Private sources/hashes, original inference pins/environments, screening, ownership,
   CSRF, deadlines, correction, evidence/scoring and JSON/JSONL remain in use.
   Existing answered interview content is not sent during resource checks.
 

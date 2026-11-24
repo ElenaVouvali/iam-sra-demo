@@ -91,6 +91,29 @@ def owned_a2(port):
         return False
 
 
+def prepare_review_model(variant):
+    """CPU/network-only preparation; pinned model cache is additive."""
+    sys.path.insert(0, str(ROOT / 'src'))
+    from iam_sra.model_spec import load_model, snapshot_path, validate_awq_snapshot
+    spec = load_model(ROOT, variant)
+    cached = snapshot_path(ROOT, spec)
+    if variant == 'awq':
+        try:
+            validate_awq_snapshot(cached)
+            return spec
+        except (OSError, ValueError, KeyError):
+            pass
+    elif list(cached.glob('*.safetensors')):
+        return spec
+    print('Preparing '+spec['model']+' in the existing cache (first AWQ download is about 6.1 GB; no GPU is used).', flush=True)
+    environment = os.environ.copy()
+    environment['IAM_MODEL_VARIANT'] = variant
+    subprocess.run([str(ROOT / '.venv/bin/python'), str(ROOT / 'scripts/download-model.py')],
+                   cwd=ROOT, env=environment, check=True)
+    if variant == 'awq': validate_awq_snapshot(cached)
+    return spec
+
+
 def cloudflared(client):
     installed = shutil.which('cloudflared')
     if installed:
@@ -215,6 +238,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--ui-port', type=int, help='Explicit frontend port; otherwise try 5018–5117')
     parser.add_argument('--api-port', type=int, help='Explicit API port; otherwise try 8018–8117')
+    parser.add_argument('--model-variant', choices=['awq','fp16'], default='awq', help='Fast fully-on-GPU AWQ by default; fp16 preserves the old CPU-offloaded deployment')
     parser.add_argument('--model-port', type=int, default=18003)
     parser.add_argument('--gpu-uuid', help='An allocated Liono A2, if multiple matching idle GPUs exist')
     parser.add_argument('--idle-seconds', type=int, default=60, help='Release the review model after this many idle seconds (10–3600)')
@@ -230,6 +254,7 @@ def main(argv=None):
             'public_link': 'Issued by Cloudflare at runtime; verified before printing',
             'third_party_relay': 'Cloudflare', 'cookie_secure': True,
             'model_lifecycle': 'on_demand', 'idle_seconds': args.idle_seconds,
+            'model_variant': args.model_variant, 'cpu_offload_gb': 0 if args.model_variant == 'awq' else 8,
             'release_previous_review_model': args.release_existing_a2,
             'stops_existing_services': args.release_existing_a2, 'changes_firewall': False}, indent=2))
         return 0
@@ -255,7 +280,7 @@ def main(argv=None):
         signal.signal(signal.SIGHUP, stop)
         sys.path.insert(0, str(ROOT / 'src'))
         from iam_sra.model_lifecycle import ProjectA2
-        backend = ProjectA2(args.model_port, root=ROOT, gpu_uuid=args.gpu_uuid)
+        backend = ProjectA2(args.model_port, root=ROOT, gpu_uuid=args.gpu_uuid, variant=args.model_variant)
         if backend.marker.exists() and not backend.stop():
             raise ValueError('Cannot verify/release the previous review model; inspect its owner record in a normal terminal.')
         if owned_a2(args.model_port):
@@ -266,10 +291,12 @@ def main(argv=None):
                 raise ValueError('The old review model could not be safely released.')
         for name in ('chat-url.txt',):
             (STATE / name).unlink(missing_ok=True)
+        spec = prepare_review_model(args.model_variant)
+        print('Review checkpoint: '+spec['model']+' / '+spec['revision'], flush=True)
         with httpx.Client(trust_env=False, timeout=30, follow_redirects=True) as client:
             binary = cloudflared(client)
         env = os.environ.copy()
-        env.update(IAM_BASE_URL=f'http://127.0.0.1:{args.model_port}', IAM_VLLM_PORT=str(args.model_port))
+        env.update(IAM_BASE_URL=f'http://127.0.0.1:{args.model_port}', IAM_VLLM_PORT=str(args.model_port), IAM_MODEL_VARIANT=args.model_variant)
         env.update(IAM_SRA_ON_DEMAND_GPU='1', IAM_SRA_GPU_IDLE_SECONDS=str(args.idle_seconds),
             IAM_SRA_REVIEW_GPU_UUID=args.gpu_uuid or '')
         def launch(command, *, output=False, cwd=ROOT):

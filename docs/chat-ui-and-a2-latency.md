@@ -57,6 +57,11 @@ inference faster.
 
 ## Practical fixes and trade-offs
 
+**Implemented follow-up:** the FN launcher now defaults to a separate pinned AWQ
+artifact with zero CPU offload. See [A2 fast inference](a2-fast-inference.md) for
+activation and the explicit limits of offline verification. The observations
+below describe the original FP16 run; its weights remain available.
+
 1. **For A2:** evaluate the official 4-bit `Qwen/Qwen3-8B-AWQ` checkpoint with
    weights entirely on GPU and zero CPU offload. The Qwen model card documents
    vLLM 0.8.5+ support. Configure it as a distinct pinned deployment, verify fit

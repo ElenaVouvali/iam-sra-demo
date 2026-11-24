@@ -12,6 +12,11 @@ import socket
 import subprocess
 import sys
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/"src"))
+try:
+    from iam_sra.model_spec import load_model, model_variant, snapshot_path, validate_awq_snapshot
+except ModuleNotFoundError:
+    from model_spec import load_model, model_variant, snapshot_path, validate_awq_snapshot  # Inference-only upload; no application package.
 RUNTIME=ROOT/".runtime"
 UUID=os.getenv("IAM_GPU_UUID", "")
 PROFILE=os.getenv("IAM_GPU_PROFILE", "")
@@ -52,6 +57,10 @@ def gpu():
     return selected[0]
 
 def cpu_offload(row):
+    if model_variant() == 'awq':
+        value=float(os.getenv("IAM_CPU_OFFLOAD_GB", "0"))
+        if value != 0: raise RuntimeError("AWQ fast mode requires zero CPU offload")
+        return 0.0
     # FP16 Qwen3-8B plus KV/cache overhead does not fit a 16 GB card.
     # Keep the same model/context; offload weights rather than quantize it.
     value=float(os.getenv("IAM_CPU_OFFLOAD_GB", "8" if float(row[4])<=18432 else "0"))
@@ -78,7 +87,8 @@ def preflight(check_ui_port=True):
     check_offload_memory(row)
     stat=os.statvfs(ROOT)
     print("Home available GiB",stat.f_bavail*stat.f_frsize/1024**3)
-    if stat.f_bavail*stat.f_frsize<30*1024**3: raise RuntimeError("Require 30 GiB /home headroom")
+    required=8 if model_variant()=="awq" else 30
+    if stat.f_bavail*stat.f_frsize<required*1024**3: raise RuntimeError(f"Require {required} GiB /home headroom")
     port_free(VPORT)
     if check_ui_port: port_free(UPORT)
     print("Ports checked",[VPORT,UPORT] if check_ui_port else [VPORT])
@@ -87,12 +97,17 @@ def preflight(check_ui_port=True):
     return row
 
 def vllm_command(row):
-    model=json.loads((ROOT/"configs/model.json").read_text())
-    snapshot=RUNTIME/"huggingface/hub/models--Qwen--Qwen3-8B/snapshots"/model['revision']
+    model=load_model(ROOT)
+    snapshot=snapshot_path(ROOT,model)
+    if model_variant()=="awq":
+        if float(row[3])<8.0: raise RuntimeError("AWQ Marlin requires Ampere or newer; use fp16 on V100/V100S")
+        validate_awq_snapshot(snapshot)
     if not list(snapshot.glob("*.safetensors")): raise RuntimeError("Pinned model snapshot missing; run download-model.py")
     utilization=float(os.getenv("IAM_GPU_MEMORY_UTILIZATION","0.80"))
     if not 0.1<=utilization<=0.85: raise RuntimeError("Memory utilization must be 0.1–0.85")
-    return [sys.executable,"-m","vllm.entrypoints.openai.api_server","--model",str(snapshot),"--served-model-name","Qwen/Qwen3-8B","--dtype","half","--host","127.0.0.1","--port",str(VPORT),"--max-model-len","4096","--max-num-seqs","1","--tensor-parallel-size","1","--gpu-memory-utilization",str(utilization),"--cpu-offload-gb",str(cpu_offload(row)),"--enforce-eager","--disable-log-requests","--guided-decoding-backend","xgrammar"]
+    command=[sys.executable,"-m","vllm.entrypoints.openai.api_server","--model",str(snapshot),"--served-model-name",model["model"],"--dtype","half","--host","127.0.0.1","--port",str(VPORT),"--max-model-len","4096","--max-num-seqs","1","--tensor-parallel-size","1","--gpu-memory-utilization",str(utilization),"--cpu-offload-gb",str(cpu_offload(row)),"--enforce-eager","--disable-log-requests","--guided-decoding-backend","xgrammar"]
+    if model_variant()=="awq": command += ["--quantization",model["quantization"]]
+    return command
 def identity(pid):
     # start-time field protects against PID reuse.
     return Path(f"/proc/{pid}/stat").read_text().split(") ",1)[1].split()[19]
@@ -131,7 +146,7 @@ def start(kind):
     (RUNTIME/"tmp").mkdir(exist_ok=True)
     if kind=="vllm":
         row=preflight(check_ui_port=False)
-        env.update({"CUDA_VISIBLE_DEVICES":row[0],"CUDA_DEVICE_ORDER":"PCI_BUS_ID","VLLM_USE_V1":"0","VLLM_ATTENTION_BACKEND":"XFORMERS","IAM_GPU_PROFILE":PROFILE})
+        env.update({"IAM_MODEL_VARIANT":model_variant(),"CUDA_VISIBLE_DEVICES":row[0],"CUDA_DEVICE_ORDER":"PCI_BUS_ID","VLLM_USE_V1":"0","VLLM_ATTENTION_BACKEND":"XFORMERS","IAM_GPU_PROFILE":PROFILE})
         cmd=vllm_command(row)
     else:
         port_free(UPORT)
@@ -139,7 +154,7 @@ def start(kind):
     # A supervisor rotates logs, handles signals, and owns a dedicated process group.
     supervisor=[sys.executable,str(ROOT/"scripts/supervise.py"),kind,json.dumps(cmd)]
     proc=subprocess.Popen(supervisor,cwd=ROOT,env=env,start_new_session=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-    record.write_text(json.dumps({"pid":proc.pid,"start_time":identity(proc.pid),"command":supervisor,"root":str(ROOT),"environment":{k:env[k] for k in ["OMP_NUM_THREADS","MKL_NUM_THREADS","OPENBLAS_NUM_THREADS","NUMEXPR_NUM_THREADS","RAYON_NUM_THREADS","TOKENIZERS_PARALLELISM","HF_HOME","TMPDIR","IAM_BASE_URL"]+(["CUDA_VISIBLE_DEVICES","CUDA_DEVICE_ORDER","VLLM_USE_V1","VLLM_ATTENTION_BACKEND","IAM_GPU_PROFILE"] + (["IAM_SRA_MODEL_LEASE_ID"] if "IAM_SRA_MODEL_LEASE_ID" in env else []) if kind=="vllm" else [])}}))
+    record.write_text(json.dumps({"pid":proc.pid,"start_time":identity(proc.pid),"command":supervisor,"root":str(ROOT),"environment":{k:env[k] for k in ["OMP_NUM_THREADS","MKL_NUM_THREADS","OPENBLAS_NUM_THREADS","NUMEXPR_NUM_THREADS","RAYON_NUM_THREADS","TOKENIZERS_PARALLELISM","HF_HOME","TMPDIR","IAM_BASE_URL"]+(["IAM_MODEL_VARIANT","CUDA_VISIBLE_DEVICES","CUDA_DEVICE_ORDER","VLLM_USE_V1","VLLM_ATTENTION_BACKEND","IAM_GPU_PROFILE"] + (["IAM_SRA_MODEL_LEASE_ID"] if "IAM_SRA_MODEL_LEASE_ID" in env else []) if kind=="vllm" else [])}}))
     print(kind,"supervisor PID",proc.pid,"log",RUNTIME/(kind+".log"))
 def stop(kind):
     record=RUNTIME/(kind+".pid.json")

@@ -12,6 +12,7 @@ import time
 import httpx
 from .assessment import AssessmentError
 from .privacy import require_safe_data
+from .settings import config
 from .chat_policy import (POLICY, SCHEMA, INTRODUCTION, PERSPECTIVE, ACKNOWLEDGEMENTS,
                          CITIZEN_DURATION, EASA_BASICS, EDUCATIONAL_OPTIONS, letter_options, citizen_depth_choice, educational_choice,
                          objectives, rubric, load_rubrics)
@@ -83,6 +84,7 @@ class ChatSession:
     def __init__(self, bank, depth='short', synthetic=False, assisted=False, corpus=None):
         self.source_scales, self.source_register = load_rubrics()
         self.bank = deepcopy(bank)
+        self.model_provenance = deepcopy(config('model'))
         self.depth = depth
         self.depth_selection = None
         self.depth_history = []
@@ -365,6 +367,9 @@ class ChatSession:
             self._last_decision['latency_seconds'] = round(self._last_decision.get('latency_seconds',0)+elapsed,3)
             self.metrics.append({'generation_calls': observed, 'wall_seconds': elapsed,
                                  'tokenize_calls':metrics.get('tokenize_calls'),
+                                 'generated_tokens':metrics.get('generated_tokens'),
+                                 'generation_http_seconds':metrics.get('generation_http_seconds'),
+                                 'model_wait_seconds':metrics.get('model_wait_seconds'),
                                  'diagnostics': [{key:deepcopy(entry[key]) for key in (
                                      'stage','phase','failure','http_status','prompt_tokens','max_output_tokens',
                                      'completion_status','validation_field','thinking_detected','transport_attempt') if key in entry}
@@ -837,6 +842,9 @@ class ChatSession:
                 self._last_decision['model_calls']=self._last_decision.get('model_calls',0)+(count if count is not None else 1)
                 self._last_decision['latency_seconds']=round(self._last_decision.get('latency_seconds',0)+elapsed,3)
                 self.metrics.append({'generation_calls': count, 'wall_seconds': elapsed,
+                                     'generated_tokens':getattr(client,'last_metrics',{}).get('generated_tokens'),
+                                     'generation_http_seconds':getattr(client,'last_metrics',{}).get('generation_http_seconds'),
+                                     'model_wait_seconds':getattr(client,'last_metrics',{}).get('model_wait_seconds'),
                                      'report_indicator_id': indicator_id, 'considered_evidence_ids': list(original)})
             self.indicator_results.append(row)
 
@@ -908,6 +916,9 @@ class ChatSession:
                     self._last_decision['model_calls']=self._last_decision.get('model_calls',0)+(count if count is not None else 1)
                     self._last_decision['latency_seconds']=round(self._last_decision.get('latency_seconds',0)+elapsed,3)
                     self.metrics.append({'generation_calls':count,'wall_seconds':elapsed,'stage':'generic_profile_match',
+                                         'generated_tokens':getattr(score_client,'last_metrics',{}).get('generated_tokens'),
+                                         'generation_http_seconds':getattr(score_client,'last_metrics',{}).get('generation_http_seconds'),
+                                         'model_wait_seconds':getattr(score_client,'last_metrics',{}).get('model_wait_seconds'),
                                          'considered_evidence_ids':[m['id'] for m in originals]})
         self._indicator_report(indicator_client)
         considered_ids = [m['id'] for m in originals]
@@ -1319,6 +1330,7 @@ class ChatSession:
             'readiness_inferred':False} for stage in progression['stages']]
         return {**self.view(), 'messages':deepcopy(self.messages), 'schema_version': SCHEMA, 'policy_version': POLICY,
                 'classification': 'synthetic' if self.synthetic else 'unlabelled_not_verified',
+                'model_provenance':deepcopy(self.model_provenance),
                 'fn_interview':progression,
                 'objective_coverage':objective_coverage,'routing_events':deepcopy(self.routing_events),
                 'training_eligible': False, 'context': deepcopy(self.context),

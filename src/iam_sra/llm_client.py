@@ -41,7 +41,10 @@ class LLMTransport:
 
     def _post_json(self,client,path,payload,stage,phase):
         from .model_lifecycle import inference_lease
+        waiting=time.monotonic()
         with inference_lease(self.base_url, self._deadline):
+            if hasattr(self,'last_metrics'):
+                self.last_metrics['model_wait_seconds']=round(self.last_metrics.get('model_wait_seconds',0)+time.monotonic()-waiting,6)
             return self._post_json_active(client,path,payload,stage,phase)
 
     def _post_json_active(self,client,path,payload,stage,phase):
@@ -50,6 +53,7 @@ class LLMTransport:
             remaining=self._deadline-time.monotonic()
             if remaining<=0:raise AssessmentError('Model request timed out.',code='timeout')
             if hasattr(self,'last_metrics'):self.last_metrics['tokenize_calls' if phase=='tokenization' else 'generation_calls']+=1
+            request_started=time.monotonic()
             try:
                 response=client.post(self.base_url+path,json=payload,timeout=min(self.request_timeout,remaining))
                 response.raise_for_status()
@@ -62,9 +66,17 @@ class LLMTransport:
             except httpx.RequestError:
                 code='transport';status=None;transient=True
             else:
-                try:return response.json()
+                try:
+                    body=response.json()
                 except (ValueError,TypeError):
                     code='schema';status=response.status_code;transient=True
+                else:
+                    usage=body.get('usage',{}) if isinstance(body,dict) else {}
+                    tokens=usage.get('completion_tokens') if isinstance(usage,dict) else None
+                    if phase=='generation' and hasattr(self,'last_metrics') and type(tokens) is int and 0<=tokens<=65536:
+                        self.last_metrics['generated_tokens']=self.last_metrics.get('generated_tokens',0)+tokens
+                        self.last_metrics['generation_http_seconds']=round(self.last_metrics.get('generation_http_seconds',0)+time.monotonic()-request_started,6)
+                    return body
             self.last_diagnostics.append({'stage':stage,'phase':phase,'transport_attempt':retry,
                 'failure':code,'http_status':status})
             if not transient or retry==1:

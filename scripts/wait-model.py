@@ -6,6 +6,16 @@ import time
 from urllib.parse import urlsplit
 
 import httpx
+from pathlib import Path
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
+try:
+    from iam_sra.model_spec import load_model
+except ModuleNotFoundError:
+    from model_spec import load_model  # Inference-only upload; no application package.
+
+def expected_model():
+    return load_model(Path(__file__).resolve().parents[1])['model']
 
 
 def project_local_endpoint(base, port):
@@ -28,7 +38,7 @@ def ready(client, base, deadline, clock=time.monotonic):
             response.raise_for_status()
         models = response.json().get('data', [])
         return isinstance(models, list) and any(isinstance(row, dict)
-            and row.get('id') == 'Qwen/Qwen3-8B' for row in models)
+            and row.get('id') == expected_model() for row in models)
     except (httpx.HTTPError, ValueError, AttributeError, TypeError):
         return False
 
@@ -39,7 +49,7 @@ def wait(client, base, timeout=180, *, clock=time.monotonic, sleep=time.sleep):
     announce_at = started
     while clock() < deadline:
         if ready(client, base, deadline, clock):
-            print('Qwen/Qwen3-8B is ready. Retry your retained answer in the UI.', flush=True)
+            print(expected_model()+' is ready. Retry your retained answer in the UI.', flush=True)
             return True
         current = clock()
         if current >= announce_at:
