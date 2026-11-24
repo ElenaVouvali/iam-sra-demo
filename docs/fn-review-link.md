@@ -153,3 +153,6 @@ multi-day FN service.
 References: [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/),
 [Cloudflare tunnel network requirements](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/tunnel-with-firewall/),
 [Flask deployment guidance](https://flask.palletsprojects.com/en/stable/deploying/).
+
+The chat now has a separate welcome screen and selectable lettered answers.
+See [UI changes and the measured A2 latency diagnosis](chat-ui-and-a2-latency.md).

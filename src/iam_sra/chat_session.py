@@ -12,8 +12,8 @@ import time
 import httpx
 from .assessment import AssessmentError
 from .privacy import require_safe_data
-from .chat_policy import (POLICY, SCHEMA, WELCOME, INTRODUCTION, PERSPECTIVE, ACKNOWLEDGEMENTS,
-                         CITIZEN_DURATION, EASA_BASICS, citizen_depth_choice, educational_choice,
+from .chat_policy import (POLICY, SCHEMA, INTRODUCTION, PERSPECTIVE, ACKNOWLEDGEMENTS,
+                         CITIZEN_DURATION, EASA_BASICS, EDUCATIONAL_OPTIONS, letter_options, citizen_depth_choice, educational_choice,
                          objectives, rubric, load_rubrics)
 from .fn_interview import FNInterview, specification, flow_key, literal_answer
 
@@ -388,7 +388,7 @@ class ChatSession:
         if node['id']=='priorities':text+='\nYou can choose just one issue if that is what matters to you.'
         educational=self.profile=='citizen' and node['id']=='drone_explanation'
         if educational:
-            text+='\n\nA — A short explanation, then continue.\n\nB — The educational resource, then finish for now.\n\nYou can also decline the explanation and continue.'
+            text+='\n\n'+EDUCATIONAL_OPTIONS+'\n\nYou can also decline the explanation and continue.'
         if node['response_type'] == 'suggested_topics' or (node['id']=='priorities' and self.profile=='technical') or node['response_type']=='display':
             topics=specification()['topic_suggestions'][flow_key(self.profile,self.depth)]
             text += '\n' + '\n'.join('• '+topic for topic in topics)
@@ -1181,7 +1181,7 @@ class ChatSession:
             if earlier:
                 self.pending_correction = earlier[-1]['id']
                 self._assistant('What would you like to change about this earlier point: “' + earlier[-1]['text'] + '”?', act='correction')
-            else: self._assistant('We are at the beginning. ' + WELCOME, 'perspective')
+            else: self._assistant('We are at the beginning. ' + PERSPECTIVE, 'perspective')
             return
         if self.pending_correction == 'clarify':
             if self.stage == 'summary' and re.fullmatch(r'(no changes|continue)[.! ]*', text, re.I):
@@ -1277,11 +1277,24 @@ class ChatSession:
             return
         self._fn_turn(text,client,indicator_client,score_client,retry_row=retry_row)
 
+    def response_options(self):
+        if self.pending_correction or self.pending_explanation or self.pending_comparison or self.failed_turn_id:
+            return []
+        if self.stage=='conversation':
+            if self.objective=='perspective':return letter_options(PERSPECTIVE)
+            if self.profile=='citizen' and self.objective=='citizen_duration':return letter_options(CITIZEN_DURATION)
+            if self.profile=='citizen' and self.objective=='drone_explanation':return letter_options(EDUCATIONAL_OPTIONS)
+        if self.stage=='review' and self._has_model_score():
+            config=specification()['review'][flow_key(self.profile,self.depth)]
+            return [{'value':key,'label':label} for key,label in zip('ABCDE',config['choices'])]
+        return []
+
     def view(self):
         participant_messages = [{key:message[key] for key in ('id','role','text','act','resource','scale') if key in message}
                                 for message in self.messages]
         educational_exit=self.stop_reason=='ended_early_after_recognition'
         return {'mode': SCHEMA, 'stage': self.stage, 'depth': self.depth, 'profile': self.profile,
+                'response_options':self.response_options(),
                 'citizen_depth':self.depth if self.profile=='citizen' else None,
                 'depth_selection':deepcopy(self.depth_selection),'depth_history':deepcopy(self.depth_history),
                 'answer_processing': {'status':'retry_required' if self.failed_turn_id else 'ready',

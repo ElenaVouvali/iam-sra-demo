@@ -1,11 +1,32 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useAssessment } from '@/composables/useAssessment'
 const flow = useAssessment({ mode: 'chat', depth: 'short', assisted: new URLSearchParams(location.search).get('assisted') === '1' })
 const { session, boot, operation, working, inferenceStatus, ended: sessionEnded } = flow
 const chat = computed(() => session.value?.chat)
 const draft = ref(''), notice = ref(''), endDialog = ref(null), ending = ref(false)
 const ended = computed(() => chat.value?.stage === 'ended')
+const introducedSession = ref(null), conversationStart = ref(null)
+const introduction = computed(() => chat.value?.messages.find((m) => m.act === 'introduction'))
+const showIntroduction = computed(() => introduction.value && !sessionEnded.value
+ && introducedSession.value !== session.value?.id && !chat.value.messages.some((m) => m.role === 'respondent'))
+const conversationMessages = computed(() => chat.value?.messages.filter((m) => m.act !== 'introduction') || [])
+const responseOptions = computed(() => chat.value?.response_options || [])
+const selectedChoice = ref(''), ownWords = ref(false)
+watch(() => `${session.value?.id}:${chat.value?.messages.at(-1)?.id}`, () => {
+ selectedChoice.value = ''
+ ownWords.value = false
+})
+async function beginConversation() {
+ introducedSession.value = session.value.id
+ await nextTick()
+ conversationStart.value?.focus()
+}
+async function sendChoice() {
+ if (!selectedChoice.value || working.value || !responseOptions.value.some((o) => o.value === selectedChoice.value)) return
+ const ok = await flow.act('chat_message', { text: selectedChoice.value })
+ notice.value = ok ? 'Response ready below.' : 'Your selection is retained. Please check the error.'
+}
 async function send() {
  if (!draft.value.trim() || working.value) return
  const submitted = draft.value
@@ -35,7 +56,7 @@ async function endSession() {
 async function restart() {
  if (working.value) return
  const ok = session.value ? await flow.reset() : await flow.act('new')
- if (ok) draft.value = ''
+ if (ok) { draft.value = ''; introducedSession.value = null }
 }
 onMounted(start)
 </script>
@@ -43,6 +64,14 @@ onMounted(start)
 <template>
  <article class="chat wrap" data-testid="chat-conversation">
   <header><h1>Let's talk about drones</h1><p>A conversation about healthcare deliveries, your experience and what matters to you.</p></header>
+  <section v-if="showIntroduction" class="introduction" aria-labelledby="chat-welcome-title" data-testid="chat-introduction">
+   <h2 id="chat-welcome-title">Before we begin</h2>
+   <p>{{ introduction.text }}</p>
+   <p v-if="operation.error.value" role="alert">{{ operation.error.value.userMessage }}</p>
+   <RouterLink to="/privacy">Full privacy and retention details</RouterLink>
+   <div class="row"><button class="btn accent" :disabled="working" @click="beginConversation">Continue to the conversation</button><button class="btn secondary" :disabled="working" @click="endDialog.showModal()">Leave and clear session</button></div>
+  </section>
+  <template v-else>
   <p v-if="inferenceStatus?.mode === 'on_demand'" role="status">
    <template v-if="inferenceStatus.state === 'loading'">Starting the model. The first reply may take a few minutes; your answer is being processed.</template>
    <template v-else-if="inferenceStatus.state === 'unavailable'">The shared GPU is currently unavailable. If your answer could not be processed, you can retry later.</template>
@@ -63,8 +92,8 @@ onMounted(start)
   <p v-if="boot.state.value === 'loading'" role="status">Opening the conversation…</p>
   <div v-if="boot.error.value" role="alert"><p>{{ boot.error.value.userMessage }}</p><button class="btn secondary" @click="start">Retry opening</button></div>
   <div v-if="operation.error.value" role="alert"><p>{{ operation.error.value.userMessage }}</p><button class="btn secondary" :disabled="working" @click="flow.act('refresh')">Refresh conversation</button></div>
-  <ol v-if="chat" class="messages" aria-label="Conversation">
-   <li v-for="message in chat.messages" :key="message.id" :class="message.role">
+  <ol v-if="chat" ref="conversationStart" tabindex="-1" class="messages" aria-label="Conversation">
+   <li v-for="message in conversationMessages" :key="message.id" :class="message.role">
     <b>{{ message.role === 'assistant' ? 'AI assistant' : 'You' }}</b>
   <section v-if="chat?.suggestion && ['result_review', 'assessment_gap'].includes(message.act)" aria-label="Provisional summary"><h2>Provisional summary</h2><p v-if="chat.suggestion.level"><b>Provisional {{ {citizen:'CRL',organisational:'ORL',technical:'TRL'}[chat.profile] }} {{ chat.suggestion.level }} · {{ chat.suggestion.anchor?.label }}</b></p><p v-else>No numeric level is suggested. You can comment, remain uncertain or finish without a score.</p><p>{{ chat.suggestion.explanation }}</p><p>{{ chat.suggestion.boundary }}</p><details v-if="chat.suggestion.citations?.length"><summary>Supporting words and uncertainty</summary><div v-for="citation in chat.suggestion.citations" :key="citation.evidence_id+ citation.quote">“{{ citation.quote }}”</div></details></section>
     <p>{{ message.text }}</p>
@@ -80,7 +109,15 @@ onMounted(start)
   <section v-if="chat?.initial_suggestion" aria-label="Initial provisional result"><h2>Initial result · review pending</h2><p>{{ chat.initial_suggestion.level ? `Initial provisional level ${chat.initial_suggestion.level}` : 'The initial result was an abstention.' }}</p><p>{{ chat.initial_suggestion.explanation }}</p><p>Additional information has been recorded separately. This has not been reassessed.</p></section>
   <section v-if="chat?.participant_review" aria-label="Your review"><h2>Your review</h2><p>{{ chat.participant_review.text }}</p><p>{{ chat.participant_review.status === 'agreed' ? 'You explicitly agreed with the provisional result.' : chat.participant_review.status === 'completed_without_numeric_result' ? 'Completed without a numeric result.' : 'Review pending. Your view and additional evidence are recorded separately; the initial result is unchanged.' }}</p></section>
   <div v-if="session?.preview" class="alert" data-testid="chat-cleaned-preview"><h2>Check the cleaned message</h2><p>Some private details were removed. Use this only if it still says what you meant.</p><p>{{ session.preview.fields.text }}</p><div class="row"><button class="btn secondary" :disabled="working" @click="confirmCleaned">Use cleaned message</button><button class="btn secondary" :disabled="working" @click="flow.act('discard_preview')">Return to editing</button></div></div>
-  <form v-if="chat && !ended && !session.preview" class="composer" @submit.prevent="send">
+  <fieldset v-if="chat && !ended && !session.preview && responseOptions.length" class="answer-options" :disabled="working" data-testid="chat-answer-options">
+   <legend>Choose your answer</legend>
+   <label v-for="option in responseOptions" :key="option.value" class="answer-option" :class="{ selected: selectedChoice === option.value }">
+    <input type="radio" name="chat-answer" :value="option.value" :checked="selectedChoice === option.value" @change="selectedChoice = option.value" />
+    <span><b>{{ option.value }}.</b> {{ option.label }}</span>
+   </label>
+   <div class="row"><button class="btn accent" type="button" :disabled="working || !selectedChoice" @click="sendChoice">Send selected answer</button><button class="btn secondary" type="button" :disabled="working" @click="ownWords = !ownWords">{{ ownWords ? 'Hide text reply' : 'Answer in my own words' }}</button></div>
+  </fieldset>
+  <form v-if="chat && !ended && !session.preview && (!responseOptions.length || ownWords)" class="composer" @submit.prevent="send">
    <label for="chat-message">Your message</label><textarea id="chat-message" v-model="draft" class="input" rows="4" maxlength="1800" aria-describedby="chat-hint" />
    <p id="chat-hint" class="t-small">Write in your own words. Enter adds a new line; use Send when ready.</p>
    <button class="btn accent" :disabled="working || !draft.trim()">Send</button>
@@ -88,9 +125,10 @@ onMounted(start)
   <p v-if="working" role="status">Responding…</p>
   <p class="sr-only" role="status" aria-live="polite">{{ notice }}</p>
   <details v-if="session" class="sra-disclosure"><summary>Download a copy</summary><p>This downloads the screened conversation so far, including partial results and any unresolved review.</p><div class="row"><button class="btn secondary" :disabled="working" @click="flow.act('export', { format:'json' })">Download JSON</button><button class="btn secondary" :disabled="working" @click="flow.act('export', { format:'jsonl' })">Download JSONL</button></div></details>
+  </template>
   <dialog ref="endDialog" aria-labelledby="chat-end-title"><h2 id="chat-end-title">End this temporary session?</h2><p>Download a copy first if you want to keep it. Ending clears the server session.</p><div class="row"><button class="btn secondary" @click="endDialog.close()">Keep talking</button><button class="btn secondary" :disabled="ending" @click="endSession">End session</button></div></dialog>
  </article>
 </template>
 <style scoped>
-.chat{overflow-wrap:anywhere;max-width:48rem;padding:1.25rem;margin:auto}.chat h1{font-size:clamp(1.65rem,5vw,2.3rem)}.messages{list-style:none;padding:0}.messages li{padding:1rem;margin:1rem 0;border-radius:.75rem;background:var(--c-surface,#f4f6fa);border:1px solid var(--line,#ccc)}.messages .respondent{margin-left:1rem;border-left:4px solid var(--c-accent,#20706b)}.messages p,blockquote{white-space:pre-wrap;overflow-wrap:anywhere}.chat .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere;height:auto;min-height:var(--h);padding-block:.5rem}.composer{display:grid;gap:.5rem}.composer textarea{width:100%;min-height:7rem}.composer button{justify-self:start}.chat button:focus-visible,.chat summary:focus-visible,.chat textarea:focus-visible{outline:3px solid #007d80;outline-offset:3px}.row{flex-wrap:wrap}dialog{max-width:min(32rem,95vw)}
+.introduction p{white-space:pre-wrap}.introduction .row{margin-top:1.25rem}.answer-options{min-width:0;display:grid;gap:.75rem;padding:1rem;margin:1rem 0;border:1px solid var(--line,#ccc);border-radius:.75rem}.answer-option{display:flex;align-items:flex-start;gap:.75rem;padding:.85rem;border:1px solid var(--line,#ccc);border-radius:.5rem;cursor:pointer}.answer-option.selected{border-color:var(--c-accent,#20706b);background:var(--c-surface,#f4f6fa)}.answer-option span{min-width:0}.answer-option input{flex-shrink:0;margin-top:.25rem}.answer-options legend{font-weight:600}.chat{overflow-wrap:anywhere;max-width:48rem;padding:1.25rem;margin:auto}.chat h1{font-size:clamp(1.65rem,5vw,2.3rem)}.messages{list-style:none;padding:0}.messages li{padding:1rem;margin:1rem 0;border-radius:.75rem;background:var(--c-surface,#f4f6fa);border:1px solid var(--line,#ccc)}.messages .respondent{margin-left:1rem;border-left:4px solid var(--c-accent,#20706b)}.messages p,blockquote{white-space:pre-wrap;overflow-wrap:anywhere}.chat .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere;height:auto;min-height:var(--h);padding-block:.5rem}.composer{display:grid;gap:.5rem}.composer textarea{width:100%;min-height:7rem}.composer button{justify-self:start}.chat button:focus-visible,.chat summary:focus-visible,.chat textarea:focus-visible{outline:3px solid #007d80;outline-offset:3px}.row{flex-wrap:wrap}dialog{max-width:min(32rem,95vw)}
 </style>

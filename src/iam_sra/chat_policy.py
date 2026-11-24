@@ -48,6 +48,17 @@ EASA_BASICS = {
     'id':'easa_basics', 'label':'Read the EASA guide to drones and air mobility',
     'url':'https://www.easa.europa.eu/en/domains/drones-air-mobility/drones-air-mobility-landscape/basics-explained',
 }
+EDUCATIONAL_OPTIONS = (
+    'A — A short explanation, then continue.\n\n'
+    'B — The educational resource, then finish for now.'
+)
+
+
+def letter_options(text):
+    """Display metadata from controller-owned option lines, never model prose."""
+    import re
+    return [{'value':match[1], 'label':match[2].strip()}
+            for match in re.finditer(r'^([A-E])(?:\.\s+|\s+—\s+)([^\n]+)',text,re.M)]
 
 
 def citizen_depth_choice(text, letters=False):
