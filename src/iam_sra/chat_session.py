@@ -570,7 +570,7 @@ class ChatSession:
             self.fn.record(goal,row['id'],'unknown' if unknown else 'explored')
             self._last_decision['validated_context_facts']=[{'field':'city','evidence_id':row['id'],'status':self.context['city_status']}]
             self._assistant('Thank you. We will keep the area general.' if unknown else
-                'Thank you. When I say “your city”, I will mean '+self.context['city']+'.',act='city_acknowledgement')
+                'Thank you. I will use that city or urban area as the context for your answers.',act='city_acknowledgement')
         elif node['response_type']=='opinion':
             # This is administration of a separate opinion, not an inferred
             # readiness capability. It cannot nominate other goals or a score.

@@ -212,6 +212,9 @@ restart was performed by this implementation task.
 
 ## Verification record and FN decisions
 
+The existing harness also supports an adaptive synthetic respondent agent for
+pre-review testing of all four flows. See [agent setup, reports and limitations](fn-agent-pre-review.md).
+
 See the results recorded below for this implementation; the older
 `eva-live-verification.md` records historical behaviour and does not validate
 this version.

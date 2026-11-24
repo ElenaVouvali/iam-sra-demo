@@ -216,6 +216,17 @@ def reviewed_bibliographic_values():
     return frozenset(values)
 
 
+@lru_cache(maxsize=1)
+def reviewed_interview_messages():
+    """Exact controller-owned FN review text; never a free-text pattern."""
+    from .fn_interview import specification
+    return frozenset(
+        review['question'].format(level=level)+'\n\n'+
+        '\n'.join(f'{letter}. {label}' for letter,label in zip('ABCDE',review['choices']))
+        for review in specification()['review'].values() for level in range(1,10)
+    )
+
+
 def broad_city_preview(text):
     """Extract a literal broad area from a numbered-address city response.
 
@@ -317,6 +328,25 @@ def require_safe_data(value):
             # its spelling as PERSON; prose containing it still gets screened.
             trace_schema_reference = (path == 'root.trace_schema' and
                 item == 'iam-sra-chat-decision-trace-1.0.0')
+            # The detector tags e.g. organisational-4 as a person. These 36
+            # bounded machine IDs are validated against the registered scales
+            # by the controller/scorer. Never exempt quotations or answer data.
+            anchor_base=r'root(?:\.(?:chat|conversation|user))?'
+            generated_fn_anchor_reference=(re.fullmatch(r'(?:citizen_short|citizen_extended|organisational|technical)-[1-9]',item) is not None
+                and any(re.fullmatch(pattern,path) for pattern in (
+                    anchor_base+r'(?:\.messages\[\d+\])?\.scale\.anchors\[\d+\]\.id',
+                    anchor_base+r'\.anchors\[\d+\]\.id',
+                    anchor_base+r'\.(?:(?:initial_results\[\d+\]\.)?suggestion|initial_suggestion)\.(?:anchor\.id|anchor_id|alternative_anchor_id)',
+                    r'root(?:\.choices\[\d+\]\.message\.content)?\.(?:selected_anchor_id|alternative_anchor_id)',
+                    r'root\.assessment\.(?:selected_anchor_id|closest_alternative_anchor_id|candidate_anchor_ids\[\d+\])',
+                )))
+            # In the complete A–E prompt, the NLP model reads a choice label as
+            # a name. Only the exact fixed prompt for a valid profile/level in
+            # server message locations is metadata. Any alteration or appended
+            # personal data still goes through the mandatory detector.
+            generated_fn_review_message=(
+                (path=='root.text' or re.fullmatch(r'root(?:\.(?:chat|conversation))?\.messages\[\d+\]\.text',path) is not None)
+                and item in reviewed_interview_messages())
             # Controller-generated chat message IDs use m<N>. The NLP model
             # tags some values (for example m16) as PERSON. Exempt only this
             # narrow syntax in application-owned reference fields; respondent
@@ -335,7 +365,7 @@ def require_safe_data(value):
                 re.fullmatch(r'm[1-9]\d{0,5}',item) is not None and chat_reference_container
                 and re.search(r'\.(?:id|answer_id|evidence_id|supersedes|response_id|in_reply_to|message_id|last_turn_id|current_answer_id|priority_evidence_id|(?:evidence_ids|context_ids|omitted_context_ids|considered_evidence_ids|supporting_evidence_ids|respondent_evidence_ids)\[\d+\])$',path) is not None
             )
-            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not trace_schema_reference and not generated_chat_message_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference:
+            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not trace_schema_reference and not generated_chat_message_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference and not generated_fn_anchor_reference and not generated_fn_review_message:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():

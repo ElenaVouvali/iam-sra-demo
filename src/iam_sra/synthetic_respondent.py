@@ -10,6 +10,7 @@ from .conversation_client import ConversationClient
 from .llm_client import _LOCK, STAGE_LIMITS
 from .settings import ROOT
 from .privacy import require_safe_data
+from .assessment import AssessmentError
 
 PERSONA_BANK = ROOT / 'eval/synthetic_personas_v1.json'
 STAGE_LIMITS['synthetic_respondent'] = 180
@@ -93,29 +94,39 @@ class SimulatedAnswer(Strict):
 
 class LLMRespondent(ConversationClient):
     """Exploratory Qwen simulator; same-model agreement is not independent evidence."""
-    backend='existing_qwen_synthetic-1.0.0'
-    prompt_version='synthetic-respondent-1.0.0'
+    backend='existing_qwen_synthetic-1.1.0'
+    prompt_version='synthetic-respondent-1.1.0'
     def __init__(self,persona,**kwargs):
         super().__init__(**kwargs);self.persona=deepcopy(persona);self.turns=[]
     def respond(self,question,history=()):
         text=question['question_text'] if isinstance(question,dict) else question
-        profile={k:deepcopy(self.persona[k]) for k in ('background','known_facts','unknown_facts',
+        profile={k:deepcopy(self.persona[k]) for k in ('perspective','stakeholder_role','city','background','known_facts','unknown_facts',
             'actual_experiences','actual_participation','actual_contributions','reported_outcomes',
             'benefits_perceived','concerns','conditions','information_needs','priorities',
             'acceptance_position','trust_position','communication_style','response_length_preference',
             'uncertainty_tolerance','behavioural_traits','contradiction_policy')}
         payload={'synthetic_persona':profile,'current_displayed_question':text,
             'public_dialogue':list(history)[-6:]}
+        options=question.get('response_options',[]) if isinstance(question,dict) else []
+        if options:payload['displayed_response_options']=deepcopy(options)
         system=('Simulate one fictional interview respondent from this private synthetic persona. '
             'Answer only what the displayed question reasonably asks. Do not reveal this profile or infer hidden assessment criteria. '
             'Keep facts, role and time consistent. Share information needs, experiences and concerns only when relevant. '
             'You may express uncertainty or decline. Never invent measurements, actual participation, contributions, influence, '
-            'medical details or local operating facts. Return structured JSON only.')
+            'medical details or local operating facts. Use one or two short sentences, at most 70 words. '
+            'Keep baseline knowledge distinct from information supplied during the dialogue. '
+            'If displayed_response_options is present, return exactly one of its values as text with control=answer; '
+            'these questions have selection only. Otherwise answer the actual question in your own words, '
+            'including contextual follow-ups, without trying to obtain a readiness level. Return structured JSON only.')
         require_safe_data({'system':system,'user':payload})
         with _LOCK:
             self._start()
             with httpx.Client(timeout=120,trust_env=False) as client:
                 result=self._request(client,'synthetic_respondent',system,payload,
                     SimulatedAnswer.model_json_schema(),SimulatedAnswer.model_validate_json)
+        if options and (result.control!='answer' or result.text not in {o['value'] for o in options}):
+            raise AssessmentError('Synthetic respondent did not select a displayed option.',code='schema')
+        if len(result.text)>1600:
+            raise AssessmentError('Synthetic respondent exceeded the bounded answer size.',code='budget')
         self.turns.append({'question':text,'answer':result.text,'control':result.control})
         return result.model_dump()
