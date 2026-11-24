@@ -34,8 +34,11 @@ normal terminal may disconnect, run the command in an existing `tmux` session.
 
 ## What it changes
 
-- Separate defaults: model `127.0.0.1:18003`, API `127.0.0.1:8018`, Vue/proxy
-  `127.0.0.1:5018`. None of these listeners is made public directly. Existing
+- Model default: `127.0.0.1:18003`. Review API prefers port 8018 and
+  automatically searches 8018–8117 when busy; Vue/proxy prefers 5018 and
+  searches 5018–5117. The selected ports are printed at startup. Explicit
+  `--ui-port`/`--api-port` choices are honoured or rejected with the conflicting
+  port number. None of these listeners is made public directly. Existing
   Davinci forwarding and application ports 18002/8017/5017 are left alone.
 - Starts A2 through `model-host.py` and the existing GPU identity/workload guards.
   It will not use another GPU or stop a busy workload. It reuses only this
@@ -62,7 +65,9 @@ hosting arrangement. Quick Tunnels are for testing, with no availability SLA.
 ## Troubleshooting
 
 The startup message identifies failed checks. A busy A2/model or port is retained;
-no competing service is killed. Optional port changes must use three distinct
+no competing service is killed. Busy default API/UI ports are skipped
+automatically; rerun the ordinary command without explicit port flags. Optional
+port changes must use three distinct
 ports; an already supervised model's endpoint must still match:
 
 ```bash
@@ -78,7 +83,7 @@ FN access, use an institutional HTTPS address or a configured named tunnel.
 
 ## Verification record
 
-The focused launcher, GPU-selection and QR checks passed **49 tests**. They
+The focused launcher, GPU-selection and QR checks passed **56 tests**. They
 use controlled downloads/process records and an in-process
 real Flask cookie/CSRF flow. They create no real public tunnel or GPU allocation:
 

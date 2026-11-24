@@ -123,3 +123,50 @@ def test_reuses_only_the_live_recorded_a2_supervisor(monkeypatch,tmp_path,fault)
     monkeypatch.setattr(m,'ROOT',root)
     monkeypatch.setattr(m,'Path',lambda value:proc if value=='/proc' else Path(value))
     assert m.owned_a2(18003)==(fault is None)
+
+
+def test_occupied_defaults_are_skipped_without_reusing_ports(monkeypatch):
+    m=launcher();busy={5018,5019,8018}
+    monkeypatch.setattr(m,'port_available',lambda port:port not in busy)
+    assert m.review_ports(None,None,18003)==(5020,8019)
+    # Reserve the explicit API choice before selecting a frontend automatically.
+    assert m.review_ports(None,5020,18003)==(5021,5020)
+
+
+def test_explicit_busy_port_is_named_and_never_silently_changed(monkeypatch):
+    m=launcher();monkeypatch.setattr(m,'port_available',lambda port:port!=8028)
+    with pytest.raises(ValueError,match=r'API port 8028.*Omit --api-port'):
+        m.review_ports(None,8028,18003)
+
+
+def test_model_port_is_excluded_from_automatic_review_ports(monkeypatch):
+    m=launcher();monkeypatch.setattr(m,'port_available',lambda port:True)
+    assert m.review_ports(None,None,5018)==(5019,8018)
+
+
+def test_all_busy_candidates_produce_bounded_clear_failure(monkeypatch):
+    m=launcher();probed=[]
+    monkeypatch.setattr(m,'port_available',lambda port:probed.append(port) or False)
+    with pytest.raises(ValueError,match='No free frontend port'):
+        m.review_ports(None,None,18003)
+    assert len(probed)==100
+
+
+@pytest.mark.parametrize('error,expected',[(98,False),(1,None)])
+def test_only_address_in_use_is_treated_as_a_busy_port(monkeypatch,error,expected):
+    m=launcher()
+    class Probe:
+        def __enter__(self):return self
+        def __exit__(self,*args):pass
+        def bind(self,address):raise OSError(error,'Synthetic socket error')
+    monkeypatch.setattr(m.socket,'socket',lambda:Probe())
+    if expected is None:
+        with pytest.raises(OSError) as exc:m.port_available(5018)
+        assert exc.value.errno==1
+    else:assert m.port_available(5018) is expected
+
+
+def test_final_port_check_reports_the_conflicting_number(monkeypatch):
+    m=launcher();monkeypatch.setattr(m,'port_available',lambda p:p!=8018)
+    with pytest.raises(ValueError,match='Review port 8018 is occupied'):
+        m.free_ports([5018,8018,18003])

@@ -6,6 +6,7 @@ Only the review API, frontend and tunnel started here are stopped on Ctrl+C.
 The project-supervised A2 model remains running. No institutional firewall change.
 """
 import argparse
+import errno
 import fcntl
 from hashlib import sha256
 import json
@@ -35,8 +36,42 @@ def free_ports(ports):
         raise ValueError('Use three different ports in 1024–65535.')
     # Check review ports first, before downloading or starting any process.
     for port in ports[:2]:
-        with socket.socket() as probe:
+        if not port_available(port):
+            raise ValueError(f'Review port {port} is occupied. Omit explicit review ports for automatic selection.')
+
+
+def port_available(port):
+    with socket.socket() as probe:
+        try:
             probe.bind(('127.0.0.1', port))
+        except OSError as exc:
+            if exc.errno == errno.EADDRINUSE:
+                return False
+            raise  # Permission/network restrictions are not port conflicts.
+    return True
+
+
+def review_ports(ui, api, model):
+    """Skip busy defaults; explicit ports must be honoured or clearly rejected."""
+    explicit = [p for p in (ui, api, model) if p is not None]
+    if len(set(explicit)) != len(explicit) or any(not 1024 <= p <= 65535 for p in explicit):
+        raise ValueError('Use three different ports in 1024–65535.')
+    excluded = set(explicit)
+    selected = []
+    for name, requested, preferred in [('frontend', ui, 5018), ('API', api, 8018)]:
+        if requested is not None:
+            if not port_available(requested):
+                raise ValueError(f'The requested {name} port {requested} is occupied. '
+                    f'Omit --{"ui" if name == "frontend" else "api"}-port to choose automatically.')
+            selected.append(requested)
+        else:
+            port = next((p for p in range(preferred, preferred + 100)
+                         if p not in excluded and port_available(p)), None)
+            if port is None:
+                raise ValueError(f'No free {name} port found in {preferred}–{preferred + 99}; select an explicit port.')
+            selected.append(port)
+            excluded.add(port)
+    return tuple(selected)
 
 
 def owned_a2(port):
@@ -178,15 +213,16 @@ def close_children(processes):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--ui-port', type=int, default=5018)
-    parser.add_argument('--api-port', type=int, default=8018)
+    parser.add_argument('--ui-port', type=int, help='Explicit frontend port; otherwise try 5018–5117')
+    parser.add_argument('--api-port', type=int, help='Explicit API port; otherwise try 8018–8117')
     parser.add_argument('--model-port', type=int, default=18003)
     parser.add_argument('--gpu-uuid', help='An allocated Liono A2, if multiple matching idle GPUs exist')
     parser.add_argument('--dry-run', action='store_true', help='Show the plan without sockets, installs or service changes')
     args = parser.parse_args(argv)
     if args.dry_run:
         print(json.dumps({'profile': 'liono-a2', 'model': f'http://127.0.0.1:{args.model_port}',
-            'api': f'http://127.0.0.1:{args.api_port}', 'frontend': f'http://127.0.0.1:{args.ui_port}',
+            'api': f'http://127.0.0.1:{args.api_port or 8018}', 'frontend': f'http://127.0.0.1:{args.ui_port or 5018}',
+            'automatic_review_ports': args.ui_port is None or args.api_port is None,
             'public_link': 'Issued by Cloudflare at runtime; verified before printing',
             'third_party_relay': 'Cloudflare', 'cookie_secure': True,
             'stops_existing_services': False, 'changes_firewall': False}, indent=2))
@@ -199,7 +235,9 @@ def main(argv=None):
             raise ValueError('Run this command on Liono, where the selected A2 is located.')
         if not (ROOT / 'app/dist/index.html').is_file():
             raise ValueError('Build the frontend first: cd app && npm run build')
+        args.ui_port, args.api_port = review_ports(args.ui_port, args.api_port, args.model_port)
         free_ports([args.ui_port, args.api_port, args.model_port])
+        print(f'Review ports: frontend {args.ui_port}, API {args.api_port}, model {args.model_port}.', flush=True)
         STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
         lock = (STATE / 'share.lock').open('a')
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
