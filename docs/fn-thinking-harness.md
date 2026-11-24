@@ -150,6 +150,12 @@ path does not make that hostname stable. No clean working address is invented.
 After validation the model returns to the existing 60-second on-demand release
 policy, so an idle website does not keep Qwen loaded.
 
+Validation-only mode does not require a frontend build or check frontend/API
+ports. It retains the exclusive sharing lock and exact GPU ownership guards.
+If another sharing launcher holds that lock, it reports the conflict explicitly
+and leaves the existing service/link untouched. Host-enforced GPU/network
+restrictions still require execution from an appropriately permitted host session.
+
 ## Verification status
 
 Offline transport/controller/security tests include separate reasoning channels,

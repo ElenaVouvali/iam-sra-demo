@@ -304,6 +304,7 @@ def main(argv=None):
     parser.add_argument('--release-existing-a2', action='store_true', help='Explicitly release the old always-on review A2 model at --model-port')
     parser.add_argument('--dry-run', action='store_true', help='Show the plan without sockets, installs or service changes')
     args = parser.parse_args(argv)
+    if not 1024<=args.model_port<=65535:parser.error('--model-port must be in 1024–65535.')
     if args.thinking and args.model_variant!='awq':parser.error('--thinking requires --model-variant awq.')
     if not 10 <= args.idle_seconds <= 3600:
         parser.error('--idle-seconds must be in 10–3600')
@@ -327,14 +328,20 @@ def main(argv=None):
     try:
         if socket.gethostname().split('.')[0] != 'liono':
             raise ValueError('Run this command on Liono, where the selected A2 is located.')
-        if not (ROOT / 'app/dist/index.html').is_file():
-            raise ValueError('Build the frontend first: cd app && npm run build')
-        args.ui_port, args.api_port = review_ports(args.ui_port, args.api_port, args.model_port)
-        free_ports([args.ui_port, args.api_port, args.model_port])
-        print(f'Review ports: frontend {args.ui_port}, API {args.api_port}, model {args.model_port}.', flush=True)
+        if not args.validation_only:
+            if not (ROOT / 'app/dist/index.html').is_file():
+                raise ValueError('Build the frontend first: cd app && npm run build')
+            args.ui_port, args.api_port = review_ports(args.ui_port, args.api_port, args.model_port)
+            free_ports([args.ui_port, args.api_port, args.model_port])
+            print(f'Review ports: frontend {args.ui_port}, API {args.api_port}, model {args.model_port}.', flush=True)
         STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
         lock = (STATE / 'share.lock').open('a')
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise ValueError('The FN sharing launcher is already running. Save current interview downloads, '
+                'press Ctrl+C in its terminal/tmux, then rerun this command. '
+                'Its GPU idle watcher must be stopped before isolated validation.') from None
         owns_state = True
         def stop(signum, frame):
             raise KeyboardInterrupt
@@ -408,7 +415,8 @@ def main(argv=None):
     except (OSError, ValueError, KeyError, httpx.HTTPError, subprocess.SubprocessError) as exc:
         if isinstance(exc, (OSError, ValueError)):
             print('Startup check: ' + str(exc), file=sys.stderr)
-        print('FN link could not be activated. Run from Liono’s normal terminal with GPU/network access. '
+        task='Live FN validation could not complete.' if args.validation_only else 'FN link could not be activated.'
+        print(task+' Run from Liono’s normal terminal with GPU/network access. '
             'Check A2 availability, outbound HTTPS/tunnel access, private sources, and free review ports. '
             'No unrelated service was stopped.', file=sys.stderr)
         return 1

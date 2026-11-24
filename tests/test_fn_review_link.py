@@ -3,6 +3,7 @@ from hashlib import sha256
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -27,6 +28,42 @@ def test_dry_run_has_private_a2_api_ui_and_never_starts_or_downloads(monkeypatch
     assert plan['profile']=='liono-a2' and plan['cookie_secure']
     assert all(plan[k].startswith('http://127.0.0.1:') for k in ['model','api','frontend'])
     assert not plan['changes_firewall'] and not plan['stops_existing_services']
+
+
+def test_validation_only_needs_no_frontend_build_or_review_ports(monkeypatch,tmp_path):
+    from iam_sra import model_lifecycle
+    m=launcher();state=tmp_path/'state'
+    monkeypatch.setattr(m,'ROOT',tmp_path);monkeypatch.setattr(m,'STATE',state)
+    monkeypatch.setattr(m.socket,'gethostname',lambda:'liono')
+    for name in ('review_ports','free_ports','cloudflared','verify_public'):
+        monkeypatch.setattr(m,name,lambda *a,**k:pytest.fail('Validation-only touched public resources'))
+    for key in ('IAM_MODEL_VARIANT','IAM_MODEL_THINKING'):
+        monkeypatch.setenv(key,os.getenv(key,'0' if key=='IAM_MODEL_THINKING' else 'fp16'))
+    stopped=[];validated=[]
+    class Backend:
+        marker=state/'absent-owner.json'
+        def __init__(self,*a,**k):pass
+        def stop(self):stopped.append(True);return True
+    monkeypatch.setattr(model_lifecycle,'ProjectA2',Backend)
+    monkeypatch.setattr(m,'owned_a2',lambda port:False)
+    monkeypatch.setattr(m,'prepare_review_model',lambda variant:{'model':'Synthetic checkpoint fixture','revision':'fixture'})
+    monkeypatch.setattr(m,'verify_live_interviews',lambda *a:validated.append(True))
+    assert m.main(['--validation-only','--thinking'])==0
+    assert validated==[True] and stopped==[True]
+    assert not (tmp_path/'app/dist/index.html').exists()
+
+
+def test_active_launcher_has_actionable_error_and_keeps_existing_link(monkeypatch,tmp_path,capsys):
+    import fcntl
+    m=launcher();state=tmp_path/'state';state.mkdir()
+    link=state/'chat-url.txt';link.write_text('existing operator link')
+    monkeypatch.setattr(m,'ROOT',tmp_path);monkeypatch.setattr(m,'STATE',state)
+    monkeypatch.setattr(m.socket,'gethostname',lambda:'liono')
+    with (state/'share.lock').open('a') as held:
+        fcntl.flock(held,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        assert m.main(['--validation-only'])==1
+    assert 'sharing launcher is already running' in capsys.readouterr().err
+    assert link.read_text()=='existing operator link'
 
 
 @pytest.mark.parametrize('ports',[[5018,5018,18003],[0,8018,18003],[5018,8018,65536]])
