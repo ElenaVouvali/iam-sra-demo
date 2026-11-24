@@ -37,8 +37,10 @@ def agent_reply(responder,chat):
     history=[{'role':m['role'],'text':m['text']} for m in chat['messages'][-6:]]
     result=responder.respond({'question_text':question['text'],
         'response_options':chat.get('response_options',[])},history)
-    if result['control']=='unsure' and result['text'].strip():
-        return result['text']  # Preserve qualified uncertainty for interpretation.
+    if result['text'].strip():
+        # The simulated spoken answer is authoritative. A contradictory control
+        # hint must not replace ordinary uncertainty with an invented refusal.
+        return result['text']
     return {'skip':'skip this question','unsure':'I do not know.','decline':'prefer not to answer'}.get(
         result['control'],result['text'])
 
@@ -139,10 +141,12 @@ def main(argv=None):
         help='Check the citizen definition/uses against actual Qwen, without scoring or completing an interview.')
     parser.add_argument('--opening-variant',choices=['reference','paraphrase','uncertain','all'],default='reference')
     parser.add_argument('--model-variant',choices=['fp16','awq'],default=os.getenv('IAM_MODEL_VARIANT','fp16'))
-    parser.add_argument('--thinking',action='store_true',help='Use the experimental A2 AWQ reasoning-parser deployment (8192-token context).')
+    parser.add_argument('--thinking',action='store_true',help='Use the experimental reasoning-parser deployment (A2/AWQ or A30/FP16, 8192-token context).')
     parser.add_argument('--require-scoring',action='store_true',help='Require all four full live agent interviews to call the scorer and complete result/review, allowing honest model abstention.')
+    parser.add_argument('--save-traces',action='store_true',help='Save screened controller decision summaries for these owned synthetic sessions; never raw thinking.')
     parser.add_argument('--respondent',choices=['reference','agent'],default='reference',
         help='Reference replays source answers; agent adapts the existing Qwen respondent to visible questions.')
+    parser.add_argument('--respondent-no-think',action='store_true',help='Soft /no_think only for the fictional respondent; interviewer/scorer thinking remains enabled.')
     parser.add_argument('--max-agent-calls',type=int,default=60,help='Per-case respondent generation-call limit (4–200)')
     parser.add_argument('--max-turns',type=int,default=100,help='Per-case operational turn limit (10–150), never a readiness threshold')
     parser.add_argument('--case-timeout-seconds',type=int,default=3600,help='Per-case elapsed limit (60–7200)')
@@ -152,8 +156,10 @@ def main(argv=None):
     parser.add_argument('--cpu-generation-seconds',type=int,default=300)
     parser.add_argument('--cpu-python',help='Existing Python with pinned torch/transformers; default .venv/bin/python')
     args=parser.parse_args(argv)
-    if args.thinking and (args.model_variant!='awq' or args.backend!='vllm'):
-        parser.error('--thinking requires --model-variant awq and --backend vllm.')
+    if args.respondent_no_think and (args.respondent!='agent' or not args.thinking):
+        parser.error('--respondent-no-think requires --respondent agent --thinking.')
+    if args.thinking and args.backend!='vllm':
+        parser.error('--thinking requires --backend vllm and a matching reasoning-parser server.')
     if args.require_scoring and (args.respondent!='agent' or args.case!='all' or args.opening_only):
         parser.error('--require-scoring requires full --respondent agent --case all interviews.')
     if not args.allow_live:parser.error('Explicit --allow-live is required for synthetic model calls.')
@@ -254,7 +260,7 @@ def main(argv=None):
             agent_metrics=[];asked={};responder=None
             if args.respondent=='agent':
                 from iam_sra.synthetic_respondent import LLMRespondent
-                responder=LLMRespondent(personas[key],base_url=args.base_url)
+                responder=LLMRespondent(personas[key],base_url=args.base_url,soft_no_think=args.respondent_no_think)
             answers={row['id']:row['answer'] for row in fixture[key]}
             variant=variants.get(variant_name,{})
             answers.update(variant.get('answers',{}))
@@ -273,7 +279,9 @@ def main(argv=None):
                     if job['status'] in {'completed','failed','cancelled'}:
                         if job['status']!='completed':raise RuntimeError('job_failed')
                         view=browser.get(f'/v1/sessions/{sid}').json['session']
-                        print(json.dumps({'case':key,'submitted_turns':steps,'stage':view['chat']['stage']}),file=sys.stderr,flush=True)
+                        state=manager.records[sid].engine.chat
+                        print(json.dumps({'case':key,'submitted_turns':steps,'stage':view['chat']['stage'],
+                            'goal':state.objective,'interviewer_calls':state.calls}),file=sys.stderr,flush=True)
                         return
                     time.sleep(.05)
                 raise RuntimeError('job_timeout')
@@ -351,6 +359,14 @@ def main(argv=None):
             c=data['conversation'];metrics=c['observable_metrics']
             name=key+('' if variant_name=='reference' else '-'+variant_name)
             (output/(name+'.json')).write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+            trace_saved=False
+            if args.save_traces:
+                try:trace=manager.developer_trace(sid)
+                except ValueError:pass  # Privacy refusal withholds the optional diagnostic.
+                else:
+                    trace_path=output/(name+'-trace.json')
+                    trace_path.write_text(json.dumps(trace,ensure_ascii=False,indent=2)+'\n')
+                    trace_path.chmod(0o600);trace_saved=True
             jsonl=browser.get(f'/v1/sessions/{sid}/export?format=jsonl')
             jsonl_ok=jsonl.status_code==200
             if jsonl_ok:
@@ -381,6 +397,7 @@ def main(argv=None):
                 'opening_variant':variant_name,
                 'backend':args.backend,'model':c.get('model_provenance'),'reference_checks':checks,
                 'respondent':args.respondent,'respondent_backend':getattr(responder,'backend','fn_reference_answers'),
+                'respondent_thinking':'soft_disabled' if args.respondent_no_think else 'enabled' if args.thinking else 'disabled',
                 'controlled_api_fixture':bool(bootstrap.json.get('synthetic_fixture')),
                 'agent_generation_calls':sum(m.get('generation_calls',0) for m in agent_metrics),
                 'agent_generated_tokens':sum(m.get('generated_tokens',0) for m in agent_metrics) or None,
@@ -391,6 +408,7 @@ def main(argv=None):
                 'review_actor':'automation','independent_validation':False,
                 'json_export_succeeded':True,'jsonl_export_succeeded':jsonl_ok,
                 'markdown_export_succeeded':markdown_ok,
+                'developer_trace_saved':trace_saved,
                 'model_suggestion_unchanged_after_review':provisional==c.get('suggestion'),
                 'protocol_passed':bool(c['stage']=='ended' and not failure and not c['completion']['partial']
                     and c.get('participant_review') and c.get('scale') and len(c['scale']['anchors'])==9

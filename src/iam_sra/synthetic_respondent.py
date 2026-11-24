@@ -94,10 +94,11 @@ class SimulatedAnswer(Strict):
 
 class LLMRespondent(ConversationClient):
     """Exploratory Qwen simulator; same-model agreement is not independent evidence."""
-    backend='existing_qwen_synthetic-1.2.0'
-    prompt_version='synthetic-respondent-1.2.0'
-    def __init__(self,persona,**kwargs):
+    backend='existing_qwen_synthetic-1.3.0'
+    prompt_version='synthetic-respondent-1.3.0'
+    def __init__(self,persona,soft_no_think=False,**kwargs):
         super().__init__(**kwargs);self.persona=deepcopy(persona);self.turns=[]
+        self.soft_no_think=soft_no_think
     def respond(self,question,history=()):
         text=question['question_text'] if isinstance(question,dict) else question
         profile={k:deepcopy(self.persona[k]) for k in ('perspective','stakeholder_role','city','background','known_facts','unknown_facts',
@@ -105,6 +106,7 @@ class LLMRespondent(ConversationClient):
             'benefits_perceived','concerns','conditions','information_needs','priorities',
             'acceptance_position','trust_position','communication_style','response_length_preference',
             'uncertainty_tolerance','behavioural_traits','contradiction_policy')}
+        profile['scenario_preference']=self.persona.get('scenario_preference')
         payload={'synthetic_persona':profile,'current_displayed_question':text,
             'public_dialogue':list(history)[-6:]}
         options=question.get('response_options',[]) if isinstance(question,dict) else []
@@ -121,9 +123,11 @@ class LLMRespondent(ConversationClient):
             'If displayed_response_options is present, return exactly one of its values as text with control=answer; '
             'these questions have selection only. Otherwise answer the actual question in your own words, '
             'including contextual follow-ups, without trying to obtain a readiness level. Return structured JSON only.')
+        if self.soft_no_think:system+=' /no_think'
         require_safe_data({'system':system,'user':payload})
         with _LOCK:
             self._start()
+            self.last_settings['synthetic_respondent_soft_no_think']=self.soft_no_think
             with httpx.Client(timeout=120,trust_env=False) as client:
                 result=self._request(client,'synthetic_respondent',system,payload,
                     SimulatedAnswer.model_json_schema(),SimulatedAnswer.model_validate_json)

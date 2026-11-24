@@ -38,7 +38,7 @@ class FNInterpretation(Strict):
     boundary_goals: list[str] = Field(default_factory=list, max_length=2)
     scope_disposition: Literal['within_scope', 'outside_remit', 'not_established'] | None = None
     topic_intent: Literal['continue_open','no_more','main_only','suggestions'] | None = None
-    topic_intent_quote: str = Field(default='',max_length=180)
+    topic_intent_quote: str = Field(default='',max_length=1800)
 
 
 class ContextFact(Strict):
@@ -88,8 +88,21 @@ FN_SYSTEM = (
     'demonstrates all readiness capabilities. A concise relevant answer can be sufficient. Do not ask someone to '
     'repeat a clear definition or list just because more details could be added. '
     'interpretation requires action, answer_kind, an exact answer_quote, coverage, topics and boundary_goals. '
+    'answer_kind meanings: substantive is a relevant description, explanation, list, experience or opinion; '
+    'yes means the respondent affirms the proposition asked; no means they deny it. These labels '
+    'describe their answer polarity, never whether the question was answered. partial is a qualified '
+    'or incomplete answer; uncertain means the '
+    'respondent expresses not knowing; declined means the respondent explicitly refuses to answer. '
+    'A concise definition or list is substantive. It is never declined merely because it is short or '
+    'does not discuss participation. Read only the current answer for refusal; participation rights '
+    'and examples in instructions are not a refusal by this respondent. '
+    'A request for explanation can accompany a negative or uncertain answer; it is not affirmative '
+    'prior knowledge. Do not route a respondent who says they do not know the concept as knowing it. '
     'For an addressed question use action=advance and include its goal in coverage, with current_answer_id, '
     'an exact quote from answer, status=explored and the appropriate answer_kind. '
+    'Copy the literal value of current_answer_id into coverage.evidence_id and fn.evidence_goal into '
+    'coverage.goal. Do not use field names or stage names as IDs. For a short answer copy the entire '
+    'answer verbatim as its quote. '
     'For explicit uncertainty use coverage status=unknown and answer_kind=uncertain; this is not low readiness. '
     'For refusal use status=declined. Never invent evidence. Quotes must be exact substrings of their cited original. '
     'Prefer one short complete clause per quote; a long valid quote is not an unclear answer. '
@@ -107,6 +120,13 @@ FN_SYSTEM = (
     'No participation opportunity is not inability; willingness is not actual influence. Support or opposition '
     'is not readiness. Distinguish previous knowledge from information supplied during this interview. '
     'Topics need an exact current-answer quote; mentioning a concern does not select it as a priority. '
+    'In open concerns, additional topics and priority selection, include a topics entry for each '
+    'substantive issue the respondent names: a short topic label and its exact supporting quote. '
+    'At the priorities question these are the issues they selected, including a single issue if that '
+    'is their choice. Do not advance a substantive priority selection with an empty topics list. '
+    'Topic labels name the respondent issues, not allowed_objectives IDs or readiness capabilities. '
+    'Use their short issue wording or a known topic label, and include previously mentioned issues '
+    'again when selected; known_topics does not mean those issues are already selected. '
     'Use known_topics to keep synonymous concerns together: reuse a known label or set matches_topic to that label. '
     'Do not count indicator mappings as distinct concerns. Keep new issues outside that bank admissible. '
     'During open discussion, topic_intent may be no_more, main_only, suggestions or continue_open, only with an '
@@ -227,6 +247,12 @@ def validate_reply(raw, request):
                 if isinstance(proposed.get('boundary_goals'),list):proposed['boundary_goals']=proposed['boundary_goals'][:2]
                 if proposed.get('scope_disposition') not in (None,'within_scope','outside_remit','not_established'):
                     proposed['scope_disposition']=None;optional_warnings.append('interpretation.scope_disposition')
+                topic_goals={'open_priorities','open_more','different_impacts','suggested_topics','priorities'}
+                intent_quote=proposed.get('topic_intent_quote','')
+                if (request['fn'].get('evidence_goal') not in topic_goals
+                        or not isinstance(intent_quote,str) or len(intent_quote)>1800):
+                    if proposed.get('topic_intent') or intent_quote:optional_warnings.append('interpretation.topic_intent')
+                    proposed['topic_intent']=None;proposed['topic_intent_quote']=''
                 decoded['interpretation']=proposed
             summary=decoded.get('decision_summary')
             if isinstance(summary,str):decoded['justification']=summary[:240]
@@ -382,13 +408,13 @@ def validate_reply(raw, request):
                 if row['goal'] in allowed and row['evidence_id'] in originals
                 and row['quote'] in originals[row['evidence_id']]]
             for entry in interpretation['coverage']:
-                # An admitted uncertainty/refusal cannot simultaneously claim
-                # a substantive capability. Negative answers may still mean
-                # a question was explored, without demonstrating readiness.
+                # The current answer has one disposition. An omitted optional
+                # per-goal label defaults to substantive in the wire model, so
+                # inherit the explicit top-level disposition for this goal.
+                # Other covered goals retain their own independent labels.
                 kind=entry['answer_kind']
                 if (entry['goal']==request['fn'].get('evidence_goal')
-                        and entry['evidence_id']==request.get('current_answer_id')
-                        and interpretation['answer_kind'] in {'uncertain','declined'}):
+                        and entry['evidence_id']==request.get('current_answer_id')):
                     kind=entry['answer_kind']=interpretation['answer_kind']
                 if kind in {'uncertain','declined'}:
                     entry['status']='unknown' if kind=='uncertain' else 'declined'
@@ -467,7 +493,7 @@ def compact_chat_request(request, lean=False):
 
 
 class ChatClient(ConversationClient):
-    prompt_version = POLICY + ':interpretation-v3'
+    prompt_version = POLICY + ':interpretation-v4'
 
     def turn(self, request):
         self._start()
@@ -537,12 +563,29 @@ class ChatClient(ConversationClient):
                                                 for e in interpretation['coverage'])):
                                 raise AssessmentError('An advance requires grounded coverage of the current evidence goal; clarify if it is ambiguous.',
                                                       code='evidence', field='interpretation.coverage')
+                            if (request['fn']['evidence_goal']=='priorities'
+                                    and interpretation['action'] in {'advance','conclude'}
+                                    and interpretation['answer_kind'] in {'substantive','partial'}
+                                    and any(e['goal']=='priorities' and e['status']=='explored'
+                                            for e in interpretation['coverage'])
+                                    and (not interpretation['topics'] or 'interpretation.topics' in result['_annotation_warnings'])):
+                                raise AssessmentError('Record every selected issue in interpretation.topics with exact current-answer quotes. Topic labels are respondent issues, not allowed_objectives IDs; do not omit an issue after a rejected annotation. Clarify only if the choice is ambiguous.',
+                                    code='evidence',field='interpretation.topics')
                         elif result['_quality_issues']:
                             raise AssessmentError('Ask a different neutral question that moves beyond answered points without assuming new personal concerns.',
                                 code='eligibility',field=result['_quality_issues'][0])
                         return result
-                    return self._request(client, 'chat_turn', system, payload,
-                                         (FNReply if interpret_answer else Reply).model_json_schema(),validate_turn)
+                    schema=(FNReply if interpret_answer else Reply).model_json_schema()
+                    if interpret_answer:
+                        # IDs come from the controller, never from respondent
+                        # prose. Constrain identifier spelling as well as checking
+                        # grounding after generation; semantic coverage stays Qwen's task.
+                        properties=schema['$defs']['GoalEvidence']['properties']
+                        properties['goal']['enum']=list(payload['fn']['allowed_objectives'])
+                        properties['evidence_id']['enum']=list(dict.fromkeys(
+                            [payload['current_answer_id']]+[r['id'] for r in payload['original_context']]
+                            +[r['answer_id'] for r in payload.get('answered_questions',[])]))
+                    return self._request(client, 'chat_turn', system, payload,schema,validate_turn)
                 except AssessmentError as exc:
                     if exc.code!='budget':raise
                     if lean:

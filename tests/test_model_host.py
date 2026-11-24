@@ -36,6 +36,19 @@ def test_dry_run_never_connects_installs_or_opens_socket(monkeypatch, capsys, pr
         assert 'ssh ' not in output
 
 
+def test_a30_fp16_thinking_dry_run_uses_same_pinned_remote_stack(monkeypatch,capsys):
+    module=runner(monkeypatch)
+    monkeypatch.setattr(module.subprocess,'run',lambda *a,**k:pytest.fail('Dry run executed'))
+    assert module.main(['start','davinci-a30','--thinking','--variant','fp16','--dry-run'])==0
+    assert 'IAM_MODEL_THINKING=1' in capsys.readouterr().out
+
+
+def test_v100_thinking_remains_explicitly_unsupported(monkeypatch,capsys):
+    module=runner(monkeypatch)
+    assert module.main(['start','davinci-v100','--thinking','--dry-run'])==1
+    assert 'davinci-a30/FP16' in capsys.readouterr().err
+
+
 def test_remote_start_checks_local_port_then_starts_waits_and_forwards(monkeypatch):
     module = runner(monkeypatch)
     calls = []

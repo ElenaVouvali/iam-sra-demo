@@ -57,8 +57,17 @@ def test_qualified_uncertainty_is_preserved_instead_of_replaced():
     assert runner().agent_reply(Respondent(),{'messages':[{'role':'assistant','text':'What do you know?'}]})==text
 
 
+@pytest.mark.parametrize('control',['answer','unsure','skip','decline'])
+def test_simulator_text_is_not_replaced_by_a_contradictory_control_hint(control):
+    text='I have no further concerns to add.'
+    class Respondent:
+        def respond(self,*a):return {'text':text,'control':control}
+    assert runner().agent_reply(Respondent(),{'messages':[{'role':'assistant','text':'Anything else?'}]})==text
+
+
 @pytest.mark.parametrize('answer,valid',[('B',True),('Maybe B',False)])
-def test_llm_respondent_handles_real_choice_contract_without_hidden_criteria(monkeypatch,answer,valid):
+@pytest.mark.parametrize('soft_no_think',[False,True])
+def test_llm_respondent_handles_real_choice_contract_without_hidden_criteria(monkeypatch,answer,valid,soft_no_think):
     persona=runner().load_agent_personas(ROOT)['citizen_short'];requests=[]
     original=httpx.Client
     def endpoint(req):
@@ -67,7 +76,7 @@ def test_llm_respondent_handles_real_choice_contract_without_hidden_criteria(mon
         return httpx.Response(200,json={'choices':[{'finish_reason':'stop','message':{'content':json.dumps({'text':answer,'control':'answer'})}}],
             'usage':{'completion_tokens':12}})
     monkeypatch.setattr(httpx,'Client',lambda **kw:original(transport=httpx.MockTransport(endpoint),**kw))
-    respondent=LLMRespondent(persona)
+    respondent=LLMRespondent(persona,soft_no_think=soft_no_think)
     question={'question_text':'Choose a perspective.','response_options':[{'value':'A','label':'Citizen'},{'value':'B','label':'Organisation'}]}
     if valid:
         assert respondent.respond(question)['text']=='B'
@@ -78,6 +87,7 @@ def test_llm_respondent_handles_real_choice_contract_without_hidden_criteria(mon
     profile=requests[0]['synthetic_persona']
     assert profile['city']=='Madrid' and profile['perspective']=='personal'
     assert not {'expected_observations','prohibited_inferences','score','anchors','fn_case'} & profile.keys()
+    assert respondent.last_settings['synthetic_respondent_soft_no_think']==soft_no_think
 
 
 def test_an_active_public_review_is_not_interrupted_or_adopted(monkeypatch,tmp_path):
@@ -218,11 +228,12 @@ def test_agent_failure_remains_partial_and_is_not_reported_as_success(monkeypatc
 def test_original_reference_cli_still_checks_source_answers_and_agreement(monkeypatch,tmp_path):
     module=prepare_runner(monkeypatch,tmp_path);service=fixture_api(monkeypatch)
     output=tmp_path/'.runtime/reference'
-    try:code=module.main(['--allow-live','--respondent','reference','--case','citizen_short','--output',str(output)])
+    try:code=module.main(['--allow-live','--respondent','reference','--case','citizen_short','--save-traces','--output',str(output)])
     finally:service.close()
     report=json.loads((output/'metrics.json').read_text());row=report['cases'][0]
     assert code==0 and report['fn_example_replay']
     assert report['live_inference']=='controlled_fixture' and not report['live_scoring_gate']['passed']
+    assert row['developer_trace_saved'] and (output/'citizen_short-trace.json').is_file()
     assert row['interpretation_checks_passed'] and row['validation']=='agrees'
     assert row['agent_generation_calls']==0 and row['stage']=='ended'
 

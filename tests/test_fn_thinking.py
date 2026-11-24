@@ -117,16 +117,19 @@ def test_extended_agent_answer_with_real_corpus_privacy_reaches_next_question(mo
     assert s.context['city']=='Coimbra' and s.metrics[-1]['generation_calls']==1
 
 
-def test_a2_thinking_launch_uses_existing_v0_reasoner_and_no_offload(monkeypatch,tmp_path):
-    ops=module('ops.py');model=ops.load_model(ops.ROOT,'awq')
-    (tmp_path/'configs').mkdir();(tmp_path/'configs/model-awq.json').write_text(json.dumps(model))
+@pytest.mark.parametrize('variant,product,cap,memory',[
+    ('awq','NVIDIA A2','8.6','15360'),('fp16','NVIDIA A30','8.0','24576')])
+def test_thinking_launch_uses_existing_v0_reasoner_and_no_offload(monkeypatch,tmp_path,variant,product,cap,memory):
+    ops=module('ops.py');model=ops.load_model(ops.ROOT,variant)
+    filename='model-awq.json' if variant=='awq' else 'model.json'
+    (tmp_path/'configs').mkdir();(tmp_path/'configs'/filename).write_text(json.dumps(model))
     snapshot=ops.snapshot_path(tmp_path,model);snapshot.mkdir(parents=True)
     (snapshot/'model.safetensors').touch()
     monkeypatch.setattr(ops,'ROOT',tmp_path)
     monkeypatch.setattr(ops,'validate_awq_snapshot',lambda p:p)
-    monkeypatch.setenv('IAM_MODEL_VARIANT','awq');monkeypatch.setenv('IAM_MODEL_THINKING','1')
+    monkeypatch.setenv('IAM_MODEL_VARIANT',variant);monkeypatch.setenv('IAM_MODEL_THINKING','1')
     monkeypatch.delenv('IAM_CPU_OFFLOAD_GB',raising=False)
-    cmd=ops.vllm_command(['0','GPU-fixture','NVIDIA A2','8.6','15360'])
+    cmd=ops.vllm_command(['0','GPU-fixture',product,cap,memory])
     assert cmd[cmd.index('--max-model-len')+1]=='8192'
     assert '--enable-reasoning' in cmd and cmd[cmd.index('--reasoning-parser')+1]=='deepseek_r1'
     assert float(cmd[cmd.index('--cpu-offload-gb')+1])==0

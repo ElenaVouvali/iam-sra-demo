@@ -2,7 +2,7 @@
 
 This refines the existing FN harness; it adds no orchestration dependency or
 parallel questionnaire. Default inference remains non-thinking. The opt-in A2
-AWQ profile is experimental until the live tests below pass on the actual host.
+AWQ profile and the A30 FP16 profile require live verification on their actual host.
 
 ## What the submitted live run found
 
@@ -48,6 +48,9 @@ budget. Non-thinking behaviour is retained.
 `IAM_MODEL_THINKING=1` coordinates:
 
 - Existing pinned Qwen3-8B-AWQ, zero CPU offload, V0/XFORMERS, one sequence.
+- On Davinci A30, the existing pinned full-precision Qwen3-8B is also supported
+  with zero offload and the same parser/context policy. AWQ remains an A2-only
+  launcher choice; the V100 profiles retain their previous non-thinking policy.
 - vLLM 0.8.5 `--enable-reasoning --reasoning-parser deepseek_r1`.
 - 8,192 context tokens and 1,536 extra output tokens by default; this is a
   combined generation reservation, not a forced reasoning cutoff. If the model

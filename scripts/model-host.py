@@ -122,8 +122,9 @@ def port_free(port):
 
 def execute(args):
     profile = PROFILES[args.profile]
-    if getattr(args,'thinking',False) and (args.profile!='liono-a2' or args.variant!='awq'):
-        raise ValueError('Experimental thinking is limited to --variant awq on liono-a2.')
+    if getattr(args,'thinking',False) and (args.profile,args.variant) not in {
+            ('liono-a2','awq'),('davinci-a30','fp16')}:
+        raise ValueError('Experimental thinking requires liono-a2/AWQ or davinci-a30/FP16.')
     if args.variant == 'awq' and args.profile != 'liono-a2':
         raise ValueError('The AWQ speed profile is currently supported on liono-a2; use fp16 for other host profiles.')
     remote = socket.gethostname().split('.')[0].lower() != profile['host']
@@ -178,7 +179,7 @@ def main(argv=None):
     parser.add_argument('action', choices=['list', 'prepare', 'check', 'start', 'tunnel'])
     parser.add_argument('profile', nargs='?', choices=PROFILES)
     parser.add_argument('--variant', choices=['fp16','awq'], default='fp16', help='Explicit model artifact; original fp16 remains the default')
-    parser.add_argument('--thinking',action='store_true',help='Experimental A2 AWQ reasoning parser and 8192-token context; requires live validation')
+    parser.add_argument('--thinking',action='store_true',help='Experimental A2/AWQ or A30/FP16 reasoning parser and 8192-token context; requires live validation')
     parser.add_argument('--port', type=int, default=18000, help='Model and local forward port (default: 18000)')
     parser.add_argument('--remote-dir', default='iam-sra-inference', help='Separate directory relative to remote home')
     parser.add_argument('--ssh', help='Override SSH destination; existing SSH config/ProxyJump is honoured')

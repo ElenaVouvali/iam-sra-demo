@@ -94,6 +94,45 @@ def test_omitted_optional_wording_is_accepted_without_a_second_generation(monkey
     assert len([path for path,_ in calls if path=='/v1/chat/completions'])==1
 
 
+def test_guided_contract_constrains_controller_goals_and_active_evidence_ids(monkeypatch):
+    calls=install_http(monkeypatch,lambda payload,_:reply(payload))
+    s=opening();s.send(DEFINITION,ChatClient())
+    body=next(body for path,body in calls if path=='/v1/chat/completions')
+    payload=json.loads(body['messages'][-1]['content'])
+    properties=body['guided_json']['$defs']['GoalEvidence']['properties']
+    assert set(properties['goal']['enum'])==set(payload['fn']['allowed_objectives'])
+    assert payload['current_answer_id'] in properties['evidence_id']['enum']
+    assert 'm9999' not in properties['evidence_id']['enum']
+
+
+@pytest.mark.parametrize('kind',['yes','no','partial'])
+def test_current_goal_inherits_answer_disposition_instead_of_default_substantive(kind):
+    from iam_sra.chat_client import validate_reply
+    s=opening();req=s._request('A qualified fictional response.');req['current_answer_id']='m99'
+    out=reply(req,kind=kind);out['interpretation']['coverage'][0].pop('answer_kind')
+    value=validate_reply(out,req)
+    assert value['interpretation']['coverage'][0]['answer_kind']==kind
+
+
+def test_irrelevant_optional_topic_quote_cannot_invalidate_clear_definition(monkeypatch):
+    def output(payload,_):
+        out=reply(payload)
+        out['interpretation']['topic_intent']='suggestions'
+        out['interpretation']['topic_intent_quote']='An irrelevant optional topic annotation. '*20
+        return out
+    install_http(monkeypatch,output)
+    s=opening();s.send(DEFINITION,ChatClient())
+    assert s.objective=='drone_uses' and not s.failures
+
+
+def test_priority_advance_retries_missing_topics_and_retains_actual_selection(monkeypatch):
+    calls=install_http(monkeypatch,lambda payload,attempt:reply(payload,topics=[] if attempt==1 else ['noise']))
+    s=opening();s._ask_fn(s.fn.current('citizen','short','priorities'))
+    s.send('Noise is the issue I want to focus on.',ChatClient())
+    assert [p['topic'] for p in s.priorities]==['noise'] and not s.failures
+    assert len([p for p,_ in calls if p=='/v1/chat/completions'])==2
+
+
 @pytest.mark.parametrize('fault',['quote','evidence_id','goal','missing_interpretation'])
 def test_bad_grounding_is_retried_and_cannot_become_coverage(monkeypatch,fault):
     def output(payload,attempt):
