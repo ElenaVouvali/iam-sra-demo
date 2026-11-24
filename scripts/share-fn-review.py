@@ -3,7 +3,7 @@
 
 Run from Liono's normal terminal, not a network/GPU-restricted execution sandbox.
 Only the review API, frontend and tunnel started here are stopped on Ctrl+C.
-The project-supervised A2 model remains running. No institutional firewall change.
+The A2 model starts on demand and is released after inactivity or review shutdown.
 """
 import argparse
 import errno
@@ -217,19 +217,26 @@ def main(argv=None):
     parser.add_argument('--api-port', type=int, help='Explicit API port; otherwise try 8018–8117')
     parser.add_argument('--model-port', type=int, default=18003)
     parser.add_argument('--gpu-uuid', help='An allocated Liono A2, if multiple matching idle GPUs exist')
+    parser.add_argument('--idle-seconds', type=int, default=60, help='Release the review model after this many idle seconds (10–3600)')
+    parser.add_argument('--release-existing-a2', action='store_true', help='Explicitly release the old always-on review A2 model at --model-port')
     parser.add_argument('--dry-run', action='store_true', help='Show the plan without sockets, installs or service changes')
     args = parser.parse_args(argv)
+    if not 10 <= args.idle_seconds <= 3600:
+        parser.error('--idle-seconds must be in 10–3600')
     if args.dry_run:
         print(json.dumps({'profile': 'liono-a2', 'model': f'http://127.0.0.1:{args.model_port}',
             'api': f'http://127.0.0.1:{args.api_port or 8018}', 'frontend': f'http://127.0.0.1:{args.ui_port or 5018}',
             'automatic_review_ports': args.ui_port is None or args.api_port is None,
             'public_link': 'Issued by Cloudflare at runtime; verified before printing',
             'third_party_relay': 'Cloudflare', 'cookie_secure': True,
-            'stops_existing_services': False, 'changes_firewall': False}, indent=2))
+            'model_lifecycle': 'on_demand', 'idle_seconds': args.idle_seconds,
+            'release_previous_review_model': args.release_existing_a2,
+            'stops_existing_services': args.release_existing_a2, 'changes_firewall': False}, indent=2))
         return 0
     children = []
     lock = None
     owns_state = False
+    backend = None
     try:
         if socket.gethostname().split('.')[0] != 'liono':
             raise ValueError('Run this command on Liono, where the selected A2 is located.')
@@ -246,21 +253,25 @@ def main(argv=None):
             raise KeyboardInterrupt
         signal.signal(signal.SIGTERM, stop)
         signal.signal(signal.SIGHUP, stop)
+        sys.path.insert(0, str(ROOT / 'src'))
+        from iam_sra.model_lifecycle import ProjectA2
+        backend = ProjectA2(args.model_port, root=ROOT, gpu_uuid=args.gpu_uuid)
+        if backend.marker.exists() and not backend.stop():
+            raise ValueError('Cannot verify/release the previous review model; inspect its owner record in a normal terminal.')
+        if owned_a2(args.model_port):
+            if not args.release_existing_a2:
+                raise ValueError('An always-on A2 model already occupies the review endpoint. '
+                    'To release that old review model, rerun with --release-existing-a2.')
+            if not backend.release_existing():
+                raise ValueError('The old review model could not be safely released.')
         for name in ('chat-url.txt',):
             (STATE / name).unlink(missing_ok=True)
         with httpx.Client(trust_env=False, timeout=30, follow_redirects=True) as client:
             binary = cloudflared(client)
         env = os.environ.copy()
         env.update(IAM_BASE_URL=f'http://127.0.0.1:{args.model_port}', IAM_VLLM_PORT=str(args.model_port))
-        if owned_a2(args.model_port):
-            print('Reusing this checkout’s running Liono A2 model.', flush=True)
-            command = [sys.executable, str(ROOT / 'scripts/wait-model.py'), '--timeout', '600']
-        else:
-            print('Starting Qwen on Liono A2 using existing GPU/workload guards.', flush=True)
-            command = [sys.executable, str(ROOT / 'scripts/model-host.py'), 'start', 'liono-a2', '--port', str(args.model_port)]
-            if args.gpu_uuid:
-                command += ['--gpu-uuid', args.gpu_uuid]
-        subprocess.run(command, cwd=ROOT, env=env, check=True)
+        env.update(IAM_SRA_ON_DEMAND_GPU='1', IAM_SRA_GPU_IDLE_SECONDS=str(args.idle_seconds),
+            IAM_SRA_REVIEW_GPU_UUID=args.gpu_uuid or '')
         def launch(command, *, output=False, cwd=ROOT):
             process = subprocess.Popen(command, cwd=cwd, env=env, start_new_session=True,
                 stdout=subprocess.PIPE if output else subprocess.DEVNULL,
@@ -276,7 +287,7 @@ def main(argv=None):
         env.update(IAM_SRA_API_HOST='127.0.0.1', IAM_SRA_API_PORT=str(args.api_port),
             IAM_SRA_ALLOWED_ORIGINS=origin, IAM_SRA_COOKIE_SECURE='1',
             IAM_SRA_API_SECRET=os.urandom(32).hex(),
-            IAM_MODEL_TIMEOUT_SECONDS='900', IAM_SRA_JOB_TIMEOUT='1800', IAM_CHAT_PROCESSING_SECONDS='3600',
+            IAM_MODEL_TIMEOUT_SECONDS='1800', IAM_SRA_JOB_TIMEOUT='1800', IAM_CHAT_PROCESSING_SECONDS='3600',
             TLDEXTRACT_CACHE=os.environ.get('TLDEXTRACT_CACHE', str(STATE / 'tldextract')))
         # Fixed Python from this invocation; reuse the existing Gunicorn configuration.
         env['IAM_API_PYTHON'] = sys.executable
@@ -288,9 +299,9 @@ def main(argv=None):
         url = origin + '/chat'
         (STATE / 'chat-url.txt').write_text(url + '\n')
         print('\nFN test link: ' + url, flush=True)
-        print('HTTPS page, API, ownership cookie and CSRF checked. A2 model health checked; no model generation test run.', flush=True)
+        print('HTTPS page, API, ownership cookie and CSRF checked. The model starts only when a reply needs inference and A2 is available.', flush=True)
         print('Anyone with this link can open it; use fictional test answers. Traffic passes through Cloudflare.', flush=True)
-        print('Keep this terminal open. Ctrl+C closes the link/API/UI; the A2 model remains supervised.', flush=True)
+        print(f'The review model is released after {args.idle_seconds} idle seconds. Keep this terminal open; Ctrl+C closes the link and releases its model.', flush=True)
         while all(p.poll() is None for p in children):
             time.sleep(1)
         raise ValueError('A review service stopped. The published link is no longer confirmed active.')
@@ -301,10 +312,12 @@ def main(argv=None):
             print('Startup check: ' + str(exc), file=sys.stderr)
         print('FN link could not be activated. Run from Liono’s normal terminal with GPU/network access. '
             'Check A2 availability, outbound HTTPS/tunnel access, private sources, and free review ports. '
-            'No existing service was stopped.', file=sys.stderr)
+            'No unrelated service was stopped.', file=sys.stderr)
         return 1
     finally:
         close_children(children)
+        if backend is not None and not backend.stop():
+            print('Review model release could not be verified. Inspect .runtime/fn-review/model-owner.json in the normal Liono terminal.', file=sys.stderr)
         if owns_state:
             (STATE / 'chat-url.txt').unlink(missing_ok=True)
         if lock is not None:

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useAssessment } from '@/composables/useAssessment'
 const flow = useAssessment({ mode: 'chat', depth: 'short', assisted: new URLSearchParams(location.search).get('assisted') === '1' })
-const { session, boot, operation, working, ended: sessionEnded } = flow
+const { session, boot, operation, working, inferenceStatus, ended: sessionEnded } = flow
 const chat = computed(() => session.value?.chat)
 const draft = ref(''), notice = ref(''), endDialog = ref(null), ending = ref(false)
 const ended = computed(() => chat.value?.stage === 'ended')
@@ -43,6 +43,11 @@ onMounted(start)
 <template>
  <article class="chat wrap" data-testid="chat-conversation">
   <header><h1>Let's talk about drones</h1><p>A conversation about healthcare deliveries, your experience and what matters to you.</p></header>
+  <p v-if="inferenceStatus?.mode === 'on_demand'" role="status">
+   <template v-if="inferenceStatus.state === 'loading'">Starting the model. The first reply may take a few minutes; your answer is being processed.</template>
+   <template v-else-if="inferenceStatus.state === 'unavailable'">The shared GPU is currently unavailable. If your answer could not be processed, you can retry later.</template>
+   <template v-else>The model starts when a reply needs it and pauses after {{ inferenceStatus.idle_seconds }} seconds without a model request, keeping the shared GPU available.</template>
+  </p>
   <p v-if="chat?.completion?.partial" role="status">This is a partial interview. Unexplored or uncertain points do not automatically lower readiness.</p>
   <p v-if="chat?.completion?.evidence_sufficiency === 'unassessed'" role="status">This interview ended without a readiness assessment.</p>
   <details class="sra-disclosure"><summary>Privacy, help and conversation options</summary>

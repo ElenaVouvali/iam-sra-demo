@@ -40,6 +40,11 @@ class LLMTransport:
         self.stage_timeout=180 if timeout is None else timeout
 
     def _post_json(self,client,path,payload,stage,phase):
+        from .model_lifecycle import inference_lease
+        with inference_lease(self.base_url, self._deadline):
+            return self._post_json_active(client,path,payload,stage,phase)
+
+    def _post_json_active(self,client,path,payload,stage,phase):
         """Retry a transient connection/status failure once; never expose bodies."""
         for retry in range(2):
             remaining=self._deadline-time.monotonic()

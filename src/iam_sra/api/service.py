@@ -379,7 +379,7 @@ class AssessmentService:
                                  sorted({row.get('field_path', 'root') for row in exc.findings}))
                     failure = APIError(exc.code, 503 if exc.code == 'privacy_unavailable' else 422)
                 except AssessmentError as exc:
-                    failure = APIError('timeout' if exc.code == 'timeout' else 'model_failure', 503)
+                    failure = APIError(exc.code if exc.code in {'timeout','gpu_unavailable'} else 'model_failure', 503)
                 except Exception:
                     # No exception repr, traceback, model text or server address
                     # enters a response, retained job, access log or result.

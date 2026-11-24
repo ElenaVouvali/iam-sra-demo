@@ -249,3 +249,10 @@ resolve `davinci.microlab.ntua.gr`, and local `nvidia-smi` could not access the
 driver. No remote installation, GPU launch, service restart or live generation
 was executed. Run the preparation/start and synthetic interview checks above
 from your normal terminal/VPN/SSH route to establish live compatibility.
+
+## FN review without idle GPU allocation
+
+The optional [FN review launcher](fn-review-link.md) now keeps its public link
+on CPU, starts Qwen on Liono A2 only for model requests, and releases that
+review-owned model after 60 idle seconds. Use that launcher for unattended FN
+testing on a shared GPU; the ordinary launch commands above remain always-on.

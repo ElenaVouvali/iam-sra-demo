@@ -14,6 +14,7 @@ MESSAGES = {
     'privacy_unavailable': 'Local privacy resources are unavailable. Ask the operator to run the privacy preflight before starting.',
     'source_unavailable': 'The reviewed source corpus is unavailable or out of date. Ask the operator to rebuild and verify it on the trusted host.',
     'timeout': 'The processing time limit was reached. Review the current step and retry; no late result will be applied.',
+    'gpu_unavailable': 'The shared GPU is unavailable or could not start. Your answer is retained; retry later.',
     'model_failure': 'Assessment could not complete. Your confirmed evidence is unchanged. You may retry this step.',
     'csrf': 'The browser security check failed. Refresh this page and try again.',
     'origin': 'This request did not come from a configured application origin.',
@@ -29,4 +30,4 @@ class APIError(Exception):
 
     def public(self):
         return {'code': self.code, 'message': MESSAGES.get(self.code, MESSAGES['model_failure']),
-                'retryable': self.code in {'queue_full', 'capacity', 'timeout', 'model_failure', 'session_busy'}}
+                'retryable': self.code in {'queue_full', 'capacity', 'timeout', 'model_failure', 'session_busy', 'gpu_unavailable'}}

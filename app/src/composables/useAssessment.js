@@ -16,6 +16,8 @@ export function useAssessment(options = {}) {
   const expired = ref(false)
   const ended = ref(false)
   const jobStatus = ref('')
+  const inferenceStatus = shallowRef(null)
+  let inferenceTimer = null, inferenceRequest = null
   let csrf = ''
   let active = true
   let epoch = 0
@@ -49,12 +51,26 @@ export function useAssessment(options = {}) {
       await pause(signal)
     }
   }
+  async function refreshInferenceStatus() {
+    if (!active || inferenceRequest || inferenceStatus.value?.mode !== 'on_demand') return
+    const controller = new AbortController()
+    inferenceRequest = controller
+    try {
+      const data = await api(TOOL, '/v1/inference-status', { signal: controller.signal })
+      if (active && !controller.signal.aborted) inferenceStatus.value = data.inference
+    } catch { /* Read-only status polling never submits/retries an answer or wakes the GPU. */ }
+    finally { if (inferenceRequest === controller) inferenceRequest = null }
+  }
   const boot = useAsync(async (signal) => {
     const mine = ++epoch
     const data = await api(TOOL, '/v1/capabilities', { signal })
     if (!active || signal.aborted || mine !== epoch) return
     csrf = data.csrf_token
     capabilities.value = data
+    inferenceStatus.value = data.inference || null
+    if (data.inference?.mode === 'on_demand' && !inferenceTimer) {
+      inferenceTimer = setInterval(refreshInferenceStatus, 3000)
+    }
     const last = data.sessions.filter((s) => (s.mode || 'legacy') === (options.mode || 'legacy')).at(-1)
     if (last) {
       const result = await api(TOOL, `/v1/sessions/${last.id}`, { signal })
@@ -125,6 +141,6 @@ export function useAssessment(options = {}) {
     if (draft && !session.value?.busy_job) return act(draft.action, draft.data)
     return act('refresh')
   }
-  onBeforeUnmount(() => { active = false; epoch++; csrf = ''; session.value = null; capabilities.value = null })
-  return { session, capabilities, expired, ended, jobStatus, boot, operation, working, allowed, initialize, act, reset, retry }
+  onBeforeUnmount(() => { clearInterval(inferenceTimer); inferenceRequest?.abort(); active = false; epoch++; csrf = ''; session.value = null; capabilities.value = null })
+  return { session, capabilities, expired, ended, jobStatus, inferenceStatus, boot, operation, working, allowed, initialize, act, reset, retry }
 }

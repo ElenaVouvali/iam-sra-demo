@@ -139,7 +139,7 @@ def start(kind):
     # A supervisor rotates logs, handles signals, and owns a dedicated process group.
     supervisor=[sys.executable,str(ROOT/"scripts/supervise.py"),kind,json.dumps(cmd)]
     proc=subprocess.Popen(supervisor,cwd=ROOT,env=env,start_new_session=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-    record.write_text(json.dumps({"pid":proc.pid,"start_time":identity(proc.pid),"command":supervisor,"root":str(ROOT),"environment":{k:env[k] for k in ["OMP_NUM_THREADS","MKL_NUM_THREADS","OPENBLAS_NUM_THREADS","NUMEXPR_NUM_THREADS","RAYON_NUM_THREADS","TOKENIZERS_PARALLELISM","HF_HOME","TMPDIR","IAM_BASE_URL"]+(["CUDA_VISIBLE_DEVICES","CUDA_DEVICE_ORDER","VLLM_USE_V1","VLLM_ATTENTION_BACKEND","IAM_GPU_PROFILE"] if kind=="vllm" else [])}}))
+    record.write_text(json.dumps({"pid":proc.pid,"start_time":identity(proc.pid),"command":supervisor,"root":str(ROOT),"environment":{k:env[k] for k in ["OMP_NUM_THREADS","MKL_NUM_THREADS","OPENBLAS_NUM_THREADS","NUMEXPR_NUM_THREADS","RAYON_NUM_THREADS","TOKENIZERS_PARALLELISM","HF_HOME","TMPDIR","IAM_BASE_URL"]+(["CUDA_VISIBLE_DEVICES","CUDA_DEVICE_ORDER","VLLM_USE_V1","VLLM_ATTENTION_BACKEND","IAM_GPU_PROFILE"] + (["IAM_SRA_MODEL_LEASE_ID"] if "IAM_SRA_MODEL_LEASE_ID" in env else []) if kind=="vllm" else [])}}))
     print(kind,"supervisor PID",proc.pid,"log",RUNTIME/(kind+".log"))
 def stop(kind):
     record=RUNTIME/(kind+".pid.json")

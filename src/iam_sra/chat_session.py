@@ -662,9 +662,12 @@ class ChatSession:
                         self.partial=True
                         self.finish('call_or_context_budget_partial')
                         return
-                    self._assistant('A technical problem prevented me from processing your answer. '
+                    message=('The shared GPU is unavailable or could not start. Your answer is saved. '
+                        'Type retry when you are ready to try again, or skip, pause or stop.' if code=='gpu_unavailable' else
+                        'A technical problem prevented me from processing your answer. '
                         'Your answer is saved; you do not need to reword it. '
-                        'Type retry to try again, or skip, pause or stop.',goal,'failure')
+                        'Type retry to try again, or skip, pause or stop.')
+                    self._assistant(message,goal,'failure')
                     return
             field=node.get('context_field')
             if field and not self.context.get(field) and not withheld_area(text) and self.fn.coverage.get(goal,{}).get('status')=='explored':

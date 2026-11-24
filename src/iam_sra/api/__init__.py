@@ -120,6 +120,11 @@ def create_app(config=None, *, service=None):
         return jsonify(api_version=API_VERSION, status='ready', components=readiness,
                        deployment='single-process-in-memory', inference_lanes=1)
 
+    @app.get('/v1/inference-status')
+    def inference_status():
+        from ..model_lifecycle import public_status
+        return jsonify(inference=public_status())
+
     @app.get('/v1/capabilities')
     def capabilities():
         if 'owner' not in session:
@@ -129,7 +134,8 @@ def create_app(config=None, *, service=None):
             readiness = {'ready': True, 'components': manager.adapter.readiness()}
         except APIError as exc:
             readiness = {'ready': False, 'error': exc.public()}
-        return jsonify(api_version=API_VERSION, application='IAM-SRA', assessment='IAM-SRA2',
+        from ..model_lifecycle import public_status
+        return jsonify(inference=public_status(), api_version=API_VERSION, application='IAM-SRA', assessment='IAM-SRA2',
                        tool_id='sra-assessment', mode='retrieval_grounded_conversation',
                        engine_version=engine_config('conversation')['version'],
                        synthetic_fixture=manager.adapter.fixture,
