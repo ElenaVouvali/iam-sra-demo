@@ -28,4 +28,4 @@ def test_onboarding_cannot_be_rewritten():
     assert not adaptive_goal({'id':'area','response_type':'city'})
     assert not adaptive_goal({'id':'healthcare_awareness','response_type':'yes_no'})
     assert not adaptive_goal({'id':'drone_description','response_type':'open'})
-    assert adaptive_goal({'id':'priority_understanding','response_type':'open'})
+    assert not adaptive_goal({'id':'priority_understanding','response_type':'open'})

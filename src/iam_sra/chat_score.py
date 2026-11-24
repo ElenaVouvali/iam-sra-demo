@@ -116,10 +116,23 @@ class ChatScoreClient(ConversationClient):
             'For an organisation assess its own unit/remit; distinguish draft plans, preparation, tested arrangements and embedded processes. '
             'For technology assess the same object/version/environment, not the expert or whole system when only a component was tested. '
             'Explain a defensible full-anchor fit and distinction from a relevant alternative, or abstain with null. '
-            'Incomplete/contradictory evidence must lead to clarification/abstention, not invented facts. If selecting, include a distinct meaningful alternative anchor. '
+            'material_conflict=true ONLY for unresolved contradictory respondent claims about the same unit or object, same activity and compatible time; draft planning without adoption, testing, or routine operation is NOT a contradiction. '
+            'evidence_incomplete=true ONLY when essential positive evidence for the proposed anchor is missing; absent evidence of a more advanced anchor is not by itself a deficit for a lower supported anchor. '
+            'When the whole selected anchor is positively supported by exact quotations and no material conflict prevents it, set both flags false and include a meaningful alternative anchor. Otherwise use a null selection and explain the specific missing or contradictory evidence without inventing facts. '
             'Review original contradictions and superseding corrections. Reports are not independently verified. '
             'Do not use illustrative PDF sample respondent answers or their example scores as evidence.'
         )
+        self.last_score_diagnostics = {}
+        def checked_match(raw):
+            candidate = (ProfileMatch.model_validate_json(raw) if isinstance(raw, str)
+                         else ProfileMatch.model_validate(raw))
+            self.last_score_diagnostics = {
+                'model_proposed_anchor': candidate.selected_anchor_id is not None,
+                'material_conflict': candidate.material_conflict,
+                'evidence_incomplete': candidate.evidence_incomplete,
+                'validator_suppressed_proposal': bool(candidate.selected_anchor_id
+                    and (candidate.material_conflict or candidate.evidence_incomplete))}
+            return validate_profile_match(raw, payload)
         with _LOCK,httpx.Client(trust_env=False) as client:
-            return self._request(client,'chat_profile_match',system,compact_score_request(payload),ProfileMatch.model_json_schema(),
-                                 lambda raw:validate_profile_match(raw,payload))
+            return self._request(client,'chat_profile_match',system,compact_score_request(payload),
+                                 ProfileMatch.model_json_schema(),checked_match)

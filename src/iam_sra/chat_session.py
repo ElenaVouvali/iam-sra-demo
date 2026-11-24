@@ -342,6 +342,7 @@ class ChatSession:
             'fallback_source':decision.get('fallback_source'),
             'closing_policy':self._discussion_progress(),
             'fn_stage':decision.get('fn_stage'), 'fn_coverage':decision.get('fn_coverage',[]),
+            'score_flag_diagnostics': deepcopy(decision.get('score_flag_diagnostics')),
             'depth_change':deepcopy(decision.get('depth_change')),
             'assessment': deepcopy(decision.get('assessment')),
             'validated_context_facts': decision.get('validated_context_facts', []),
@@ -401,6 +402,14 @@ class ChatSession:
         text = node.get('preface', '')
         if text: text += '\n\n'
         text += node['canonical_question']
+        scoped_technical_preface = False
+        if (self.profile == 'technical'
+                and node['id'] in {'controlled', 'representative', 'complete'}
+                and self.context.get('technical_object')):
+            scoped_technical_preface = True
+            obj = self.context['technical_object'][:180]
+            text = ('Please answer for the assessed object (' + obj +
+                    '). Distinguish tests of this component from tests of an integrated drone system.\n\n' + text)
         if node['id']=='citizen_duration':text=CITIZEN_DURATION
         raised=self._raised_topics()
         if self.profile=='citizen' and node['id']=='open_more' and len(raised)==1:
@@ -425,6 +434,8 @@ class ChatSession:
         self.messages[-1]['source'] = {**deepcopy(self._rubric()['source']),
             'locator':node['source_locator'], 'specification_version':self.fn.version,
             'wording':'authored adaptation' if 'authored' in node['source_locator'] else 'canonical question'}
+        if scoped_technical_preface:
+            self.messages[-1]['source']['wording']='authored scoped preface with unchanged canonical question'
         if educational:
             self.messages[-1]['resource']=deepcopy(EASA_BASICS)
             self.messages[-1]['source']['adaptation']='optional educational exit'
@@ -732,7 +743,9 @@ class ChatSession:
                     self._last_decision['validated_action']=interpretation['action']
                     self._last_decision['rejected_optional_annotations']=result.get('_annotation_warnings',[])
                     self._last_decision['fn_coverage']=[{k:v for k,v in e.items() if k!='quote'} for e in interpretation['coverage']]
-                    if result['act']=='explanation_offer' or interpretation['action']=='explain' or result['proposed_action']=='provide_information':
+                    if ((result['act']=='explanation_offer' or interpretation['action']=='explain'
+                         or result['proposed_action']=='provide_information')
+                            and not (self.profile=='citizen' and goal=='drone_recognition')):
                         passages=request.get('retrieved_context',{}).get('passages',[])
                         passage=next((p for p in passages if p['id'] in result['source_ids']),None)
                         requested=text.strip().endswith('?') or bool(re.search(r'\b(?:what|how|explain|tell me|information|understand)\b',text,re.I))
@@ -1004,6 +1017,8 @@ class ChatSession:
                 started = time.monotonic()
                 try:
                     value = score_client.match_profile(payload)
+                    self._last_decision['score_flag_diagnostics'] = deepcopy(
+                        getattr(score_client, 'last_score_diagnostics', {}))
                     value = validate_profile_match(value, payload)
                     anchor = next((a for a in scale['anchors'] if a['id']==value['selected_anchor_id']), None)
                     self.suggestion.update(status='suggested' if anchor else 'abstained',
@@ -1013,6 +1028,13 @@ class ChatSession:
                         material_conflict=value['material_conflict'], evidence_incomplete=value['evidence_incomplete'],
                         considered_evidence_ids=[m['id'] for m in originals],
                         evidence_sufficiency='provisionally_sufficient' if anchor else 'insufficient')
+                    if not anchor:
+                        flagged = []
+                        if value['material_conflict']:
+                            flagged.append('Model flagged a material conflict; the conflicting statements were not identified.')
+                        if value['evidence_incomplete']:
+                            flagged.append('Model flagged insufficient evidence for a full anchor; specific missing evidence was not identified.')
+                        self.suggestion['gaps'] = flagged or ['Model did not select a supported provisional anchor.']
                 except (AssessmentError, httpx.HTTPError, ValueError) as exc:
                     code=getattr(exc,'code','model_failure')
                     self.suggestion.update(status='unavailable', explanation='A valid provisional profile judgment is unavailable. Your original words are retained.',

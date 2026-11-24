@@ -4,7 +4,7 @@ import json
 import random
 import re
 import httpx
-from pydantic import Field
+from pydantic import Field, field_validator
 from .schemas import Strict
 from .conversation_client import ConversationClient
 from .llm_client import _LOCK, STAGE_LIMITS
@@ -91,6 +91,13 @@ class SimulatedAnswer(Strict):
     text: str = Field(min_length=0,max_length=6000)
     control: str = Field(pattern='^(answer|skip|unsure|decline)$')
 
+    @field_validator('text')
+    @classmethod
+    def no_control_metadata_in_speech(cls, text):
+        if re.match(r'^\s*control\s*[:=]\s*(?:answer|unsure|skip|decline)\b', text, re.I):
+            raise ValueError('Synthetic control metadata is not participant speech.')
+        return text
+
 
 class LLMRespondent(ConversationClient):
     """Exploratory Qwen simulator; same-model agreement is not independent evidence."""
@@ -116,7 +123,9 @@ class LLMRespondent(ConversationClient):
             'Keep facts, role and time consistent. Share information needs, experiences and concerns only when relevant. '
             'You may express uncertainty or decline. Never invent measurements, actual participation, contributions, influence, '
             'medical details or local operating facts. '
-            'Use control=unsure for unknown facts. Use skip or decline only for an explicit refusal in the persona, '
+            'Control is PRIVATE JSON metadata and must never appear in text. When giving a substantive answer, use control=answer even when some external facts are unknown. Use control=unsure ONLY if the particular question cannot be answered at all. '
+            'Unknown local operations must not prevent answers about the persona priorities, experiences, proposed safeguards, or preferences. '
+            'Use skip or decline only for an explicit refusal in the persona, '
             'not for unfamiliarity. Never answer an ordinary question by reselecting your perspective. '
             'Use one or two short sentences, at most 70 words. '
             'Keep baseline knowledge distinct from information supplied during the dialogue. '

@@ -108,14 +108,15 @@ def new_background(answer, previously_supplied):
 def adaptive_goal(node):
     """Never rewrite source-critical onboarding, literal-choice or scale questions."""
     if node.get('preface') or node.get('response_type') in {'city', 'citizen_depth', 'permission', 'yes_no',
-                                     'display', 'opinion'}:
+                                     'display', 'suggested_topics', 'opinion'}:
         return False
     return node.get('id') not in {'area', 'perspective', 'drone_recognition', 'drone_description',
                                   'drone_uses', 'drone_other_uses', 'healthcare_awareness',
                                   'healthcare_detail', 'local_awareness', 'local_basis',
                                   'citizen_duration', 'drone_explanation',
                                   'open_priorities', 'open_more', 'different_impacts',
-                                  'priorities', 'decisions', 'participation'}
+                                  'priorities', 'priority_understanding',
+                                  'decisions', 'participation'}
 
 def explicit_priority_commitment(answer):
     """Only an overt personal selection can close prioritisation early.

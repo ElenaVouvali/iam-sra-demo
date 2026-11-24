@@ -55,7 +55,7 @@ def test_source_critical_questions_and_prefaces_are_not_rewritten():
         assert not adaptive_goal({'id': goal, 'response_type': 'open'})
     assert not adaptive_goal({'id': 'conditions', 'response_type': 'open',
                               'preface': 'Imagine a proposed service.'})
-    assert adaptive_goal({'id': 'priority_understanding', 'response_type': 'open'})
+    assert not adaptive_goal({'id': 'priority_understanding', 'response_type': 'open'})
 
 
 def test_fn_wire_has_no_free_form_decision_summary():

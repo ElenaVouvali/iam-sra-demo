@@ -33,6 +33,8 @@ class FNInterpretation(Strict):
     action: Literal['follow_up', 'clarify', 'advance', 'explain', 'conclude']
     answer_kind: Literal['yes', 'no', 'uncertain', 'partial', 'substantive', 'declined']
     answer_quote: str = Field(min_length=1, max_length=1800)
+    # Semantic disposition only; evidence identity/text are server-owned.
+    current_goal_addressed: bool | None = None
     coverage: list[GoalEvidence] = Field(default_factory=list, max_length=6)
     topics: list[TopicEvidence] = Field(default_factory=list, max_length=5)
     boundary_goals: list[str] = Field(default_factory=list, max_length=2)
@@ -98,6 +100,7 @@ FN_SYSTEM = (
     'and examples in instructions are not a refusal by this respondent. '
     'A request for explanation can accompany a negative or uncertain answer; it is not affirmative '
     'prior knowledge. Do not route a respondent who says they do not know the concept as knowing it. '
+    'Set current_goal_addressed=true only if the respondent actually answered the current question, including an explicit no or genuine uncertainty; false if unrelated or ambiguous. '
     'For an addressed question normally use action=advance and include its goal in coverage, with current_answer_id, '
     'an exact quote from answer, status=explored and the appropriate answer_kind. '
     'Copy the literal value of current_answer_id into coverage.evidence_id and fn.evidence_goal into '
@@ -415,6 +418,23 @@ def validate_reply(raw, request):
             interpretation['coverage'] = [row for row in interpretation['coverage']
                 if row['goal'] in allowed and row['evidence_id'] in originals
                 and row['quote'] in originals[row['evidence_id']]]
+            # The interpreter judges meaning; Python supplies only the identity
+            # and verbatim source of the CURRENT question's answer. Never
+            # invent evidence for additional goals.
+            goal = request['fn'].get('evidence_goal')
+            current_id = request.get('current_answer_id')
+            if (interpretation['action'] in {'advance', 'conclude'}
+                    and interpretation.get('current_goal_addressed') is True
+                    and goal in allowed and current_id in originals
+                    and not any(e['goal'] == goal for e in interpretation['coverage'])):
+                kind = interpretation['answer_kind']
+                status = ('unknown' if kind == 'uncertain' else
+                          'declined' if kind == 'declined' else 'explored')
+                interpretation['coverage'].append({
+                    'goal': goal, 'evidence_id': current_id,
+                    'quote': answer[:1800], 'status': status,
+                    'answer_kind': kind})
+                warnings.append('interpretation.current_goal_server_anchor')
             for entry in interpretation['coverage']:
                 # The current answer has one disposition. An omitted optional
                 # per-goal label defaults to substantive in the wire model, so
@@ -599,6 +619,9 @@ class ChatClient(ConversationClient):
                         return result
                     schema=(FNReply if interpret_answer else Reply).model_json_schema()
                     if interpret_answer:
+                        semantic_schema = schema['$defs']['FNInterpretation']
+                        semantic_schema['properties']['current_goal_addressed'] = {'type':'boolean'}
+                        semantic_schema.setdefault('required', []).append('current_goal_addressed')
                         # IDs come from the controller, never from respondent
                         # prose. Constrain identifier spelling as well as checking
                         # grounding after generation; semantic coverage stays Qwen's task.
