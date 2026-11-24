@@ -89,6 +89,9 @@ class ChatSession:
         self.inference_configuration={'enable_thinking':thinking_enabled(),'context_tokens':context_tokens(),
             'reasoning_token_allowance':reasoning_tokens(),'reasoning_retention':'discarded',
             'reasoning_parser':'deepseek_r1' if thinking_enabled() else None}
+        from .adaptive_interview import enabled as adaptive_enabled
+        self.inference_configuration['fn_adaptive_mode']=adaptive_enabled()
+        self.inference_configuration['fn_adaptive_policy']='natural-conversation-prototype-0.1' if adaptive_enabled() else None
         self.depth = depth
         self.depth_selection = None
         self.depth_history = []
@@ -123,6 +126,9 @@ class ChatSession:
         self.routing_events = []
         self.decision_traces = []
         self.concerns = []
+        self.adaptive_wordings = 0
+        self.adaptive_probes = 0
+        self.information_needs_handled = []
         self._last_decision = {}
         self.failed_turn_id = None
         self.suggestion = None
@@ -429,6 +435,74 @@ class ChatSession:
         if node['id']=='citizen_duration' or (node['id']=='open_more' and len(raised)==1) or node['id']=='priorities':
             self.messages[-1]['source']['wording']='authored adaptation of FN question'
 
+    def _adapt_next_fn_question(self, client, earlier_answer):
+        """Present a source-mapped, context-aware next question when available.
+
+        Failure is only a presentation fallback; the canonical FN question stays.
+        Neither scope nor evidence coverage nor the next objective can change.
+        """
+        from .adaptive_interview import enabled, max_wordings, adaptive_goal
+        if not enabled() or self.stage != 'conversation' or not earlier_answer:
+            return
+        node = self.fn.current(self.profile, self.depth, self.objective)
+        if not node or not adaptive_goal(node):
+            return
+        if self.adaptive_wordings >= max_wordings(self.depth):
+            return
+        if not self.messages or self.messages[-1].get('role') != 'assistant' or self.messages[-1].get('act') != 'question':
+            return
+        original = self.messages[-1]['text']
+        msg_id = self.messages[-1]['id']
+        self.adaptive_wordings += 1
+        try:
+            request = self._request('', comparison=False)
+            request['fn'] = self.fn.snapshot(self.profile,self.depth,self.objective,self.context,self.concerns)
+            request['retrieved_context'] = {'guidance':[], 'passages':[], 'status':'not_required_for_wording'}
+            request['answer'] = ''
+            request['current_answer_id'] = None
+            request['last_question'] = original
+            request['recent_reply'] = earlier_answer[:1600]
+            request['adaptive_wording'] = True
+            request['previous_questions'] = request['previous_questions'][:-1]
+            response=self._generate(client,request)
+            candidate=response.get('message','').strip()
+            # All generic wording/privacy/repetition validation is in ChatClient.
+            if not candidate or response.get('_quality_issues') or candidate.count('?') != 1:
+                raise ValueError('The generated question was not eligible.')
+            # The same controller-owned question message and evidence goal remain.
+            current=next((m for m in self.messages if m['id']==msg_id),None)
+            if current is None or current['text'] != original or self.objective != node['id']:
+                raise ValueError('The interview state changed during generation.')
+            current['text']=candidate
+            current['source']['canonical_question']=original
+            current['source']['wording']='LLM_contextual_adaptation_pending_review'
+            self.routing_events.append({'event':'adaptive_question','objective_id':node['id'],
+                                        'message_id':msg_id,'canonical_retained':True})
+        except (AssessmentError, ValueError, httpx.HTTPError) as exc:
+            self.routing_events.append({'event':'adaptive_question_fallback','objective_id':node['id'],
+                                        'reason':getattr(exc,'code','unavailable_or_ineligible')})
+
+    def _respond_to_information_need(self, text):
+        """Offer conservative general background without treating it as prior knowledge."""
+        from .adaptive_interview import enabled, new_background
+        if not enabled() or self.profile != 'citizen':
+            return
+        kinds, background=new_background(text,self.information_needs_handled)
+        if not kinds:
+            return
+        # Authored contextual background. Neither local operations nor comparisons
+        # are represented as established facts. Exposed after recording the answer.
+        self.information_needs_handled.extend(kinds)
+        self._assistant(background,act='supplied_information')
+        self.exposures.append({'id':f'x{len(self.exposures)+1}',
+            'kind':'authored_general_background','categories':kinds,'text':background,
+            'source':{**deepcopy(self._rubric()['source']),
+                'locator':'FN citizen concerns and questions; authored contextual background',
+                'status':'author_adaptation_not_verbatim_FN'},
+            'prior_knowledge':False,'actual_activity':False,'revision':self.revision})
+        self.routing_events.append({'event':'responded_to_information_need',
+                                    'categories':kinds,'evidence_scope':'general_only'})
+
     def _raised_topics(self):
         return [row for row in self.concerns if row.get('evidence_ids') and (
             row.get('spontaneously_raised') or row.get('selected_priority') or row.get('suggested_by_interviewer'))]
@@ -566,6 +640,7 @@ class ChatSession:
             return
         row=retry_row or self._user(text,not skipped and node['response_type'] not in {'opinion','permission'},'advance_request' if skipped and direct_intent(text)=='advance' else 'skip' if skipped else 'opinion' if node['response_type']=='opinion' else 'answer')
         goal=node['id']
+        result=None
         self._last_decision['fn_stage']=self.fn.stage_for(self.profile,self.depth,goal)['id']
         if skipped:
             self.fn.record(goal,row['id'],'declined','declined')
@@ -703,7 +778,28 @@ class ChatSession:
                 self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'FN_explanation','text':explanation,
                     'source':deepcopy(self._rubric()['source']),'prior_knowledge':False,'revision':self.revision})
         if goal in self.fn.coverage:self.covered[goal]=list(self.fn.coverage[goal]['evidence_ids'])
+        from .adaptive_interview import enabled, adaptive_goal
+        if (enabled() and result is not None and goal in self.fn.coverage
+                and adaptive_goal(node) and goal!='priorities'
+                and interpretation.get('action')=='follow_up'
+                and not result.get('_quality_issues') and result.get('message','').count('?')==1
+                and self.fn.followups.get(goal,0)<1
+                and self.adaptive_probes < (3 if self.depth=='short' else 7)):
+            self.fn.followups[goal]=self.fn.followups.get(goal,0)+1
+            self.adaptive_probes+=1
+            self._respond_to_information_need(text)
+            self._assistant(result['message'],goal,act='question')
+            self.messages[-1]['source']={**deepcopy(self._rubric()['source']),
+                'locator':node['source_locator'],'specification_version':self.fn.version,
+                'wording':'LLM_contextual_probe_pending_review'}
+            self.routing_events.append({'event':'adaptive_probe','objective_id':goal})
+            return
+        if result is not None and not any(e.get('kind') in {'retrieved_source_information',
+                'permissioned_explanation'} and e.get('revision')==self.revision for e in self.exposures):
+            self._respond_to_information_need(text)
         self._route_fn(indicator_client,score_client)
+        if result is not None:
+            self._adapt_next_fn_question(client,text)
 
     def _correction_target(self, text):
         cues = {

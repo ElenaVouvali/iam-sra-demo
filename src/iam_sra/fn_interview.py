@@ -74,6 +74,9 @@ class FNInterview:
             self.unresolved_gaps.remove(goal)
 
     def applicable(self, node, concerns):
+        from .adaptive_interview import enabled, optional_topic_probes_unneeded
+        if enabled() and node.get('id') in {'suggested_topics','open_more'} and optional_topic_probes_unneeded(concerns):
+            return False
         if node.get('id') in {'open_more','suggested_topics'} and self.facts.get('topic_scope_closed'):
             return False
         condition = node.get('when')

@@ -120,6 +120,8 @@ class LLMRespondent(ConversationClient):
             'not for unfamiliarity. Never answer an ordinary question by reselecting your perspective. '
             'Use one or two short sentences, at most 70 words. '
             'Keep baseline knowledge distinct from information supplied during the dialogue. '
+            'Use previously supplied answers and explanations in public_dialogue; avoid repeating '
+            'the same information request if it has been addressed, and say specifically what remains unclear. '
             'If displayed_response_options is present, return exactly one of its values as text with control=answer; '
             'these questions have selection only. Otherwise answer the actual question in your own words, '
             'including contextual follow-ups, without trying to obtain a readiness level. Return structured JSON only.')

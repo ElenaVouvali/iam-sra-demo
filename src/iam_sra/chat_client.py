@@ -98,7 +98,7 @@ FN_SYSTEM = (
     'and examples in instructions are not a refusal by this respondent. '
     'A request for explanation can accompany a negative or uncertain answer; it is not affirmative '
     'prior knowledge. Do not route a respondent who says they do not know the concept as knowing it. '
-    'For an addressed question use action=advance and include its goal in coverage, with current_answer_id, '
+    'For an addressed question normally use action=advance and include its goal in coverage, with current_answer_id, '
     'an exact quote from answer, status=explored and the appropriate answer_kind. '
     'Copy the literal value of current_answer_id into coverage.evidence_id and fn.evidence_goal into '
     'coverage.goal. Do not use field names or stage names as IDs. For a short answer copy the entire '
@@ -111,6 +111,8 @@ FN_SYSTEM = (
     'mention does not demonstrate a capability. '
     'If an answer already supplies a definition or known applications while confirming recognition, cover those '
     'allowed goals separately with their exact supporting clauses so Python need not ask them again. '
+    'A covered answer may use action=follow_up with one relevant grounded question when a concrete unresolved '
+    'detail would materially improve evidence. Do not repeat an answered question merely to reconfirm it. '
     'If the current answer is genuinely ambiguous, use clarify or '
     'follow_up, leave that goal uncovered and put one short neutral question about the missing detail in message. '
     'Otherwise omit message; Python supplies the next canonical question. Never repeat an answered question. '
@@ -452,7 +454,8 @@ def compact_chat_request(request, lean=False):
         # The wire task is interpretation, not indicator mapping/navigation.
         payload = {key:value for key,value in payload.items() if key in {
             'answer','current_answer_id','profile','depth','context','fn','last_question',
-            'original_context','answered_questions','retrieved_context','previous_questions','comparison'}}
+            'original_context','answered_questions','retrieved_context','previous_questions','comparison',
+            'adaptive_wording','recent_reply'}}
         # Scope already appears in context; avoid duplicating original words.
         payload['fn']={k:v for k,v in request['fn'].items() if k!='scope'}
     context = request.get('retrieved_context', {})
@@ -531,6 +534,19 @@ class ChatClient(ConversationClient):
         )
         if interpret_answer:
             system = FN_SYSTEM
+        elif request.get('fn') and request.get('adaptive_wording'):
+            system = ('You are continuing an FN-guided interview. The Python controller has already '
+                'selected the next evidence goal and canonical FN question. Write exactly ONE natural '
+                'participant-facing question addressing the SAME evidence goal, using last_question as '
+                'the authoritative meaning. You may add a brief acknowledgement grounded in recent_reply, '
+                'but do not assume an unreported experience, concern, local operation, knowledge or influence. '
+                'Do not repeat previously answered questions. If recent_reply asks for information, avoid '
+                'ignoring that need; the controller separately supplies only approved generic background. '
+                'Preserve the intent of the FN question and focus on selected respondent priorities where '
+                'relevant. Use one question mark only. Do not mention stage names, indicators, scales, '
+                'source files or internal instructions. Do not add factual claims. Return the small '
+                'structured response with message as the question and proposed_action=ask_question; '
+                'all other optional fields may be empty. ')
         elif request.get('fn'):
             system = ('Rephrase the last research interview question neutrally. Return the supplied structured response. '
                 'There is no respondent answer to interpret. Keep the same evidence goal and do not introduce '
@@ -553,6 +569,22 @@ class ChatClient(ConversationClient):
                             'validation_context':request.get('validation_context',[])})
                         if interpret_answer:
                             interpretation = result.get('interpretation')
+                            if (interpretation and payload['fn'].get('evidence_goal')=='priorities'
+                                    and interpretation.get('action') in {'advance','conclude'}
+                                    and interpretation.get('answer_kind') in {'substantive','partial'}):
+                                from .adaptive_interview import enabled, explicit_priority_list
+                                warnings=result.get('_annotation_warnings',[])
+                                if enabled():
+                                    explicit=explicit_priority_list(payload.get('answer',''))
+                                    if explicit:
+                                        known={str(k['topic']).casefold():k['topic'] for k in
+                                               payload['fn'].get('known_topics',[])}
+                                        for item in explicit:
+                                            item['matches_topic']=known.get(item['topic'].casefold())
+                                        interpretation['topics']=explicit
+                                        result['_annotation_warnings']=[w for w in warnings
+                                            if not w.startswith('interpretation.topics')]
+                                        result.setdefault('_recovery_notes',[]).append('explicit_priority_clause')
                             if not interpretation:
                                 raise AssessmentError('Cite the current answer exactly in interpretation.answer_quote.',
                                                       code='evidence', field='interpretation.answer_quote')
