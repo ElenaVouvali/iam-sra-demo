@@ -147,3 +147,64 @@ test('welcome-screen session-clear errors remain visible', async () => {
   assert.ok(ui.text().includes('Synthetic session-clear error'))
  } finally { ui.unmount() }
 })
+test('profile labels and explanatory descriptions appear once, inside selectable cards', async () => {
+ const initial = snapshot(roles, true)
+ const guidance = 'If more than one applies, choose the perspective you prefer today.'
+ initial.chat.messages.at(-1).text = 'Which perspective?\n\nA. Citizen\nA resident answering personally.\n\nB. Organisation or institution\nAn organisation representative.\n\nC. Technology expert or researcher\nSomeone developing drone technology.\n\n' + guidance
+ const ui = await mount(initial)
+ try {
+  for (const value of ['Citizen', 'Organisation or institution', 'Technology expert or researcher',
+   'A resident answering personally.', 'An organisation representative.', 'Someone developing drone technology.', guidance]) {
+   assert.equal(ui.text().split(value).length - 1, 1, value)
+  }
+  const cards = ui.all().filter((n) => n.type === 'label' && n.props.class?.includes('answer-option'))
+  assert.equal(cards.length, 3)
+  assert.ok(ui.text(cards[0]).includes('A resident answering personally.'))
+  assert.ok(ui.text().includes('Which perspective?'))
+  ui.all().find((n) => n.props.type === 'radio' && n.props.value === 'A').props.onChange()
+  await Vue.nextTick(); await ui.click(ui.button('Send selected answer'))
+  // The original history remains complete once the active choice controls disappear.
+  assert.equal(ui.text().split('A resident answering personally.').length - 1, 1)
+ } finally { ui.unmount() }
+})
+for (const separator of ['. ', ' — ']) test(`lettered answers using ${separator.trim()} are not repeated in the question`, async () => {
+ const options = [{ value: 'A', label: 'Short conversation' }, { value: 'B', label: 'Detailed conversation' }]
+ const initial = snapshot(options, true)
+ initial.chat.messages.at(-1).text = 'How much detail?\n\nA' + separator + options[0].label + '\n\nB' + separator + options[1].label + '\n\nYou may change later.'
+ const ui = await mount(initial)
+ try {
+  for (const option of options) assert.equal(ui.text().split(option.label).length - 1, 1)
+  assert.ok(ui.text().includes('How much detail?')); assert.ok(ui.text().includes('You may change later.'))
+  assert.equal(ui.all().filter((n) => n.props.type === 'radio').length, 2)
+ } finally { ui.unmount() }
+})
+test('contiguous A–E validation candidates appear only in their selectable cards', async () => {
+ const options = 'ABCDE'.split('').map((value) => ({ value, label: `Unique validation choice ${value}` }))
+ const initial = snapshot(options, true)
+ initial.chat.messages.at(-1).text = 'Does the result fit?\n\n' + options.map((o) => `${o.value}. ${o.label}`).join('\n')
+ const ui = await mount(initial)
+ try {
+  for (const option of options) assert.equal(ui.text().split(option.label).length - 1, 1)
+  assert.ok(ui.text().includes('Does the result fit?'))
+  assert.equal(ui.all().filter((n) => n.props.type === 'radio').length, 5)
+ } finally { ui.unmount() }
+})
+test('open questions retain their original text even when it includes lettered examples', async () => {
+ const initial = snapshot([], true), question = 'Compare these examples:\nA. Noise\nB. Privacy\nWhat matters to you?'
+ initial.chat.messages.at(-1).text = question
+ const ui = await mount(initial)
+ try {
+  assert.ok(ui.text().includes(question))
+  assert.equal(ui.all().filter((n) => n.type === 'textarea').length, 1)
+ } finally { ui.unmount() }
+})
+test('compact profile clarification does not repeat candidates beside the cards', async () => {
+ const initial = snapshot(roles, true)
+ initial.chat.messages.at(-1).text = 'Please choose your perspective: A. Citizen, B. Organisation or institution, or C. Technology expert or researcher. A profession alone does not select a perspective.'
+ const ui = await mount(initial)
+ try {
+  for (const option of roles) assert.equal(ui.text().split(option.label).length - 1, 1)
+  assert.ok(ui.text().includes('Please choose your perspective.'))
+  assert.ok(ui.text().includes('A profession alone does not select a perspective.'))
+ } finally { ui.unmount() }
+})

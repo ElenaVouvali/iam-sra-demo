@@ -14,6 +14,12 @@ choices and **Send selected answer**. Nothing is preselected. An optional
 available. Other questions retain the current open-text composer. Suggestions
 and thematic topic lists are not converted into compulsory choice forms.
 
+Each active candidate answer appears only once, inside its selectable card.
+Role descriptions appear with their card; the chat bubble retains the question
+and non-option guidance. The original complete question remains unchanged in
+exports and is displayed once in history after the choice controls disappear.
+Open questions are never stripped of lettered examples.
+
 The additive `chat.response_options` field uses existing canonical wording and
 controller state. Selection sends the ordinary screened `chat_message` with its
 literal choice; the existing controller handles it. Model-generated text cannot
@@ -116,3 +122,10 @@ across these runs), **10** Vue component interaction checks, and the production 
 (**58 modules**) passed. The Python groups are disjoint. Real privacy checks
 accept the new option metadata and existing introduction. Source PDFs/hashes and
 model pins were preserved. No service restart or model replacement was performed.
+
+
+The duplicate-choice rendering fix passed **16 component interaction checks**
+and the production build (58 modules). It changes frontend presentation only;
+existing API/model services do not need restarting. Refresh the application to
+load the rebuilt frontend. No real-browser layout check was run in this
+socket-restricted environment.

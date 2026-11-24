@@ -11,7 +11,30 @@ const introduction = computed(() => chat.value?.messages.find((m) => m.act === '
 const showIntroduction = computed(() => introduction.value && !sessionEnded.value
  && introducedSession.value !== session.value?.id && !chat.value.messages.some((m) => m.role === 'respondent'))
 const conversationMessages = computed(() => chat.value?.messages.filter((m) => m.act !== 'introduction') || [])
-const responseOptions = computed(() => chat.value?.response_options || [])
+const choiceDisplay = computed(() => {
+ const options = chat.value?.response_options || []
+ const message = conversationMessages.value.filter((m) => m.role === 'assistant').at(-1)
+ if (!options.length || !message) return { options: [], questionId: null, prompt: '' }
+ const inlineList = options.map((o, i) => `${i === options.length - 1 ? 'or ' : ''}${o.value}. ${o.label}`).join(', ')
+ const lines = message.text.replace(inlineList, '').replace(/:\s*\./g, '.').split('\n'), hidden = new Set()
+ const optionLine = (line) => line.match(/^([A-E])(?:\.\s+|\s+—\s+)(.*)$/)
+ const cards = options.map((option) => {
+  const index = lines.findIndex((line) => {
+   const match = optionLine(line)
+   return match?.[1] === option.value && match[2].trim() === option.label
+  })
+  if (index < 0) return option
+  hidden.add(index)
+  const description = []
+  for (let i = index + 1; i < lines.length && lines[i].trim() && !optionLine(lines[i]); i++) {
+   description.push(lines[i]); hidden.add(i)
+  }
+  return { ...option, description: description.join('\n') }
+ })
+ return { options: cards, questionId: message.id,
+  prompt: lines.filter((_, i) => !hidden.has(i)).join('\n').replace(/\n{3,}/g, '\n\n').trim() }
+})
+const responseOptions = computed(() => choiceDisplay.value.options)
 const selectedChoice = ref(''), ownWords = ref(false)
 watch(() => `${session.value?.id}:${chat.value?.messages.at(-1)?.id}`, () => {
  selectedChoice.value = ''
@@ -96,7 +119,7 @@ onMounted(start)
    <li v-for="message in conversationMessages" :key="message.id" :class="message.role">
     <b>{{ message.role === 'assistant' ? 'AI assistant' : 'You' }}</b>
   <section v-if="chat?.suggestion && ['result_review', 'assessment_gap'].includes(message.act)" aria-label="Provisional summary"><h2>Provisional summary</h2><p v-if="chat.suggestion.level"><b>Provisional {{ {citizen:'CRL',organisational:'ORL',technical:'TRL'}[chat.profile] }} {{ chat.suggestion.level }} · {{ chat.suggestion.anchor?.label }}</b></p><p v-else>No numeric level is suggested. You can comment, remain uncertain or finish without a score.</p><p>{{ chat.suggestion.explanation }}</p><p>{{ chat.suggestion.boundary }}</p><details v-if="chat.suggestion.citations?.length"><summary>Supporting words and uncertainty</summary><div v-for="citation in chat.suggestion.citations" :key="citation.evidence_id+ citation.quote">“{{ citation.quote }}”</div></details></section>
-    <p>{{ message.text }}</p>
+    <p>{{ message.id === choiceDisplay.questionId ? choiceDisplay.prompt : message.text }}</p>
     <p v-if="message.resource?.id === 'easa_basics'"><a :href="message.resource.url" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{ message.resource.label }}</a></p>
   <section v-if="(message.scale || chat?.scale) && ['scale_disclosure', 'methodology'].includes(message.act)" aria-label="Scale disclosure"><h2>Readiness scale</h2><p>This prototype scale supports a provisional summary of your self-reported situation. It does not independently verify your answers.</p><ol><li v-for="anchor in (message.scale || chat.scale).anchors" :key="anchor.level"><b>{{ anchor.level }} · {{ anchor.label }}</b><p>{{ anchor.description }}</p></li></ol></section>
 
@@ -113,7 +136,7 @@ onMounted(start)
    <legend>Choose your answer</legend>
    <label v-for="option in responseOptions" :key="option.value" class="answer-option" :class="{ selected: selectedChoice === option.value }">
     <input type="radio" name="chat-answer" :value="option.value" :checked="selectedChoice === option.value" @change="selectedChoice = option.value" />
-    <span><b>{{ option.value }}.</b> {{ option.label }}</span>
+    <span><b>{{ option.value }}.</b> {{ option.label }}<small v-if="option.description" class="option-description">{{ option.description }}</small></span>
    </label>
    <div class="row"><button class="btn accent" type="button" :disabled="working || !selectedChoice" @click="sendChoice">Send selected answer</button><button class="btn secondary" type="button" :disabled="working" @click="ownWords = !ownWords">{{ ownWords ? 'Hide text reply' : 'Answer in my own words' }}</button></div>
   </fieldset>
@@ -130,5 +153,5 @@ onMounted(start)
  </article>
 </template>
 <style scoped>
-.introduction p{white-space:pre-wrap}.introduction .row{margin-top:1.25rem}.answer-options{min-width:0;display:grid;gap:.75rem;padding:1rem;margin:1rem 0;border:1px solid var(--line,#ccc);border-radius:.75rem}.answer-option{display:flex;align-items:flex-start;gap:.75rem;padding:.85rem;border:1px solid var(--line,#ccc);border-radius:.5rem;cursor:pointer}.answer-option.selected{border-color:var(--c-accent,#20706b);background:var(--c-surface,#f4f6fa)}.answer-option span{min-width:0}.answer-option input{flex-shrink:0;margin-top:.25rem}.answer-options legend{font-weight:600}.chat{overflow-wrap:anywhere;max-width:48rem;padding:1.25rem;margin:auto}.chat h1{font-size:clamp(1.65rem,5vw,2.3rem)}.messages{list-style:none;padding:0}.messages li{padding:1rem;margin:1rem 0;border-radius:.75rem;background:var(--c-surface,#f4f6fa);border:1px solid var(--line,#ccc)}.messages .respondent{margin-left:1rem;border-left:4px solid var(--c-accent,#20706b)}.messages p,blockquote{white-space:pre-wrap;overflow-wrap:anywhere}.chat .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere;height:auto;min-height:var(--h);padding-block:.5rem}.composer{display:grid;gap:.5rem}.composer textarea{width:100%;min-height:7rem}.composer button{justify-self:start}.chat button:focus-visible,.chat summary:focus-visible,.chat textarea:focus-visible{outline:3px solid #007d80;outline-offset:3px}.row{flex-wrap:wrap}dialog{max-width:min(32rem,95vw)}
+.introduction p{white-space:pre-wrap}.introduction .row{margin-top:1.25rem}.answer-options{min-width:0;display:grid;gap:.75rem;padding:1rem;margin:1rem 0;border:1px solid var(--line,#ccc);border-radius:.75rem}.answer-option{display:flex;align-items:flex-start;gap:.75rem;padding:.85rem;border:1px solid var(--line,#ccc);border-radius:.5rem;cursor:pointer}.answer-option.selected{border-color:var(--c-accent,#20706b);background:var(--c-surface,#f4f6fa)}.answer-option span{min-width:0}.option-description{display:block;margin-top:.35rem;font-size:.95em;line-height:1.5}.answer-option input{flex-shrink:0;margin-top:.25rem}.answer-options legend{font-weight:600}.chat{overflow-wrap:anywhere;max-width:48rem;padding:1.25rem;margin:auto}.chat h1{font-size:clamp(1.65rem,5vw,2.3rem)}.messages{list-style:none;padding:0}.messages li{padding:1rem;margin:1rem 0;border-radius:.75rem;background:var(--c-surface,#f4f6fa);border:1px solid var(--line,#ccc)}.messages .respondent{margin-left:1rem;border-left:4px solid var(--c-accent,#20706b)}.messages p,blockquote{white-space:pre-wrap;overflow-wrap:anywhere}.chat .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere;height:auto;min-height:var(--h);padding-block:.5rem}.composer{display:grid;gap:.5rem}.composer textarea{width:100%;min-height:7rem}.composer button{justify-self:start}.chat button:focus-visible,.chat summary:focus-visible,.chat textarea:focus-visible{outline:3px solid #007d80;outline-offset:3px}.row{flex-wrap:wrap}dialog{max-width:min(32rem,95vw)}
 </style>
