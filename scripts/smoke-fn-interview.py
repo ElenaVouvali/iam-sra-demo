@@ -256,6 +256,7 @@ def main(argv=None):
             if r.status_code!=201:
                 reports.append({'case':key,'status':'source_or_privacy_unavailable','http_status':r.status_code});continue
             view=r.json['session'];sid=view['id'];started=time.monotonic();steps=0;checks=[]
+            name=key+('' if variant_name=='reference' else '-'+variant_name)
             case_deadline=started+args.case_timeout_seconds
             agent_metrics=[];asked={};responder=None
             if args.respondent=='agent':
@@ -278,7 +279,16 @@ def main(argv=None):
                     job=result.json['job']
                     if job['status'] in {'completed','failed','cancelled'}:
                         if job['status']!='completed':raise RuntimeError('job_failed')
-                        view=browser.get(f'/v1/sessions/{sid}').json['session']
+                        current_view=browser.get(f'/v1/sessions/{sid}')
+                        if current_view.status_code!=200 or 'session' not in current_view.json:
+                            raise RuntimeError('session_view_withheld')
+                        view=current_view.json['session']
+                        if args.save_traces:
+                            # Preserve the already-screened participant API view
+                            # even if the later detailed export is withheld.
+                            checkpoint=output/(name+'-view.json')
+                            checkpoint.write_text(json.dumps(view,ensure_ascii=False,indent=2)+'\n')
+                            checkpoint.chmod(0o600)
                         state=manager.records[sid].engine.chat
                         print(json.dumps({'case':key,'submitted_turns':steps,'stage':view['chat']['stage'],
                             'goal':state.objective,'interviewer_calls':state.calls}),file=sys.stderr,flush=True)
@@ -348,7 +358,7 @@ def main(argv=None):
                 code=str(exc)
                 failure=code if code in {'turn_limit','case_timeout','submission_rejected','job_unavailable',
                     'job_failed','job_timeout','premature_scale','repeated_question','agent_call_limit',
-                    'interpretation_failed','unexpected_clarification_of_reference_answer'} else 'unexpected_runtime_failure'
+                    'interpretation_failed','unexpected_clarification_of_reference_answer','session_view_withheld'} else 'unexpected_runtime_failure'
             except (ValueError,httpx.HTTPError):failure='agent_or_privacy_failure' if responder else 'model_or_privacy_failure'
             result=browser.get(f'/v1/sessions/{sid}/export')
             if result.status_code!=200:

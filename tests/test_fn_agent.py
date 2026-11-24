@@ -271,6 +271,38 @@ def test_fn_scale_ids_are_metadata_only_in_exact_reference_fields(monkeypatch):
         with pytest.raises(privacy.PrivacyError):privacy.require_safe_data(record)
 
 
+def test_exposure_ids_and_lossless_score_columns_are_metadata_only(monkeypatch):
+    from iam_sra import privacy
+    class FlagIds:
+        def analyze(self,*,text,**kw):
+            return [privacy.Finding('PERSON',0,len(text))] if text in {'x3','m16','Alice Example'} else []
+    monkeypatch.setattr(privacy,'detector',lambda:FlagIds())
+    columns=['id','text','objective','information_exposure_ids']
+    table={'original_columns':columns,'originals':[['m16','A safe description.','recognition',['x3']]]}
+    privacy.require_safe_data({'user':table})
+    privacy.require_safe_data({'conversation':{'messages':[{'information_exposure_ids':['x3']}],
+        'information_exposures':[{'id':'x3'}]}})
+    privacy.require_safe_data({'user':{'supplied_information':[{'id':'x3'}]}})
+    privacy.require_safe_data({'choices':[{'message':{'content':json.dumps({'citations':[{'evidence_id':'m16','quote':'A safe description.'}]})}}]})
+    for record in (
+        {'answer':'x3'},{'quote':'x3'},{'text':'m16'},
+        {'conversation':{'messages':[{'information_exposure_ids':['Alice Example']}]}},
+        {'user':{'original_columns':columns,'originals':[['m16','x3','recognition',['x3']]]}},
+        {'user':{'answer':json.dumps(table)}},
+    ):
+        with pytest.raises(privacy.PrivacyError):privacy.require_safe_data(record)
+
+
+@pytest.mark.presidio_live
+def test_real_detector_preserves_information_exposure_references_in_exports_and_score_table():
+    from iam_sra.privacy import require_safe_data
+    require_safe_data({'conversation':{'messages':[{'information_exposure_ids':['x1','x2','x3']}],
+        'information_exposures':[{'id':'x3','text':'General information about drone services.'}]}})
+    require_safe_data({'user':{'original_columns':['id','text','objective','information_exposure_ids'],
+        'originals':[['m16','I would compare the evidence.','evaluation_evidence',['x3']]],
+        'supplied_information':[{'id':'x3','text':'General information about drone services.'}]}})
+
+
 @pytest.mark.presidio_live
 def test_exact_fn_review_prompts_do_not_allow_personal_data_or_changed_text():
     from iam_sra import privacy

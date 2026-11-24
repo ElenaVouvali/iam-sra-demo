@@ -133,6 +133,17 @@ def test_priority_advance_retries_missing_topics_and_retains_actual_selection(mo
     assert len([p for p,_ in calls if p=='/v1/chat/completions'])==2
 
 
+def test_priority_advance_cannot_silently_drop_one_rejected_topic(monkeypatch):
+    def output(payload,attempt):
+        wrong=next(goal for goal in payload['fn']['allowed_objectives'] if '_' in goal)
+        return reply(payload,topics=[wrong,'wildlife'] if attempt==1 else ['noise','wildlife'])
+    calls=install_http(monkeypatch,output)
+    s=opening();s._ask_fn(s.fn.current('citizen','short','priorities'))
+    s.send('Noise and wildlife matter most to me.',ChatClient())
+    assert {p['topic'] for p in s.priorities}=={'noise','wildlife'} and not s.failures
+    assert len([p for p,_ in calls if p=='/v1/chat/completions'])==2
+
+
 @pytest.mark.parametrize('fault',['quote','evidence_id','goal','missing_interpretation'])
 def test_bad_grounding_is_retried_and_cannot_become_coverage(monkeypatch,fault):
     def output(payload,attempt):

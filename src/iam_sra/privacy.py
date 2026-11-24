@@ -359,13 +359,25 @@ def require_safe_data(value):
                 # decoded vLLM response. Quotes/answers are never exempted;
                 # the client separately checks IDs against active originals.
                 or re.fullmatch(r'root(?:\.choices\[\d+\]\.message\.content)?\.interpretation\.coverage\[\d+\]\.evidence_id',path) is not None
+                or re.fullmatch(r'root(?:\.choices\[\d+\]\.message\.content)?\.citations\[\d+\]\.evidence_id',path) is not None
                 or re.fullmatch(r'root\.coverage\[\d+\]\.evidence_id',path) is not None
             )
             generated_chat_message_reference = (
                 re.fullmatch(r'm[1-9]\d{0,5}',item) is not None and chat_reference_container
                 and re.search(r'\.(?:id|answer_id|evidence_id|supersedes|response_id|in_reply_to|message_id|last_turn_id|current_answer_id|priority_evidence_id|(?:evidence_ids|context_ids|omitted_context_ids|considered_evidence_ids|supporting_evidence_ids|respondent_evidence_ids)\[\d+\])$',path) is not None
             )
-            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not trace_schema_reference and not generated_chat_message_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference and not generated_fn_anchor_reference and not generated_fn_review_message:
+            # x<N> identifies controller-recorded information exposure, never a
+            # participant name. Keep the exemption restricted to these structural
+            # reference fields; text/quotes and arbitrary JSON remain screened.
+            exposure_base=r'root(?:\.(?:chat|conversation|user))?'
+            generated_exposure_reference=(re.fullmatch(r'x[1-9]\d{0,5}',item) is not None
+                and any(re.fullmatch(pattern,path) for pattern in (
+                    exposure_base+r'\.messages\[\d+\]\.information_exposure_ids\[\d+\]',
+                    exposure_base+r'\.originals\[\d+\]\.information_exposure_ids\[\d+\]',
+                    exposure_base+r'\.(?:information_exposures|supplied_information)\[\d+\]\.id',
+                    r'root\.turns\[\d+\]\.controller_execution\.postcondition\.exposure_id',
+                )))
+            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not trace_schema_reference and not generated_chat_message_reference and not generated_exposure_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference and not generated_fn_anchor_reference and not generated_fn_review_message:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():
@@ -385,6 +397,18 @@ def require_safe_data(value):
                     strings.append((str(key),path+'.<key>'))
                 if isinstance(val, (str, int)) and re.search(r'password|pin|token|secret|iban|card.number|account.number', str(key), re.I):
                     strings.append((str(key) + ': ' + str(val),path+'.'+str(key)))
+                # Lossless FN scoring tables use explicit original_columns.
+                # Screen each cell in its semantic field, so generated IDs do
+                # not become prose and answer cells retain normal screening.
+                columns=item.get('original_columns')
+                if (key=='originals' and path in {'root','root.user'}
+                        and isinstance(columns,list) and len(columns)==4
+                        and all(isinstance(c,str) for c in columns)
+                        and set(columns)=={'id','text','objective','information_exposure_ids'}
+                        and isinstance(val,list) and all(isinstance(row,list) and len(row)==4 for row in val)):
+                    for i,row in enumerate(val):
+                        for field,cell in zip(columns,row):collect(cell,path+f'.originals[{i}].'+field)
+                    continue
                 collect(val,path+'.'+str(key))
         elif isinstance(item, (list, tuple)):
             for i,val in enumerate(item): collect(val,path+f'[{i}]')
