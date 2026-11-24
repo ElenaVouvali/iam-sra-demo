@@ -144,7 +144,7 @@ def test_priority_advance_cannot_silently_drop_one_rejected_topic(monkeypatch):
     assert len([p for p,_ in calls if p=='/v1/chat/completions'])==2
 
 
-@pytest.mark.parametrize('fault',['quote','evidence_id','goal','missing_interpretation'])
+@pytest.mark.parametrize('fault',['evidence_id','goal','missing_interpretation'])
 def test_bad_grounding_is_retried_and_cannot_become_coverage(monkeypatch,fault):
     def output(payload,attempt):
         result=reply(payload)
@@ -326,3 +326,63 @@ def test_priority_selection_with_two_iam_cc_indicator_concerns(monkeypatch):
     }
 
     assert not session.failures
+
+
+def test_top_level_answer_quote_is_owned_by_python(monkeypatch):
+    """A bad LLM echo must not reject otherwise grounded evidence."""
+
+    def output(payload, attempt):
+        result = reply(payload)
+        result['interpretation']['answer_quote'] = (
+            'A paraphrase that was not in the original response.'
+        )
+        return result
+
+    calls = install_http(monkeypatch, output)
+
+    s = opening()
+    s.send(DEFINITION, ChatClient())
+
+    assert s.objective == 'drone_uses'
+    assert not s.failures
+    assert s.fn.coverage['drone_description']['status'] == 'explored'
+
+    generations = [
+        path for path, _ in calls
+        if path == '/v1/chat/completions'
+    ]
+
+    assert len(generations) == 1
+
+
+def test_server_owned_answer_quote_does_not_accept_fabricated_claim(monkeypatch):
+    """Repairing the answer anchor must not launder false evidence."""
+
+    def output(payload, attempt):
+        result = reply(payload)
+
+        result['interpretation']['answer_quote'] = (
+            'A paraphrase not in the original response.'
+        )
+
+        result['interpretation']['coverage'][0]['quote'] = (
+            'This evidence quotation was never provided.'
+        )
+
+        return result
+
+    calls = install_http(monkeypatch, output)
+
+    s = opening()
+    s.send(DEFINITION, ChatClient())
+
+    assert s.objective == 'drone_description'
+    assert s.failed_turn_id
+    assert 'drone_description' not in s.fn.coverage
+
+    generations = [
+        path for path, _ in calls
+        if path == '/v1/chat/completions'
+    ]
+
+    assert len(generations) == 2

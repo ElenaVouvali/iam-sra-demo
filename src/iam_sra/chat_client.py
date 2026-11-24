@@ -239,6 +239,12 @@ def validate_reply(raw, request):
             proposed=decoded['interpretation']
             if isinstance(proposed,dict):
                 proposed=dict(proposed)
+                # The original respondent answer is already screened and
+                # retained by Python. Do not trust an LLM-generated echo
+                # as the authoritative answer quotation.
+                original_answer = request.get('answer')
+                if isinstance(original_answer, str) and original_answer:
+                    proposed['answer_quote'] = original_answer[:1800]
                 # Optional topic/probe hints do not invalidate grounded core
                 # interpretation. Every admitted item is still checked below.
                 topics=[]
