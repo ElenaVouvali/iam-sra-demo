@@ -6,8 +6,9 @@ import threading
 import time
 import httpx
 from pydantic import ValidationError
-from .settings import MODEL, BASE_URL, CONTEXT_TOKENS
+from .settings import MODEL, BASE_URL
 from .assessment import AssessmentError
+from .model_spec import thinking_enabled, context_tokens, reasoning_tokens
 
 _LOCK=threading.Lock()
 STAGE_LIMITS = {'readiness_evidence': 1600, 'readiness_grounding': 1400, 'workbook_score': 500}
@@ -86,13 +87,15 @@ class LLMTransport:
         from .privacy import require_safe_data, safe_message, PrivacyError
         require_safe_data({'system':system,'user':user,'schema':schema})
         self._accepted_wire = None
+        enabled=thinking_enabled()
+        context_limit=context_tokens()
         messages=[{"role":"system","content":system},{"role":"user","content":json.dumps(user,ensure_ascii=False,separators=(',',':'))}]
-        limit=STAGE_LIMITS[stage]
+        limit=STAGE_LIMITS[stage]+reasoning_tokens()
         for attempt in range(2):
             remaining=self._deadline-time.monotonic()
             if remaining<=0:raise AssessmentError("Assessment time limit reached; no result saved.",code="timeout")
             attempt_start=time.monotonic()
-            tokenize_payload={"model":MODEL,"messages":messages,"add_generation_prompt":True,"chat_template_kwargs":{"enable_thinking":False}}
+            tokenize_payload={"model":MODEL,"messages":messages,"add_generation_prompt":True,"chat_template_kwargs":{"enable_thinking":enabled}}
             token_key=hashlib.sha256(json.dumps({'endpoint':self.base_url,
                 'model_revision':getattr(self,'last_settings',{}).get('model'),
                 'payload':tokenize_payload},sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
@@ -109,14 +112,32 @@ class LLMTransport:
                 if hasattr(self,'_cache_scope'):
                     if len(token_cache)>=128:token_cache.pop(next(iter(token_cache)))
                     token_cache[token_key]=count
-            if count+limit>CONTEXT_TOKENS:
-                if hasattr(self,'last_diagnostics'):self.last_diagnostics.append({'stage':stage,'attempt':attempt,'prompt_tokens':count,'max_output_tokens':limit,'context_tokens':CONTEXT_TOKENS,'failure':'budget'})
-                raise AssessmentError("Full "+stage+" request exceeds context budget: "+str(count)+" prompt tokens + "+str(limit)+" reserved output tokens > "+str(CONTEXT_TOKENS)+". Instructions, proposal and evidence all contribute; evidence is never truncated.",code="budget")
-            payload={"model":MODEL,"messages":messages,"max_tokens":limit,"temperature":0.2,"top_p":0.8,"chat_template_kwargs":{"enable_thinking":False},"guided_json":guided_schema(schema),"guided_decoding_backend":BACKEND}
+            if count+limit>context_limit:
+                if hasattr(self,'last_diagnostics'):self.last_diagnostics.append({'stage':stage,'attempt':attempt,'prompt_tokens':count,'max_output_tokens':limit,'context_tokens':context_limit,'failure':'budget'})
+                raise AssessmentError("Full "+stage+" request exceeds context budget: "+str(count)+" prompt tokens + "+str(limit)+" reserved output tokens > "+str(context_limit)+". Instructions, proposal and evidence all contribute; evidence is never truncated.",code="budget")
+            payload={"model":MODEL,"messages":messages,"max_tokens":limit,"temperature":0.6 if enabled else 0.2,"top_p":0.95 if enabled else 0.8,"chat_template_kwargs":{"enable_thinking":enabled},"guided_json":guided_schema(schema),"guided_decoding_backend":BACKEND}
+            if enabled:payload['top_k']=20
             remaining=self._deadline-time.monotonic()
             if remaining<=0:raise AssessmentError('Assessment time limit reached; no result saved.',code='timeout')
             body=self._post_json(client,'/v1/chat/completions',payload,stage,'generation')
-            # Screen the entire body, including reasoning, before any trace or validator.
+            # In the explicitly enabled profile, the server separates internal
+            # work from deliverable JSON. Discard that untrusted private channel
+            # before any retention, logging, downstream prompting or assessment.
+            # Every deliverable field still passes the existing privacy gate.
+            reasoning_chars=0
+            if enabled and isinstance(body,dict):
+                for row in body.get('choices',[]) if isinstance(body.get('choices'),list) else []:
+                    message=row.get('message') if isinstance(row,dict) else None
+                    if isinstance(message,dict):
+                        discarded=message.pop('reasoning_content',None)
+                        if isinstance(discarded,str):reasoning_chars+=len(discarded)
+                        elif discarded is not None:
+                            raise AssessmentError('The reasoning parser returned an invalid channel.',code='schema',field='reasoning_content')
+                        discarded=None
+                if hasattr(self,'last_metrics'):
+                    self.last_metrics['reasoning_characters']=self.last_metrics.get('reasoning_characters',0)+reasoning_chars
+            # With thinking disabled, unexpected reasoning is screened/rejected
+            # exactly as before. Never strip think tags out of final JSON.
             try:
                 require_safe_data(body)
             except PrivacyError as exc:
@@ -139,7 +160,7 @@ class LLMTransport:
                 if attempt==1:raise AssessmentError('The model returned an incomplete response envelope.',code='schema') from None
                 continue
             thinking=bool(message.get('reasoning_content')) or '<think>' in content or '</think>' in content
-            trace={"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"finish_reason":choice['finish_reason'],"retry_feedback":messages[0]['content'][len(system):],"thinking_detected":thinking,"raw_output":None, "output_retention":"structural_metadata_only"}
+            trace={"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"finish_reason":choice['finish_reason'],"retry_feedback":messages[0]['content'][len(system):],"thinking_detected":thinking or reasoning_chars>0,"reasoning_enabled":enabled,"reasoning_characters":reasoning_chars,"raw_output":None, "output_retention":"structural_metadata_only"}
             self.last_trace.append(trace)
             if choice['finish_reason']!='stop' or thinking:
                 error=AssessmentError("Truncated output or visible thinking rejected; no result saved.",code="thinking" if thinking else "truncated")
@@ -148,16 +169,19 @@ class LLMTransport:
                 completion_status='stop'
                 try:
                     result=validator(content)
-                    self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"usage":body.get('usage'),"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":True,"evidence_pass":True,"eligibility_pass":True,"completion_status":completion_status,"thinking_detected":False})
+                    self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"usage":body.get('usage'),"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":True,"evidence_pass":True,"eligibility_pass":True,"completion_status":completion_status,"thinking_detected":reasoning_chars>0,"reasoning_enabled":enabled,"reasoning_characters":reasoning_chars})
                     self._accepted_wire = content
                     return result
                 except ValidationError as exc:
                     error=schema_error(exc)
                     self.last_diagnostics.append({'stage':stage,'attempt':attempt,'validation_fields':[{'location':list(e['loc']),'type':e['type']} for e in exc.errors()[:3]],'validation_field':error.field})
                 except PrivacyError: raise
-                except AssessmentError as exc:error=AssessmentError(safe_message(exc),code=exc.code,field=exc.field)
+                except AssessmentError as exc:
+                    error=AssessmentError(safe_message(exc),code=exc.code,field=exc.field)
+                    if getattr(exc,'validation_fields',None):
+                        self.last_diagnostics.append({'stage':stage,'attempt':attempt,'validation_fields':exc.validation_fields})
             self.last_diagnostics.append({"stage":stage,"attempt":attempt,"prompt_tokens":count,"max_output_tokens":limit,"failure":error.code,"validation_field":error.field,"completion_status":completion_status,"latency_seconds":round(time.monotonic()-attempt_start,4),"schema_pass":error.code in {'evidence','eligibility'},"evidence_pass":False if error.code=='evidence' else None,"eligibility_pass":False if error.code=='eligibility' else None,"thinking_detected":thinking})
             if attempt==1:raise error
             # No previous citizen/model output is copied into feedback. Recount
             # the whole message before every retry; do not truncate evidence.
-            messages[0]['content']=system+'\nRetry: previous output failed '+error.code+' checks: '+safe_message(error)+' Return a fresh object matching the supplied schema and cite only listed passage IDs. Do not add missing facts; use empty optional fields when no detail is supported.'
+            messages[0]['content']=system+'\nRetry: previous output failed '+error.code+' checks at '+str(error.field or 'response')+': '+safe_message(error)+' Return a fresh object matching the supplied schema and cite only listed passage IDs. Do not add missing facts; use empty optional fields when no detail is supported.'

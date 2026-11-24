@@ -18,21 +18,21 @@ STAGE_LIMITS['chat_turn'] = 1100
 class GoalEvidence(Strict):
     goal: str = Field(max_length=60)
     evidence_id: str = Field(max_length=20)
-    quote: str = Field(min_length=1, max_length=240)
+    quote: str = Field(min_length=1, max_length=1800)
     status: Literal['explored', 'unknown', 'declined', 'not_applicable']
     answer_kind: Literal['yes', 'no', 'uncertain', 'partial', 'substantive', 'declined'] = 'substantive'
 
 
 class TopicEvidence(Strict):
     topic: str = Field(min_length=1, max_length=70)
-    quote: str = Field(min_length=1, max_length=180)
+    quote: str = Field(min_length=1, max_length=1800)
     matches_topic: str | None = Field(default=None,max_length=70)
 
 
 class FNInterpretation(Strict):
     action: Literal['follow_up', 'clarify', 'advance', 'explain', 'conclude']
     answer_kind: Literal['yes', 'no', 'uncertain', 'partial', 'substantive', 'declined']
-    answer_quote: str = Field(min_length=1, max_length=240)
+    answer_quote: str = Field(min_length=1, max_length=1800)
     coverage: list[GoalEvidence] = Field(default_factory=list, max_length=6)
     topics: list[TopicEvidence] = Field(default_factory=list, max_length=5)
     boundary_goals: list[str] = Field(default_factory=list, max_length=2)
@@ -44,7 +44,7 @@ class FNInterpretation(Strict):
 class ContextFact(Strict):
     field: Literal['city', 'organisation_or_unit', 'responsibilities',
                    'technical_object', 'object_version', 'intended_environment', 'technical_role', 'expertise']
-    quote: str = Field(min_length=1, max_length=180)
+    quote: str = Field(min_length=1, max_length=1800)
 
 
 class Reply(Strict):
@@ -77,6 +77,7 @@ class FNReply(Strict):
     message: str = Field(default='Thank you.', min_length=1, max_length=700)
     context_facts: list[ContextFact] = Field(default_factory=list, max_length=4)
     source_ids: list[str] = Field(default_factory=list, max_length=2)
+    decision_summary: str = Field(default='',max_length=240)
 
 
 FN_SYSTEM = (
@@ -91,8 +92,13 @@ FN_SYSTEM = (
     'an exact quote from answer, status=explored and the appropriate answer_kind. '
     'For explicit uncertainty use coverage status=unknown and answer_kind=uncertain; this is not low readiness. '
     'For refusal use status=declined. Never invent evidence. Quotes must be exact substrings of their cited original. '
+    'Prefer one short complete clause per quote; a long valid quote is not an unclear answer. '
+    'Use decision_summary for one short explanation of the interpretation and evidence limits, not hidden deliberation. '
     'Only allowed_objectives may be covered. Other goals need their own explicit supporting evidence; a topic '
-    'mention does not demonstrate a capability. If the current answer is genuinely ambiguous, use clarify or '
+    'mention does not demonstrate a capability. '
+    'If an answer already supplies a definition or known applications while confirming recognition, cover those '
+    'allowed goals separately with their exact supporting clauses so Python need not ask them again. '
+    'If the current answer is genuinely ambiguous, use clarify or '
     'follow_up, leave that goal uncovered and put one short neutral question about the missing detail in message. '
     'Otherwise omit message; Python supplies the next canonical question. Never repeat an answered question. '
     'Interpret qualified yes/no semantically. A pilot is not routine use; a plan is not an adopted or tested '
@@ -203,21 +209,47 @@ def _quality_issues(message, request, _selected, proposed_action='ask_question')
 
 def validate_reply(raw, request):
     discarded_wording = False
+    optional_warnings=[]
     try:
         decoded = json.loads(raw) if isinstance(raw, str) else raw
         if request.get('fn') and isinstance(decoded, dict) and decoded.get('interpretation'):
+            decoded=dict(decoded)
+            proposed=decoded['interpretation']
+            if isinstance(proposed,dict):
+                proposed=dict(proposed)
+                # Optional topic/probe hints do not invalidate grounded core
+                # interpretation. Every admitted item is still checked below.
+                topics=[]
+                for index,item in enumerate(proposed.get('topics',[]) if isinstance(proposed.get('topics',[]),list) else []):
+                    try:topics.append(TopicEvidence.model_validate(item).model_dump())
+                    except ValidationError:optional_warnings.append('interpretation.topics.'+str(index))
+                proposed['topics']=topics[:5]
+                if isinstance(proposed.get('boundary_goals'),list):proposed['boundary_goals']=proposed['boundary_goals'][:2]
+                if proposed.get('scope_disposition') not in (None,'within_scope','outside_remit','not_established'):
+                    proposed['scope_disposition']=None;optional_warnings.append('interpretation.scope_disposition')
+                decoded['interpretation']=proposed
+            summary=decoded.get('decision_summary')
+            if isinstance(summary,str):decoded['justification']=summary[:240]
             if 'message' in decoded and (not isinstance(decoded['message'],str) or not 1<=len(decoded['message'])<=700):
                 if isinstance(decoded['message'],str):require_safe_data({'message':decoded['message']})
                 decoded={key:value for key,value in decoded.items() if key!='message'}
                 discarded_wording=True
             decoded = {'message': 'Thank you.', **decoded}
         value = Reply.model_validate(decoded)
-    except (ValidationError, ValueError, TypeError):
+    except ValidationError as exc:
+        names=set().union(*(m.model_fields for m in (Reply,FNInterpretation,GoalEvidence,TopicEvidence,ContextFact)))
+        fields=[{'location':[x if isinstance(x,int) or x in names else '<extra_field>' for x in e['loc']],
+                 'type':e['type']} for e in exc.errors(include_input=False,include_url=False)[:4]]
+        error=AssessmentError('The model response did not match its response contract.',code='schema',
+            field='.'.join(str(x) for x in fields[0]['location']) or 'response')
+        error.validation_fields=fields
+        raise error from None
+    except (ValueError, TypeError):
         # Field names and structural category are safe; rejected values are not.
         raise AssessmentError('The model response did not match its small response contract.',
                               code='schema', field='response') from None
 
-    warnings = ['message'] if discarded_wording else []
+    warnings = (['message'] if discarded_wording else [])+optional_warnings
     model_proposed_action = value.proposed_action
     available_indicators = set(request.get('indicator_ids', []))
     raw_indicators = value.indicator_ids
@@ -250,7 +282,7 @@ def validate_reply(raw, request):
     raw_facts = value.context_facts
     for fact in raw_facts if isinstance(raw_facts, list) else []:
         if (isinstance(fact, dict) and fact.get('field') in allowed_context_fields
-                and isinstance(fact.get('quote'), str) and 0 < len(fact['quote']) <= 180
+                and isinstance(fact.get('quote'), str) and 0 < len(fact['quote']) <= 1800
                 and fact['quote'] in answer):
             facts.append(ContextFact.model_validate(fact))
         else:
@@ -291,7 +323,13 @@ def validate_reply(raw, request):
         value.proposed_action = 'ask_question'
 
     issues = _quality_issues(value.message, request, None, value.proposed_action)
-    if discarded_wording:issues.append('unusable_wording')
+    if value.interpretation and value.interpretation.action in {'advance','conclude'}:
+        # Python supplies the next canonical question. Ignore only presentation
+        # defects in unused wording; retain disclosure/unsupported-claim guards.
+        benign={'empty','not_a_question','multiple_questions','repeated_question','answer_echo',
+            'missing_knowledge_probe','missing_healthcare_awareness_probe'}
+        issues=[issue for issue in issues if issue not in benign]
+    if discarded_wording and not (value.interpretation and value.interpretation.action in {'advance','conclude'}):issues.append('unusable_wording')
     if action_rejected:
         issues.append('unauthorized_information_action')
     for field_name, max_length in (('topic', 100), ('respondent_intent', 80),
@@ -429,7 +467,7 @@ def compact_chat_request(request, lean=False):
 
 
 class ChatClient(ConversationClient):
-    prompt_version = POLICY + ':interpretation-v2'
+    prompt_version = POLICY + ':interpretation-v3'
 
     def turn(self, request):
         self._start()

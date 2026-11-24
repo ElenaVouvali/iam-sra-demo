@@ -5,6 +5,22 @@ from pathlib import Path
 import re
 
 
+def thinking_enabled():
+    value=os.getenv('IAM_MODEL_THINKING','0')
+    if value not in {'0','1'}:raise ValueError('IAM_MODEL_THINKING must be 0 or 1.')
+    return value=='1'
+
+
+def context_tokens():
+    return 8192 if thinking_enabled() else 4096
+
+
+def reasoning_tokens():
+    value=int(os.getenv('IAM_MODEL_REASONING_TOKENS','1536'))
+    if not 512<=value<=4096:raise ValueError('IAM_MODEL_REASONING_TOKENS must be 512–4096.')
+    return value if thinking_enabled() else 0
+
+
 def model_variant(value=None):
     value = value if value is not None else os.getenv('IAM_MODEL_VARIANT', 'fp16')
     if value not in {'fp16', 'awq'}:

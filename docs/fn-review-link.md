@@ -15,6 +15,21 @@ cd ~/IAM_CC/iam-sra-demo
 .venv-api/bin/python scripts/share-fn-review.py --release-existing-a2
 ```
 
+Startup now runs **four full live synthetic interviews, including model scoring
+and review, before opening a public API/tunnel**. This occupies the A2 during
+validation and can take a long time. Failures prevent publication; the reports
+are preserved under `.runtime/fn-review/live-*`. A valid model abstention is
+allowed only after an actual scoring call. Fixture success cannot pass this gate.
+After validation the model is released and ordinary review remains on demand.
+
+Experimental thinking and the administrator-provided stable address are
+documented in [FN thinking and live validation](fn-thinking-harness.md). To test
+without publishing anything:
+
+```bash
+.venv-api/bin/python scripts/share-fn-review.py --thinking --validation-only
+```
+
 The default is now the pinned **4-bit Qwen3-8B-AWQ** A2 profile with Marlin and
 zero CPU weight offload. First use downloads about 6.1 GB without reserving the
 GPU; subsequent starts reuse the validated cache. Original FP16 weights remain
@@ -29,12 +44,16 @@ model endpoint. It is unnecessary on later clean runs and harmless when no
 matching old review model exists. The launcher otherwise refuses to adopt an
 unmarked already-running model automatically.
 
-The script prints **`FN test link: https://…trycloudflare.com/chat`** only after
-checking the public page, local and public API, Secure ownership cookie, CSRF,
+The script prints **`FN test link: https://…trycloudflare.com/iam-sra-fn-review`** only after
+passing live interview/scoring checks and checking the public page, local and public API, Secure ownership cookie, CSRF,
 and blank interview creation/deletion. Copy that actual URL to FN. FN needs only
 a browser, with no commands, SSH or VPN. The link is also written to
-`.runtime/fn-review/chat-url.txt` while active. These startup checks do not
-reserve the A2 or test model inference.
+`.runtime/fn-review/chat-url.txt` while active. Startup validation uses real
+inference; page/ownership/CSRF checks themselves do not request a model.
+
+Share it with the label **IAM-SRA — FN Review**. The descriptive review path
+opens the same chat as `/chat`. Cloudflare assigns the temporary hostname;
+a chosen hostname requires a configured domain and named tunnel.
 
 Keep the launcher running. Detach `tmux` with Ctrl+B then D, and reconnect with
 `tmux attach -t YOUR_SESSION_NAME`. Ctrl+C in the launcher stops its API/frontend/
@@ -44,8 +63,8 @@ retention policy; a long-lived link does not promise cross-day interview resume.
 
 ## GPU behaviour
 
-1. Opening the link, selecting perspective/depth, reading status, and other
-   controller-only answers do not load Qwen. No model is reserved at startup.
+1. After startup validation releases its model, opening the link, selecting
+   perspective/depth, reading status and other controller-only answers do not load Qwen.
 2. The first screened answer that actually needs Qwen starts the existing pinned
    model on an available **Liono A2**, using `model-host.py` and existing guards.
    The additional compute-process check also rejects small foreign GPU jobs

@@ -14,9 +14,9 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"src"))
 try:
-    from iam_sra.model_spec import load_model, model_variant, snapshot_path, validate_awq_snapshot
+    from iam_sra.model_spec import load_model, model_variant, snapshot_path, validate_awq_snapshot, thinking_enabled, context_tokens
 except ModuleNotFoundError:
-    from model_spec import load_model, model_variant, snapshot_path, validate_awq_snapshot  # Inference-only upload; no application package.
+    from model_spec import load_model, model_variant, snapshot_path, validate_awq_snapshot, thinking_enabled, context_tokens  # Inference-only upload; no application package.
 RUNTIME=ROOT/".runtime"
 UUID=os.getenv("IAM_GPU_UUID", "")
 PROFILE=os.getenv("IAM_GPU_PROFILE", "")
@@ -105,8 +105,11 @@ def vllm_command(row):
     if not list(snapshot.glob("*.safetensors")): raise RuntimeError("Pinned model snapshot missing; run download-model.py")
     utilization=float(os.getenv("IAM_GPU_MEMORY_UTILIZATION","0.80"))
     if not 0.1<=utilization<=0.85: raise RuntimeError("Memory utilization must be 0.1–0.85")
-    command=[sys.executable,"-m","vllm.entrypoints.openai.api_server","--model",str(snapshot),"--served-model-name",model["model"],"--dtype","half","--host","127.0.0.1","--port",str(VPORT),"--max-model-len","4096","--max-num-seqs","1","--tensor-parallel-size","1","--gpu-memory-utilization",str(utilization),"--cpu-offload-gb",str(cpu_offload(row)),"--enforce-eager","--disable-log-requests","--guided-decoding-backend","xgrammar"]
+    if thinking_enabled() and (model_variant()!='awq' or gpu_class(row)!='a2'):
+        raise RuntimeError('Experimental thinking is restricted to AWQ on Liono A2; validate it live before sharing.')
+    command=[sys.executable,"-m","vllm.entrypoints.openai.api_server","--model",str(snapshot),"--served-model-name",model["model"],"--dtype","half","--host","127.0.0.1","--port",str(VPORT),"--max-model-len",str(context_tokens()),"--max-num-seqs","1","--tensor-parallel-size","1","--gpu-memory-utilization",str(utilization),"--cpu-offload-gb",str(cpu_offload(row)),"--enforce-eager","--disable-log-requests","--guided-decoding-backend","xgrammar"]
     if model_variant()=="awq": command += ["--quantization",model["quantization"]]
+    if thinking_enabled():command += ['--enable-reasoning','--reasoning-parser','deepseek_r1']
     return command
 def identity(pid):
     # start-time field protects against PID reuse.
@@ -146,7 +149,7 @@ def start(kind):
     (RUNTIME/"tmp").mkdir(exist_ok=True)
     if kind=="vllm":
         row=preflight(check_ui_port=False)
-        env.update({"IAM_MODEL_VARIANT":model_variant(),"CUDA_VISIBLE_DEVICES":row[0],"CUDA_DEVICE_ORDER":"PCI_BUS_ID","VLLM_USE_V1":"0","VLLM_ATTENTION_BACKEND":"XFORMERS","IAM_GPU_PROFILE":PROFILE})
+        env.update({"IAM_MODEL_VARIANT":model_variant(),"IAM_MODEL_THINKING":'1' if thinking_enabled() else '0',"CUDA_VISIBLE_DEVICES":row[0],"CUDA_DEVICE_ORDER":"PCI_BUS_ID","VLLM_USE_V1":"0","VLLM_ATTENTION_BACKEND":"XFORMERS","IAM_GPU_PROFILE":PROFILE})
         cmd=vllm_command(row)
     else:
         port_free(UPORT)
@@ -154,7 +157,7 @@ def start(kind):
     # A supervisor rotates logs, handles signals, and owns a dedicated process group.
     supervisor=[sys.executable,str(ROOT/"scripts/supervise.py"),kind,json.dumps(cmd)]
     proc=subprocess.Popen(supervisor,cwd=ROOT,env=env,start_new_session=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-    record.write_text(json.dumps({"pid":proc.pid,"start_time":identity(proc.pid),"command":supervisor,"root":str(ROOT),"environment":{k:env[k] for k in ["OMP_NUM_THREADS","MKL_NUM_THREADS","OPENBLAS_NUM_THREADS","NUMEXPR_NUM_THREADS","RAYON_NUM_THREADS","TOKENIZERS_PARALLELISM","HF_HOME","TMPDIR","IAM_BASE_URL"]+(["IAM_MODEL_VARIANT","CUDA_VISIBLE_DEVICES","CUDA_DEVICE_ORDER","VLLM_USE_V1","VLLM_ATTENTION_BACKEND","IAM_GPU_PROFILE"] + (["IAM_SRA_MODEL_LEASE_ID"] if "IAM_SRA_MODEL_LEASE_ID" in env else []) if kind=="vllm" else [])}}))
+    record.write_text(json.dumps({"pid":proc.pid,"start_time":identity(proc.pid),"command":supervisor,"root":str(ROOT),"environment":{k:env[k] for k in ["OMP_NUM_THREADS","MKL_NUM_THREADS","OPENBLAS_NUM_THREADS","NUMEXPR_NUM_THREADS","RAYON_NUM_THREADS","TOKENIZERS_PARALLELISM","HF_HOME","TMPDIR","IAM_BASE_URL"]+(["IAM_MODEL_VARIANT","IAM_MODEL_THINKING","CUDA_VISIBLE_DEVICES","CUDA_DEVICE_ORDER","VLLM_USE_V1","VLLM_ATTENTION_BACKEND","IAM_GPU_PROFILE"] + (["IAM_SRA_MODEL_LEASE_ID"] if "IAM_SRA_MODEL_LEASE_ID" in env else []) if kind=="vllm" else [])}}))
     print(kind,"supervisor PID",proc.pid,"log",RUNTIME/(kind+".log"))
 def stop(kind):
     record=RUNTIME/(kind+".pid.json")

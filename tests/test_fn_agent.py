@@ -222,6 +222,7 @@ def test_original_reference_cli_still_checks_source_answers_and_agreement(monkey
     finally:service.close()
     report=json.loads((output/'metrics.json').read_text());row=report['cases'][0]
     assert code==0 and report['fn_example_replay']
+    assert report['live_inference']=='controlled_fixture' and not report['live_scoring_gate']['passed']
     assert row['interpretation_checks_passed'] and row['validation']=='agrees'
     assert row['agent_generation_calls']==0 and row['stage']=='ended'
 

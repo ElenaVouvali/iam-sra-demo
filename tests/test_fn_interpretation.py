@@ -64,7 +64,7 @@ def test_clear_fn_answers_advance_once_despite_unused_wording(monkeypatch,wordin
 
 def test_compact_fn_schema_keeps_grounding_and_omits_legacy_annotation_work():
     properties=FNReply.model_json_schema()['properties']
-    assert set(properties)=={'interpretation','message','context_facts','source_ids'}
+    assert set(properties)=={'interpretation','message','context_facts','source_ids','decision_summary'}
     assert FNReply.model_json_schema()['required']==['interpretation']
 
 

@@ -137,13 +137,14 @@ reference mode checks the supplied source path. Neither has target score labels.
 
 ## Thinking mode
 
-Thinking remains **off**. Qwen documents thinking for complex reasoning and
-non-thinking for efficient general dialogue. This app currently rejects returned
-reasoning content and uses a 4,096-token context with bounded structured outputs.
-Changing only `enable_thinking` is not a tested integration: server-side reasoning
-parsing, JSON decoding, output budgets, privacy screening and latency need joint
-verification. The pinned vLLM 0.8.5 also has documented reasoning-parser versus
-non-thinking compatibility limitations.
+The default remains **off** with a 4,096-token context. An experimental coordinated
+`--thinking` A2/AWQ profile now configures the vLLM reasoner, separated response
+channels, 8,192-token context and larger output reservation. See
+[thinking integration, observed failures and live publication checks](fn-thinking-harness.md).
+The pinned vLLM 0.8.5 has documented reasoning-parser versus non-thinking
+compatibility limitations; every client of a thinking endpoint must use the
+same mode. Real A2 compatibility, latency and semantic improvement still need
+host-run verification.
 
 Most reference-path questions are controller-owned FN wording, so extra model
 reasoning would not automatically make those questions more conversational.

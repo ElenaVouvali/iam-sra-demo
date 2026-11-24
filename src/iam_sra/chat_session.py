@@ -85,6 +85,10 @@ class ChatSession:
         self.source_scales, self.source_register = load_rubrics()
         self.bank = deepcopy(bank)
         self.model_provenance = deepcopy(config('model'))
+        from .model_spec import thinking_enabled,context_tokens,reasoning_tokens
+        self.inference_configuration={'enable_thinking':thinking_enabled(),'context_tokens':context_tokens(),
+            'reasoning_token_allowance':reasoning_tokens(),'reasoning_retention':'discarded',
+            'reasoning_parser':'deepseek_r1' if thinking_enabled() else None}
         self.depth = depth
         self.depth_selection = None
         self.depth_history = []
@@ -230,7 +234,10 @@ class ChatSession:
             last_question=next((m for m in reversed(self.messages) if m['role']=='assistant'
                 and m.get('objective_id')==self.objective and m.get('act') in {'question','authored_fallback'}),{})
         from .chat_retrieval import retrieve_chat_context
-        query = (' '.join([answer[:900]] + [m['text'][:300] for m in originals[-3:]]))[:1800]
+        # Rank optional background using the actual screened answer. Concatenating
+        # unrelated city/choice/evidence fields creates new prose that can be
+        # misread as a person's name. Scope/memory remain structured below.
+        query = answer
         retrieval = retrieve_chat_context(self.corpus, self.profile, self.depth, query)
         self._last_decision['retrieval'] = retrieval
         return {'answer': answer, 'profile': self.profile, 'context': self.context,
@@ -368,11 +375,14 @@ class ChatSession:
             self.metrics.append({'generation_calls': observed, 'wall_seconds': elapsed,
                                  'tokenize_calls':metrics.get('tokenize_calls'),
                                  'generated_tokens':metrics.get('generated_tokens'),
+                                 'reasoning_characters':metrics.get('reasoning_characters',0),
+                                 'reasoning_enabled':getattr(client,'last_settings',{}).get('enable_thinking',False),
                                  'generation_http_seconds':metrics.get('generation_http_seconds'),
                                  'model_wait_seconds':metrics.get('model_wait_seconds'),
                                  'diagnostics': [{key:deepcopy(entry[key]) for key in (
                                      'stage','phase','failure','http_status','prompt_tokens','max_output_tokens',
-                                     'completion_status','validation_field','thinking_detected','transport_attempt') if key in entry}
+                                     'completion_status','validation_field','validation_fields','thinking_detected',
+                                     'reasoning_enabled','reasoning_characters','field_paths','privacy_boundary','transport_attempt') if key in entry}
                                      for entry in getattr(client,'last_diagnostics',[])[-6:]],
                                  'context_ids': getattr(client,'last_context_selection',{}).get('context_ids',[m['id'] for m in request['original_context']]),
                                  'prompt_context_selection':deepcopy(getattr(client,'last_context_selection',None)), 'current_answer_id':request['current_answer_id'],
@@ -659,7 +669,9 @@ class ChatSession:
                     field=getattr(exc,'field',None)
                     self.failures.append({'stage':'chat_turn','code':code,'category':category,'field':field,'revision':self.revision,
                         'inference_started':bool(getattr(client,'last_metrics',{}).get('generation_calls')),
-                        'privacy_entities':list(getattr(exc,'entity_types',()))})
+                        'privacy_entities':list(getattr(exc,'entity_types',())),
+                        'privacy_field_paths':[f.get('field_path','root') for f in getattr(exc,'findings',())],
+                        'validation_fields':deepcopy(getattr(exc,'validation_fields',[]))})
                     _log.warning('chat_interpretation_failure code=%s field=%s goal=%s',code,field,goal)
                     self._last_decision.update(fallback_used=True,error=code,accepted_action='answer_processing_failed')
                     self.failed_turn_id=row['id']
@@ -870,7 +882,8 @@ class ChatSession:
         scope_ready = self.profile=='citizen' or (self.profile=='organisational' and self.context['organisation_or_unit'] and self.context['responsibilities']) or (self.profile=='technical' and self.context['technical_object'])
         scope_ready=scope_ready and self.context['scope_status']!='outside_remit'
         if score_client and scale and scope_ready and originals and self.calls + 4 <= self.limits['calls']:
-            if sum(len(m['text']) for m in originals) > 5000:
+            from .model_spec import thinking_enabled
+            if not thinking_enabled() and sum(len(m['text']) for m in originals) > 5000:
                 self.suggestion['gaps'] = ['Complete original evidence exceeds this bounded judgment request. No evidence was silently omitted.']
             else:
                 payload = {'profile': self.profile, 'scope': self.context, 'anchors': scale['anchors'],
@@ -917,6 +930,8 @@ class ChatSession:
                     self._last_decision['latency_seconds']=round(self._last_decision.get('latency_seconds',0)+elapsed,3)
                     self.metrics.append({'generation_calls':count,'wall_seconds':elapsed,'stage':'generic_profile_match',
                                          'generated_tokens':getattr(score_client,'last_metrics',{}).get('generated_tokens'),
+                                         'reasoning_characters':getattr(score_client,'last_metrics',{}).get('reasoning_characters',0),
+                                         'reasoning_enabled':getattr(score_client,'last_settings',{}).get('enable_thinking',False),
                                          'generation_http_seconds':getattr(score_client,'last_metrics',{}).get('generation_http_seconds'),
                                          'model_wait_seconds':getattr(score_client,'last_metrics',{}).get('model_wait_seconds'),
                                          'considered_evidence_ids':[m['id'] for m in originals]})
@@ -1331,6 +1346,7 @@ class ChatSession:
         return {**self.view(), 'messages':deepcopy(self.messages), 'schema_version': SCHEMA, 'policy_version': POLICY,
                 'classification': 'synthetic' if self.synthetic else 'unlabelled_not_verified',
                 'model_provenance':deepcopy(self.model_provenance),
+                'inference_configuration':deepcopy(self.inference_configuration),
                 'fn_interview':progression,
                 'objective_coverage':objective_coverage,'routing_events':deepcopy(self.routing_events),
                 'training_eligible': False, 'context': deepcopy(self.context),

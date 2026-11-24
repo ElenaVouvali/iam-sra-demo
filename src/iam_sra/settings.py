@@ -13,4 +13,5 @@ SCENARIO = config("scenario")
 MODEL = config("model")["model"]
 BASE_URL = os.getenv("IAM_BASE_URL", "http://127.0.0.1:8000")
 MAX_INPUT_BYTES = 4000
-CONTEXT_TOKENS = 4096
+from .model_spec import context_tokens
+CONTEXT_TOKENS = context_tokens()

@@ -22,11 +22,14 @@ import subprocess
 import sys
 from threading import Thread
 import time
+from urllib.parse import urlsplit
+from uuid import uuid4
 
 import httpx
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = ROOT / '.runtime/fn-review'
+REVIEW_PATH = '/iam-sra-fn-review'
 RELEASE = 'https://api.github.com/repos/cloudflare/cloudflared/releases/latest'
 LINK = re.compile(r'https://[a-z0-9]+(?:-[a-z0-9]+)*\.trycloudflare\.com(?=[\s/]|$)')
 
@@ -199,7 +202,7 @@ def wait_health(client, url, processes, timeout=120):
 
 def verify_public(client, origin):
     """Test the HTTPS page, proxy, Secure ownership cookie and CSRF, then clear."""
-    page = client.get(origin + '/chat')
+    page = client.get(origin + REVIEW_PATH)
     page.raise_for_status()
     if '<html' not in page.text.lower():
         raise ValueError('Public URL did not return the app.')
@@ -234,27 +237,86 @@ def close_children(processes):
                 process.wait(timeout=5)
 
 
+def public_origin(value):
+    """An administrator-configured HTTPS proxy; this does not create DNS."""
+    origin=urlsplit(value)
+    if (origin.scheme!='https' or not origin.hostname or origin.username or origin.password
+            or origin.path not in {'','/'} or origin.query or origin.fragment
+            or origin.port not in {None,443}):
+        raise argparse.ArgumentTypeError('Use an approved HTTPS origin, for example https://iam-sra.example.org.')
+    return value.rstrip('/')
+
+
+def verify_live_interviews(backend, args, children):
+    """Hold the exact model lease before starting any public API or tunnel."""
+    backend.start(time.monotonic()+610)
+    marker=backend._marker() or {}
+    if not backend.owns_running_model() or not marker.get('lease_id'):
+        raise ValueError('Live validation model ownership could not be verified.')
+    output=STATE/('live-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid4().hex[:8])
+    env=os.environ.copy()
+    env.update(IAM_BASE_URL=f'http://127.0.0.1:{args.model_port}',IAM_MODEL_VARIANT=args.model_variant,
+        IAM_MODEL_THINKING='1' if args.thinking else '0',IAM_SRA_ON_DEMAND_GPU='0',
+        IAM_SRA_VALIDATION_LEASE=marker['lease_id'],IAM_MODEL_TIMEOUT_SECONDS='1800',
+        IAM_SRA_JOB_TIMEOUT='1800',IAM_CHAT_PROCESSING_SECONDS='3600',
+        TLDEXTRACT_CACHE=os.environ.get('TLDEXTRACT_CACHE',str(STATE/'tldextract')))
+    command=[sys.executable,str(ROOT/'scripts/smoke-fn-interview.py'),'--allow-live',
+        '--respondent','agent','--model-variant',args.model_variant,'--case','all',
+        '--base-url',env['IAM_BASE_URL'],'--require-scoring','--case-timeout-seconds','7200',
+        '--output',str(output)]
+    if args.thinking:command.append('--thinking')
+    print('Validating four complete live interviews and scoring before publication. This occupies the A2 while tests run.',flush=True)
+    # The child prints only screened metrics/transcripts, never raw model output.
+    log=STATE/('validation-'+uuid4().hex+'.log')
+    with log.open('x') as stdout:
+        log.chmod(0o600)
+        process=subprocess.Popen(command,cwd=ROOT,env=env,start_new_session=True,stdout=stdout)
+        children.append(process)
+        try:code=process.wait(timeout=4*7200+300)
+        finally:
+            if process.poll() is None:close_children([process])
+    if not backend.stop():
+        raise ValueError('The validation model could not be safely released; no public link was opened.')
+    if code!=0:
+        raise ValueError(f'Live interviews did not pass scoring/review. Inspect {output}/metrics.json and {log}. No FN link was opened.')
+    report=json.loads((output/'metrics.json').read_text())
+    # Re-evaluate the report rather than trusting only the process exit status.
+    import importlib.util
+    spec=importlib.util.spec_from_file_location('fn_live_gate',ROOT/'scripts/smoke-fn-interview.py')
+    harness=importlib.util.module_from_spec(spec);spec.loader.exec_module(harness)
+    if harness.live_scoring_failures(report,thinking=args.thinking):
+        raise ValueError(f'Live scoring report failed publication checks: {output}.')
+    print('Live completion/scoring checks passed. Human semantic review is still required. Report: '+str(output),flush=True)
+    return output
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--ui-port', type=int, help='Explicit frontend port; otherwise try 5018–5117')
     parser.add_argument('--api-port', type=int, help='Explicit API port; otherwise try 8018–8117')
     parser.add_argument('--model-variant', choices=['awq','fp16'], default='awq', help='Fast fully-on-GPU AWQ by default; fp16 preserves the old CPU-offloaded deployment')
     parser.add_argument('--model-port', type=int, default=18003)
+    parser.add_argument('--thinking',action='store_true',help='Experimental AWQ thinking with an 8192-token context and separated reasoning parser.')
+    parser.add_argument('--validation-only',action='store_true',help='Run the four live scoring checks, release the A2, and exit without publishing.')
+    parser.add_argument('--public-origin',type=public_origin,help='Existing approved HTTPS reverse proxy pointing at --ui-port; no Cloudflare Quick Tunnel is started.')
     parser.add_argument('--gpu-uuid', help='An allocated Liono A2, if multiple matching idle GPUs exist')
     parser.add_argument('--idle-seconds', type=int, default=60, help='Release the review model after this many idle seconds (10–3600)')
     parser.add_argument('--release-existing-a2', action='store_true', help='Explicitly release the old always-on review A2 model at --model-port')
     parser.add_argument('--dry-run', action='store_true', help='Show the plan without sockets, installs or service changes')
     args = parser.parse_args(argv)
+    if args.thinking and args.model_variant!='awq':parser.error('--thinking requires --model-variant awq.')
     if not 10 <= args.idle_seconds <= 3600:
         parser.error('--idle-seconds must be in 10–3600')
     if args.dry_run:
         print(json.dumps({'profile': 'liono-a2', 'model': f'http://127.0.0.1:{args.model_port}',
             'api': f'http://127.0.0.1:{args.api_port or 8018}', 'frontend': f'http://127.0.0.1:{args.ui_port or 5018}',
             'automatic_review_ports': args.ui_port is None or args.api_port is None,
-            'public_link': 'Issued by Cloudflare at runtime; verified before printing',
-            'third_party_relay': 'Cloudflare', 'cookie_secure': True,
+            'public_link': args.public_origin or 'Issued by Cloudflare at runtime; verified before printing',
+            'third_party_relay': None if args.public_origin else 'Cloudflare', 'cookie_secure': True,
             'model_lifecycle': 'on_demand', 'idle_seconds': args.idle_seconds,
             'model_variant': args.model_variant, 'cpu_offload_gb': 0 if args.model_variant == 'awq' else 8,
+            'thinking_enabled':args.thinking,'live_scoring_required':True,'validation_only':args.validation_only,
+            'approved_public_origin':args.public_origin,
             'release_previous_review_model': args.release_existing_a2,
             'stops_existing_services': args.release_existing_a2, 'changes_firewall': False}, indent=2))
         return 0
@@ -279,6 +341,8 @@ def main(argv=None):
         signal.signal(signal.SIGTERM, stop)
         signal.signal(signal.SIGHUP, stop)
         sys.path.insert(0, str(ROOT / 'src'))
+        os.environ['IAM_MODEL_THINKING']='1' if args.thinking else '0'
+        os.environ['IAM_MODEL_VARIANT']=args.model_variant
         from iam_sra.model_lifecycle import ProjectA2
         backend = ProjectA2(args.model_port, root=ROOT, gpu_uuid=args.gpu_uuid, variant=args.model_variant)
         if backend.marker.exists() and not backend.stop():
@@ -293,10 +357,16 @@ def main(argv=None):
             (STATE / name).unlink(missing_ok=True)
         spec = prepare_review_model(args.model_variant)
         print('Review checkpoint: '+spec['model']+' / '+spec['revision'], flush=True)
-        with httpx.Client(trust_env=False, timeout=30, follow_redirects=True) as client:
-            binary = cloudflared(client)
+        verify_live_interviews(backend,args,children)
+        if args.validation_only:return 0
+        children.clear()  # The finished validation child cannot trip service health checks.
+        if not args.public_origin:
+            with httpx.Client(trust_env=False, timeout=30, follow_redirects=True) as client:
+                binary = cloudflared(client)
         env = os.environ.copy()
-        env.update(IAM_BASE_URL=f'http://127.0.0.1:{args.model_port}', IAM_VLLM_PORT=str(args.model_port), IAM_MODEL_VARIANT=args.model_variant)
+        env.update(IAM_BASE_URL=f'http://127.0.0.1:{args.model_port}', IAM_VLLM_PORT=str(args.model_port), IAM_MODEL_VARIANT=args.model_variant,
+            IAM_MODEL_THINKING='1' if args.thinking else '0')
+        env.pop('IAM_SRA_VALIDATION_LEASE',None)
         env.update(IAM_SRA_ON_DEMAND_GPU='1', IAM_SRA_GPU_IDLE_SECONDS=str(args.idle_seconds),
             IAM_SRA_REVIEW_GPU_UUID=args.gpu_uuid or '')
         def launch(command, *, output=False, cwd=ROOT):
@@ -310,7 +380,7 @@ def main(argv=None):
         launch([sys.executable, 'serve_app.py'], cwd=ROOT / 'app')
         configuration = STATE / 'empty-config.yml'
         configuration.write_text('{}\n')  # Do not read/change existing Cloudflare account configuration.
-        origin = tunnel_origin(launch(tunnel_command(binary, args.ui_port, configuration), output=True))
+        origin = args.public_origin or tunnel_origin(launch(tunnel_command(binary, args.ui_port, configuration), output=True))
         env.update(IAM_SRA_API_HOST='127.0.0.1', IAM_SRA_API_PORT=str(args.api_port),
             IAM_SRA_ALLOWED_ORIGINS=origin, IAM_SRA_COOKIE_SECURE='1',
             IAM_SRA_API_SECRET=os.urandom(32).hex(),
@@ -323,11 +393,12 @@ def main(argv=None):
             wait_health(client, f'http://127.0.0.1:{args.api_port}/v1/health', children)
             wait_health(client, origin + '/api/sra-assessment/v1/health', children)
             verify_public(client, origin)
-        url = origin + '/chat'
+        url = origin + REVIEW_PATH
         (STATE / 'chat-url.txt').write_text(url + '\n')
         print('\nFN test link: ' + url, flush=True)
         print('HTTPS page, API, ownership cookie and CSRF checked. The model starts only when a reply needs inference and A2 is available.', flush=True)
-        print('Anyone with this link can open it; use fictional test answers. Traffic passes through Cloudflare.', flush=True)
+        print('Anyone with this link can open it; use fictional test answers.'+
+            ('' if args.public_origin else ' Traffic passes through Cloudflare.'), flush=True)
         print(f'The review model is released after {args.idle_seconds} idle seconds. Keep this terminal open; Ctrl+C closes the link and releases its model.', flush=True)
         while all(p.poll() is None for p in children):
             time.sleep(1)

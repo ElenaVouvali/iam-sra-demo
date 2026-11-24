@@ -72,7 +72,8 @@ def ssh_command(target):
 
 
 def settings(args):
-    values = {'IAM_GPU_PROFILE': args.profile, 'IAM_MODEL_VARIANT': args.variant, 'IAM_VLLM_PORT': str(args.port),
+    values = {'IAM_GPU_PROFILE': args.profile, 'IAM_MODEL_VARIANT': args.variant,
+              'IAM_MODEL_THINKING':'1' if getattr(args,'thinking',False) else '0', 'IAM_VLLM_PORT': str(args.port),
               'IAM_BASE_URL': f'http://127.0.0.1:{args.port}',
               # Ignore stale device/precision choices from previous launches.
               'IAM_GPU_UUID': args.gpu_uuid or '',
@@ -121,6 +122,8 @@ def port_free(port):
 
 def execute(args):
     profile = PROFILES[args.profile]
+    if getattr(args,'thinking',False) and (args.profile!='liono-a2' or args.variant!='awq'):
+        raise ValueError('Experimental thinking is limited to --variant awq on liono-a2.')
     if args.variant == 'awq' and args.profile != 'liono-a2':
         raise ValueError('The AWQ speed profile is currently supported on liono-a2; use fp16 for other host profiles.')
     remote = socket.gethostname().split('.')[0].lower() != profile['host']
@@ -175,6 +178,7 @@ def main(argv=None):
     parser.add_argument('action', choices=['list', 'prepare', 'check', 'start', 'tunnel'])
     parser.add_argument('profile', nargs='?', choices=PROFILES)
     parser.add_argument('--variant', choices=['fp16','awq'], default='fp16', help='Explicit model artifact; original fp16 remains the default')
+    parser.add_argument('--thinking',action='store_true',help='Experimental A2 AWQ reasoning parser and 8192-token context; requires live validation')
     parser.add_argument('--port', type=int, default=18000, help='Model and local forward port (default: 18000)')
     parser.add_argument('--remote-dir', default='iam-sra-inference', help='Separate directory relative to remote home')
     parser.add_argument('--ssh', help='Override SSH destination; existing SSH config/ProxyJump is honoured')

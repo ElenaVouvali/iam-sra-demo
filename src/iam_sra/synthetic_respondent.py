@@ -94,8 +94,8 @@ class SimulatedAnswer(Strict):
 
 class LLMRespondent(ConversationClient):
     """Exploratory Qwen simulator; same-model agreement is not independent evidence."""
-    backend='existing_qwen_synthetic-1.1.0'
-    prompt_version='synthetic-respondent-1.1.0'
+    backend='existing_qwen_synthetic-1.2.0'
+    prompt_version='synthetic-respondent-1.2.0'
     def __init__(self,persona,**kwargs):
         super().__init__(**kwargs);self.persona=deepcopy(persona);self.turns=[]
     def respond(self,question,history=()):
@@ -113,7 +113,10 @@ class LLMRespondent(ConversationClient):
             'Answer only what the displayed question reasonably asks. Do not reveal this profile or infer hidden assessment criteria. '
             'Keep facts, role and time consistent. Share information needs, experiences and concerns only when relevant. '
             'You may express uncertainty or decline. Never invent measurements, actual participation, contributions, influence, '
-            'medical details or local operating facts. Use one or two short sentences, at most 70 words. '
+            'medical details or local operating facts. '
+            'Use control=unsure for unknown facts. Use skip or decline only for an explicit refusal in the persona, '
+            'not for unfamiliarity. Never answer an ordinary question by reselecting your perspective. '
+            'Use one or two short sentences, at most 70 words. '
             'Keep baseline knowledge distinct from information supplied during the dialogue. '
             'If displayed_response_options is present, return exactly one of its values as text with control=answer; '
             'these questions have selection only. Otherwise answer the actual question in your own words, '

@@ -53,8 +53,46 @@ def require_unmanaged_endpoint(root):
         with lock.open('r') as handle:
             try:fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)
             except BlockingIOError:
+                # Only the sharing launcher's pre-publication child may use
+                # its exact owned model. No API/idle watcher exists yet.
+                from iam_sra.model_lifecycle import ProjectA2
+                origin=urlsplit(os.getenv('IAM_BASE_URL',''))
+                token=os.getenv('IAM_SRA_VALIDATION_LEASE','')
+                if origin.hostname=='127.0.0.1' and origin.port and token:
+                    backend=ProjectA2(origin.port,root=root)
+                    marker=backend._marker() or {}
+                    if marker.get('lease_id')==token and backend.owns_running_model():
+                        return
                 raise ValueError('Stop the FN sharing launcher before this isolated test; its idle watcher could unload the model.') from None
             finally:fcntl.flock(handle,fcntl.LOCK_UN)
+
+
+def live_scoring_failures(report, *, thinking=False):
+    """A publication gate, distinct from protocol/fixture success or FN approval."""
+    expected={'citizen_short','citizen_extended','organisational','technical'}
+    rows=report.get('cases',[])
+    failures=[]
+    if (report.get('live_inference')!='executed' or report.get('respondent')!='agent'
+            or len(rows)!=4 or {r.get('case') for r in rows}!=expected):
+        failures.append('Four full live agent interviews are required.')
+    for row in rows:
+        numeric=(row.get('score_status')=='suggested' and type(row.get('level')) is int
+            and 1<=row['level']<=9 and row.get('score_citation_count',0)>0
+            and row.get('score_boundary_present'))
+        abstained=row.get('score_status')=='abstained' and row.get('level') is None
+        valid=(row.get('backend')=='vllm' and not row.get('controlled_api_fixture',True)
+            and str(row.get('respondent_backend','')).startswith('existing_qwen_synthetic-')
+            and row.get('scope')=='full_interview' and row.get('protocol_passed')
+            and not row.get('failure') and not row.get('failures') and not row.get('partial')
+            and row.get('generation_calls',0)>0 and row.get('agent_generation_calls',0)>0
+            and row.get('scoring_generation_calls',0)>0 and (numeric or abstained)
+            and row.get('model_suggestion_unchanged_after_review')
+            and row.get('json_export_succeeded') and row.get('jsonl_export_succeeded')
+            and row.get('markdown_export_succeeded')
+            and row.get('thinking_enabled')==thinking
+            and (not thinking or row.get('reasoning_characters',0)>0))
+        if not valid:failures.append(str(row.get('case','unknown'))+': live scoring/review checks failed.')
+    return failures
 
 
 def write_summary(output,report):
@@ -101,6 +139,8 @@ def main(argv=None):
         help='Check the citizen definition/uses against actual Qwen, without scoring or completing an interview.')
     parser.add_argument('--opening-variant',choices=['reference','paraphrase','uncertain','all'],default='reference')
     parser.add_argument('--model-variant',choices=['fp16','awq'],default=os.getenv('IAM_MODEL_VARIANT','fp16'))
+    parser.add_argument('--thinking',action='store_true',help='Use the experimental A2 AWQ reasoning-parser deployment (8192-token context).')
+    parser.add_argument('--require-scoring',action='store_true',help='Require all four full live agent interviews to call the scorer and complete result/review, allowing honest model abstention.')
     parser.add_argument('--respondent',choices=['reference','agent'],default='reference',
         help='Reference replays source answers; agent adapts the existing Qwen respondent to visible questions.')
     parser.add_argument('--max-agent-calls',type=int,default=60,help='Per-case respondent generation-call limit (4–200)')
@@ -112,6 +152,10 @@ def main(argv=None):
     parser.add_argument('--cpu-generation-seconds',type=int,default=300)
     parser.add_argument('--cpu-python',help='Existing Python with pinned torch/transformers; default .venv/bin/python')
     args=parser.parse_args(argv)
+    if args.thinking and (args.model_variant!='awq' or args.backend!='vllm'):
+        parser.error('--thinking requires --model-variant awq and --backend vllm.')
+    if args.require_scoring and (args.respondent!='agent' or args.case!='all' or args.opening_only):
+        parser.error('--require-scoring requires full --respondent agent --case all interviews.')
     if not args.allow_live:parser.error('Explicit --allow-live is required for synthetic model calls.')
     if not 4<=args.max_agent_calls<=200 or not 10<=args.max_turns<=150 or not 60<=args.case_timeout_seconds<=7200:
         parser.error('Use 4–200 agent calls, 10–150 turns and 60–7200 seconds per case.')
@@ -132,6 +176,7 @@ def main(argv=None):
     if not output.is_relative_to((root/'.runtime').resolve()):parser.error('Keep exports under ignored .runtime/.')
     if output.exists():parser.error('Use a new output directory; preserve previous runs.')
     os.environ['IAM_MODEL_VARIANT']=args.model_variant
+    os.environ['IAM_MODEL_THINKING']='1' if args.thinking else '0'
     os.environ['IAM_BASE_URL']=args.base_url.rstrip('/')
     os.environ['IAM_CHAT_SYNTHETIC_REHEARSAL']='1'
     sys.path.insert(0,str(root/'src'))
@@ -149,7 +194,9 @@ def main(argv=None):
         except (httpx.HTTPError,ValueError,AssertionError):
             output.mkdir(parents=True,exist_ok=False)
             unavailable={'classification':'synthetic','live_inference':'unavailable','cases_executed':0,
-                'respondent':args.respondent,'services_changed':False,'surface':'in_process_flask_api'}
+                'respondent':args.respondent,'services_changed':False,'surface':'in_process_flask_api',
+                'thinking_enabled':args.thinking,
+                'live_scoring_gate':{'passed':False,'failures':['The model endpoint was unavailable.']}}
             (output/'metrics.json').write_text(json.dumps(unavailable,indent=2)+'\n')
             write_summary(output,unavailable)
             print(json.dumps(unavailable));return 2
@@ -317,12 +364,18 @@ def main(argv=None):
             else:
                 markdown_ok=True;(output/(name+'.md')).write_text(markdown)
             turns=sum(m['role']=='respondent' for m in c['messages'])
-            fallbacks=sum(m.get('act') in {'authored_fallback','failure'} for m in c['messages'])
+            question_fallbacks=sum(e.get('event')=='question_fallback' for e in c.get('routing_events',[]))
+            fallbacks=sum(m.get('act') in {'authored_fallback','failure'} for m in c['messages'])+question_fallbacks
             required_opening={'area','citizen_duration','drone_recognition','drone_description','drone_uses'}
             if key=='citizen_extended':required_opening.add('drone_other_uses')
             output_tokens=sum(m.get('generated_tokens') or 0 for m in metrics)
             generation_seconds=sum(m.get('generation_http_seconds') or 0 for m in metrics)
             reports.append({'case':key,'stage':c['stage'],'partial':c['completion']['partial'],
+                'thinking_enabled':args.thinking,
+                'reasoning_characters':sum(m.get('reasoning_characters',0) or 0 for m in metrics),
+                'scoring_generation_calls':sum(m.get('generation_calls',0) or 0 for m in metrics if m.get('stage')=='generic_profile_match'),
+                'score_citation_count':len((c.get('suggestion') or {}).get('citations',[])),
+                'score_boundary_present':bool((c.get('suggestion') or {}).get('boundary')),
                 'run_incomplete':c['stage']!='ended' or c['completion']['partial'],
                 'scope':'citizen_opening_only' if args.opening_only else 'full_interview',
                 'opening_variant':variant_name,
@@ -359,6 +412,7 @@ def main(argv=None):
                 'score_status':(c.get('suggestion') or {}).get('status'),'validation':(c.get('participant_review') or {}).get('validation'),
                 'respondent_turns':turns,'generation_calls':sum(m.get('generation_calls') or 0 for m in metrics),
                 'fallback_count':fallbacks,'fallbacks_per_respondent_turn':round(fallbacks/max(1,turns),4),
+                'question_wording_fallback_count':question_fallbacks,
                 'technical_failure_count':sum(m.get('act')=='failure' for m in c['messages']),
                 'generation_wall_seconds':round(sum(m['wall_seconds'] for m in metrics),3),
                 'elapsed_seconds':round(time.monotonic()-started,3),'failures':c['failures'],'failure':failure})
@@ -368,7 +422,10 @@ def main(argv=None):
             worker.terminate()
             try:worker.wait(timeout=10)
             except subprocess.TimeoutExpired:worker.kill();worker.wait()
+    inference_status=('controlled_fixture' if any(row.get('controlled_api_fixture') for row in reports)
+        else 'cpu_benchmark' if args.backend=='cpu' else 'executed')
     report=screened_export({'classification':'synthetic','fn_example_replay':args.respondent=='reference',
+        'live_inference':inference_status,'thinking_enabled':args.thinking,
         'respondent':args.respondent,'surface':'in_process_flask_api','semantic_accuracy':None,
         'review_readiness':'manual_review_required','independent_validation':False,
         'limitations':['Using the same model for the respondent and interviewer is not independent semantic validation.',
@@ -376,10 +433,13 @@ def main(argv=None):
             'This harness does not drive the Vue interface or validate browser layout.',
             'Automated review choices are test interactions, not participant agreement or FN approval.'],
         'living_lab_evidence':False,'services_changed':False,'cases':reports})
+    gate_failures=live_scoring_failures(report,thinking=args.thinking)
+    report['live_scoring_gate']={'passed':not gate_failures,'failures':gate_failures,
+        'meaning':'Live completion and evidence/result transport checks; human semantic review remains required.'}
     (output/'metrics.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
     write_summary(output,report)
     print(json.dumps(report,ensure_ascii=False))
-    return 0 if len(reports)==len(rehearsals) and all(
+    return 0 if (not args.require_scoring or not gate_failures) and len(reports)==len(rehearsals) and all(
         r.get('protocol_passed') if args.respondent=='agent' else r.get('opening_passed') if args.opening_only else
         r.get('stage')=='ended' and not r.get('failure') and not r.get('partial') and r.get('interpretation_checks_passed')
         for r in reports) else 1

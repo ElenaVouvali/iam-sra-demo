@@ -4,6 +4,7 @@ import httpx
 from .llm_client import LLMTransport, BACKEND, STAGE_LIMITS
 from .assessment import AssessmentError
 from .settings import config
+from .model_spec import thinking_enabled,context_tokens,reasoning_tokens
 
 class ConversationClient(LLMTransport):
     def _start(self):
@@ -11,14 +12,17 @@ class ConversationClient(LLMTransport):
         self.last_anchor_facts={};self.last_metrics={'generation_calls':0,'tokenize_calls':0,'cache_hits':0,'tokenize_cache_hits':0}
         if not hasattr(self,'session_metrics'):self.session_metrics={'generation_calls':0,'tokenize_calls':0,'latency_seconds':0.0}
         self._deadline=min(time.monotonic()+self.stage_timeout,getattr(self,'external_deadline',float('inf')))
-        self.last_settings={'enable_thinking':False,'backend':BACKEND,'context_tokens':4096,
-            'temperature':0.2,'top_p':0.8,'stage_deadline_seconds':self.stage_timeout,
+        self.last_settings={'enable_thinking':thinking_enabled(),'backend':BACKEND,'context_tokens':context_tokens(),
+            'reasoning_token_allowance':reasoning_tokens(), 'reasoning_retention':'discarded',
+            'temperature':0.6 if thinking_enabled() else 0.2,'top_p':0.95 if thinking_enabled() else 0.8,'stage_deadline_seconds':self.stage_timeout,
             'request_timeout_seconds':self.request_timeout,'screened_requests':True,
             'stage_output_limits':dict(STAGE_LIMITS),'maximum_attempts_per_call':2,
             'model':config('model'),'expected_deployment':{'dtype':'half','engine':'V0','attention':'XFORMERS','tensor_parallel_size':1,'max_num_seqs':1}}
 
         if config('model').get('quantization'):
             self.last_settings['expected_deployment'].update(quantization=config('model')['quantization'], cpu_offload_gb=0)
+        self.last_settings['expected_deployment'].update(max_model_len=context_tokens(),
+            reasoning_parser='deepseek_r1' if thinking_enabled() else None)
 
     def bind_session(self,session_id,edit_epoch):
         scope=(session_id,edit_epoch)
@@ -40,7 +44,7 @@ class ConversationClient(LLMTransport):
         self.last_settings['last_request_context']=dict(self.last_request_context)
         key=digest({'stage':stage,'system':system,'user':user,'schema':schema,'endpoint':self.base_url,
             'cache_format':'validated_wire_v2',
-            'model':config('model'),'request_settings':{'output_limit':STAGE_LIMITS[stage],'temperature':0.2,'top_p':0.8,'enable_thinking':False,'backend':BACKEND},'policies':{k:config(k) for k in ['concerns','prompts']}})
+            'model':config('model'),'request_settings':{'output_limit':STAGE_LIMITS[stage],'temperature':0.6 if thinking_enabled() else 0.2,'top_p':0.95 if thinking_enabled() else 0.8,'enable_thinking':thinking_enabled(),'context_tokens':context_tokens(),'reasoning_token_allowance':reasoning_tokens(),'backend':BACKEND},'policies':{k:config(k) for k in ['concerns','prompts']}})
         cache=getattr(self,'_request_cache',{})
         callback=getattr(self,'progress',None)
         if callback:callback(stage)
