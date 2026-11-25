@@ -1,6 +1,26 @@
 """Independent expected-branch audit for registered FN reference replays."""
 
 
+def expected_reference_answer_status(goal, reference, overrides=None):
+    """A question absent from the FN answer fixture has no asserted answer.
+
+    The replay harness uses a synthetic "I do not know" response for such an
+    optional branch; expect explicit unknown coverage instead of treating that
+    answer as if it were the fixture's substantive reference response.
+    """
+    overrides=overrides or {}
+    if goal in overrides:
+        return overrides[goal]
+    # The runner supplies an explicit duration selection for this stable
+    # onboarding stage; unlike optional evidence probes, it is not missing
+    # reference content and must be recorded as answered.
+    if goal=='citizen_duration':
+        return 'explored'
+    if reference is None or reference.get('answer_kind')=='uncertain':
+        return 'unknown'
+    return 'explored'
+
+
 def expected_goals(case, fixture, spec):
     fixture_flows=fixture.get('flows',fixture)
     flow=fixture_flows[case]

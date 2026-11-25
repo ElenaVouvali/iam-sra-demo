@@ -28,6 +28,25 @@ def test_four_distinct_personas_have_no_target_levels():
     assert 'component' in personas['technical']['background'] or 'container' in personas['technical']['background']
 
 
+@pytest.mark.parametrize(('persona_id','case'),[
+    ('fn_unfamiliar_citizen','citizen_short'),('G3_multiconcern_priority_revision','citizen_extended'),
+    ('fn_planning_unit','organisational'),('G8_routine_health_logistics','organisational'),
+    ('fn_container_component','technical'),('G11_representative_system_validation','technical'),
+])
+def test_live_generalisation_personas_match_profile_without_score_targets(monkeypatch,tmp_path,persona_id,case):
+    module=prepare_runner(monkeypatch,tmp_path)
+    persona=module.load_generalisation_persona(tmp_path,persona_id,case)
+    assert persona['persona_id']==persona_id and persona['synthetic'] is True
+    assert not any(key in persona for key in ('target_level','expected_level','score'))
+    visible={key:persona.get(key) for key in (
+        'perspective','stakeholder_role','city','background','known_facts','unknown_facts',
+        'actual_experiences','actual_participation','actual_contributions','reported_outcomes',
+        'benefits_perceived','concerns','conditions','information_needs','priorities',
+        'acceptance_position','trust_position','communication_style','response_length_preference',
+        'uncertainty_tolerance','behavioural_traits','contradiction_policy')}
+    assert 'expected_observations' not in visible and 'prohibited_inferences' not in visible
+
+
 def test_respondent_sees_visible_question_and_recent_dialogue_only():
     class Respondent:
         def respond(self,question,history):
@@ -111,7 +130,8 @@ def test_invalid_or_unbounded_agent_runs_are_rejected(arguments):
 
 def prepare_runner(monkeypatch,tmp_path):
     module=runner();(tmp_path/'eval').mkdir()
-    for name in ('fn_agent_personas_v1.json','fn_golden_paths.json','fn_interpretation_cases.json'):
+    for name in ('fn_agent_personas_v1.json','fn_golden_paths.json','fn_interpretation_cases.json',
+                 'synthetic_personas_v1.json','fn_generalisation_additional_personas_v1.json'):
         shutil.copyfile(ROOT/'eval'/name,tmp_path/'eval'/name)
     module.__file__=str(tmp_path/'scripts/smoke-fn-interview.py')
     monkeypatch.setenv('IAM_SRA_ON_DEMAND_GPU','0')
@@ -335,10 +355,11 @@ def test_exact_fn_review_prompts_do_not_allow_personal_data_or_changed_text():
     text=review['question'].format(level=4)+'\n\n'+'\n'.join(f'{k}. {label}' for k,label in zip('ABCDE',review['choices']))
     privacy.require_safe_data({'text':text})
     privacy.require_safe_data({'chat':{'messages':[{'text':text}]}})
-    for record in ({'text':text+' Email alice@example.com'},
+    unsafe=text+' Email alice@example.com'
+    for record in ({'text':unsafe},
                    {'text':text.replace('It describes me well','My name is Alice Example')},
-                   {'quote':text},{'answer':text},
-                   {'text':json.dumps({'chat':{'messages':[{'text':text}]}})}):
+                   {'quote':unsafe},{'answer':unsafe},
+                   {'text':json.dumps({'chat':{'messages':[{'text':unsafe}]}})}):
         with pytest.raises(privacy.PrivacyError):privacy.require_safe_data(record)
 
 

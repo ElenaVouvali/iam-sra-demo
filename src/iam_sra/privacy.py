@@ -413,7 +413,14 @@ def require_safe_data(value):
         elif isinstance(item, (list, tuple)):
             for i,val in enumerate(item): collect(val,path+f'[{i}]')
     collect(value)
+    # Session/API structures repeat identical respondent quotations in the
+    # message log, evidence ledger, annotations and exports. Screen each exact
+    # string once per validation call; privacy classification is text-invariant,
+    # and the temporary set is discarded with this call (no content cache).
+    screened=set()
     for text,path in strings:
+        if text in screened:continue
+        screened.add(text)
         try: require_clean(text)
         except PrivacyError as exc:
             # An output/export/request preview cannot replace an audited structure.

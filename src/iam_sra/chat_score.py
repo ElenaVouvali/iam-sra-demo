@@ -14,6 +14,7 @@ from .chat_policy import POLICY
 STAGE_LIMITS['chat_profile_match'] = 1250
 
 
+
 def evidence_aliases(payload):
     """Map private session IDs to short neutral wire IDs for the scorer prompt."""
     return {f'evidence-{index}':row['id'] for index,row in enumerate(payload['originals'],1)}
@@ -28,14 +29,23 @@ def exposure_aliases(payload):
 
 class ProfileMatch(Strict):
     selected_anchor_id: str | None = Field(max_length=80)
+    # Generate the adjacent anchor before its rationale. The guided decoder
+    # follows property order, and the boundary must explain this exact choice.
+    alternative_anchor_id: str | None = Field(max_length=80)
     citations: list[Citation] = Field(max_length=4)
     # Keep participant-facing rationale bounded after decoding. Empty or
     # missing prose is rejected by validation; Python never fabricates it.
-    explanation: str | None = Field(...)
-    boundary: str | None = Field(...)
-    alternative_anchor_id: str | None = Field(max_length=80)
+    explanation: str | None = Field(..., max_length=600)
+    boundary: str | None = Field(..., max_length=500)
     material_conflict: bool
     evidence_incomplete: bool
+
+
+def profile_match_schema():
+    """Constrain guided output to the same minimum boundary Python validates."""
+    schema=ProfileMatch.model_json_schema()
+    schema['properties']['boundary']['minLength']=40
+    return schema
 
 
 def compact_score_request(payload):
@@ -93,13 +103,24 @@ def validate_profile_match(raw, payload):
         chosen=anchors[selected];alternative=anchors[value.alternative_anchor_id]
         if abs(int(chosen['level'])-int(alternative['level']))!=1:
             raise AssessmentError('The comparison anchor must be an adjacent level.',code='evidence',field='alternative_anchor_id')
-    for cite in value.citations:
-        if cite.evidence_id not in evidence or cite.quote not in evidence[cite.evidence_id]:
-            raise AssessmentError('Profile citation must match original words.',code='evidence',field='citations.quote')
     require_safe_data(value)
     result = value.model_dump()
-    result['explanation'] = result['explanation'][:600] if result['explanation'] else None
-    result['boundary'] = result['boundary'][:500] if result['boundary'] else None
+    # A model can quote an exact respondent sentence but attach the neighbouring
+    # answer ID. Repair only an unambiguous exact-quote match; never use semantic
+    # or approximate matching. Repeated identical quotations remain ambiguous.
+    normalized_citations=[];seen_citations=set()
+    for citation in result['citations']:
+        quote=citation['quote'];evidence_id=citation['evidence_id']
+        if evidence_id not in evidence or quote not in evidence[evidence_id]:
+            matches=[candidate for candidate,text in evidence.items() if quote in text]
+            if len(matches)!=1:
+                raise AssessmentError('Profile citation must match one unambiguous original answer.',
+                                      code='evidence',field='citations.quote')
+            citation['evidence_id']=matches[0]
+        key=(citation['evidence_id'],quote)
+        if key not in seen_citations:
+            normalized_citations.append(citation);seen_citations.add(key)
+    result['citations']=normalized_citations
     for field in ('explanation','boundary'):
         if result[field] and re.search(r'\b(?:PDFs?|workbook|rubric|source document|interview example)\b|\.(?:pdf|xlsx|docx)\b', result[field], re.I):
             result[field] = None
@@ -202,5 +223,5 @@ class ChatScoreClient(ConversationClient):
             return validate_profile_match(candidate, payload)
         with _LOCK,httpx.Client(trust_env=False) as client:
             return self._request(client,'chat_profile_match',system,compact_score_request(payload),
-                ProfileMatch.model_json_schema(),checked_match,
-                retry_hint=('Return every required field. For a non-null selected_anchor_id, boundary must be a complete explanatory sentence of at least 40 characters. Its FIRST SENTENCE must state the exact human-readable label of alternative_anchor_id or write “level N”; the value of alternative_anchor_id is an internal ID and MUST NOT be copied into boundary prose. Make the named label/level correspond to alternative_anchor_id, exactly one level above or below the selected anchor. Do not name another level before the selected alternative. Do not include any message ID, evidence-N label, person/place name, or respondent quotation in explanation/boundary; exact quotations belong only in citations. Do not leave boundary null or put it only in explanation. Provide no more than four citations, each with the exact original evidence ID and contiguous quote. For abstention only, the selection, alternative ID and boundary may be null; explanation must state the concrete missing or contradictory evidence.'))
+                profile_match_schema(),checked_match,
+                retry_hint=('Return every required field. Keep explanation to 600 characters or fewer and boundary to 500 characters or fewer; use complete sentences and do not let either field end mid-sentence. For a non-null selected_anchor_id, boundary must be a complete explanatory sentence of at least 40 characters. Its FIRST SENTENCE must state the exact human-readable label of alternative_anchor_id or write “level N”; the value of alternative_anchor_id is an internal ID and MUST NOT be copied into boundary prose. Make the named label/level correspond to alternative_anchor_id, exactly one level above or below the selected anchor. Do not name another level before the selected alternative. Do not include any message ID, evidence-N label, person/place name, or respondent quotation in explanation/boundary; exact quotations belong only in citations. Do not leave boundary null or put it only in explanation. Provide no more than four citations, each with the exact original evidence ID and contiguous quote. For abstention only, the selection, alternative ID and boundary may be null; explanation must state the concrete missing or contradictory evidence.'))

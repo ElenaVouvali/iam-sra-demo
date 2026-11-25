@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 const CASE = JSON.parse(readFileSync(new URL('../../../eval/conversation_meeting_cases_v2.json', import.meta.url))).cases[0]
 const AUTHORED_SCENARIO = JSON.parse(readFileSync(new URL('../../../configs/scenario.json', import.meta.url))).id
-export const pages = ['/tools/sra-assessment', '/tools/sra-assessment/app']
+export const pages = ['/tools/sra-assessment', '/tools/sra-assessment/app', '/chat']
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 async function select(page, label, value, root = 'body') {
   const id = await page.$$eval(`${root} label`, (els, text) => els.find((el) => el.textContent.trim().startsWith(text))?.htmlFor, label)
@@ -36,6 +36,18 @@ function monitor(page) {
 }
 
 export const flows = {
+ 'chat introduction and selectable profile options': async (page, _errors, { go, expect, clickText }) => {
+  await go(page, '/chat')
+  await waitUntil(() => page.$('[data-testid="chat-introduction"]'), 'Chat introduction did not open')
+  expect(await page.$('[data-testid="chat-introduction"]'), 'Introduction is not a separate first screen')
+  expect(!await page.$('[data-testid="chat-answer-options"]'), 'Profile question appeared before introduction')
+  await clickText(page, 'button', 'Continue to the conversation')
+  await waitUntil(() => page.$('[data-testid="chat-answer-options"]'), 'Perspective choices did not appear')
+  const optionText = await page.$eval('[data-testid="chat-answer-options"]', el => el.textContent)
+  expect(optionText.includes('Citizen') && optionText.includes('Organisation or institution') && optionText.includes('Technology expert or researcher'), 'Explained profile choices missing')
+  expect(await page.$('[data-testid="chat-answer-options"] input[type="radio"][value="A"]'), 'Citizen choice is not selectable')
+  expect(!await page.$('[data-testid="indicator-assessment"]'), 'Internal indicator form appeared during onboarding')
+ },
   'catalogue, detail, keyboard and Back': async (page, _errors, { go, back, expect, clickText }) => {
     await go(page, '/')
     await page.keyboard.press('Tab')

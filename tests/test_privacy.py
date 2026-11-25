@@ -372,6 +372,19 @@ def test_model_json_labels_are_structure_but_prose_is_still_screened():
     with pytest.raises(PrivacyError):require_safe_data({'content':json.dumps({'interpretation':'Email alice@example.com'})})
 
 
+def test_duplicate_exact_text_is_screened_once_per_payload_not_cached_between_calls(monkeypatch):
+    import iam_sra.privacy as privacy
+    observed=[]
+    monkeypatch.setattr(privacy,'require_clean',lambda text:observed.append(text) or text)
+    payload={'messages':[{'text':'A repeated safe sentence.'},{'text':'A repeated safe sentence.'}],
+             'evidence':{'quote':'A repeated safe sentence.'},'other':'Another sentence.'}
+    assert privacy.require_safe_data(payload)==payload
+    assert observed==['A repeated safe sentence.','Another sentence.']
+    observed.clear()
+    privacy.require_safe_data(payload)
+    assert observed==['A repeated safe sentence.','Another sentence.']
+
+
 @pytest.mark.parametrize('setting', [None, '0', '1'])
 def test_privacy_is_mandatory_and_environment_cannot_bypass(monkeypatch, setting):
     from iam_sra.privacy import screening_enabled

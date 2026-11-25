@@ -138,6 +138,141 @@ def test_open_ended_wildlife_concern_is_not_rejected_for_missing_indicator():
     assert value['topic']=='wildlife disturbance'
 
 
+def test_multi_concern_answer_retains_each_grounded_topic_on_same_original_evidence():
+    s,c=chat();s.concerns=[]
+    answer=('Urgent deliveries could help. Repeated flights may disturb nesting birds; noise near homes could affect sleep; '
+        'a drone passing a bedroom window might see inside; benefits may not be shared fairly; and residents should know how routes are decided.')
+    row=s._user(answer,True,'answer');s.objective='open_priorities'
+    topics=[
+        {'topic':'nesting birds','quote':'disturb nesting birds','matches_topic':None},
+        {'topic':'residential noise','quote':'noise near homes could affect sleep','matches_topic':None},
+        {'topic':'privacy','quote':'a drone passing a bedroom window might see inside','matches_topic':None},
+        {'topic':'fairness','quote':'benefits may not be shared fairly','matches_topic':None},
+        {'topic':'route transparency','quote':'residents should know how routes are decided','matches_topic':None},
+    ]
+    s._fn_topics(row,{'answer_kind':'substantive','topics':topics,'coverage':[]})
+    ledger={c['topic']:c for c in s.concerns}
+    assert set(ledger)=={item['topic'] for item in topics}
+    assert all(row['id'] in ledger[item['topic']]['evidence_ids'] for item in topics)
+    assert all(ledger[item['topic']]['spontaneously_raised'] for item in topics)
+    assert len({eid for c in ledger.values() for eid in c['evidence_ids']})==1
+
+
+def test_explicit_priority_revision_replaces_current_set_and_preserves_history():
+    s,c=chat();s.concerns=[
+        {'topic':'wildlife disturbance','evidence_ids':['m-old'],'spontaneously_raised':True,
+         'suggested_by_interviewer':False,'selected_priority':True,'explored':False,'priority':True,
+         'indicator_ids':[],'mapping_status':'not_mapped','interpretation_status':'unreviewed'},
+        {'topic':'privacy','evidence_ids':['m-old'],'spontaneously_raised':True,
+         'suggested_by_interviewer':False,'selected_priority':True,'explored':False,'priority':True,
+         'indicator_ids':[],'mapping_status':'not_mapped','interpretation_status':'unreviewed'},
+    ]
+    s.priorities=[{'topic':'wildlife disturbance','evidence_id':'m-old','text':'Earlier choice','origin':'respondent_selected'},
+                  {'topic':'privacy','evidence_id':'m-old','text':'Earlier choice','origin':'respondent_selected'}]
+    s.objective='priority_understanding'
+    answer='I want to revise my earlier choice. Privacy stays important; transparency about routes matters more to me than wildlife.'
+    row=s._user(answer,True,'answer')
+    interpreted={'answer_kind':'substantive','topics':[
+        {'topic':'privacy','quote':'Privacy stays important','matches_topic':None},
+        {'topic':'transparency','quote':'transparency about routes','matches_topic':None}],
+        'priority_update':'replace','priority_quote':'I want to revise my earlier choice. Privacy stays important; transparency about routes matters more to me than wildlife.',
+        'priority_topics':[
+            {'topic':'privacy','quote':'Privacy stays important','matches_topic':None},
+            {'topic':'transparency','quote':'transparency about routes matters more to me','matches_topic':None}],
+        'coverage':[]}
+    s._fn_topics(row,interpreted)
+    assert [p['topic'] for p in s.priorities]==['privacy','transparency']
+    by_topic={c['topic']:c for c in s.concerns}
+    assert by_topic['wildlife disturbance']['selected_priority'] is False
+    assert by_topic['privacy']['selected_priority'] is True
+    assert by_topic['transparency']['selected_priority'] is True
+    assert s.priority_history[-1]['previous_topics']==['wildlife disturbance','privacy']
+    assert s.priority_history[-1]['current_topics']==['privacy','transparency']
+    assert s.export()['priority_history']==s.priority_history
+
+
+def test_fn_interpretation_accepts_more_than_five_grounded_concerns_and_validates_priority_quotes():
+    s,c=chat()
+    answer=('Nesting habitat, residential noise, bedroom privacy, fair distribution, route transparency, and access for remote clinics matter.')
+    request=s._request(answer)
+    rows=[('nesting habitat','Nesting habitat'),('residential noise','residential noise'),
+        ('bedroom privacy','bedroom privacy'),('fair distribution','fair distribution'),
+        ('route transparency','route transparency'),('remote clinic access','access for remote clinics')]
+    topics=[{'topic':label,'quote':quote,'matches_topic':None} for label,quote in rows]
+    payload={'message':'Which issues would you like to discuss first?','interpretation':{
+        'action':'advance','answer_kind':'substantive','answer_quote':answer,'current_goal_addressed':True,
+        'coverage':[],'topics':topics,'boundary_goals':[],'priority_update':'replace',
+        'priority_quote':'remote clinics matter','priority_topics':[
+            {'topic':'route transparency','quote':'route transparency','matches_topic':None}]}}
+    checked=validate_reply(payload,request)
+    assert len(checked['interpretation']['topics'])==6
+    assert checked['interpretation']['priority_update']=='replace'
+    assert checked['interpretation']['priority_topics'][0]['quote']=='route transparency'
+
+    payload['interpretation']['priority_quote']='not present in the answer'
+    rejected=validate_reply(payload,request)
+    assert rejected['interpretation']['priority_update']=='none'
+    assert rejected['interpretation']['priority_topics']==[]
+    assert 'interpretation.priority_update' in rejected['_annotation_warnings']
+
+
+def test_grounded_priority_topics_can_fill_selection_topics_field():
+    answer='Privacy and routes matter most to us.'
+    request={'answer':answer,'current_answer_id':'m7','profile':'organisational',
+        'fn':{'evidence_goal':'priorities','allowed_objectives':{'priorities':'priority selection'},'known_topics':[]}}
+    payload={'message':'Which issue should we start with?','interpretation':{
+        'action':'advance','answer_kind':'substantive','answer_quote':answer,'current_goal_addressed':True,
+        'coverage':[{'goal':'priorities','evidence_id':'m7','quote':answer,'status':'explored'}],
+        'topics':[],'priority_update':'none','priority_topics':[
+            {'topic':'privacy','quote':'Privacy','matches_topic':None},
+            {'topic':'routes','quote':'routes','matches_topic':None}]}}
+    checked=validate_reply(payload,request)
+    assert [item['topic'] for item in checked['interpretation']['topics']]==['privacy','routes']
+    assert 'priority_topics_used_for_selection' in checked['_annotation_warnings']
+
+
+def test_missing_priority_topic_annotations_request_one_clarification_not_technical_failure():
+    from iam_sra.chat_client import priority_annotation_needs_clarification
+    request={'fn':{'evidence_goal':'priorities'}}
+    result={'interpretation':{'action':'advance','answer_kind':'substantive',
+        'coverage':[{'goal':'priorities','status':'explored'}],'topics':[]},
+        '_annotation_warnings':[]}
+    assert priority_annotation_needs_clarification(request,result)
+    result['interpretation']['topics']=[{'topic':'privacy','quote':'privacy'}]
+    assert not priority_annotation_needs_clarification(request,result)
+
+
+def test_missing_priority_annotations_preserve_answer_and_ask_one_bounded_clarifier():
+    from iam_sra.chat_client import priority_annotation_needs_clarification
+    s,c=chat()
+    for answer in ('Noise and privacy matter.',
+                   'No, those are the issues I want to focus on.',
+                   'The effects could differ depending on where people live.'):
+        s.send(answer,c)
+    assert s.objective=='priorities'
+    class MissingTopics:
+        def turn(self,request):
+            answer=request['answer']
+            result=validate_reply({'message':'Which issue or issues matter most?', 'interpretation':{
+                'action':'advance','answer_kind':'substantive','answer_quote':answer,
+                'current_goal_addressed':True,'coverage':[],'topics':[]}},request)
+            result['_priority_annotation_missing']=priority_annotation_needs_clarification(request,result)
+            return result
+    answer='Privacy and route choices matter most.'
+    s.send(answer,MissingTopics())
+    assert s.stage=='conversation' and s.objective=='priorities'
+    assert s.messages[-1]['text'].startswith('To make sure I understood your choice')
+    assert s.failures==[] and 'priorities' not in s.fn.coverage
+    assert any(row['text']==answer for row in s.active_evidence())
+    assert s.routing_events[-1]['event']=='priority_annotation_clarification'
+
+
+def test_fn_interpreter_system_prompt_passes_privacy_screen():
+    from iam_sra.chat_client import FN_SYSTEM
+    from iam_sra.privacy import require_clean
+    assert require_clean(FN_SYSTEM)==FN_SYSTEM
+
+
 def test_malformed_optional_annotations_are_discarded_without_blocking_question():
     s,c=chat();request=s._request('Nesting birds could be disturbed.')
     value=validate_reply({'message':'What effects on nesting birds would worry you most?',
@@ -506,6 +641,7 @@ def test_profile_score_rejects_invented_quote_and_unsupported_selection():
 
 
 def test_profile_score_requires_model_explanation_and_boundary_for_numeric_selection():
+    from pydantic import ValidationError
     from iam_sra.chat_score import validate_profile_match
     from iam_sra.chat_policy import rubric
     from chat_fixture import ScoreFixture
@@ -523,8 +659,21 @@ def test_profile_score_requires_model_explanation_and_boundary_for_numeric_selec
     result=validate_profile_match(value,payload)
     assert result['explanation'] and result['boundary']
     value['explanation']='x'*800
-    result=validate_profile_match(value,payload)
-    assert len(result['explanation'])==600
+    with pytest.raises(ValidationError) as exc:validate_profile_match(value,payload)
+    assert exc.value.errors()[0]['loc']==('explanation',)
+
+
+def test_participant_score_text_removes_complete_internal_alias_ranges_cleanly():
+    from iam_sra.chat_session import participant_score_text
+    text=participant_score_text(
+        'Possible benefits (medical delivery trial, evidence-7), and concerns (noise, evidence-12). '
+        'The next levels (citizen_extended-3 or above) are not demonstrated (evidence-17-19). '
+        'Recognition is met by evidence-4 and 5 (m12). The balance is evident (evidence-10, 12, 13).')
+    assert 'evidence-' not in text and 'citizen_extended-' not in text and 'm1' not in text
+    assert 'trial)' in text and 'noise)' in text
+    assert '()' not in text and '( or above)' not in text and '(-19' not in text
+    assert '( 12, 13)' not in text and 'evident .' not in text
+    assert 'level ,' not in text and 'met by and' not in text and 'met by .' not in text
 
 
 def test_profile_score_boundary_must_match_the_adjacent_anchor_it_names():
@@ -547,10 +696,37 @@ def test_profile_score_boundary_must_match_the_adjacent_anchor_it_names():
     assert exc.value.field=='boundary'
 
 
+def test_profile_score_repairs_only_unique_exact_quote_id_mismatch():
+    from iam_sra.chat_score import validate_profile_match
+    from iam_sra.chat_policy import rubric
+    from chat_fixture import ScoreFixture
+    s,c=chat();anchors=rubric(s.bank,s.profile,s.depth)['anchors']
+    quote='I would want a clear explanation before deciding.'
+    payload={'anchors':anchors,'originals':[{'id':'m1','text':'An unrelated answer.'},
+        {'id':'m2','text':quote}]}
+    value=ScoreFixture().match_profile(payload)
+    value.update(selected_anchor_id=anchors[2]['id'],alternative_anchor_id=anchors[1]['id'],
+        citations=[{'evidence_id':'m1','quote':quote}],
+        explanation='The respondent asks for information before deciding.',
+        boundary=f"{anchors[1]['label']} (level {anchors[1]['level']}) requires only recognising relevance, which is demonstrated.",
+        material_conflict=False,evidence_incomplete=False)
+    result=validate_profile_match(value,payload)
+    assert result['citations']==[{'evidence_id':'m2','quote':quote}]
+    payload['originals'].append({'id':'m3','text':quote})
+    with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
+    assert exc.value.field=='citations.quote'
+
+
 def test_score_wire_schema_requires_rationale_boundary_and_alternative_keys():
-    from iam_sra.chat_score import ProfileMatch
-    required=set(ProfileMatch.model_json_schema()['required'])
+    from iam_sra.chat_score import ProfileMatch,profile_match_schema
+    schema=profile_match_schema()
+    required=set(schema['required'])
     assert {'explanation','boundary','alternative_anchor_id'}<=required
+    keys=list(schema['properties'])
+    assert keys.index('alternative_anchor_id')<keys.index('boundary')
+    assert schema['properties']['explanation']['anyOf'][0]['maxLength']==600
+    assert schema['properties']['boundary']['minLength']==40
+    assert schema['properties']['boundary']['anyOf'][0]['maxLength']==500
 
 
 def test_profile_score_normalizes_contradictory_selection_to_honest_abstention():

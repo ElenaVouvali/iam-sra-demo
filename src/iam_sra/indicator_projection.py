@@ -33,7 +33,7 @@ RULES = {
         'The answer explicitly addresses acoustic effects, soundscapes, or noise-related responses.'),
     'indicator-08': (r'\b(?:visual (?:impact|pollution)|landscape|how (?:the )?(?:place|area|square|neighbourhood) looks|appearance of (?:the )?(?:drone|landing|site)|hover(?:ing)? over (?:the )?(?:square|homes?|neighbourhood|landmark)|visibility of (?:the )?(?:drone|pad))\b',
         'The answer concerns visible aircraft or infrastructure and its effect on landscapes or everyday experience.'),
-    'indicator-09': (r'\b(?:camera.{0,60}(?:window|home|house|see|record)|(?:see|observe|look) into (?:my |their )?(?:window|home|house)|personal data|who (?:can|will) (?:see|access) (?:the )?(?:image|data|recording)|feel(?:s)? unsafe|personal safety|fear of (?:a )?(?:crash|collision)|close to (?:pedestrians?|people walking))\b',
+    'indicator-09': (r'\b(?:camera.{0,60}(?:window|home|house|see|record)|(?:window|home|house).{0,40}(?:see|observe|look) inside|(?:see|observe|look) (?:into|inside) (?:my |their )?(?:window|home|house)|personal data|who (?:can|will) (?:see|access) (?:the )?(?:image|data|recording)|feel(?:s)? unsafe|personal safety|fear of (?:a )?(?:crash|collision)|close to (?:pedestrians?|people walking))\b',
         'The answer expresses an affected person’s privacy or perceived personal-safety concern.'),
     'indicator-10': (r'\b(?:cybersecurity|cyber[- ]attack|hack(?:ed|ing)?|data breach|encryption|access controls?|authentication|unauthori[sz]ed access|technical safety|system reliability|redundan(?:cy|t)|failure rates?|validated safety|data protection controls?)\b',
         'The answer concerns technical/operational safety, system reliability, cybersecurity, or data protection.'),
@@ -41,9 +41,9 @@ RULES = {
         'The answer links wind or aircraft-generated airflow to operational safety or site placement.'),
     'indicator-12': (r'\b(?:airspace capacity|air[- ]traffic management|airspace coordination|airspace separation|U[- ]space|routes? coordinated with (?:helicopters?|aircraft)|traffic grows|airspace (?:demand|constraints?))\b',
         'The answer concerns airspace/traffic-management capacity, coordination, or separation.'),
-    'indicator-13': (r'\b(?:unequal(?:ly)? (?:distributed|shared)|disproportionate(?:ly)? (?:burden|impact)|disproportionately|distribution of (?:benefits|costs|risks)|benefits? go to .{0,60}burden|burden.{0,60}benefits?|unfair(?:ness)?|equity|who benefits and who bears|inclusive decision)\b',
+    'indicator-13': (r'\b(?:unequal(?:ly)? (?:distributed|shared)|disproportionate(?:ly)? (?:burden|impact)|disproportionately|distribution of (?:benefits|costs|risks)|benefits? go to .{0,60}burden|burden.{0,60}benefits?|unfair(?:ness)?|shared fairly|fairly distributed|equity|who benefits and who bears|inclusive decision)\b',
         'The answer concerns distribution of benefits, costs, risks, wellbeing, or inclusive decisions.'),
-    'indicator-14': (r'\b(?:public awareness|public familiarity|understand(?:ing)? of (?:capabilities|limitations|impacts)|trust in (?:the )?(?:authority|institution|operator|service)|transparent information|clear and trustworthy information|explain.{0,40}(?:comments?|feedback|decision)|accountability|public dialogue)\b',
+    'indicator-14': (r'\b(?:public awareness|public familiarity|understand(?:ing)? of (?:capabilities|limitations|impacts)|trust in (?:the )?(?:authority|institution|operator|service)|transparent information|transparen\w*.{0,40}(?:route|decision|input|public)|clear and trustworthy information|explain.{0,40}(?:comments?|feedback|decision)|accountability|public dialogue)\b',
         'The answer concerns public understanding, information quality, trust, dialogue, or accountability.'),
     'indicator-15': (r'\b(?:continuing training|staff training|training on (?:service|system|safety|limits)|skills gaps?|competence building|build(?:ing)? (?:staff )?skills|access to expertise|continuing learning|technical expertise)\b',
         'The answer concerns skills, expertise, training, or continuing learning.'),
@@ -94,6 +94,14 @@ def project_concerns(concerns, messages, bank):
         quote=entry['quote'];matches=[]
         for iid,(pattern,rationale) in RULES.items():
             cue=re.search(pattern,quote,re.I)
+            # A long answer can mention noise while the concern record is about
+            # wildlife. Attribute acoustic evidence only when an independently
+            # extracted concern label identifies an acoustic issue too.
+            if iid=='indicator-07' and entry['topics'] and any(
+                    topic.casefold() not in {'respondent concern','concern','topic'} for topic in entry['topics']) and not any(
+                        re.search(r'\b(?:noise|sound|acoustic|buzz|decibel|soundscape)\b',topic,re.I)
+                        for topic in entry['topics']):
+                cue=None
             if cue and not _negative(iid,quote):
                 row=official[iid]
                 matches.append({'indicator_id':iid,'indicator_name':row['name'],

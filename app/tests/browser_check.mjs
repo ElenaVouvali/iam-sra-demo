@@ -38,6 +38,18 @@ for (const f of readdirSync(pageDir).filter((f) => f.endsWith('.mjs')).sort()) {
 const failures = []
 function expect(ok, msg) { if (!ok) throw new Error(msg) }
 async function go(page, path) { await page.goto(BASE + path, { waitUntil: 'networkidle0', timeout: 45000 }) }
+async function setViewport(page, viewport) {
+  try {
+    await page.setViewport(viewport)
+  } catch (error) {
+    // Puppeteer 25 sends the BiDi screen-orientation override even when only
+    // viewport dimensions are needed. Firefox 136 does not implement that
+    // command, although its viewport resize command succeeds concurrently.
+    // Keep responsive-width checks running, while making this limitation clear.
+    if (!String(error?.message).includes('emulation.setScreenOrientationOverride')) throw error
+    console.warn('Firefox does not support the orientation override; continuing with the requested viewport dimensions.')
+  }
+}
 // Browser Back. Not page.goBack(): in production Firefox restores the page from the back/forward cache, which fires
 // pageshow but no load event, so goBack() waits for a load that never comes. Wait for the URL to change instead.
 async function back(page) {
@@ -83,7 +95,7 @@ try {
   for (const path of PAGES) {
     for (const w of WIDTHS) {
       errors.length = 0
-      await page.setViewport({ width: w, height: 900 })
+      await setViewport(page, { width: w, height: 900 })
       try {
         await go(page, path)
         await new Promise((r) => setTimeout(r, 300))           // let watchers settle after network idle
@@ -101,7 +113,7 @@ try {
   for (const [name, fn] of Object.entries(FLOWS)) {
     if (process.env.FLOW && !name.includes(process.env.FLOW)) continue
     errors.length = 0
-    await page.setViewport({ width: 1200, height: 900 })
+    await setViewport(page, { width: 1200, height: 900 })
     try {
       await fn(page, errors, { go, back, expect, clickText })
       if (errors.length) throw new Error(errors.join('; '))

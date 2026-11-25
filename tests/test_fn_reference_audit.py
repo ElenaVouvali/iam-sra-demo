@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from iam_sra.fn_interview import specification
-from iam_sra.fn_reference_audit import audit, expected_goals
+from iam_sra.fn_reference_audit import audit, expected_goals, expected_reference_answer_status
 
 ROOT=Path(__file__).resolve().parents[1]
 FIXTURE=json.loads((ROOT/'eval/fn_golden_paths.json').read_text())
@@ -41,3 +41,10 @@ def test_reference_expectations_do_not_reuse_controller_applicability(monkeypatc
     monkeypatch.setattr(FNInterview,'applicable',lambda *args:False)
     expected=set(expected_goals('citizen_short',FIXTURE,specification()))
     assert {'area','demonstration_view','tradeoff','local_basis'}<=expected
+
+
+def test_optional_reference_question_without_fixture_answer_expects_explicit_unknown():
+    assert expected_reference_answer_status('informing',None)=='unknown'
+    assert expected_reference_answer_status('informing',None,{'informing':'declined'})=='declined'
+    assert expected_reference_answer_status('local_awareness',{'answer_kind':'uncertain'})=='unknown'
+    assert expected_reference_answer_status('area',{'answer_kind':'substantive'})=='explored'

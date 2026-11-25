@@ -31,6 +31,32 @@ def load_agent_personas(root):
     return personas
 
 
+def load_generalisation_persona(root, persona_id, case):
+    """Load a score-blind fictional respondent from the maintained persona banks."""
+    from iam_sra.synthetic_respondent import load_personas
+    from iam_sra.privacy import require_safe_data
+    candidates=[]
+    for path in (root/'eval/fn_agent_personas_v1.json',root/'eval/synthetic_personas_v1.json',
+                 root/'eval/fn_generalisation_additional_personas_v1.json'):
+        if not path.is_file():continue
+        value=json.loads(path.read_text())
+        if path.name in {'synthetic_personas_v1.json','fn_generalisation_additional_personas_v1.json'}:
+            value=load_personas(path)
+        candidates.extend(value.get('personas',[]))
+    matches=[row for row in candidates if row.get('persona_id')==persona_id]
+    if len(matches)!=1:raise ValueError('Select exactly one registered fictional persona ID.')
+    persona=deepcopy(matches[0])
+    expected='citizen' if case.startswith('citizen') else 'organisational' if case=='organisational' else 'technical'
+    actual=('citizen' if persona.get('perspective')=='personal' else
+            'organisational' if persona.get('perspective')=='organisation' else
+            'technical' if persona.get('perspective')=='technical' else None)
+    if actual!=expected:raise ValueError('The selected persona does not match the requested interview profile.')
+    if persona.get('fn_case') and persona['fn_case']!=case:
+        raise ValueError('The selected FN fixture persona does not match the requested interview depth/profile.')
+    require_safe_data({'persona':persona})
+    return persona
+
+
 def agent_reply(responder,chat):
     """Only participant-visible material goes to the respondent, never goals/scales."""
     question=next(m for m in reversed(chat['messages']) if m['role']=='assistant')
@@ -146,6 +172,7 @@ def main(argv=None):
     parser.add_argument('--save-traces',action='store_true',help='Save screened controller decision summaries for these owned synthetic sessions; never raw thinking.')
     parser.add_argument('--respondent',choices=['reference','agent'],default='reference',
         help='Reference replays source answers; agent adapts the existing Qwen respondent to visible questions.')
+    parser.add_argument('--persona-id',help='Select a registered fictional persona for one --respondent agent case.')
     parser.add_argument('--respondent-no-think',action='store_true',help='Soft /no_think only for the fictional respondent; interviewer/scorer thinking remains enabled.')
     parser.add_argument('--max-agent-calls',type=int,default=60,help='Per-case respondent generation-call limit (4–200)')
     parser.add_argument('--max-turns',type=int,default=100,help='Per-case operational turn limit (10–150), never a readiness threshold')
@@ -158,6 +185,8 @@ def main(argv=None):
     args=parser.parse_args(argv)
     if args.respondent_no_think and (args.respondent!='agent' or not args.thinking):
         parser.error('--respondent-no-think requires --respondent agent --thinking.')
+    if args.persona_id and (args.respondent!='agent' or args.case=='all'):
+        parser.error('--persona-id requires --respondent agent and one explicit --case.')
     if args.thinking and args.backend!='vllm':
         parser.error('--thinking requires --backend vllm and a matching reasoning-parser server.')
     if args.require_scoring and (args.respondent!='agent' or args.case!='all' or args.opening_only):
@@ -192,6 +221,9 @@ def main(argv=None):
         try:require_unmanaged_endpoint(root)
         except ValueError as exc:parser.error(str(exc))
     personas=load_agent_personas(root) if args.respondent=='agent' else {}
+    if args.persona_id:
+        try:personas[args.case]=load_generalisation_persona(root,args.persona_id,args.case)
+        except (ValueError,OSError,json.JSONDecodeError) as exc:parser.error(str(exc))
     if args.backend=='vllm':
         try:
             with httpx.Client(trust_env=False,timeout=5) as http:
@@ -330,6 +362,7 @@ def main(argv=None):
                     if args.opening_only and goal=='healthcare_awareness':break
                     reference=next((row for row in fixture[key] if row['id']==goal),None)
                     node=current.fn.current(current.profile,current.depth,goal)
+                    from iam_sra.fn_reference_audit import expected_reference_answer_status
                     canonical=(current.messages[-1]['text']==CITIZEN_DURATION if goal=='citizen_duration'
                         else bool((reference and reference['question'] in current.messages[-1]['text'])
                                   or (reference is None and node
@@ -338,8 +371,7 @@ def main(argv=None):
                     submit(('35 minutes' if key=='citizen_extended' else '20 minutes') if goal=='citizen_duration' else answers.get(goal,'I do not know.'))
                     current=manager.records[sid].engine.chat
                     coverage=current.fn.coverage.get(goal,{})
-                    expected=variant.get('expected_statuses',{}).get(goal,
-                        'unknown' if reference and reference['answer_kind']=='uncertain' else 'explored')
+                    expected=expected_reference_answer_status(goal,reference,variant.get('expected_statuses',{}))
                     actual_kind=current.fn.facts.get(goal)
                     readings=variant.get('accepted_readings',{}).get(goal)
                     # FN labels this qualified decision-making answer

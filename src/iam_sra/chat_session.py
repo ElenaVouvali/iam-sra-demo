@@ -45,10 +45,21 @@ def direct_intent(text):
 
 def participant_score_text(value):
     """Remove internal anchor identifiers from scorer prose before display/export."""
-    text=re.sub(r'\b(?:citizen_short|citizen_extended|organisational|technical)-[1-9]\b','',str(value or ''),flags=re.I)
-    text=re.sub(r'\bevidence-\d+\b','',text,flags=re.I)
+    text=str(value or '')
+    internal_id=(r'(?:m\d+|x\d+|evidence[- ]\d+(?:[-–]\d+)?|indicator[- ]\d+|'
+                 r'anchor[-_]\d+|(?:citizen_short|citizen_extended|organisational|technical|technology)-[1-9])')
+    id_list=internal_id+r'(?:\s*(?:,|and|&)\s*(?:'+internal_id+r'|\d+))*'
+    text=re.sub(r',?\s*(?:which\s+)?(?:is\s+)?(?:met|supported|shown|demonstrated|evidenced)\s+by\s+'+id_list,
+                '',text,flags=re.I)
+    text=re.sub(r'\b'+id_list+r'\b','',text,flags=re.I)
+    text=re.sub(r'\b'+internal_id+r'\b','',text,flags=re.I)
     text=re.sub(r'\s+([.,;:!?])',r'\1',text)
-    text=re.sub(r'\(\s*\)','',text)
+    text=re.sub(r',\s*\)',')',text)
+    text=re.sub(r'\(\s*,','(',text)
+    text=re.sub(r'\(\s*[.,;:!?\s]*\)','',text)
+    text=re.sub(r'\(\s*(?:or|and)\s+above\s*\)','',text,flags=re.I)
+    text=re.sub(r'(?<!\w)[,;:]\s*([,;:])',r'\1',text)
+    text=re.sub(r'\s+([.,;:!?])',r'\1',text)
     return re.sub(r'\s{2,}',' ',text).strip()
 
 
@@ -134,6 +145,7 @@ class ChatSession:
         self.messages = []
         self.annotations = []
         self.priorities = []
+        self.priority_history = []
         self.exposures = []
         self.preferences = []
         self.pending_comparison = None
@@ -395,7 +407,14 @@ class ChatSession:
             result = client.turn(request)
             # Validate injected fixture clients through the identical public contract.
             from .chat_client import validate_reply
-            return validate_reply(result, request)
+            checked = validate_reply(result, request)
+            # ChatClient may attach this server-internal recovery signal after
+            # its first validation. Preserve it across the session's contract
+            # validation; it contains no respondent text and is consumed only
+            # by the controller below.
+            if result.get('_priority_annotation_missing'):
+                checked['_priority_annotation_missing'] = True
+            return checked
         finally:
             metrics = getattr(client, 'last_metrics', {})
             observed = metrics.get('generation_calls')
@@ -643,7 +662,17 @@ class ChatSession:
         selecting=((self.objective=='priorities' or explicit_earlier) and self.fn.coverage.get('priorities',{}).get('status')=='explored'
                    and interpretation['answer_kind'] not in {'uncertain','declined'}
                    and len(interpretation.get('topics',[]))<=3)
-        for item in interpretation.get('topics',[]):
+        interpreted_topics=list(interpretation.get('topics',[]))
+        update=interpretation.get('priority_update','none')
+        priority_topics=list(interpretation.get('priority_topics',[]))
+        if update!='none' and interpretation.get('priority_quote') in row['text']:
+            # Priority changes are a separate state transition from historical
+            # concern extraction. The model proposes exact labels/quotes; the
+            # validated original answer remains authoritative.
+            interpreted_topics.extend(item for item in priority_topics
+                if not any(item.get('topic','').casefold()==old.get('topic','').casefold()
+                           for old in interpreted_topics))
+        for item in interpreted_topics:
             topic=item.get('matches_topic') or item['topic'].strip()
             old=next((c for c in self.concerns if c['topic'].casefold()==topic.casefold()),None)
             if old is None:
@@ -655,7 +684,7 @@ class ChatSession:
             old['evidence_ids']=list(dict.fromkeys(old['evidence_ids']+[row['id']]))
             old['spontaneously_raised'] |= spontaneous
             old['suggested_by_interviewer'] |= self.objective=='suggested_topics'
-            if selecting and len([c for c in self.concerns if c['selected_priority']])<3:
+            if selecting and update=='none' and len([c for c in self.concerns if c['selected_priority']])<3:
                 old['selected_priority']=True;old['priority']=True
                 if not any(p['topic']==topic for p in self.priorities):
                     self.priorities.append({'topic':topic,'evidence_id':row['id'],'text':row['text'],'origin':'respondent_selected'})
@@ -663,6 +692,47 @@ class ChatSession:
                 old['explored'] |= self.fn.coverage.get(self.objective,{}).get('status')=='explored'
             old['last_turn_id']=row['id']
             row['topic']=topic
+        if update!='none' and priority_topics and interpretation.get('priority_quote') in row['text']:
+            previous=[p['topic'] for p in self.priorities]
+            proposed=[]
+            for item in priority_topics:
+                topic=item.get('matches_topic') or item['topic'].strip()
+                concern=next((c for c in self.concerns if c['topic'].casefold()==topic.casefold()),None)
+                if concern is None:
+                    # The exact label/quote pair already passed the interpreter
+                    # validator; retain the newly named participant concern.
+                    concern={'topic':topic,'kind':'emerging_topic','evidence_ids':[],
+                        'spontaneously_raised':False,'suggested_by_interviewer':False,
+                        'selected_priority':False,'explored':False,'priority':False,
+                        'indicator_ids':[],'mapping_status':'not_mapped','interpretation_status':'unreviewed'}
+                    self.concerns.append(concern)
+                concern['evidence_ids']=list(dict.fromkeys(concern['evidence_ids']+[row['id']]))
+                if update=='remove':
+                    continue
+                if not any(p['topic'].casefold()==topic.casefold() for p in proposed):
+                    proposed.append({'topic':topic,'evidence_id':row['id'],'text':row['text'],
+                        'origin':'respondent_priority_revision'})
+            if update=='replace':
+                selected=proposed
+            elif update=='add':
+                selected=[*self.priorities,*[p for p in proposed if p['topic'].casefold() not in
+                    {old['topic'].casefold() for old in self.priorities}]]
+            else:  # explicit removal
+                removed={item.get('matches_topic') or item['topic'].strip() for item in priority_topics}
+                selected=[p for p in self.priorities if p['topic'] not in removed]
+            selected=selected[:3]
+            selected_names={p['topic'].casefold() for p in selected}
+            for concern in self.concerns:
+                if concern.get('selected_priority'):
+                    concern['selected_priority']=concern['priority']=False
+            for selected_item in selected:
+                concern=next((c for c in self.concerns if c['topic'].casefold()==selected_item['topic'].casefold()),None)
+                if concern:
+                    concern['selected_priority']=concern['priority']=True
+            self.priorities=selected
+            self.priority_history.append({'action':update,'evidence_id':row['id'],
+                'quote':interpretation['priority_quote'],'previous_topics':previous,
+                'current_topics':[p['topic'] for p in selected],'revision':self.revision})
 
     def _topic_disposition(self, row, interpretation):
         if self.profile!='citizen' or self.objective not in {'open_priorities','open_more','different_impacts','suggested_topics','priorities'}:return False
@@ -736,6 +806,18 @@ class ChatSession:
                         self.routing_events.append({'event':'question_fallback','issues':result['_quality_issues'],'evidence_id':row['id']})
                     interpretation=result.get('interpretation')
                     if not interpretation: raise AssessmentError('Grounded interpretation unavailable.',code='evidence',field='interpretation')
+                    if result.get('_priority_annotation_missing'):
+                        # The original answer remains evidence, but incomplete
+                        # priority extraction must not silently mark every
+                        # named issue as selected. Ask once in ordinary chat.
+                        interpretation['coverage']=[entry for entry in interpretation['coverage']
+                            if entry.get('goal')!=goal]
+                        interpretation['action']='clarify'
+                        result['message']=("To make sure I understood your choice, which issue or issues would you like us to focus on first? "
+                            "You can choose one, a few, or say you do not want to select any.")
+                        self.fn.coverage.pop(goal,None)
+                        self.routing_events.append({'event':'priority_annotation_clarification',
+                            'evidence_id':row['id'],'reason':'grounded_topic_annotation_missing'})
                     # Preserve explicit uncertainty in the respondent's own
                     # wording when the model labels a qualified answer too
                     # strongly. This affects evidence status, never readiness.
@@ -1617,6 +1699,7 @@ class ChatSession:
                 'objective_coverage':objective_coverage,'routing_events':deepcopy(self.routing_events),
                 'training_eligible': False, 'context': deepcopy(self.context),
                 'evidence_revision': self.revision, 'annotations': deepcopy(self.annotations), 'priorities':deepcopy(self.priorities),
+                'priority_history':deepcopy(self.priority_history),
                 'objectives': self._all_objectives(), 'information_exposures': deepcopy(self.exposures),
                 'response_preferences': deepcopy(self.preferences), 'initial_results': deepcopy(self.initial_results),
                 'indicator_projection': {'participant_reviewed': False, 'results': deepcopy(self.indicator_results),

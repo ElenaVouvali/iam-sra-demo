@@ -41,6 +41,22 @@ def test_wildlife_noise_and_shared_word_hard_negatives():
     assert unrelated['status']=='unmapped'
 
 
+def test_long_answer_noise_is_not_attributed_to_wildlife_only_topic():
+    quote=('Nesting birds may be disturbed near the wetland, while separate residential noise could disturb sleep.')
+    row=projection(quote,topic='nesting birds')
+    assert 'indicator-07' not in ids(row)
+    assert row['status']=='unmapped'
+
+
+def test_s7_specific_privacy_fairness_and_transparency_phrasing_maps_conservatively():
+    privacy=projection('A drone passing a bedroom window might see inside, though I do not know if it has a camera.',topic='privacy')
+    fairness=projection('Benefits and impacts may not be shared fairly.',topic='distributional fairness')
+    transparency=projection('I want transparency about route decisions and whether residents can influence them.',topic='transparency')
+    assert ids(privacy)=={'indicator-09'}
+    assert ids(fairness)=={'indicator-13'}
+    assert ids(transparency)=={'indicator-14'}
+
+
 def test_privacy_cyber_and_safety_are_kept_semantically_distinct_or_ambiguous():
     privacy=projection('I do not want cameras recording through my bedroom window.')
     cyber=projection('I am concerned about encryption, authentication and unauthorised access to stored images.')

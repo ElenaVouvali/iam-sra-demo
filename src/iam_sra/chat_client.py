@@ -38,7 +38,12 @@ class FNInterpretation(Strict):
     # Semantic disposition only; evidence identity/text are server-owned.
     current_goal_addressed: bool | None = None
     coverage: list[GoalEvidence] = Field(default_factory=list, max_length=6)
-    topics: list[TopicEvidence] = Field(default_factory=list, max_length=5)
+    # Keep every distinct issue in a multi-concern answer. This bounded ceiling
+    # is an operational guard, not a prompt to truncate a normal response.
+    topics: list[TopicEvidence] = Field(default_factory=list, max_length=12)
+    priority_update: Literal['none', 'replace', 'add', 'remove'] = 'none'
+    priority_quote: str = Field(default='', max_length=1800)
+    priority_topics: list[TopicEvidence] = Field(default_factory=list, max_length=3)
     boundary_goals: list[str] = Field(default_factory=list, max_length=2)
     scope_disposition: Literal['within_scope', 'outside_remit', 'not_established'] | None = None
     topic_intent: Literal['continue_open','no_more','main_only','suggestions'] | None = None
@@ -140,6 +145,14 @@ FN_SYSTEM = (
     'again when selected; known_topics does not mean those issues are already selected. '
     'Use known_topics to keep synonymous concerns together: reuse a known label or set matches_topic to that label. '
     'Do not count indicator mappings as distinct concerns. Keep new issues outside that bank admissible. '
+    'Split a multi-issue answer into all distinct, explicitly supported concerns (up to the response contract limit); '
+    'do not omit later concerns because an earlier clause already supplied one. Preserve different issues such as '
+    'wildlife habitat disturbance and residential noise separately. Do not invent a concern to fill the list. '
+    'When the respondent explicitly changes their selected priorities, set priority_update to replace, add, or remove '
+    'as stated, include the exact supporting priority_quote, and list the resulting selected issues in '
+    'priority_topics with exact supporting quotations. Use replace when they say a new set now matters instead of '
+    'the earlier set; add/remove only when they explicitly add/remove an issue. A mere mention, comparison, or '
+    'hypothetical proposal is not a priority update. Otherwise use none. '
     'During open discussion, topic_intent may be no_more, main_only, suggestions or continue_open, only with an '
     'exact topic_intent_quote supporting that choice. main_only means an explicit choice to focus on the sole '
     'raised issue, not just mentioning one issue. no_more means no further topics; suggestions requests examples. '
@@ -165,6 +178,8 @@ def _topic_label_is_grounded(label, quote):
         result=set()
         for word in re.findall(r'[a-z]+',text.casefold()):
             if word in stop:continue
+            if word in {'fair','fairly','fairness','unfair','unfairness'}:
+                result.add('fair');continue
             stem=word
             for suffix in ('ing','ance','ment','ed','es','s'):
                 if len(stem)>len(suffix)+2 and stem.endswith(suffix):
@@ -279,7 +294,12 @@ def validate_reply(raw, request):
                 for index,item in enumerate(proposed.get('topics',[]) if isinstance(proposed.get('topics',[]),list) else []):
                     try:topics.append(TopicEvidence.model_validate(item).model_dump())
                     except ValidationError:optional_warnings.append('interpretation.topics.'+str(index))
-                proposed['topics']=topics[:5]
+                proposed['topics']=topics[:12]
+                priority_topics=[]
+                for index,item in enumerate(proposed.get('priority_topics',[]) if isinstance(proposed.get('priority_topics',[]),list) else []):
+                    try:priority_topics.append(TopicEvidence.model_validate(item).model_dump())
+                    except ValidationError:optional_warnings.append('interpretation.priority_topics.'+str(index))
+                proposed['priority_topics']=priority_topics[:3]
                 if isinstance(proposed.get('boundary_goals'),list):proposed['boundary_goals']=proposed['boundary_goals'][:2]
                 if proposed.get('scope_disposition') not in (None,'within_scope','outside_remit','not_established'):
                     proposed['scope_disposition']=None;optional_warnings.append('interpretation.scope_disposition')
@@ -492,8 +512,31 @@ def validate_reply(raw, request):
                 and _topic_label_is_grounded(row['topic'].strip(),row['quote'])
                 and not (row['topic'] in allowed and '_' in row['topic'] and row['topic'] not in answer)]
             if len(interpretation['topics']) != len(value.interpretation.topics):warnings.append('interpretation.topics')
+            interpretation['priority_topics'] = [row for row in interpretation['priority_topics']
+                if row['quote'] in answer and _topic_label_is_grounded(row['topic'].strip(),row['quote'])]
+            if len(interpretation['priority_topics']) != len(value.interpretation.priority_topics):
+                warnings.append('interpretation.priority_topics')
+            priority_quote=interpretation.get('priority_quote','')
+            priority_update=interpretation.get('priority_update','none')
+            # Some constrained outputs place the issues selected in response
+            # to the priorities question in priority_topics, even when there
+            # is no revision action. These are still grounded selections.
+            if (request.get('fn',{}).get('evidence_goal')=='priorities'
+                    and priority_update=='none' and not interpretation['topics']
+                    and interpretation['priority_topics']):
+                interpretation['topics']=list(interpretation['priority_topics'])
+                warnings.append('priority_topics_used_for_selection')
+            if (priority_update!='none' and (not priority_quote or priority_quote not in answer
+                    or not interpretation['priority_topics'])):
+                interpretation['priority_update']='none'
+                interpretation['priority_quote']=''
+                interpretation['priority_topics']=[]
+                warnings.append('interpretation.priority_update')
+            elif priority_update=='none':
+                interpretation['priority_quote']=''
+                interpretation['priority_topics']=[]
             known={row['topic'].casefold():row['topic'] for row in request['fn'].get('known_topics',[])}
-            for topic in interpretation['topics']:
+            for topic in interpretation['topics']+interpretation['priority_topics']:
                 match=topic.get('matches_topic')
                 topic['matches_topic']=known.get(match.casefold()) if match else None
                 if match and topic['matches_topic'] is None:warnings.append('interpretation.matches_topic')
@@ -561,6 +604,18 @@ def compact_chat_request(request, lean=False):
     payload['priority_context']=None
     payload['omitted_context_ids']=list(dict.fromkeys(request.get('omitted_context_ids',[])+omitted))
     return payload
+
+
+def priority_annotation_needs_clarification(request, result):
+    """A valid answer with missing topic annotations needs one clarification, not a technical retry."""
+    interpretation=result.get('interpretation') or {}
+    return bool(request.get('fn',{}).get('evidence_goal')=='priorities'
+        and interpretation.get('action') in {'advance','conclude'}
+        and interpretation.get('answer_kind') in {'substantive','partial'}
+        and any(e.get('goal')=='priorities' and e.get('status')=='explored'
+                for e in interpretation.get('coverage',[]))
+        and (not interpretation.get('topics')
+             or 'interpretation.topics' in result.get('_annotation_warnings',[])))
 
 
 class ChatClient(ConversationClient):
@@ -647,14 +702,8 @@ class ChatClient(ConversationClient):
                                                 for e in interpretation['coverage'])):
                                 raise AssessmentError('An advance requires grounded coverage of the current evidence goal; clarify if it is ambiguous.',
                                                       code='evidence', field='interpretation.coverage')
-                            if (request['fn']['evidence_goal']=='priorities'
-                                    and interpretation['action'] in {'advance','conclude'}
-                                    and interpretation['answer_kind'] in {'substantive','partial'}
-                                    and any(e['goal']=='priorities' and e['status']=='explored'
-                                            for e in interpretation['coverage'])
-                                    and (not interpretation['topics'] or 'interpretation.topics' in result['_annotation_warnings'])):
-                                raise AssessmentError('Record every selected issue in interpretation.topics with exact current-answer quotes. Topic labels are respondent issues, not allowed_objectives IDs; do not omit an issue after a rejected annotation. Clarify only if the choice is ambiguous.',
-                                    code='evidence',field='interpretation.topics')
+                            if priority_annotation_needs_clarification(request,result):
+                                result['_priority_annotation_missing']=True
                         elif result['_quality_issues']:
                             raise AssessmentError('Ask a different neutral question that moves beyond answered points without assuming new personal concerns.',
                                 code='eligibility',field=result['_quality_issues'][0])
