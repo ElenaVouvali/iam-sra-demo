@@ -266,8 +266,10 @@ def test_developer_trace_requires_explicit_server_token_and_is_not_in_export(api
     serialized=json.dumps(response.json['trace'])
     assert 'My personal views' not in serialized
     assert 'accepted_questions' in serialized and 'state_after' in serialized
+    assert response.json['trace']['concern_projection']['status']=='not_run'
     exported=b.client.get(f'/v1/sessions/{sid}/export').json['conversation']
     assert 'decision_traces' not in exported
+    assert 'concern_projection' not in exported['indicator_projection']
 
 
 def test_storage_is_not_exposed_without_governance_configuration(api):
@@ -582,6 +584,28 @@ def test_abstention_rejects_hidden_anchor_claims_and_internal_ids():
     value['explanation']='The account does not establish whether feedback changed a decision.'
     result=validate_profile_match(value,payload)
     assert result['selected_anchor_id'] is None
+
+
+def test_contradictory_model_abstention_becomes_safe_unavailable_review():
+    class BadAbstention:
+        last_metrics={};last_settings={};last_diagnostics=[]
+        def match_profile(self,payload):
+            return {'selected_anchor_id':None,'alternative_anchor_id':None,'citations':[],
+                'explanation':'The respondent meets Awareness criteria (m1, evidence-8, indicator-09), but lacks levels 8, 17 and 19.',
+                'boundary':'The scale remains available for review; no level has been selected.',
+                'material_conflict':False,'evidence_incomplete':True}
+    s,c=chat();s.objective='opinion_why';s._user('The account is incomplete and I remain unsure.')
+    s._report(None,BadAbstention())
+    assert s.suggestion['status']=='unavailable' and s.suggestion['level'] is None
+    visible='\n'.join(m['text'] for m in s.messages if m['role']=='assistant')
+    assert 'The scoring step did not provide a usable explanation tied to your answers' in visible
+    re=__import__('re')
+    assert not re.search(r'\b(?:m\d+|x\d+|evidence-\d+|indicator-\d+|citizen_(?:short|extended)-\d+)\b',visible,re.I)
+    assert 'Awareness criteria' not in visible and 'readiness-scales-v4' not in visible
+    s.send('I am not sure',c);s.send('no changes',c)
+    assert s.stage=='ended' and s.suggestion['status']=='unavailable'
+    assert s.participant_review['validation']=='uncertain'
+    assert s.participant_review['status']=='pending_human_review'
 
 
 def test_partial_coverage_rejects_unreviewed_interpretations_as_confirmed():

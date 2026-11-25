@@ -2273,7 +2273,7 @@
   },
   "review": {
     "citizen_short": {
-      "question": "Now that you have seen the scale and the explanation, how well do you think Level {level} describes your situation?",
+      "question": "Now that you have seen the scale and the explanation, how well do you think the provisional CRL {level} result describes your situation?",
       "choices": [
         "It describes me well",
         "It mostly describes me, but something important is missing",
@@ -2285,7 +2285,7 @@
       "detail": "Could you briefly explain what happened?"
     },
     "citizen_extended": {
-      "question": "Now that you have seen the whole scale and the explanation, how well do you think Level {level} describes your situation?",
+      "question": "Now that you have seen the whole scale and the explanation, how well do you think the provisional CRL {level} result describes your situation?",
       "choices": [
         "It describes me well",
         "It mostly describes me, but something important is missing",
@@ -2297,7 +2297,7 @@
       "detail": "Thank you. Could you briefly explain what feedback was provided and what changed?"
     },
     "organisational": {
-      "question": "Now that you have seen the scale and the explanation, how well do you think Level {level} describes your organisation's current situation?",
+      "question": "Now that you have seen the scale and the explanation, how well do you think the provisional ORL {level} result describes your organisation's current situation?",
       "choices": [
         "It describes the organisation well",
         "It mostly describes the organisation, but something important is missing",
@@ -2309,7 +2309,7 @@
       "detail": "Are the responsibilities and procedures now part of the organisation's normal processes, rather than being used only for the pilot?"
     },
     "technical": {
-      "question": "Now that you have seen the scale and the explanation, how well do you think Level {level} describes the current technical maturity of the system?",
+      "question": "Now that you have seen the scale and the explanation, how well do you think the provisional TRL {level} result describes the current technical maturity of the system?",
       "choices": [
         "It describes the system well",
         "It mostly describes the system, but something important is missing",

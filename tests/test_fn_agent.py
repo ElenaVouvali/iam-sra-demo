@@ -165,6 +165,19 @@ def test_reference_respondent_fixture_consumes_repeated_canonical_questions_in_o
 
 
 @pytest.mark.presidio_live
+def test_controlled_citizen_short_agent_api_reaches_result_review(monkeypatch,tmp_path):
+    module=prepare_runner(monkeypatch,tmp_path);service=fixture_api(monkeypatch)
+    monkeypatch.setattr('iam_sra.synthetic_respondent.LLMRespondent',ReferenceRespondentFixture)
+    output=tmp_path/'.runtime/agent'
+    try:code=module.main(['--allow-live','--respondent','agent','--case','citizen_short','--output',str(output)])
+    finally:service.close()
+    report=json.loads((output/'metrics.json').read_text());row=report['cases'][0]
+    assert code==0 and row['stage']=='ended' and row['protocol_passed']
+    assert row['score_status'] in {'suggested','abstained'} and row['validation'] in {'agrees','uncertain'}
+    assert row['json_export_succeeded'] and row['jsonl_export_succeeded'] and row['markdown_export_succeeded']
+
+
+@pytest.mark.presidio_live
 def test_all_four_agent_api_journeys_review_exports_and_report_are_honest(monkeypatch,tmp_path):
     module=prepare_runner(monkeypatch,tmp_path);service=fixture_api(monkeypatch)
     monkeypatch.setattr('iam_sra.synthetic_respondent.LLMRespondent',ReferenceRespondentFixture)

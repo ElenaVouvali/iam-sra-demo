@@ -338,6 +338,8 @@ def test_review_prompt_explains_validated_result_before_validation_choices():
     s._review_prompt()
     text=s.messages[-1]['text']
     assert 'Provisional result: CRL 6 — Informed evaluation' in text
+    assert 'provisional CRL 6 result describes your situation' in text
+    assert 'Level 6 describes your situation' not in text
     assert 'I would compare route times.' in text
     assert 'Influence needs evidence that a decision changed.' in text
     assert 'A.' in text and 'E.' in text

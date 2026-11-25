@@ -266,7 +266,7 @@ def main(argv=None):
             variant=variants.get(variant_name,{})
             answers.update(variant.get('answers',{}))
             def submit(text):
-                nonlocal view,steps
+                nonlocal view,steps,failure_diagnostic
                 if steps>=args.max_turns:raise RuntimeError('turn_limit')
                 if time.monotonic()>=case_deadline:raise RuntimeError('case_timeout')
                 steps+=1
@@ -278,7 +278,10 @@ def main(argv=None):
                     if result.status_code!=200:raise RuntimeError('job_unavailable')
                     job=result.json['job']
                     if job['status'] in {'completed','failed','cancelled'}:
-                        if job['status']!='completed':raise RuntimeError('job_failed')
+                        if job['status']!='completed':
+                            retained=manager.jobs.get(jid)
+                            failure_diagnostic=deepcopy(retained.diagnostic) if retained else None
+                            raise RuntimeError('job_failed')
                         current_view=browser.get(f'/v1/sessions/{sid}')
                         if current_view.status_code!=200 or 'session' not in current_view.json:
                             raise RuntimeError('session_view_withheld')
@@ -295,7 +298,7 @@ def main(argv=None):
                         return
                     time.sleep(.05)
                 raise RuntimeError('job_timeout')
-            failure=None;provisional=None
+            failure=None;failure_diagnostic=None;provisional=None
             try:
                 submit('A. Citizen' if key.startswith('citizen') else 'B. Organisation or institution' if key=='organisational' else 'C. Technology expert or researcher')
                 while view['chat']['stage']=='conversation':
@@ -469,7 +472,8 @@ def main(argv=None):
                 'question_wording_fallback_count':question_fallbacks,
                 'technical_failure_count':sum(m.get('act')=='failure' for m in c['messages']),
                 'generation_wall_seconds':round(sum(m['wall_seconds'] for m in metrics),3),
-                'elapsed_seconds':round(time.monotonic()-started,3),'failures':c['failures'],'failure':failure})
+                'elapsed_seconds':round(time.monotonic()-started,3),'failures':c['failures'],'failure':failure,
+                'failure_diagnostic':failure_diagnostic})
     finally:
         manager.close()
         if worker is not None:

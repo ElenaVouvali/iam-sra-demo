@@ -11,6 +11,7 @@ from hashlib import sha256
 import json
 import logging
 import os
+import re
 import sqlite3
 from pathlib import Path
 from queue import Queue, Empty, Full
@@ -25,6 +26,12 @@ from ..assessment import AssessmentError
 from ..privacy import PrivacyError, require_safe_data
 
 _log = logging.getLogger(__name__)
+
+
+def _job_diagnostic(stage, category, code):
+    """Keep only bounded enums and control-flow stages; never exception text."""
+    safe_code = code if isinstance(code, str) and re.fullmatch(r'[a-z_]{1,40}', code) else 'other'
+    return {'stage':stage,'category':category,'code':safe_code}
 
 
 @dataclass
@@ -58,6 +65,9 @@ class Job:
     status: str = 'queued'
     finished: float | None = None
     error: dict | None = None
+    # Safe process-local diagnostic for operator tests/traces. Never included
+    # in JobView or any participant-facing API response.
+    diagnostic: dict | None = None
 
 
 class AssessmentService:
@@ -131,6 +141,7 @@ class AssessmentService:
             if job.status in {'queued', 'running'} and now >= job.deadline:
                 job.status = 'failed'
                 job.error = APIError('timeout', 504).public()
+                job.diagnostic = _job_diagnostic('job_deadline','timeout','timeout')
                 job.finished = now
                 record = self.records.get(job.session_id)
                 if record and record.busy == job.id:
@@ -198,6 +209,7 @@ class AssessmentService:
             return screened_export({'session_id': sid,
                 'trace_schema': 'iam-sra-chat-decision-trace-1.0.0',
                 'turns': deepcopy(record.engine.chat.decision_traces),
+                'concern_projection':deepcopy(record.engine.chat.concern_projection),
                 'assessment': deepcopy(next((row['assessment'] for row in reversed(record.engine.chat.decision_traces)
                     if row.get('assessment') is not None), None))})
 
@@ -371,6 +383,7 @@ class AssessmentService:
                     view = self.adapter.present(candidate, job.session_id, job.version + 1)
                 except APIError as exc:
                     failure = exc
+                    diagnostic=_job_diagnostic(phase,'api_error',exc.code)
                 except PrivacyError as exc:
                     category = ('generated_output_privacy' if exc.boundary == 'model_output' else
                                 'response_view_export_privacy' if phase == 'response_view_export' else 'controller_state_privacy')
@@ -378,12 +391,21 @@ class AssessmentService:
                                  phase, category, sorted(exc.entity_types),
                                  sorted({row.get('field_path', 'root') for row in exc.findings}))
                     failure = APIError(exc.code, 503 if exc.code == 'privacy_unavailable' else 422)
+                    diagnostic=_job_diagnostic(phase,category,exc.code)
+                    # These are schema paths and detector labels only; never
+                    # retain the matched text or its surrounding context.
+                    paths=sorted({str(row.get('field_path','root')) for row in exc.findings})[:8]
+                    diagnostic['privacy_entity_types']=sorted(set(map(str,exc.entity_types)))[:8]
+                    diagnostic['privacy_field_paths']=[p for p in paths
+                        if re.fullmatch(r'[A-Za-z0-9_.\[\]-]{1,160}',p)]
                 except AssessmentError as exc:
                     failure = APIError(exc.code if exc.code in {'timeout','gpu_unavailable'} else 'model_failure', 503)
+                    diagnostic=_job_diagnostic(phase,'assessment_error',exc.code)
                 except Exception:
                     # No exception repr, traceback, model text or server address
                     # enters a response, retained job, access log or result.
                     failure = APIError('model_failure', 503)
+                    diagnostic=_job_diagnostic(phase,'unexpected_exception','model_failure')
                 safe_failed_attempt = None
                 if failure and job.action == 'answer' and candidate.failed_attempt:
                     try:
@@ -402,6 +424,7 @@ class AssessmentService:
                     record.preview = None
                     if failure:
                         job.status, job.error = 'failed', failure.public()
+                        job.diagnostic = diagnostic
                         if job.action=='indicator_suggest' and record.engine.indicators:
                             record.engine.indicators.note_suggestion_failure(failure.code)
                             try:

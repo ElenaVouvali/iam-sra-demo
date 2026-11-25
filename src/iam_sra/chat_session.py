@@ -156,6 +156,7 @@ class ChatSession:
         self.initial_results = []
         self.participant_review = None
         self.indicator_results = []
+        self.concern_projection = {'status':'not_run','version':1,'results':[]}
         self.stop_reason = None
         self.started = time.monotonic()
         self._assistant(INTRODUCTION,act='introduction')
@@ -1060,6 +1061,16 @@ class ChatSession:
                                      'report_indicator_id': indicator_id, 'considered_evidence_ids': list(original)})
             self.indicator_results.append(row)
 
+    def _project_concerns(self):
+        """Run the bounded deterministic projection once, outside the interview UI."""
+        from .indicator_projection import project_concerns
+        try:
+            active=[m for m in self.active_evidence() if m.get('evidence_status')=='respondent_provided']
+            self.concern_projection=project_concerns(self.concerns,active,self.bank)
+        except (KeyError,TypeError,ValueError):
+            self.concern_projection={'status':'unavailable','version':1,
+                'results':[],'reason':'The evidence-linked concern projection could not be validated.'}
+
     def _has_model_score(self):
         result=self.suggestion or {}
         return (result.get('status')=='suggested' and type(result.get('level')) is int
@@ -1158,6 +1169,7 @@ class ChatSession:
                                          'generation_http_seconds':getattr(score_client,'last_metrics',{}).get('generation_http_seconds'),
                                          'model_wait_seconds':getattr(score_client,'last_metrics',{}).get('model_wait_seconds'),
                                          'considered_evidence_ids':[m['id'] for m in originals]})
+        self._project_concerns()
         self._indicator_report(indicator_client)
         considered_ids = [m['id'] for m in originals]
         citation_ids = list(dict.fromkeys(c['evidence_id'] for c in self.suggestion.get('citations', [])))

@@ -383,6 +383,9 @@ def test_failed_answer_preserves_unresolved_history_and_safe_errors(make_api):
     job = browser.act('answer', {'text': 'I would like information about noise.'}, allow_failure=True)
     assert job['status'] == 'failed'
     assert '/private/model' not in json.dumps(job)
+    retained=next(reversed(service.jobs.values()))
+    assert retained.diagnostic=={'stage':'controller_action','category':'assessment_error','code':'transport'}
+    assert 'diagnostic' not in job and 'Do not expose' not in json.dumps(retained.diagnostic)
     assert browser.view['retry_draft']['data']['text'] == 'I would like information about noise.'
     finish_declined(browser)
     exported = browser.client.get('/v1/sessions/' + browser.view['id'] + '/export').json
