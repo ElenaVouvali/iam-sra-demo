@@ -332,6 +332,7 @@ def test_uncertainty_skip_and_simplification_are_not_low_levels():
     s.send("I don't know",c);s.send('skip this question',c)
     s.send('stop',c);s.send('looks right',c)
     assert s.suggestion['level'] is None and s.suggestion['status']=='abstained'
+    assert s.suggestion['scoring_outcome']=='not_run_no_scorer'
     assert len(s.view()['scale']['anchors'])==9
 
 
@@ -486,6 +487,7 @@ def test_generic_suggestion_and_indicator_results_have_separate_contracts():
     s,c=chat();s.send('Noise and privacy concern me.',c);s.send('stop',c)
     s.send('looks right',c,score_client=ScoreFixture())
     assert s.suggestion['status']=='abstained' and s.suggestion['citations']==[]
+    assert s.suggestion['scoring_outcome']=='model_abstention_insufficient_evidence'
     assert s.suggestion['considered_evidence_ids']
     assert not s.export()['indicator_projection']['participant_reviewed']
 
@@ -597,6 +599,7 @@ def test_contradictory_model_abstention_becomes_safe_unavailable_review():
     s,c=chat();s.objective='opinion_why';s._user('The account is incomplete and I remain unsure.')
     s._report(None,BadAbstention())
     assert s.suggestion['status']=='unavailable' and s.suggestion['level'] is None
+    assert s.suggestion['scoring_outcome']=='invalid_model_output'
     visible='\n'.join(m['text'] for m in s.messages if m['role']=='assistant')
     assert 'The scoring step did not provide a usable explanation tied to your answers' in visible
     re=__import__('re')
@@ -1164,6 +1167,7 @@ def test_model_score_occurs_before_personal_choice_and_remains_separate():
     assert not calls and s.participant_review is None
     s.send('no changes',c,score_client=ValidScore())
     assert len(calls)==1 and s.suggestion['level']==1 and s.view()['self_assessment_available']
+    assert s.suggestion['scoring_outcome']=='validated_score'
     s.send('7',c)
     assert s.participant_review['preferred_level']==7 and s.suggestion['level']==1
     assert len(calls)==1 and not s.participant_review['independent_validation']

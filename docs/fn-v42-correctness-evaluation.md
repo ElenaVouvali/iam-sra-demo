@@ -6,11 +6,11 @@ This checkpoint preserves `6bf43209bb2ffd7fa4916954f761d4bad16934c1` and adds ta
 
 The reproduced failure occurred while the controller rendered the final respondent review question. The phrase `Level 4` was flagged by Presidio as a person name (`PERSON`) and the queued job failed before committing the answer. The failure was not a model timeout, respondent inconsistency, queue-loss, or scoring failure. Review templates now name the profile scale (CRL/ORL/TRL) and the provisional result, avoiding the detector collision. Failed jobs also retain a bounded, process-local diagnostic containing the stage/category/code and, for privacy failures, detector labels and schema paths; it is excluded from the participant `JobView` and contains no matched text or traceback. In this restricted execution environment, the real-detector test also requires `TLDEXTRACT_CACHE=/tmp/iam-sra-publish-tldextract`; without it, tldextract attempted to create a lock under the read-only home cache and privacy screening correctly failed closed.
 
-The four-profile controlled API journey reached the expected review/export path for citizen-short, citizen-extended, organisation and technology. Each journey ended non-partially, executed the scorer, recorded respondent validation and produced JSON, JSONL and Markdown exports. Reproducible protected artifacts are in `.runtime/fn-v42-controlled-four-profile-api-fixed-20261125/`; the pre-fix diagnosis is in `.runtime/fn-v42-agent-citizen-short-api-diagnostic2-20261125/`.
+The four-profile controlled API journey reached the expected review/export path for citizen-short, citizen-extended, organisation and technology. Each journey ended non-partially, executed the scorer, recorded respondent validation and produced JSON, JSONL and Markdown exports. The gate passed again after the scoring-outcome metadata change: 1 test passed in 773 seconds. Reproducible protected artifacts are in `.runtime/fn-v42-controlled-four-profile-api-fixed-20261125/`; the pre-fix diagnosis is in `.runtime/fn-v42-agent-citizen-short-api-diagnostic2-20261125/`.
 
 ## Scoring and result review
 
-An abstention containing an anchor claim or internal reference is rejected as invalid scoring output. The conversation reports a safe unavailable result, leaves the initial proposal unset, and permits uncertainty/comments with review pending. Valid numeric scoring remains evidence-cited and must name an adjacent anchor with a participant-readable boundary. A genuine abstention remains allowed when the scorer gives a concrete missing/contradictory-evidence reason.
+An abstention containing an anchor claim or internal reference is rejected as invalid scoring output. The conversation reports a safe unavailable result, leaves the initial proposal unset, and permits uncertainty/comments with review pending. Exported `scoring_outcome` metadata distinguishes validated score, model abstention (including insufficient evidence or conflict), invalid model output, model errors, and scoring not run for missing scope/evidence or operational limits. Valid numeric scoring remains evidence-cited and must name an adjacent anchor with a participant-readable boundary. A genuine abstention remains allowed when the scorer gives a concrete missing/contradictory-evidence reason.
 
 The historical S6 transcript and S2 transcript have not been rewritten. The S6 contradictory abstention is preserved at `.runtime/fn-v42-a30-stress-S6-extended-adaptive3-corrected2-20261125/`. A deterministic test exercises the correction. Archived S2 included an invalid abstention whose prose named an anchor and embedded its internal anchor ID; the archived scan identifies assistant message index 42. The current validator rejects that shape, but the historical participant artifact remains evidence of the earlier leak and is not represented as fixed retroactively.
 
@@ -48,6 +48,12 @@ TLDEXTRACT_CACHE=/tmp/iam-sra-publish-tldextract PYTHONPATH=src \
   tests/test_fn_interpretation.py tests/test_chat_conversation.py \
   tests/test_api_integration.py
 ```
+
+The recorded result was `312 passed, 1 warning` before the final additive
+`scoring_outcome` field. After that field and the authenticated-trace-only
+projection routing were added, the affected chat, interpretation and full
+four-profile API gate passed again: `196 passed, 1 warning`. The full focused
+group can be rerun with the command above.
 
 ## Remaining review items
 

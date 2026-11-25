@@ -1087,12 +1087,21 @@ class ChatSession:
         self.suggestion = {'status': 'abstained', 'level': None, 'anchor_id': None,
             'policy_version': POLICY, 'revision': self.revision, 'result_version':1, 'partial_interview':self.partial, 'rubric_version': (scale or {}).get('rubric_version'),
             'explanation': 'There is not enough usable scoped evidence for an overall level.',
-            'gaps': [], 'considered_evidence_ids': [], 'evidence_sufficiency': 'insufficient', 'external_verification': 'not_performed'}
+            'gaps': [], 'considered_evidence_ids': [], 'evidence_sufficiency': 'insufficient',
+            'scoring_outcome':'not_run', 'external_verification': 'not_performed'}
         originals = [{'id': m['id'], 'text': m['text'], 'objective': m['objective_id'],
                       'evidence_mode':score_evidence_mode(m['objective_id']),
                       'information_exposure_ids': m['information_exposure_ids']} for m in self.active_evidence()]
         scope_ready = self.profile=='citizen' or (self.profile=='organisational' and self.context['organisation_or_unit'] and self.context['responsibilities']) or (self.profile=='technical' and self.context['technical_object'])
         scope_ready=scope_ready and self.context['scope_status']!='outside_remit'
+        if not score_client:
+            self.suggestion['scoring_outcome']='not_run_no_scorer'
+        elif not scope_ready:
+            self.suggestion['scoring_outcome']='not_run_scope_insufficient'
+        elif not originals:
+            self.suggestion['scoring_outcome']='not_run_no_respondent_evidence'
+        elif self.calls + 4 > self.limits['calls']:
+            self.suggestion['scoring_outcome']='not_run_operational_limit'
         if score_client and scale and scope_ready and originals and self.calls + 4 <= self.limits['calls']:
             from .model_spec import thinking_enabled
             if not thinking_enabled() and sum(len(m['text']) for m in originals) > 5000:
@@ -1116,7 +1125,8 @@ class ChatSession:
                         citations=value['citations'], alternative_anchor_id=value['alternative_anchor_id'],
                         material_conflict=value['material_conflict'], evidence_incomplete=value['evidence_incomplete'],
                         considered_evidence_ids=[m['id'] for m in originals],
-                        evidence_sufficiency='provisionally_sufficient' if anchor else 'insufficient')
+                        evidence_sufficiency='provisionally_sufficient' if anchor else 'insufficient',
+                        scoring_outcome='validated_score' if anchor else 'model_abstention_insufficient_evidence' if value['evidence_incomplete'] else 'model_abstention_material_conflict' if value['material_conflict'] else 'model_abstention')
                     if not anchor:
                         # The validated model explanation is the abstention
                         # rationale. Do not replace it with a generic Python
@@ -1138,6 +1148,7 @@ class ChatSession:
                     }.get(field,'The scoring step did not produce a valid evidence-grounded result, so no numeric result is shown.')
                     self.suggestion.update(status='unavailable', explanation='A valid provisional profile judgment is unavailable. Your original words are retained.',
                                            gaps=[participant_reason],
+                                           scoring_outcome='invalid_model_output' if code in {'schema','evidence'} else 'scoring_model_error',
                                            considered_evidence_ids=[m['id'] for m in originals])
                     diagnostics=getattr(score_client,'last_diagnostics',[])
                     last=diagnostics[-1] if diagnostics else {}
