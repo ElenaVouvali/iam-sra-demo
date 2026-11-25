@@ -43,6 +43,27 @@ def direct_intent(text):
     return None
 
 
+def participant_score_text(value):
+    """Remove internal anchor identifiers from scorer prose before display/export."""
+    text=re.sub(r'\b(?:citizen_short|citizen_extended|organisational|technical)-[1-9]\b','',str(value or ''),flags=re.I)
+    text=re.sub(r'\bevidence-\d+\b','',text,flags=re.I)
+    text=re.sub(r'\s+([.,;:!?])',r'\1',text)
+    text=re.sub(r'\(\s*\)','',text)
+    return re.sub(r'\s{2,}',' ',text).strip()
+
+
+def score_evidence_mode(objective):
+    """Label question intent without copying interviewer wording into scoring input."""
+    if objective in {'conditions','conditions_why','decisions_should','meaningful',
+                     'participation_capability','influence_evidence','problem_action',
+                     'escalation','ongoing_role','hypothetical_comparison'}:
+        return 'hypothetical_or_normative'
+    if objective in {'opportunity','participation','feedback_outcome','demonstration',
+                     'demonstration_view','local_basis','healthcare_detail'}:
+        return 'reported_experience_or_prior_knowledge'
+    return 'open_or_other'
+
+
 def explicit_profile(text):
     """Recognise a plainly selected perspective; never infer it from occupation."""
     value = text.strip().casefold()
@@ -151,7 +172,11 @@ class ChatSession:
     def limits(self):
         return {'turns': int(os.getenv('IAM_CHAT_MAX_TURNS', '96')),
                 'calls': int(os.getenv('IAM_CHAT_MAX_CALLS', '64')),
-                'processing_seconds': int(os.getenv('IAM_CHAT_PROCESSING_SECONDS', '600'))}
+                # Thinking-enabled interviews on the supported GPU can exceed
+                # ten minutes of cumulative inference time. Keep this as a
+                # safeguard, but do not force a normal FN flow into a partial
+                # result at the former 600-second default.
+                'processing_seconds': int(os.getenv('IAM_CHAT_PROCESSING_SECONDS', '2400'))}
 
     def _assistant(self, text, objective=None, act='question'):
         require_safe_data({'text': text})
@@ -590,6 +615,24 @@ class ChatSession:
         return True
 
     def _fn_topics(self, row, interpretation):
+        # Naming no known drone uses is not evidence of a citizen concern.
+        # Preserve concerns explicitly volunteered alongside that answer.
+        if (self.profile == 'citizen'
+                and self.objective in {'drone_uses', 'drone_other_uses'}
+                and interpretation['answer_kind'] in {'no', 'uncertain', 'declined'}
+                and not re.search(
+                    r'\b(?:worr(?:y|ied)|concern(?:ed)?|fear|risk|'
+                    r'problem|noise|privacy|fairness|wildlife|safety|'
+                    r'impact|benefit|affect(?:ed|s)?|'
+                    r'need to know|want to know|bother(?:ed|s)?)\b',
+                    row['text'], re.I)):
+            if interpretation.get('topics'):
+                self.routing_events.append({
+                    'event': 'unsupported_recognition_topic_ignored',
+                    'objective_id': self.objective,
+                    'evidence_id': row['id']
+                })
+            return
         stage=self.fn.stage_for(self.profile,self.depth,self.objective)
         spontaneous=self.objective in {'open_priorities','open_more','different_impacts','requirements_open'}
         from .adaptive_interview import explicit_priority_commitment
@@ -692,6 +735,31 @@ class ChatSession:
                         self.routing_events.append({'event':'question_fallback','issues':result['_quality_issues'],'evidence_id':row['id']})
                     interpretation=result.get('interpretation')
                     if not interpretation: raise AssessmentError('Grounded interpretation unavailable.',code='evidence',field='interpretation')
+                    # Preserve explicit uncertainty in the respondent's own
+                    # wording when the model labels a qualified answer too
+                    # strongly. This affects evidence status, never readiness.
+                    from .fn_interview import explicit_answer_uncertainty
+                    explicit_uncertainty=explicit_answer_uncertainty(row['text'])
+                    if explicit_uncertainty:
+                        interpretation['answer_kind']=explicit_uncertainty
+                        for entry in interpretation.get('coverage',[]):
+                            if entry['goal']==goal:
+                                entry['answer_kind']=explicit_uncertainty
+                                entry['status']='unknown' if explicit_uncertainty=='uncertain' else 'explored'
+                        if node['response_type'] in {'yes_no','permission'}:
+                            interpretation['answer_polarity']=explicit_uncertainty
+                    if goal=='local_awareness':
+                        from .fn_interview import tentative_local_operation_report
+                        if tentative_local_operation_report(row['text']):
+                            # Keep a tentative report distinct from a verified
+                            # operation while preserving FN's basis follow-up.
+                            interpretation['answer_polarity']='partial'
+                            interpretation['answer_kind']='partial'
+                            for entry in interpretation.get('coverage',[]):
+                                if entry['goal']=='local_awareness':
+                                    entry['answer_kind']='partial';entry['status']='explored'
+                            self.routing_events.append({'event':'tentative_local_basis_followup',
+                                'evidence_id':row['id'],'verified_local_operation':False})
                     self.failed_turn_id=None
                     for entry in interpretation['coverage']:
                         from .adaptive_interview import explicit_priority_commitment
@@ -712,7 +780,14 @@ class ChatSession:
                                 self.routing_events.append({'event':'explicit_prior_evidence_reused',
                                     'goal':extra_goal,'evidence_id':row['id'],'readiness_inferred':False})
                     if goal in self.fn.coverage and node['response_type'] in {'yes_no','permission'}:
-                        self.fn.facts[goal]=interpretation['answer_kind']
+                        polarity=interpretation.get('answer_polarity')
+                        if polarity not in {'yes','no','uncertain','partial'}:
+                            polarity=(interpretation['answer_kind'] if interpretation['answer_kind']
+                                      in {'yes','no','uncertain','partial'} else 'uncertain')
+                        # Conditional routing uses proposition polarity while
+                        # the evidence annotation keeps answer richness intact.
+                        self.fn.facts[goal]=polarity
+                        self.fn.facts[goal+'_evidence_kind']=interpretation['answer_kind']
                     accepted=self._apply_context_facts(result,text,row['id'])
                     self._last_decision['validated_context_facts']=accepted
                     self._fn_topics(row,interpretation)
@@ -745,7 +820,7 @@ class ChatSession:
                     self._last_decision['fn_coverage']=[{k:v for k,v in e.items() if k!='quote'} for e in interpretation['coverage']]
                     if ((result['act']=='explanation_offer' or interpretation['action']=='explain'
                          or result['proposed_action']=='provide_information')
-                            and not (self.profile=='citizen' and goal=='drone_recognition')):
+                            and not (self.profile=='citizen' and goal in {'drone_recognition','drone_description'})):
                         passages=request.get('retrieved_context',{}).get('passages',[])
                         passage=next((p for p in passages if p['id'] in result['source_ids']),None)
                         requested=text.strip().endswith('?') or bool(re.search(r'\b(?:what|how|explain|tell me|information|understand)\b',text,re.I))
@@ -1003,6 +1078,7 @@ class ChatSession:
             'explanation': 'There is not enough usable scoped evidence for an overall level.',
             'gaps': [], 'considered_evidence_ids': [], 'evidence_sufficiency': 'insufficient', 'external_verification': 'not_performed'}
         originals = [{'id': m['id'], 'text': m['text'], 'objective': m['objective_id'],
+                      'evidence_mode':score_evidence_mode(m['objective_id']),
                       'information_exposure_ids': m['information_exposure_ids']} for m in self.active_evidence()]
         scope_ready = self.profile=='citizen' or (self.profile=='organisational' and self.context['organisation_or_unit'] and self.context['responsibilities']) or (self.profile=='technical' and self.context['technical_object'])
         scope_ready=scope_ready and self.context['scope_status']!='outside_remit'
@@ -1020,6 +1096,8 @@ class ChatSession:
                     self._last_decision['score_flag_diagnostics'] = deepcopy(
                         getattr(score_client, 'last_score_diagnostics', {}))
                     value = validate_profile_match(value, payload)
+                    value['explanation']=participant_score_text(value.get('explanation'))
+                    value['boundary']=participant_score_text(value.get('boundary'))
                     anchor = next((a for a in scale['anchors'] if a['id']==value['selected_anchor_id']), None)
                     self.suggestion.update(status='suggested' if anchor else 'abstained',
                         level=anchor['level'] if anchor else None, anchor_id=anchor['id'] if anchor else None,
@@ -1029,23 +1107,34 @@ class ChatSession:
                         considered_evidence_ids=[m['id'] for m in originals],
                         evidence_sufficiency='provisionally_sufficient' if anchor else 'insufficient')
                     if not anchor:
-                        flagged = []
-                        if value['material_conflict']:
-                            flagged.append('Model flagged a material conflict; the conflicting statements were not identified.')
-                        if value['evidence_incomplete']:
-                            flagged.append('Model flagged insufficient evidence for a full anchor; specific missing evidence was not identified.')
-                        self.suggestion['gaps'] = flagged or ['Model did not select a supported provisional anchor.']
+                        # The validated model explanation is the abstention
+                        # rationale. Do not replace it with a generic Python
+                        # gap that falsely implies a specific missing fact.
+                        self.suggestion['gaps'] = []
                 except (AssessmentError, httpx.HTTPError, ValueError) as exc:
                     code=getattr(exc,'code','model_failure')
+                    field=getattr(exc,'field',None)
+                    # The scorer may raise inside its validator before the
+                    # successful-return assignment above. Preserve the
+                    # original proposal flags/IDs for authenticated traces.
+                    self._last_decision['score_flag_diagnostics']=deepcopy(
+                        getattr(score_client,'last_score_diagnostics',{}))
+                    participant_reason={
+                        'explanation':'The scoring step did not provide a usable explanation tied to your answers, so no numeric result is shown.',
+                        'boundary':'The scoring step did not provide a valid comparison with a neighboring level, so no numeric result is shown.',
+                        'alternative_anchor_id':'The scoring step did not identify a valid neighboring level, so no numeric result is shown.',
+                        'citations':'The scoring step did not provide verifiable quotations from your answers, so no numeric result is shown.'
+                    }.get(field,'The scoring step did not produce a valid evidence-grounded result, so no numeric result is shown.')
                     self.suggestion.update(status='unavailable', explanation='A valid provisional profile judgment is unavailable. Your original words are retained.',
-                                           gaps=[code])
+                                           gaps=[participant_reason],
+                                           considered_evidence_ids=[m['id'] for m in originals])
                     diagnostics=getattr(score_client,'last_diagnostics',[])
                     last=diagnostics[-1] if diagnostics else {}
                     self.failures.append({'stage':'generic_profile_match','category':'model_schema' if code=='schema' else 'evidence_integrity' if code=='evidence' else 'model_transport',
                         'code':code,'attempts':sum(1 for d in diagnostics if d.get('stage')=='chat_profile_match' and 'attempt' in d),
                         'generation_calls':getattr(score_client,'last_metrics',{}).get('generation_calls'),
                         'transport_attempts':sum(1 for d in diagnostics if 'transport_attempt' in d),
-                        'validation_field':getattr(exc,'field',None) or last.get('validation_field'),
+                        'validation_field':field or last.get('validation_field'),
                         'completion_status':last.get('completion_status')})
                     validation_errors = [
                         item for item in diagnostics
@@ -1096,10 +1185,30 @@ class ChatSession:
 
     def _review_prompt(self):
         if not self._has_model_score():
-            self._assistant('There is not enough consistent evidence for a defensible numeric level. You may comment, say “I am not sure”, or write “no changes” to finish without a score. No level is invented.',act='assessment_gap')
+            reason=(self.suggestion or {}).get('explanation') or ''
+            gaps=(self.suggestion or {}).get('gaps') or []
+            if reason.startswith('A valid provisional profile judgment is unavailable'):
+                reason=''
+            detail=' '.join([reason, *[str(g) for g in gaps if g]])
+            detail=re.sub(r'\s+',' ',detail).strip()
+            if not detail:
+                detail='The evidence did not support a validated provisional result.'
+            self._assistant(detail+' You may comment, say “I am not sure”, or write “no changes” to finish without a score. No level is invented.',act='assessment_gap')
             return
         config=specification()['review'][flow_key(self.profile,self.depth)]
         text=config['question'].format(level=self.suggestion['level'])
+        anchor=(self.suggestion or {}).get('anchor') or {}
+        label=anchor.get('label')
+        if label:
+            text=f"Provisional result: CRL {self.suggestion['level']} — {label}.\n\n{self.suggestion.get('explanation','')}"
+            citations=(self.suggestion.get('citations') or [])[:3]
+            if citations:
+                text+='\n\nEvidence from your answers:\n'+'\n'.join('“'+c['quote']+'”' for c in citations)
+            boundary=self.suggestion.get('boundary')
+            if boundary:text+='\n\nBoundary: '+boundary
+            gaps=self.suggestion.get('gaps') or []
+            if gaps:text+='\n\nRemaining uncertainty: '+'; '.join(gaps)
+            text+='\n\n'+config['question'].format(level=self.suggestion['level'])
         text+='\n\n'+'\n'.join(f'{letter}. {label}' for letter,label in zip('ABCDE',config['choices']))
         self._assistant(text,act='result_review')
 

@@ -32,6 +32,8 @@ class TopicEvidence(Strict):
 class FNInterpretation(Strict):
     action: Literal['follow_up', 'clarify', 'advance', 'explain', 'conclude']
     answer_kind: Literal['yes', 'no', 'uncertain', 'partial', 'substantive', 'declined']
+    # Polarity is orthogonal to evidence richness; detailed answers may affirm.
+    answer_polarity: Literal['yes', 'no', 'uncertain', 'partial', 'not_applicable'] | None = None
     answer_quote: str = Field(min_length=1, max_length=1800)
     # Semantic disposition only; evidence identity/text are server-owned.
     current_goal_addressed: bool | None = None
@@ -95,12 +97,16 @@ FN_SYSTEM = (
     'describe their answer polarity, never whether the question was answered. partial is a qualified '
     'or incomplete answer; uncertain means the '
     'respondent expresses not knowing; declined means the respondent explicitly refuses to answer. '
+    'answer_polarity is a separate field: on yes/no questions use yes, no, uncertain or partial; on open questions use not_applicable. '
+    'A detailed answer can be both answer_kind=substantive and answer_polarity=yes. Never infer polarity from detail alone. '
+    'When someone tentatively reports a possible local test or operation but is unsure, use partial and preserve the uncertainty in their exact evidence; do not call the operation verified. Use uncertain only when they have no tentative report or basis. '
     'A concise definition or list is substantive. It is never declined merely because it is short or '
     'does not discuss participation. Read only the current answer for refusal; participation rights '
     'and examples in instructions are not a refusal by this respondent. '
     'A request for explanation can accompany a negative or uncertain answer; it is not affirmative '
     'prior knowledge. Do not route a respondent who says they do not know the concept as knowing it. '
     'Set current_goal_addressed=true only if the respondent actually answered the current question, including an explicit no or genuine uncertainty; false if unrelated or ambiguous. '
+    'For drone_description, inability to describe a drone is uncertainty, even if the person recognises the term. Do not claim demonstrated knowledge from recognition alone. '
     'For an addressed question normally use action=advance and include its goal in coverage, with current_answer_id, '
     'an exact quote from answer, status=explored and the appropriate answer_kind. '
     'Copy the literal value of current_answer_id into coverage.evidence_id and fn.evidence_goal into '
@@ -148,6 +154,25 @@ FN_SYSTEM = (
 
 def _normal(text):
     return ' '.join(re.findall(r'[a-z0-9]+', text.casefold()))
+
+
+def _topic_label_is_grounded(label, quote):
+    """Accept simple inflections while rejecting added impacts or groups."""
+    stop={'a','an','the','and','or','of','to','in','on','for','near','with',
+          'issue','issues','topic','topics','concern','concerns','impact','impacts',
+          'effect','effects'}
+    def tokens(text):
+        result=set()
+        for word in re.findall(r'[a-z]+',text.casefold()):
+            if word in stop:continue
+            stem=word
+            for suffix in ('ing','ance','ment','ed','es','s'):
+                if len(stem)>len(suffix)+2 and stem.endswith(suffix):
+                    stem=stem[:-len(suffix)];break
+            result.add(stem)
+        return result
+    terms=tokens(label)
+    return bool(terms) and terms <= tokens(quote)
 
 
 def question_terms(text, city=''):
@@ -407,6 +432,22 @@ def validate_reply(raw, request):
     result = value.model_dump()
     if value.interpretation is not None and request.get('fn'):
         interpretation = value.interpretation.model_dump()
+        from .fn_interview import explicit_unknown_drone_description
+        if (request.get('profile') == 'citizen'
+                and request['fn'].get('evidence_goal') == 'drone_description'
+                and explicit_unknown_drone_description(answer)):
+            # The respondent explicitly answered that they cannot describe it.
+            # This is valid uncertainty, not a partial demonstrated definition.
+            interpretation['action'] = 'advance'
+            interpretation['answer_kind'] = 'uncertain'
+            interpretation['current_goal_addressed'] = True
+            interpretation['coverage'] = [entry for entry in interpretation['coverage']
+                if entry['goal'] != 'drone_description'
+                or entry['evidence_id'] == request.get('current_answer_id')]
+            for entry in interpretation['coverage']:
+                if entry['goal'] == 'drone_description':
+                    entry['answer_kind'] = 'uncertain'
+                    entry['status'] = 'unknown'
         allowed = set(request['fn'].get('allowed_objectives', {}))
         originals = {row['id']:row['text'] for row in request.get('original_context', [])}
         originals.update({row['answer_id']:row['answer'] for row in request.get('answered_questions', [])})
@@ -448,6 +489,7 @@ def validate_reply(raw, request):
                     entry['status']='unknown' if kind=='uncertain' else 'declined'
             if len(interpretation['coverage']) != len(value.interpretation.coverage): warnings.append('interpretation.coverage')
             interpretation['topics'] = [row for row in interpretation['topics'] if row['quote'] in answer
+                and _topic_label_is_grounded(row['topic'].strip(),row['quote'])
                 and not (row['topic'] in allowed and '_' in row['topic'] and row['topic'] not in answer)]
             if len(interpretation['topics']) != len(value.interpretation.topics):warnings.append('interpretation.topics')
             known={row['topic'].casefold():row['topic'] for row in request['fn'].get('known_topics',[])}
@@ -544,7 +586,7 @@ class ChatClient(ConversationClient):
             'Respect the stated organisation remit, specific technical object/configuration and expertise limits. '
             'For an organisational remit/relevance clarification, scope_disposition may identify outside_remit, '
             'within_scope or not_established, supported by the exact answer_quote. Never infer it from a job title. '
-            'Topics need exact current-answer quotes. Mention is not priority selection; Python records that distinction. '
+            'Topics need exact current-answer quotes. Use a concise issue phrase that appears literally inside its quote; do not add an affected group, setting, cause or impact not stated there. Mention is not priority selection; Python records that distinction. '
             'Keep indicator_ids optional, provisional relevance only; no numerical readiness judgment here. '
             'Use advance when addressed or explicitly unknown. Otherwise ask one neutral, short relevant follow-up '
             'or clarification about the SAME goal, reusing selected priorities and avoiding resolved questions. '

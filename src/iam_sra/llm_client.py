@@ -83,7 +83,7 @@ class LLMTransport:
             if not transient or retry==1:
                 raise AssessmentError('The model service request could not complete.',code=code) from None
 
-    def _request(self,client,stage,system,user,schema,validator):
+    def _request(self,client,stage,system,user,schema,validator,retry_hint=None):
         from .privacy import require_safe_data, safe_message, PrivacyError
         require_safe_data({'system':system,'user':user,'schema':schema})
         self._accepted_wire = None
@@ -184,4 +184,10 @@ class LLMTransport:
             if attempt==1:raise error
             # No previous citizen/model output is copied into feedback. Recount
             # the whole message before every retry; do not truncate evidence.
-            messages[0]['content']=system+'\nRetry: previous output failed '+error.code+' checks at '+str(error.field or 'response')+': '+safe_message(error)+' Return a fresh object matching the supplied schema and cite only listed passage IDs. Do not add missing facts; use empty optional fields when no detail is supported.'
+            feedback=('Retry: previous output failed '+error.code+' checks at '+str(error.field or 'response')+': '+safe_message(error)+
+                      ' Return a fresh object matching the supplied schema and cite only listed passage IDs. Do not add missing facts.')
+            if retry_hint:
+                feedback+=' '+retry_hint
+            else:
+                feedback+=' Use empty optional fields only when the schema permits them and no detail is supported.'
+            messages[0]['content']=system+'\n'+feedback

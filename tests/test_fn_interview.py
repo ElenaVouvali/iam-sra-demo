@@ -470,15 +470,37 @@ def test_depth_change_after_result_cannot_switch_the_scale_under_initial_judgmen
 
 @pytest.mark.parametrize('key',list(GOLDEN))
 def test_score_compaction_preserves_all_originals_and_all_nine_exact_scale_texts(key):
-    from iam_sra.chat_score import compact_score_request
-    s,c,scorer,questions=replay(key)
-    original=scorer.calls[-1];before=deepcopy(original)
+    from iam_sra.chat_score import compact_score_request,evidence_aliases
+    profile='citizen' if key.startswith('citizen') else key
+    depth='extended' if key=='citizen_extended' else 'short'
+    anchors=ChatSession(bank(),depth,synthetic=True).source_scales[key]
+    original={'profile':profile,'scope':{'city':'Madrid'},'anchors':deepcopy(anchors),
+        'guidance':'Synthetic transport fixture.','originals':[
+            {'id':'m3','text':'A synthetic original answer about a relevant concern.',
+             'objective':'open_concerns','evidence_mode':'open_or_other','information_exposure_ids':['x1']},
+            {'id':'m17','text':'A second synthetic response with an exact evidence statement.',
+             'objective':'evaluation','evidence_mode':'hypothetical_or_normative','information_exposure_ids':['x1','x2']}],
+        'supplied_information':[{'id':'x1','kind':'model_explanation'}, {'id':'x2','kind':'suggested_topics'}],
+        'exploration_gaps':[],'partial_interview':False}
+    before=deepcopy(original)
     wire=compact_score_request(original)
+    aliases=evidence_aliases(original)
+    from iam_sra.chat_score import exposure_aliases
+    exposure_ids=exposure_aliases(original)
     restored=[dict(zip(wire['original_columns'],row)) for row in wire['originals']]
+    for row in restored:
+        row['id']=aliases[row['id']]
+        row['information_exposure_ids']=[exposure_ids[value] for value in row['information_exposure_ids']]
     assert restored==original['originals'] and original==before
+    assert wire['supplied_information'][0]['id']=='exposure-1'
+    assert wire['originals'][0][-1]==['exposure-1']
+    assert wire['originals'][1][-1]==['exposure-1','exposure-2']
+    assert all(row[wire['original_columns'].index('id')] not in aliases.values() for row in wire['originals'])
     assert len(wire['anchors'])==9
     assert [(a['id'],a['level'],a['label'],a['description']) for a in wire['anchors']]==[(a['id'],a['level'],a['label'],a['description']) for a in original['anchors']]
-    assert wire['supplied_information']==original['supplied_information']
+    restored_exposures=deepcopy(wire['supplied_information'])
+    for row in restored_exposures:row['id']=exposure_ids[row['id']]
+    assert restored_exposures==original['supplied_information']
 
 
 @pytest.mark.parametrize('key',list(GOLDEN))

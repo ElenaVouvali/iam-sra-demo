@@ -29,7 +29,7 @@ class ConversationClient(LLMTransport):
         if getattr(self,'_cache_scope',None)!=scope:
             self._request_cache={};self._token_count_cache={};self._cache_scope=scope
 
-    def _request(self,client,stage,system,user,schema,validator):
+    def _request(self,client,stage,system,user,schema,validator,retry_hint=None):
         from .privacy import require_safe_data
         require_safe_data({'system':system,'user':user,'schema':schema})
         from .interpretation import digest
@@ -42,7 +42,7 @@ class ConversationClient(LLMTransport):
         self.last_request_context={'stage':stage,'task':task,'facet':user.get('facet'),
             'request_id':request_id,'prompt_version':getattr(self,'prompt_version',config('prompts')['version'])}
         self.last_settings['last_request_context']=dict(self.last_request_context)
-        key=digest({'stage':stage,'system':system,'user':user,'schema':schema,'endpoint':self.base_url,
+        key=digest({'stage':stage,'system':system,'user':user,'schema':schema,'retry_hint':retry_hint,'endpoint':self.base_url,
             'cache_format':'validated_wire_v2',
             'model':config('model'),'request_settings':{'output_limit':STAGE_LIMITS[stage],'temperature':0.6 if thinking_enabled() else 0.2,'top_p':0.95 if thinking_enabled() else 0.8,'enable_thinking':thinking_enabled(),'context_tokens':context_tokens(),'reasoning_token_allowance':reasoning_tokens(),'backend':BACKEND},'policies':{k:config(k) for k in ['concerns','prompts']}})
         cache=getattr(self,'_request_cache',{})
@@ -63,7 +63,7 @@ class ConversationClient(LLMTransport):
         before=self.last_metrics['generation_calls'];offset=len(self.last_diagnostics)
         trace_offset=len(self.last_trace)
         try:
-            result=super()._request(client,stage,system,user,schema,validator)
+            result=super()._request(client,stage,system,user,schema,validator,retry_hint=retry_hint)
             # Validators may convert passage IDs into source text or otherwise
             # transform the wire format. Cache the accepted response, not the
             # transformed model, so cache hits can run the same validator.

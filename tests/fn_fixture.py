@@ -40,5 +40,5 @@ class ScoreFixture:
                 'alternative_anchor_id':payload['anchors'][self.index+1]['id'],
                 'citations':[{'evidence_id':quote['id'],'quote':excerpt(quote['text'],120)}],
                 'explanation':'Synthetic score transport fixture, not a methodological judgment.',
-                'boundary':'The comparison anchor is not demonstrated in this synthetic fixture.',
+                'boundary':f"{payload['anchors'][self.index+1]['label']} (level {payload['anchors'][self.index+1]['level']}) is not demonstrated in this synthetic fixture.",
                 'material_conflict':False,'evidence_incomplete':False}

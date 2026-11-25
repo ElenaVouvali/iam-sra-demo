@@ -326,8 +326,11 @@ def main(argv=None):
                         continue
                     if args.opening_only and goal=='healthcare_awareness':break
                     reference=next((row for row in fixture[key] if row['id']==goal),None)
+                    node=current.fn.current(current.profile,current.depth,goal)
                     canonical=(current.messages[-1]['text']==CITIZEN_DURATION if goal=='citizen_duration'
-                        else bool(reference and reference['question'] in current.messages[-1]['text']))
+                        else bool((reference and reference['question'] in current.messages[-1]['text'])
+                                  or (reference is None and node
+                                      and node['canonical_question'] in current.messages[-1]['text'])))
                     failures=len(current.failures)
                     submit(('35 minutes' if key=='citizen_extended' else '20 minutes') if goal=='citizen_duration' else answers.get(goal,'I do not know.'))
                     current=manager.records[sid].engine.chat
@@ -336,6 +339,17 @@ def main(argv=None):
                         'unknown' if reference and reference['answer_kind']=='uncertain' else 'explored')
                     actual_kind=current.fn.facts.get(goal)
                     readings=variant.get('accepted_readings',{}).get(goal)
+                    # FN labels this qualified decision-making answer
+                    # "uncertain". The controller deliberately preserves its
+                    # explicit uncertainty marker while retaining the
+                    # respondent's tentative, meaningful proposal as partial
+                    # evidence. Audit that as a valid uncertain reading, not
+                    # as a falsely certain answer.
+                    if (not readings and reference and reference.get('answer_kind')=='uncertain'
+                            and current.fn.facts.get(goal)=='partial'):
+                        from iam_sra.fn_interview import explicit_answer_uncertainty
+                        if explicit_answer_uncertainty(reference.get('answer',''))=='partial':
+                            readings=[{'status':'explored','answer_kind':'partial'}]
                     reading_ok=({'status':coverage.get('status'),'answer_kind':actual_kind} in readings
                         if readings else coverage.get('status')==expected)
                     topics_ok=goal not in variant.get('no_topics',[]) or not current.concerns
@@ -396,6 +410,13 @@ def main(argv=None):
             if key=='citizen_extended':required_opening.add('drone_other_uses')
             output_tokens=sum(m.get('generated_tokens') or 0 for m in metrics)
             generation_seconds=sum(m.get('generation_http_seconds') or 0 for m in metrics)
+            reference_audit=None
+            if args.respondent=='reference' and key.startswith('citizen') and not args.opening_only:
+                from iam_sra.fn_interview import specification as fn_specification
+                from iam_sra.fn_reference_audit import audit as audit_reference
+                reference_audit=audit_reference(key,data,fixture,fn_specification())
+                (output/(name+'-reference-audit.json')).write_text(
+                    json.dumps(reference_audit,ensure_ascii=False,indent=2)+'\n')
             reports.append({'case':key,'stage':c['stage'],'partial':c['completion']['partial'],
                 'thinking_enabled':args.thinking,
                 'reasoning_characters':sum(m.get('reasoning_characters',0) or 0 for m in metrics),
@@ -406,6 +427,11 @@ def main(argv=None):
                 'scope':'citizen_opening_only' if args.opening_only else 'full_interview',
                 'opening_variant':variant_name,
                 'backend':args.backend,'model':c.get('model_provenance'),'reference_checks':checks,
+                'reference_conditional_audit':reference_audit,
+                'reference_conditional_audit_passed':None if reference_audit is None else bool(
+                    not reference_audit['expected_but_unasked'] and not reference_audit['expected_but_uncovered']
+                    and not reference_audit['unexpectedly_triggered'] and reference_audit['uncertainty_preserved']
+                    and reference_audit['healthcare_prior_knowledge_not_exposure_id']),
                 'respondent':args.respondent,'respondent_backend':getattr(responder,'backend','fn_reference_answers'),
                 'respondent_thinking':'soft_disabled' if args.respondent_no_think else 'enabled' if args.thinking else 'disabled',
                 'controlled_api_fixture':bool(bootstrap.json.get('synthetic_fixture')),

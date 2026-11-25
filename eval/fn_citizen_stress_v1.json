@@ -1,0 +1,385 @@
+{
+  "schema_version": "iam-sra-citizen-stress-1.0.0",
+  "classification": "fictional evaluation personas; not participant data and not score targets",
+  "scenarios": [
+    {
+      "id": "S1_unfamiliar_birds_short",
+      "depth": "short",
+      "persona": {
+        "perspective": "citizen",
+        "stakeholder_role": "resident",
+        "city": "Madrid",
+        "background": "A resident with little prior exposure to drones who enjoys walking near wetlands.",
+        "known_facts": [],
+        "unknown_facts": [
+          "drone operation details",
+          "local service status",
+          "technical wildlife effects"
+        ],
+        "actual_experiences": [],
+        "actual_participation": [],
+        "actual_contributions": [],
+        "reported_outcomes": [],
+        "benefits_perceived": [
+          "urgent medical supplies might arrive sooner"
+        ],
+        "concerns": [
+          "disturbance to nesting birds near wetlands"
+        ],
+        "conditions": [
+          "avoid sensitive nesting seasons and habitats"
+        ],
+        "information_needs": [
+          "independent monitoring of wildlife disturbance"
+        ],
+        "priorities": [
+          "nesting birds"
+        ],
+        "acceptance_position": "open but cautious",
+        "trust_position": "depends on monitoring",
+        "communication_style": "plain and concise",
+        "response_length_preference": "short",
+        "uncertainty_tolerance": "states unknowns clearly",
+        "behavioural_traits": [],
+        "contradiction_policy": "do not invent local operations or participation",
+        "scenario_preference": "answer from personal experience"
+      },
+      "answers": {
+        "drone_recognition": "No, I do not know what a drone is. Could you explain briefly?",
+        "drone_explanation": "Yes, please.",
+        "healthcare_awareness": "No, I had not heard of that before today.",
+        "local_awareness": "I do not know whether this happens here.",
+        "open_priorities": "I am concerned that repeated flights could disturb nesting birds near wetlands. I have not joined any consultation.",
+        "open_more": "Bird nesting seasons and quiet areas are the main things I would want checked.",
+        "different_impacts": "Birds and people living near wetlands could be affected differently.",
+        "suggested_topics": "None of those are more important to me than the wildlife concern.",
+        "priorities": "Nesting birds and seasonal disturbance.",
+        "demonstration": "No, I have not attended one.",
+        "opportunity": "No, I have never had a chance to take part.",
+        "participation": "I have not participated.",
+        "influence": "I do not know of any decision I influenced."
+      }
+    },
+    {
+      "id": "S2_privacy_priority_shift_short",
+      "depth": "short",
+      "persona": {
+        "perspective": "citizen",
+        "stakeholder_role": "resident",
+        "city": "Madrid",
+        "background": "A renter who initially notices aircraft noise but is more concerned about data collection after considering the service.",
+        "known_facts": [
+          "drones can carry small packages"
+        ],
+        "unknown_facts": [
+          "whether this service uses cameras",
+          "who can access flight data",
+          "local service status"
+        ],
+        "actual_experiences": [],
+        "actual_participation": [],
+        "actual_contributions": [],
+        "reported_outcomes": [],
+        "benefits_perceived": [
+          "faster transport of urgent supplies"
+        ],
+        "concerns": [
+          "noise",
+          "collection and retention of personal data"
+        ],
+        "conditions": [
+          "publish what data are collected and delete unnecessary records"
+        ],
+        "information_needs": [
+          "data retention and access rules"
+        ],
+        "priorities": [
+          "privacy and data handling"
+        ],
+        "acceptance_position": "conditional",
+        "trust_position": "requires transparent data rules",
+        "communication_style": "reflective",
+        "response_length_preference": "brief",
+        "behavioural_traits": [],
+        "contradiction_policy": "priority can change; do not erase earlier noise concern",
+        "scenario_preference": "answer from personal experience"
+      },
+      "answers": {
+        "drone_recognition": "Yes, I know they can fly without a person onboard.",
+        "drone_description": "An aircraft controlled remotely or automatically.",
+        "drone_uses": "Photography and some deliveries.",
+        "healthcare_awareness": "I had heard generally that drones can carry medical items.",
+        "local_awareness": "I am not sure about local services.",
+        "open_priorities": "Noise is the first thing I notice, though I have not decided what matters most.",
+        "open_more": "Actually, privacy and what data are collected matter more to me. I would want to know what is recorded and who can access it.",
+        "different_impacts": "People near routes may be affected more than others.",
+        "priorities": "Privacy and data collection are my main priorities now; noise also matters.",
+        "demonstration": "No.",
+        "opportunity": "No, I have not had an opportunity to comment.",
+        "capability": "I could ask who collects the data and suggest limits, but I have not done this in a consultation.",
+        "influence": "I have not influenced a decision."
+      }
+    },
+    {
+      "id": "S3_ambiguous_uncertain_short",
+      "depth": "short",
+      "persona": {
+        "perspective": "citizen",
+        "stakeholder_role": "patient",
+        "city": "Madrid",
+        "background": "A patient who recognises the word drone but has limited confidence about how the technology works.",
+        "known_facts": [
+          "has heard the term drone"
+        ],
+        "unknown_facts": [
+          "technical operation",
+          "whether medical drone services exist locally",
+          "effects on privacy"
+        ],
+        "actual_experiences": [],
+        "actual_participation": [],
+        "actual_contributions": [],
+        "reported_outcomes": [],
+        "benefits_perceived": [],
+        "concerns": [
+          "uncertain privacy implications"
+        ],
+        "conditions": [
+          "clear explanation before deciding"
+        ],
+        "information_needs": [
+          "how a service would work and what information it uses"
+        ],
+        "priorities": [
+          "understanding the service"
+        ],
+        "acceptance_position": "undecided",
+        "trust_position": "not established",
+        "communication_style": "qualified and cautious",
+        "response_length_preference": "short",
+        "behavioural_traits": [],
+        "contradiction_policy": "retain uncertainty and do not guess",
+        "scenario_preference": "answer only what is known"
+      },
+      "answers": {
+        "drone_recognition": "I have heard of drones, but I am not sure what they are.",
+        "drone_description": "I cannot really describe one.",
+        "drone_uses": "I cannot think of examples.",
+        "drone_explanation": "Yes, a short explanation would help.",
+        "healthcare_awareness": "Not that I know of.",
+        "local_awareness": "I cannot say whether there are services here.",
+        "open_priorities": "I do not know enough yet. I would need a simple explanation of how the delivery works.",
+        "open_more": "I am unsure about other issues.",
+        "different_impacts": "I cannot tell without more information.",
+        "suggested_topics": "I do not know which of those apply.",
+        "priorities": "I cannot select priorities yet.",
+        "opportunity": "I have not taken part in a related decision."
+      }
+    },
+    {
+      "id": "S4_supportive_inexperienced_extended",
+      "depth": "extended",
+      "persona": {
+        "perspective": "citizen",
+        "stakeholder_role": "resident",
+        "city": "Madrid",
+        "background": "A generally supportive resident who values healthcare access and has not been invited to a consultation.",
+        "known_facts": [
+          "urgent medical items may benefit from faster transport"
+        ],
+        "unknown_facts": [
+          "actual local operation",
+          "measured impacts",
+          "regulatory arrangements"
+        ],
+        "actual_experiences": [],
+        "actual_participation": [],
+        "actual_contributions": [],
+        "reported_outcomes": [],
+        "benefits_perceived": [
+          "faster delivery of urgent medical supplies"
+        ],
+        "concerns": [
+          "unequal effects on homes near routes"
+        ],
+        "conditions": [
+          "publish route and noise monitoring and offer a way to raise concerns"
+        ],
+        "information_needs": [
+          "reliable comparison of delivery time, noise and alternatives"
+        ],
+        "priorities": [
+          "healthcare benefit",
+          "fair distribution"
+        ],
+        "acceptance_position": "supportive if impacts are managed",
+        "trust_position": "open but wants evidence",
+        "communication_style": "positive and practical",
+        "response_length_preference": "medium",
+        "behavioural_traits": [],
+        "contradiction_policy": "has never participated; do not claim ability was demonstrated in practice",
+        "scenario_preference": "answer from personal experience"
+      },
+      "answers": {
+        "drone_recognition": "Yes, they are aircraft without a pilot onboard.",
+        "drone_description": "An aircraft operated without a pilot sitting inside it.",
+        "drone_uses": "I know about photography and parcel delivery.",
+        "healthcare_awareness": "I had heard generally of medical deliveries by drone.",
+        "local_awareness": "I do not know whether that happens here.",
+        "open_priorities": "It could help urgent care. I would want the routes and effects on nearby homes monitored.",
+        "open_more": "Reliable evidence comparing time, noise and road alternatives would help.",
+        "different_impacts": "Homes under routes could experience more noise while patients elsewhere receive the benefit.",
+        "suggested_topics": "Privacy is worth checking, but fair distribution and evidence matter more to me.",
+        "priorities": "Healthcare access and fair distribution.",
+        "demonstration": "No, I have not attended a demonstration.",
+        "hypothetical_comparison": "I would compare the delivery time and reliability with road transport and check who experiences the noise.",
+        "opportunity": "No, I have never had an opportunity to participate.",
+        "capability": "I could review information and explain what safeguards I would want if invited.",
+        "participation": "I have not taken part.",
+        "influence": "I have not influenced a decision because I have not had an opportunity.",
+        "opinion": "I support trying it if the evidence and safeguards are convincing."
+      }
+    },
+    {
+      "id": "S5_engaged_influence_uncertain_extended",
+      "depth": "extended",
+      "persona": {
+        "perspective": "citizen",
+        "stakeholder_role": "community volunteer",
+        "city": "Madrid",
+        "background": "A volunteer who once joined a transport consultation and proposed a change, but does not know whether decision makers adopted it.",
+        "known_facts": [
+          "a public consultation occurred about a transport proposal"
+        ],
+        "unknown_facts": [
+          "whether the proposed change was adopted",
+          "whether the consultation related to drones"
+        ],
+        "actual_experiences": [
+          "reviewed a transport proposal at a community meeting"
+        ],
+        "actual_participation": [
+          "attended one local transport meeting"
+        ],
+        "actual_contributions": [
+          "suggested moving a proposed loading area away from a school"
+        ],
+        "reported_outcomes": [
+          "does not know whether the suggestion changed the final plan"
+        ],
+        "benefits_perceived": [
+          "medical delivery could help when roads are congested"
+        ],
+        "concerns": [
+          "noise near schools"
+        ],
+        "conditions": [
+          "publish responses to public suggestions"
+        ],
+        "information_needs": [
+          "a record of which suggestions were accepted and why"
+        ],
+        "priorities": [
+          "visible response to public input",
+          "noise near schools"
+        ],
+        "acceptance_position": "open with conditions",
+        "trust_position": "wants traceable feedback",
+        "communication_style": "specific but careful",
+        "response_length_preference": "medium",
+        "behavioural_traits": [],
+        "contradiction_policy": "do not state that the suggestion changed a decision",
+        "scenario_preference": "distinguish what was proposed from what is known to have changed"
+      },
+      "answers": {
+        "drone_recognition": "Yes, I have seen small remotely operated aircraft.",
+        "drone_description": "An aircraft that can be controlled from the ground.",
+        "drone_uses": "Photography and some delivery trials.",
+        "healthcare_awareness": "I had heard that samples can be transported between medical sites.",
+        "local_awareness": "I do not know about services in my city.",
+        "open_priorities": "I would want to know about noise near schools and whether public comments receive a response.",
+        "open_more": "I have joined a transport consultation, but not one about drones.",
+        "different_impacts": "Schools and homes under routes might experience more disturbance.",
+        "suggested_topics": "Noise and public response are important to me.",
+        "priorities": "Noise near schools and a clear account of what happens to public suggestions.",
+        "demonstration": "No drone demonstration, simulation or similar activity.",
+        "opportunity": "Yes, I attended one transport planning meeting.",
+        "participation": "I suggested moving a proposed loading area away from a school.",
+        "feedback_outcome": "I do not know whether the suggestion changed the plan.",
+        "influence_evidence": "I would need to see the final decision and a response showing what changed and why.",
+        "sustained": "I have not been involved regularly; I might take part again if invited.",
+        "opinion": "I am open to the service if impacts are monitored."
+      }
+    },
+    {
+      "id": "S6_challenging_correction_refusal_extended",
+      "depth": "extended",
+      "persona": {
+        "perspective": "citizen",
+        "stakeholder_role": "resident",
+        "city": "Madrid",
+        "background": "A resident who prefers plain language, sometimes declines questions and corrects an initially mistaken recollection.",
+        "known_facts": [
+          "heard about a medical delivery trial in another region"
+        ],
+        "unknown_facts": [
+          "whether a trial happened locally",
+          "technical performance"
+        ],
+        "actual_experiences": [
+          "read a local newsletter about a proposed route"
+        ],
+        "actual_participation": [],
+        "actual_contributions": [],
+        "reported_outcomes": [],
+        "benefits_perceived": [
+          "urgent deliveries could help"
+        ],
+        "concerns": [
+          "noise",
+          "unclear responsibility for complaints"
+        ],
+        "conditions": [
+          "plain-language notices and a clear complaints route"
+        ],
+        "information_needs": [
+          "who answers complaints"
+        ],
+        "priorities": [
+          "noise",
+          "accountability"
+        ],
+        "acceptance_position": "undecided",
+        "trust_position": "depends on clear accountability",
+        "communication_style": "direct; asks for simpler wording",
+        "response_length_preference": "short",
+        "behavioural_traits": [
+          "may decline one question"
+        ],
+        "contradiction_policy": "correct earlier answer explicitly; never invent consultation or influence",
+        "scenario_preference": "answer briefly and ask for simpler wording when needed"
+      },
+      "answers": {
+        "drone_recognition": "Yes, I have heard of them.",
+        "drone_description": "Small aircraft controlled from elsewhere.",
+        "drone_uses": "Photography and deliveries.",
+        "healthcare_awareness": "I heard about a medical delivery trial somewhere else.",
+        "local_awareness": "I first thought I heard about a local test, but I am not sure.",
+        "local_basis": "I read a newsletter about a proposed route, not a confirmed test.",
+        "open_priorities": "Noise and who handles complaints matter to me.",
+        "open_more": "Could you ask that more simply?",
+        "different_impacts": "People living near a route may hear more noise.",
+        "suggested_topics": "I would keep noise and complaint handling in focus.",
+        "priorities": "Noise and accountability.",
+        "priority_understanding": "I want the route and timing to be clear, and a named public process for complaints.",
+        "demonstration": "No, I have not attended one.",
+        "opportunity": "prefer not to answer",
+        "capability": "If invited, I could ask for clear information and suggest a quieter route.",
+        "participation": "I have not taken part in a decision.",
+        "feedback_outcome": "I do not know of an outcome.",
+        "influence_evidence": "Show which comments changed the plan, if any.",
+        "opinion": "I am uncertain until the process is clearer."
+      }
+    }
+  ]
+}

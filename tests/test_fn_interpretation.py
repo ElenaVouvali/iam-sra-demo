@@ -125,6 +125,26 @@ def test_irrelevant_optional_topic_quote_cannot_invalidate_clear_definition(monk
     assert s.objective=='drone_uses' and not s.failures
 
 
+def test_topic_label_cannot_add_an_unsupported_affected_group_or_impact():
+    from iam_sra.chat_client import validate_reply
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short';s.stage='conversation';s.objective='open_priorities'
+    request=s._request('Bird nesting seasons and quiet areas are the main things I would want checked.')
+    exact=reply(request,topics=[])
+    exact['interpretation']['topics']=[{'topic':'Bird nesting seasons','quote':request['answer'],'matches_topic':None}]
+    valid=validate_reply(exact,request)
+    assert valid['interpretation']['topics'][0]['topic']=='Bird nesting seasons'
+    wrong=reply(request,topics=[])
+    wrong['interpretation']['topics']=[{'topic':'noise impact on residential areas','quote':request['answer'],'matches_topic':None}]
+    rejected=validate_reply(wrong,request)
+    assert rejected['interpretation']['topics']==[]
+    assert 'interpretation.topics' in rejected['_annotation_warnings']
+
+    land_request=s._request('Maybe where they fly and where they land.')
+    land=reply(land_request,topics=[])
+    land['interpretation']['topics']=[{'topic':'landing','quote':land_request['answer'],'matches_topic':None}]
+    assert validate_reply(land,land_request)['interpretation']['topics'][0]['topic']=='landing'
+
+
 def test_priority_advance_retries_missing_topics_and_retains_actual_selection(monkeypatch):
     calls=install_http(monkeypatch,lambda payload,attempt:reply(payload,topics=[] if attempt==1 else ['noise']))
     s=opening();s._ask_fn(s.fn.current('citizen','short','priorities'))
@@ -181,7 +201,12 @@ def test_explicit_uncertainty_or_refusal_cannot_be_overridden_by_explored_annota
         result['interpretation']['coverage'][0]['answer_kind']='substantive'
         return result
     install_http(monkeypatch,output)
-    s=opening();s.send('I do not know how to describe it.',ChatClient())
+    answer = (
+        'I prefer not to answer.'
+        if kind == 'declined'
+        else 'I do not know how to describe it.'
+    )
+    s=opening();s.send(answer,ChatClient())
     assert s.fn.coverage['drone_description']['status']==status
     assert s.fn.facts['drone_description']==kind
     assert s.objective=='drone_uses'
@@ -197,7 +222,173 @@ def test_negative_examples_answer_records_no_knowledge_claim_or_numeric_readines
     s.send("I can't think of any examples.",ChatClient())
     assert s.fn.coverage['drone_uses']['status']=='explored' and s.fn.facts['drone_uses']=='no'
     assert s.annotations[-1]['goal_evidence'][0]['answer_kind']=='no'
-    assert s.objective=='healthcare_awareness' and not s.concerns and s.suggestion is None
+    assert s.objective=='drone_explanation' and not s.concerns and s.suggestion is None
+    s.send('yes',ChatClient())
+    assert s.objective=='healthcare_awareness'
+    assert s.fn.coverage['drone_description']['status']=='unknown'
+    assert sum(e['kind']=='FN_explanation' for e in s.exposures)==1
+
+
+@pytest.mark.parametrize('answer,polarity,next_goal', [
+    ('Yes. I attended a simulation where different routes were compared.', 'yes', 'demonstration_view'),
+    ('No, I have never attended a demonstration.', 'no', 'hypothetical_comparison'),
+    ('I may have seen something, but I am not sure.', 'uncertain', 'hypothetical_comparison'),
+    ('I attended a simulation, but it did not help me decide.', 'yes', 'demonstration_view'),
+])
+def test_demonstration_polarity_is_separate_from_evidence_richness(monkeypatch,answer,polarity,next_goal):
+    def output(payload,_):
+        result=reply(payload,kind='substantive',status='explored')
+        result['interpretation']['answer_polarity']=polarity
+        return result
+    install_http(monkeypatch,output)
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short'
+    nodes=s.fn.nodes('citizen','short');target=next(i for i,n in enumerate(nodes) if n['id']=='demonstration')
+    for node in nodes[:target]:s.fn.record(node['id'],None,'not_applicable')
+    s.stage='conversation'
+    s._ask_fn(s.fn.current('citizen','short','demonstration'))
+    s._fn_turn(answer,ChatClient())
+    assert s.fn.coverage['demonstration']['status']=='explored'
+    assert s.fn.facts['demonstration']==polarity
+    assert s.fn.facts['demonstration_evidence_kind']=='substantive'
+    assert s.objective==next_goal
+
+
+def test_uncertain_local_operation_does_not_become_verified_or_force_local_basis(monkeypatch):
+    def output(payload,_):
+        result=reply(payload,kind='uncertain',status='unknown')
+        result['interpretation']['answer_polarity']='uncertain'
+        return result
+    install_http(monkeypatch,output)
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short'
+    nodes=s.fn.nodes('citizen','short');target=next(i for i,n in enumerate(nodes) if n['id']=='local_awareness')
+    for node in nodes[:target]:s.fn.record(node['id'],None,'not_applicable')
+    s.stage='conversation'
+    s._ask_fn(s.fn.current('citizen','short','local_awareness'))
+    s._fn_turn("I don't know whether there have been local tests.",ChatClient())
+    assert s.fn.coverage['local_awareness']['status']=='unknown'
+    assert s.fn.coverage.get('local_basis') is None
+    assert s.objective=='open_priorities'
+
+
+def test_tentative_local_testing_preserves_uncertainty_and_asks_source_followup(monkeypatch):
+    def output(payload,_):
+        result=reply(payload,kind='uncertain',status='unknown')
+        result['interpretation']['answer_polarity']='uncertain'
+        return result
+    install_http(monkeypatch,output)
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short'
+    nodes=s.fn.nodes('citizen','short');target=next(i for i,n in enumerate(nodes) if n['id']=='local_awareness')
+    for node in nodes[:target]:s.fn.record(node['id'],None,'not_applicable')
+    s.stage='conversation';s._ask_fn(s.fn.current('citizen','short','local_awareness'))
+    s._fn_turn("I think there have been tests, but I'm not sure.",ChatClient())
+    assert s.fn.facts['local_awareness']=='partial'
+    assert s.fn.coverage['local_awareness']['status']=='explored'
+    assert s.objective=='local_basis'
+    assert s.context['city_status']=='not_established'
+    assert s.annotations[-1]['answer_kind']=='partial'
+
+
+@pytest.mark.parametrize('answer,expected', [
+    ('I think there have been tests, but I am not sure.',True),
+    ('I do not know whether there have been local tests.',False),
+    ('I think no tests have happened here.',False),
+    ('I heard about an operation, but it was in another city.',False),
+])
+def test_tentative_local_basis_detection_never_asserts_operation(answer,expected):
+    from iam_sra.fn_interview import tentative_local_operation_report
+    assert tentative_local_operation_report(answer) is expected
+
+
+@pytest.mark.parametrize('answer,expected', [
+    ("No, I don't know.",'uncertain'),
+    ("I don't know exactly; I think it might be used for urgent deliveries.",'partial'),
+    ('No, that service is not offered here.','not_uncertain'),
+])
+def test_explicit_answer_uncertainty_is_not_flattened(answer,expected):
+    from iam_sra.fn_interview import explicit_answer_uncertainty
+    assert explicit_answer_uncertainty(answer)==(None if expected=='not_uncertain' else expected)
+
+
+def test_correction_of_initial_no_invalidates_conditional_demonstration_route(monkeypatch):
+    def output(payload,_):
+        result=reply(payload,kind='substantive',status='explored')
+        result['interpretation']['answer_polarity']='no'
+        return result
+    install_http(monkeypatch,output)
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short'
+    nodes=s.fn.nodes('citizen','short');target=next(i for i,n in enumerate(nodes) if n['id']=='demonstration')
+    for node in nodes[:target]:s.fn.record(node['id'],None,'not_applicable')
+    s.stage='conversation';s._ask_fn(s.fn.current('citizen','short','demonstration'))
+    s._fn_turn('No, I have never attended one.',ChatClient())
+    assert s.objective=='hypothetical_comparison'
+    s.send('back',ChatClient())
+    assert s.pending_correction
+    s.send('Correction: I did attend a route simulation.',ChatClient())
+    assert 'demonstration' not in s.fn.coverage
+    assert s.objective=='demonstration'
+
+
+def test_review_prompt_explains_validated_result_before_validation_choices():
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short';s.stage='review'
+    s.suggestion={'status':'suggested','level':6,'anchor_id':'citizen_short-6',
+        'anchor':{'level':6,'label':'Informed evaluation'},
+        'explanation':'Your answers compare evidence and options.',
+        'citations':[{'evidence_id':'m12','quote':'I would compare route times.'}],
+        'boundary':'Influence needs evidence that a decision changed.'}
+    s._review_prompt()
+    text=s.messages[-1]['text']
+    assert 'Provisional result: CRL 6 — Informed evaluation' in text
+    assert 'I would compare route times.' in text
+    assert 'Influence needs evidence that a decision changed.' in text
+    assert 'A.' in text and 'E.' in text
+
+
+def test_abstention_review_uses_specific_available_evidence_gap():
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short';s.stage='review'
+    s.suggestion={'status':'abstained','level':None,
+        'explanation':'The account does not establish whether feedback changed a decision.',
+        'gaps':['Feedback outcome remains uncertain.']}
+    s._review_prompt()
+    assert 'does not establish whether feedback changed a decision' in s.messages[-1]['text']
+    assert 'Feedback outcome remains uncertain.' in s.messages[-1]['text']
+
+
+def test_participant_score_text_hides_internal_anchor_identifiers():
+    from iam_sra.chat_session import participant_score_text
+    text=participant_score_text('Evidence fits Awareness (citizen_short-2, evidence-4), not citizen_extended-3.')
+    assert 'citizen_short-2' not in text and 'citizen_extended-3' not in text
+    assert 'evidence-4' not in text
+
+
+def test_scoring_context_marks_hypothetical_objectives_without_copying_questions():
+    from iam_sra.chat_session import score_evidence_mode
+    assert score_evidence_mode('problem_action')=='hypothetical_or_normative'
+    assert score_evidence_mode('participation_capability')=='hypothetical_or_normative'
+    assert score_evidence_mode('feedback_outcome')=='reported_experience_or_prior_knowledge'
+    assert score_evidence_mode('open_priorities')=='open_or_other'
+
+
+def test_scoring_validation_failure_preserves_original_proposal_and_explains_gap():
+    from iam_sra.assessment import AssessmentError
+    class InvalidScore:
+        last_score_diagnostics={'model_proposed_anchor':True,'model_proposed_anchor_id':'citizen_short-7',
+            'model_proposed_alternative_anchor_id':None,'material_conflict':False,
+            'evidence_incomplete':False,'validator_suppressed_proposal':False}
+        last_metrics={'generation_calls':2,'generated_tokens':400,'reasoning_characters':1000,
+                      'generation_http_seconds':20,'model_wait_seconds':0}
+        last_settings={'enable_thinking':True}
+        last_diagnostics=[]
+        def match_profile(self,payload):
+            raise AssessmentError('Invalid boundary.',code='evidence',field='boundary')
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short'
+    s._user('I do not know whether feedback changed a decision.',True,'answer')
+    s._report(score_client=InvalidScore())
+    assert s._last_decision['score_flag_diagnostics']['model_proposed_anchor_id']=='citizen_short-7'
+    assert s.suggestion['status']=='unavailable' and s.suggestion['level'] is None
+    assert s.suggestion['considered_evidence_ids']==[s.messages[2]['id']]
+    review=s.messages[-1]['text']
+    assert 'valid comparison with a neighboring level' in review
+    assert 'valid provisional profile judgment is unavailable' not in review
 
 
 def test_model_goal_identifiers_do_not_become_participant_topics_and_wildlife_is_retained(monkeypatch):

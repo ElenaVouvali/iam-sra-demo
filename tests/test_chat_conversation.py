@@ -367,7 +367,7 @@ def test_disagreement_preserves_initial_suggestion_and_preferred_level_separate(
                 'alternative_anchor_id':payload['anchors'][1]['id'],
                 'citations':[{'evidence_id':payload['originals'][-1]['id'],'quote':payload['originals'][-1]['text']}],
                 'explanation':'Synthetic flow-test result; not semantic validation.',
-                'boundary':'Synthetic comparison of two anchors.', 'material_conflict':False,'evidence_incomplete':False}
+                'boundary':f"{payload['anchors'][1]['label']} (level {payload['anchors'][1]['level']}) is not demonstrated.", 'material_conflict':False,'evidence_incomplete':False}
     s,c=chat();s.send('stop',c);s.send('looks right',c,score_client=ValidScore())
     initial=deepcopy(s.suggestion)
     s.send('I disagree, I prefer level 7 because something is missing.',c)
@@ -501,7 +501,7 @@ def test_profile_score_rejects_invented_quote_and_unsupported_selection():
     with pytest.raises(AssessmentError):validate_profile_match(bad,payload)
 
 
-def test_profile_score_can_render_explanation_from_validated_anchors_when_optional_prose_empty():
+def test_profile_score_requires_model_explanation_and_boundary_for_numeric_selection():
     from iam_sra.chat_score import validate_profile_match
     from iam_sra.chat_policy import rubric
     from chat_fixture import ScoreFixture
@@ -510,12 +510,43 @@ def test_profile_score_can_render_explanation_from_validated_anchors_when_option
     value=ScoreFixture().match_profile(payload)
     value.update(selected_anchor_id=anchors[2]['id'], citations=[{'evidence_id':'x','quote':'I propose quiet hours.'}],
                  alternative_anchor_id=anchors[1]['id'], explanation='', boundary='', material_conflict=False, evidence_incomplete=False)
+    with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
+    assert exc.value.field=='explanation'
+    value['explanation']='This anchor matches these respondent statements and their demonstrated reasoning.'
+    with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
+    assert exc.value.field=='boundary'
+    value['boundary']=f"{anchors[1]['label']} (level {anchors[1]['level']}) requires evidence that is not present here."
     result=validate_profile_match(value,payload)
-    assert result['explanation'] and 'x' in result['explanation']
-    assert result['boundary'] and anchors[1]['label'] in result['boundary']
+    assert result['explanation'] and result['boundary']
     value['explanation']='x'*800
     result=validate_profile_match(value,payload)
     assert len(result['explanation'])==600
+
+
+def test_profile_score_boundary_must_match_the_adjacent_anchor_it_names():
+    from iam_sra.chat_score import validate_profile_match
+    from iam_sra.chat_policy import rubric
+    from chat_fixture import ScoreFixture
+    s,c=chat();anchors=rubric(s.bank,s.profile,s.depth)['anchors']
+    payload={'anchors':anchors,'originals':[{'id':'x','text':'I propose quiet hours.'}]}
+    value=ScoreFixture().match_profile(payload)
+    value.update(selected_anchor_id=anchors[3]['id'],alternative_anchor_id=anchors[1]['id'],
+        citations=[{'evidence_id':'x','quote':'I propose quiet hours.'}],
+        explanation='The exact answer supports the selected level.',
+        boundary=f"{anchors[1]['label']} (level {anchors[1]['level']}) is not demonstrated.",
+        material_conflict=False,evidence_incomplete=False)
+    with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
+    assert exc.value.field=='alternative_anchor_id'
+    value['alternative_anchor_id']=anchors[2]['id']
+    value['boundary']=f"{anchors[1]['label']} (level {anchors[1]['level']}) is not demonstrated."
+    with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
+    assert exc.value.field=='boundary'
+
+
+def test_score_wire_schema_requires_rationale_boundary_and_alternative_keys():
+    from iam_sra.chat_score import ProfileMatch
+    required=set(ProfileMatch.model_json_schema()['required'])
+    assert {'explanation','boundary','alternative_anchor_id'}<=required
 
 
 def test_profile_score_normalizes_contradictory_selection_to_honest_abstention():
@@ -529,11 +560,28 @@ def test_profile_score_normalizes_contradictory_selection_to_honest_abstention()
                  alternative_anchor_id=anchors[1]['id'], material_conflict=True)
     result=validate_profile_match(value,payload)
     assert result['selected_anchor_id'] is None and result['citations']==[]
-    assert 'enough consistent evidence' in result['explanation']
+    assert result['explanation']=='Synthetic fixture abstains; human semantic review required.'
     bad=ScoreFixture().match_profile(payload);bad['selected_anchor_id']='invented-anchor'
     bad['citations']=[{'evidence_id':'x','quote':'I propose quiet hours.'}]
     bad['alternative_anchor_id']=payload['anchors'][0]['id']
     with pytest.raises(AssessmentError):validate_profile_match(bad,payload)
+
+
+def test_abstention_rejects_hidden_anchor_claims_and_internal_ids():
+    from iam_sra.chat_score import validate_profile_match
+    from iam_sra.chat_policy import rubric
+    from chat_fixture import ScoreFixture
+    s,c=chat();anchors=rubric(s.bank,s.profile,s.depth)['anchors']
+    payload={'anchors':anchors,'originals':[{'id':'m1','text':'I am not sure.'}]}
+    value=ScoreFixture().match_profile(payload)
+    value.update(selected_anchor_id=None,alternative_anchor_id=None,citations=[],
+        material_conflict=False,evidence_incomplete=True,
+        explanation="The respondent meets Awareness criteria (m1, 8, 17), but lacks deeper evidence.")
+    with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
+    assert exc.value.field=='explanation'
+    value['explanation']='The account does not establish whether feedback changed a decision.'
+    result=validate_profile_match(value,payload)
+    assert result['selected_anchor_id'] is None
 
 
 def test_partial_coverage_rejects_unreviewed_interpretations_as_confirmed():
@@ -943,10 +991,9 @@ def test_score_display_uses_plain_fallback_when_model_mentions_source_files():
         'citations':[{'evidence_id':'m1','quote':'I am uncertain.'}],
         'explanation':'According to the PDF, this fits.', 'boundary':'See the workbook.',
         'material_conflict':False,'evidence_incomplete':False}
-    result=validate_profile_match(value,{'anchors':anchors,'originals':[{'id':'m1','text':'I am uncertain.'}]})
-    assert result['selected_anchor_id']==anchors[0]['id']
-    assert 'PDF' not in result['explanation'] and 'workbook' not in result['boundary']
-    assert result['citations']==value['citations']
+    with pytest.raises(AssessmentError) as exc:
+        validate_profile_match(value,{'anchors':anchors,'originals':[{'id':'m1','text':'I am uncertain.'}]})
+    assert exc.value.field=='explanation'
 
 
 def test_participant_scale_template_hides_source_files_and_page_references():
@@ -1086,7 +1133,8 @@ def test_model_score_occurs_before_personal_choice_and_remains_separate():
             return {'selected_anchor_id':payload['anchors'][0]['id'],
                 'alternative_anchor_id':payload['anchors'][1]['id'],
                 'citations':[{'evidence_id':payload['originals'][-1]['id'],'quote':payload['originals'][-1]['text']}],
-                'explanation':'Synthetic flow fixture; not semantic validation.', 'boundary':'Synthetic boundary.',
+                'explanation':'Synthetic flow fixture; not semantic validation.',
+                'boundary':f"{payload['anchors'][1]['label']} (level {payload['anchors'][1]['level']}) is not demonstrated.",
                 'material_conflict':False,'evidence_incomplete':False}
     s,c=chat();s.send('stop',c)
     assert not calls and s.participant_review is None

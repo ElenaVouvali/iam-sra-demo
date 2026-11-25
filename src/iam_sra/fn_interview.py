@@ -39,6 +39,59 @@ def literal_answer(text):
     return None
 
 
+def explicit_unknown_drone_description(answer):
+    """Recognise explicit inability; do not grade correctness or general knowledge."""
+    value = ' '.join(answer.casefold().split())
+    # Preserve an explicit refusal, even if the person also says
+    # that they cannot describe the concept.
+    if re.search(
+        r"\b(?:prefer not to answer|rather not answer|"
+        r"don't want to answer|do not want to answer|"
+        r"decline to answer|refuse to answer)\b", value
+    ):
+        return False
+    # A meaningful definition in the same response takes precedence.
+    if re.search(r'\b(?:aircraft|unmanned|pilotless|without (?:a|an|the) pilot|flying (?:machine|device|vehicle))\b', value):
+        return False
+    return bool(re.search(
+        r"\b(?:(?:do\s+not|don't|can't|cannot)\s+(?:really\s+)?(?:know\s+how\s+to\s+)?(?:describe|define|explain)\s+(?:it|them|(?:a\s+|the\s+)?drones?)\b|"
+        r"(?:do\s+not|don't)\s+know\s+what\s+(?:(?:a\s+)?drones?\s+(?:is|are)|(?:it|they)\s+(?:is|are|means?))\b|"
+        r"(?:not\s+sure|unsure)\s+how\s+to\s+(?:describe|define|explain)\s+(?:it|them|(?:a\s+|the\s+)?drones?)\b)",
+        value))
+
+
+def tentative_local_operation_report(answer):
+    """Detect a tentative reported basis without asserting a verified operation."""
+    value=' '.join(answer.casefold().split())
+    reported=bool(re.search(r'\b(?:i think|i heard|i remember hearing|i may have heard|'
+                            r'there (?:may|might|could) have been|possibly there (?:was|were))\b',value))
+    activity=bool(re.search(r'\b(?:test(?:s|ed|ing)?|trial(?:s)?|demonstrat(?:ion|ions|ed)|'
+                            r'operation(?:s|al)?|service(?:s)?|flight(?:s)?)\b',value))
+    uncertain=bool(re.search(r'\b(?:not sure|unsure|uncertain|might|may|possibly|think|could)\b',value))
+    if re.search(r'\b(?:no|not|never|haven.t|hasn.t|didn.t|don.t)\s+'
+                 r'(?:(?:any|a|the|been|local|actual|confirmed)\s+){0,3}'
+                 r'(?:tests?|trials?|demonstrat\w*|operations?|services?|flights?)\b',value) or re.search(
+                 r'\b(?:don.t|do not) think (?:there )?(?:have been|was|were)\b[^.!?]{0,30}'
+                 r'\b(?:tests?|trials?|demonstrat\w*|operations?|services?|flights?)\b',value):
+        return False
+    if re.search(r'\b(?:another|different|other) (?:city|area|region)|elsewhere|not here\b',value):
+        return False
+    return reported and activity and uncertain
+
+
+def explicit_answer_uncertainty(answer):
+    """Preserve clear uncertainty markers that coexist with tentative content."""
+    value=' '.join(answer.casefold().split())
+    if re.match(r'\bno\b[,. ]+i (?:do not|don.t) know\b|\bno\b[,. ]+i am not sure\b',value):
+        return 'uncertain'
+    marker=re.match(r"\b(?:i (?:do not|don't) know exactly|i am not sure|i'm not sure|not sure|uncertain)\b",value)
+    if not marker:return None
+    tail=value[marker.end():].strip(' .,:;!?')
+    # A bare uncertainty is unknown; a meaningful qualified guess is partial.
+    meaningful=[w for w in re.findall(r"[a-z']+",tail) if w not in {'i','am','is','are','was','were','do','not','dont','know','think','maybe','perhaps','the','a','an','it','they','about','how','what','whether','exactly'}]
+    return 'partial' if len(meaningful)>=3 else 'uncertain'
+
+
 class FNInterview:
     def __init__(self):
         self.version = VERSION
@@ -74,6 +127,11 @@ class FNInterview:
             self.unresolved_gaps.remove(goal)
 
     def applicable(self, node, concerns):
+        # A citizen may recognise the term without being able to describe it.
+        # Offer the existing FN explanation after the prior-knowledge probes.
+        if (node.get('id') == 'drone_explanation'
+                and self.facts.get('drone_recognition') in {'yes', 'partial'}):
+            return self.coverage.get('drone_description', {}).get('status') == 'unknown'
         if node.get('id') in {'open_more','suggested_topics'} and self.facts.get('topic_scope_closed'):
             return False
         condition = node.get('when')

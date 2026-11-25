@@ -12,7 +12,8 @@
     "uncertain": {
       "answers": {
         "drone_description": "I recognise them, but I don't know how to describe them.",
-        "drone_uses": "I can't think of any examples."
+        "drone_uses": "I can't think of any examples.",
+        "drone_explanation": "yes"
       },
       "expected_statuses": {"drone_description": "unknown", "drone_uses": "unknown"},
       "accepted_readings": {

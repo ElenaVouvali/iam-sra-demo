@@ -146,11 +146,22 @@ class ReferenceRespondentFixture:
     backend='controlled_reference_fixture'
     def __init__(self,persona,**kw):
         from test_fn_interview import GOLDEN
-        self.rows=GOLDEN[persona['fn_case']];self.last_metrics={}
+        self.rows=GOLDEN[persona['fn_case']];self.last_metrics={};self.used_rows=set()
     def respond(self,question,history):
-        text=next(r['answer'] for r in self.rows if r['question'] in question['question_text'])
+        match=next(((index,row) for index,row in enumerate(self.rows)
+                    if index not in self.used_rows and row['question'] in question['question_text']),None)
+        if match is None:raise AssertionError('No unused reference answer matches the visible canonical question.')
+        index,row=match;self.used_rows.add(index);text=row['answer']
         self.last_metrics={'generation_calls':1,'generated_tokens':30,'generation_http_seconds':.1}
         return {'text':text,'control':'answer'}
+
+
+def test_reference_respondent_fixture_consumes_repeated_canonical_questions_in_order():
+    respondent=ReferenceRespondentFixture({'fn_case':'citizen_short'})
+    first=respondent.respond({'question_text':'Why?'},[])
+    second=respondent.respond({'question_text':'Why?'},[])
+    assert first['text'].startswith('Because the extra travel time')
+    assert second['text'].startswith('I understand why they might be useful')
 
 
 @pytest.mark.presidio_live
