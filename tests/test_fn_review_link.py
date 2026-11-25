@@ -30,6 +30,19 @@ def test_dry_run_has_private_a2_api_ui_and_never_starts_or_downloads(monkeypatch
     assert not plan['changes_firewall'] and not plan['stops_existing_services']
 
 
+def test_davinci_v100_dry_run_selects_fp16_non_thinking_and_never_starts(monkeypatch,capsys):
+    m=launcher()
+    monkeypatch.setattr(m,'free_ports',lambda _:pytest.fail('Opened socket'))
+    monkeypatch.setattr(m.subprocess,'run',lambda *a,**k:pytest.fail('Started model'))
+    monkeypatch.setattr(m,'cloudflared',lambda _:pytest.fail('Downloaded tunnel'))
+    assert m.main(['--gpu-profile','davinci-v100','--model-port','18020','--dry-run'])==0
+    plan=json.loads(capsys.readouterr().out)
+    assert plan['profile']=='davinci-v100' and plan['model_variant']=='fp16'
+    assert plan['thinking_enabled'] is False and plan['cpu_offload_gb']==0
+    assert plan['model_lifecycle']=='on_demand' and not plan['stops_existing_services']
+    assert plan['model']=='http://127.0.0.1:18020'
+
+
 def test_validation_only_needs_no_frontend_build_or_review_ports(monkeypatch,tmp_path):
     from iam_sra import model_lifecycle
     m=launcher();state=tmp_path/'state'

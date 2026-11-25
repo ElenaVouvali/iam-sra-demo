@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Temporary FN browser link, using the existing Liono A2/model/API/Vue stack.
+"""Temporary FN browser link using the existing Vue/API stack and a selected GPU.
 
 Run from Liono's normal terminal, not a network/GPU-restricted execution sandbox.
 Only the review API, frontend and tunnel started here are stopped on Ctrl+C.
@@ -115,6 +115,42 @@ def prepare_review_model(variant):
                    cwd=ROOT, env=environment, check=True)
     if variant == 'awq': validate_awq_snapshot(cached)
     return spec
+
+
+def prepare_v100(remote_dir, port):
+    """Prepare an isolated Davinci inference checkout without starting a model."""
+    subprocess.run([sys.executable,str(ROOT/'scripts/model-host.py'),'prepare','davinci-v100',
+        '--variant','fp16','--port',str(port),'--remote-dir',remote_dir],cwd=ROOT,check=True)
+
+
+def verify_v100_model(backend):
+    """Verify one real non-thinking completion, then release only this V100 lease."""
+    backend.start(time.monotonic()+610)
+    probe_error=None
+    try:
+        with httpx.Client(timeout=180,trust_env=False) as client:
+            response=client.post(f'http://127.0.0.1:{backend.port}/v1/chat/completions',json={
+                'model':'Qwen/Qwen3-8B','messages':[{'role':'user','content':'Return only the word READY.'}],
+                'temperature':0,'max_tokens':64,'chat_template_kwargs':{'enable_thinking':False}})
+            if response.is_error:
+                probe_error=f'HTTP {response.status_code}'
+                raise ValueError('V100 inference probe failed: '+probe_error)
+            content=response.json()['choices'][0]['message'].get('content','')
+            if not isinstance(content,str) or not content.strip():
+                probe_error='empty completion'
+                raise ValueError('V100 inference probe failed: '+probe_error)
+    except httpx.TimeoutException:
+        probe_error='request timeout'
+        raise ValueError('V100 inference probe failed: '+probe_error) from None
+    except httpx.HTTPError as exc:
+        probe_error=type(exc).__name__
+        raise ValueError('V100 inference probe failed: '+probe_error) from None
+    except (KeyError,ValueError) as exc:
+        if probe_error is None:probe_error='invalid response ('+type(exc).__name__+')'
+        raise
+    finally:
+        if not backend.stop():
+            raise ValueError('The V100 probe model could not be safely released.')
 
 
 def cloudflared(client):
@@ -294,28 +330,36 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--ui-port', type=int, help='Explicit frontend port; otherwise try 5018–5117')
     parser.add_argument('--api-port', type=int, help='Explicit API port; otherwise try 8018–8117')
-    parser.add_argument('--model-variant', choices=['awq','fp16'], default='awq', help='Fast fully-on-GPU AWQ by default; fp16 preserves the old CPU-offloaded deployment')
-    parser.add_argument('--model-port', type=int, default=18003)
+    parser.add_argument('--gpu-profile',choices=['liono-a2','davinci-v100'],default='liono-a2')
+    parser.add_argument('--remote-dir',default='iam-sra-v100-review',help='Separate Davinci inference directory')
+    parser.add_argument('--model-variant', choices=['awq','fp16'], default=None, help='Defaults to AWQ for A2 and FP16 for V100')
+    parser.add_argument('--model-port', type=int, default=None)
     parser.add_argument('--thinking',action='store_true',help='Experimental AWQ thinking with an 8192-token context and separated reasoning parser.')
-    parser.add_argument('--validation-only',action='store_true',help='Run the four live scoring checks, release the A2, and exit without publishing.')
+    parser.add_argument('--validation-only',action='store_true',help='Run live model validation and exit without publishing.')
     parser.add_argument('--public-origin',type=public_origin,help='Existing approved HTTPS reverse proxy pointing at --ui-port; no Cloudflare Quick Tunnel is started.')
     parser.add_argument('--gpu-uuid', help='An allocated Liono A2, if multiple matching idle GPUs exist')
     parser.add_argument('--idle-seconds', type=int, default=60, help='Release the review model after this many idle seconds (10–3600)')
     parser.add_argument('--release-existing-a2', action='store_true', help='Explicitly release the old always-on review A2 model at --model-port')
     parser.add_argument('--dry-run', action='store_true', help='Show the plan without sockets, installs or service changes')
     args = parser.parse_args(argv)
+    args.model_variant=args.model_variant or ('awq' if args.gpu_profile=='liono-a2' else 'fp16')
+    args.model_port=args.model_port or (18003 if args.gpu_profile=='liono-a2' else 18010)
+    if args.gpu_profile=='davinci-v100' and (args.model_variant!='fp16' or args.thinking):
+        parser.error('Davinci V100 preview requires FP16 with thinking disabled.')
+    if args.gpu_profile=='davinci-v100' and not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',args.remote_dir):
+        parser.error('--remote-dir must be a simple isolated directory name.')
     if not 1024<=args.model_port<=65535:parser.error('--model-port must be in 1024–65535.')
     if args.thinking and args.model_variant!='awq':parser.error('--thinking requires --model-variant awq.')
     if not 10 <= args.idle_seconds <= 3600:
         parser.error('--idle-seconds must be in 10–3600')
     if args.dry_run:
-        print(json.dumps({'profile': 'liono-a2', 'model': f'http://127.0.0.1:{args.model_port}',
+        print(json.dumps({'profile': args.gpu_profile, 'model': f'http://127.0.0.1:{args.model_port}',
             'api': f'http://127.0.0.1:{args.api_port or 8018}', 'frontend': f'http://127.0.0.1:{args.ui_port or 5018}',
             'automatic_review_ports': args.ui_port is None or args.api_port is None,
             'public_link': args.public_origin or 'Issued by Cloudflare at runtime; verified before printing',
             'third_party_relay': None if args.public_origin else 'Cloudflare', 'cookie_secure': True,
             'model_lifecycle': 'on_demand', 'idle_seconds': args.idle_seconds,
-            'model_variant': args.model_variant, 'cpu_offload_gb': 0 if args.model_variant == 'awq' else 8,
+            'model_variant': args.model_variant, 'cpu_offload_gb': 0 if args.gpu_profile == 'davinci-v100' or args.model_variant == 'awq' else 8,
             'thinking_enabled':args.thinking,'live_scoring_required':True,'validation_only':args.validation_only,
             'approved_public_origin':args.public_origin,
             'release_previous_review_model': args.release_existing_a2,
@@ -327,7 +371,7 @@ def main(argv=None):
     backend = None
     try:
         if socket.gethostname().split('.')[0] != 'liono':
-            raise ValueError('Run this command on Liono, where the selected A2 is located.')
+            raise ValueError('Run this command on Liono; Vue/API stay here while inference is forwarded from Davinci.')
         if not args.validation_only:
             if not (ROOT / 'app/dist/index.html').is_file():
                 raise ValueError('Build the frontend first: cd app && npm run build')
@@ -350,11 +394,14 @@ def main(argv=None):
         sys.path.insert(0, str(ROOT / 'src'))
         os.environ['IAM_MODEL_THINKING']='1' if args.thinking else '0'
         os.environ['IAM_MODEL_VARIANT']=args.model_variant
-        from iam_sra.model_lifecycle import ProjectA2
-        backend = ProjectA2(args.model_port, root=ROOT, gpu_uuid=args.gpu_uuid, variant=args.model_variant)
+        from iam_sra.model_lifecycle import ProjectA2, ProjectDavinciV100
+        if args.gpu_profile=='liono-a2':
+            backend = ProjectA2(args.model_port, root=ROOT, gpu_uuid=args.gpu_uuid, variant=args.model_variant)
+        else:
+            backend = ProjectDavinciV100(args.model_port,root=ROOT,remote_dir=args.remote_dir,variant='fp16')
         if backend.marker.exists() and not backend.stop():
             raise ValueError('Cannot verify/release the previous review model; inspect its owner record in a normal terminal.')
-        if owned_a2(args.model_port):
+        if args.gpu_profile=='liono-a2' and owned_a2(args.model_port):
             if not args.release_existing_a2:
                 raise ValueError('An always-on A2 model already occupies the review endpoint. '
                     'To release that old review model, rerun with --release-existing-a2.')
@@ -362,9 +409,15 @@ def main(argv=None):
                 raise ValueError('The old review model could not be safely released.')
         for name in ('chat-url.txt',):
             (STATE / name).unlink(missing_ok=True)
-        spec = prepare_review_model(args.model_variant)
-        print('Review checkpoint: '+spec['model']+' / '+spec['revision'], flush=True)
-        verify_live_interviews(backend,args,children)
+        if args.gpu_profile=='davinci-v100':
+            print(f'Preparing isolated Davinci directory {args.remote_dir}; this does not modify the A30 service.',flush=True)
+            prepare_v100(args.remote_dir,args.model_port)
+            verify_v100_model(backend)
+            print('V100 generation probe passed. Full interview/scoring is what the partner will review.',flush=True)
+        else:
+            spec = prepare_review_model(args.model_variant)
+            print('Review checkpoint: '+spec['model']+' / '+spec['revision'], flush=True)
+            verify_live_interviews(backend,args,children)
         if args.validation_only:return 0
         children.clear()  # The finished validation child cannot trip service health checks.
         if not args.public_origin:
@@ -376,6 +429,8 @@ def main(argv=None):
         env.pop('IAM_SRA_VALIDATION_LEASE',None)
         env.update(IAM_SRA_ON_DEMAND_GPU='1', IAM_SRA_GPU_IDLE_SECONDS=str(args.idle_seconds),
             IAM_SRA_REVIEW_GPU_UUID=args.gpu_uuid or '')
+        env['IAM_SRA_GPU_PROFILE']=args.gpu_profile
+        if args.gpu_profile=='davinci-v100':env['IAM_SRA_REMOTE_DIR']=args.remote_dir
         def launch(command, *, output=False, cwd=ROOT):
             process = subprocess.Popen(command, cwd=cwd, env=env, start_new_session=True,
                 stdout=subprocess.PIPE if output else subprocess.DEVNULL,
@@ -403,7 +458,7 @@ def main(argv=None):
         url = origin + REVIEW_PATH
         (STATE / 'chat-url.txt').write_text(url + '\n')
         print('\nFN test link: ' + url, flush=True)
-        print('HTTPS page, API, ownership cookie and CSRF checked. The model starts only when a reply needs inference and A2 is available.', flush=True)
+        print(f'HTTPS page, API, ownership cookie and CSRF checked. The model starts on demand on {args.gpu_profile}.', flush=True)
         print('Anyone with this link can open it; use fictional test answers.'+
             ('' if args.public_origin else ' Traffic passes through Cloudflare.'), flush=True)
         print(f'The review model is released after {args.idle_seconds} idle seconds. Keep this terminal open; Ctrl+C closes the link and releases its model.', flush=True)
@@ -417,7 +472,7 @@ def main(argv=None):
             print('Startup check: ' + str(exc), file=sys.stderr)
         task='Live FN validation could not complete.' if args.validation_only else 'FN link could not be activated.'
         print(task+' Run from Liono’s normal terminal with GPU/network access. '
-            'Check A2 availability, outbound HTTPS/tunnel access, private sources, and free review ports. '
+            'Check selected GPU availability, outbound HTTPS/tunnel access, private sources, and free review ports. '
             'No unrelated service was stopped.', file=sys.stderr)
         return 1
     finally:

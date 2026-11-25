@@ -81,6 +81,8 @@ def settings(args):
               'IAM_GPU_MEMORY_UTILIZATION': args.gpu_memory_utilization}
     if args.python:
         values['IAM_PYTHON'] = args.python
+    lease=os.getenv('IAM_SRA_MODEL_LEASE_ID')
+    if lease:values['IAM_SRA_MODEL_LEASE_ID']=lease
     return values
 
 
@@ -151,6 +153,10 @@ def execute(args):
         run_host(args, ['.venv/bin/python', 'scripts/ops.py', 'preflight', 'vllm'],
                  remote=remote, target=target)
         return
+    if args.action == 'stop':
+        run_host(args, ['.venv/bin/python', 'scripts/ops.py', 'stop', 'vllm'],
+                 remote=remote, target=target)
+        return
     if args.action == 'tunnel' and not remote:
         raise ValueError('This profile is local; no model SSH tunnel is required')
     # Do not start a remote model if the application-side forward is occupied.
@@ -176,7 +182,7 @@ def execute(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['list', 'prepare', 'check', 'start', 'tunnel'])
+    parser.add_argument('action', choices=['list', 'prepare', 'check', 'start', 'stop', 'tunnel'])
     parser.add_argument('profile', nargs='?', choices=PROFILES)
     parser.add_argument('--variant', choices=['fp16','awq'], default='fp16', help='Explicit model artifact; original fp16 remains the default')
     parser.add_argument('--thinking',action='store_true',help='Experimental A2/AWQ or A30/FP16 reasoning parser and 8192-token context; requires live validation')

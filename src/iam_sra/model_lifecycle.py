@@ -188,6 +188,131 @@ class ProjectA2:
         return self.stop()
 
 
+class ProjectDavinciV100:
+    """On-demand V100 lease using the separately supervised Davinci model host."""
+    profile='davinci-v100'
+
+    def __init__(self,port,*,root=ROOT,variant=None,remote_dir='iam-sra-v100-review'):
+        self.port,self.root,self.remote_dir=port,Path(root),remote_dir
+        self.variant=model_variant(variant)
+        self.thinking=thinking_enabled()
+        self.record=self.root/'.runtime/fn-review/davinci-v100-tunnel.json'
+        self.marker=self.root/'.runtime/fn-review/model-owner-davinci-v100.json'
+
+    def _read(self,path):
+        try:
+            value=json.loads(path.read_text())
+            return value if isinstance(value,dict) else None
+        except (OSError,ValueError):return None
+
+    def _process(self,row):
+        try:
+            pid=int(row['pid']);proc=Path('/proc')/str(pid)
+            started=(proc/'stat').read_text().split(') ',1)[1].split()[19]
+            command=(proc/'cmdline').read_bytes().rstrip(b'\0').decode().split('\0')
+            return (proc.stat().st_uid==os.getuid() and started==row['start_time']
+                and command==row['command'] and os.getpgid(pid)==pid and command[1:4]==[
+                    str(self.root/'scripts/model-host.py'),'start',self.profile])
+        except (OSError,ValueError,KeyError,TypeError,IndexError,AttributeError):return False
+
+    def _owned(self):
+        marker=self._read(self.marker);row=self._read(self.record)
+        return bool(marker and row and marker.get('lease_id')==row.get('lease_id')
+            and marker.get('port')==self.port and marker.get('remote_dir')==self.remote_dir
+            and row.get('root')==str(self.root) and row.get('port')==self.port
+            and row.get('remote_dir')==self.remote_dir and self._process(row))
+
+    def owns_running_model(self):
+        if not self._owned():return False
+        try:
+            import httpx
+            with httpx.Client(timeout=2,trust_env=False) as client:
+                response=client.get(f'http://127.0.0.1:{self.port}/v1/models')
+                response.raise_for_status()
+                from .settings import MODEL
+                return any(item.get('id')==MODEL for item in response.json().get('data',[]))
+        except Exception:return False
+
+    def _write(self,path,value):
+        path.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
+        tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(value));tmp.chmod(0o600);tmp.replace(path)
+
+    def _remote_command(self,action,lease):
+        env=os.environ.copy();env.update(IAM_MODEL_VARIANT=self.variant,
+            IAM_MODEL_THINKING='1' if self.thinking else '0',IAM_SRA_MODEL_LEASE_ID=lease)
+        command=[sys.executable,str(self.root/'scripts/model-host.py'),action,self.profile,
+            '--variant',self.variant,'--port',str(self.port),'--remote-dir',self.remote_dir]
+        if self.thinking:command.append('--thinking')
+        return subprocess.run(command,cwd=self.root,env=env,timeout=660,
+            stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False).returncode==0
+
+    def start(self,deadline):
+        if self.owns_running_model():return
+        if self.marker.exists() or self.record.exists():
+            raise AssessmentError('Davinci review model ownership cannot be verified.',code='gpu_unavailable')
+        if self.thinking:
+            raise AssessmentError('The Davinci V100 preview uses non-thinking inference.',code='gpu_unavailable')
+        lease=uuid4().hex
+        marker={'profile':self.profile,'port':self.port,'variant':self.variant,
+            'remote_dir':self.remote_dir,'lease_id':lease}
+        self._write(self.marker,marker)
+        env=os.environ.copy();env.update(IAM_MODEL_VARIANT=self.variant,IAM_MODEL_THINKING='0',
+            IAM_SRA_MODEL_LEASE_ID=lease)
+        command=[sys.executable,str(self.root/'scripts/model-host.py'),'start',self.profile,
+            '--variant',self.variant,'--port',str(self.port),'--remote-dir',self.remote_dir]
+        process=None
+        launch_log=self.root/'.runtime/fn-review/davinci-v100-model-host.log'
+        try:
+            launch_log.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
+            with launch_log.open('a') as output:
+                os.chmod(launch_log,0o600)
+                process=subprocess.Popen(command,cwd=self.root,env=env,start_new_session=True,
+                    stdout=output,stderr=subprocess.STDOUT)
+            started=(Path('/proc')/str(process.pid)/'stat').read_text().split(') ',1)[1].split()[19]
+            self._write(self.record,{'pid':process.pid,'start_time':started,'command':command,
+                'root':str(self.root),'port':self.port,'remote_dir':self.remote_dir,'lease_id':lease})
+            limit=min(deadline,time.monotonic()+610)
+            while time.monotonic()<limit:
+                if process.poll() is not None:
+                    raise AssessmentError(f'Davinci model host exited ({process.returncode}); see private startup diagnostic.',code='gpu_unavailable')
+                if self.owns_running_model():return
+                time.sleep(.5)
+            raise AssessmentError('Davinci model startup timed out.',code='timeout')
+        except Exception as exc:
+            _log.warning('davinci_v100_start_failed category=%s',type(exc).__name__)
+            self.stop()
+            raise AssessmentError(f'Davinci V100 unavailable ({type(exc).__name__}); retry later.',code='gpu_unavailable') from None
+
+    def stop(self):
+        marker=self._read(self.marker)
+        if not marker:return not self.marker.exists() and not self.record.exists()
+        row=self._read(self.record);lease=marker.get('lease_id')
+        if not lease or marker.get('port')!=self.port or marker.get('remote_dir')!=self.remote_dir:
+            return False
+        if row and row.get('lease_id')==lease and self._process(row):
+            try:os.killpg(int(row['pid']),signal.SIGTERM)
+            except ProcessLookupError:pass
+            except (OSError,ValueError):return False
+            end=time.monotonic()+15
+            while time.monotonic()<end and self._process(row):time.sleep(.1)
+            if self._process(row):
+                if not self._process(row):return False
+                try:os.killpg(int(row['pid']),signal.SIGKILL)
+                except (OSError,ValueError):return False
+                end=time.monotonic()+5
+                while time.monotonic()<end and self._process(row):time.sleep(.1)
+                if self._process(row):return False
+        # The remote stop command accepts only this lease, profile and loopback
+        # port from the remote supervisor record. A stale lease cannot stop a
+        # different user's or another profile's process.
+        if not self._remote_command('stop',lease):return False
+        for path in (self.record,self.marker):
+            current=self._read(path)
+            if path==self.marker and current!=marker:return False
+            path.unlink(missing_ok=True)
+        return True
+
+
 class OnDemandModel:
     def __init__(self, backend, idle_seconds=60, *, clock=time.monotonic):
         self.backend, self.idle_seconds, self.clock = backend, idle_seconds, clock
@@ -278,7 +403,16 @@ def manager():
                     or origin.username or origin.password or origin.path not in {'', '/'} or origin.query or origin.fragment
                     or not 10 <= idle <= 3600):
                 raise ValueError('On-demand review requires an exact loopback model endpoint and 10–3600 idle seconds.')
-            backend = ProjectA2(origin.port, gpu_uuid=os.getenv('IAM_SRA_REVIEW_GPU_UUID') or None)
+            profile = os.getenv('IAM_SRA_GPU_PROFILE', 'liono-a2')
+            if profile == 'liono-a2':
+                backend = ProjectA2(origin.port, gpu_uuid=os.getenv('IAM_SRA_REVIEW_GPU_UUID') or None)
+            elif profile == 'davinci-v100':
+                remote_dir = os.getenv('IAM_SRA_REMOTE_DIR', '')
+                if not remote_dir or os.getenv('IAM_MODEL_VARIANT', 'fp16') != 'fp16' or thinking_enabled():
+                    raise ValueError('Davinci V100 review requires a remote directory, FP16 and thinking disabled.')
+                backend = ProjectDavinciV100(origin.port, remote_dir=remote_dir, variant='fp16')
+            else:
+                raise ValueError('Unsupported on-demand review GPU profile.')
             _manager = OnDemandModel(backend, idle)
             atexit.register(_manager.close)
             threading.Thread(target=_manager.watch, name='iam-sra-idle-gpu', daemon=True).start()

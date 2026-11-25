@@ -15,6 +15,32 @@ cd ~/IAM_CC/iam-sra-demo
 .venv-api/bin/python scripts/share-fn-review.py --release-existing-a2
 ```
 
+### Davinci V100 preview
+
+The same launcher can serve the current Vue/Flask application from Liono while
+forwarding inference to a separately prepared Davinci V100. Use FP16 without
+thinking; do not select or stop an occupied device. The launcher performs a
+real generation probe, then releases its model lease before it prints the
+Cloudflare URL. During review, inference starts on demand and is released after
+the configured idle interval.
+
+```bash
+.venv-api/bin/python scripts/share-fn-review.py \
+  --gpu-profile davinci-v100 \
+  --model-port 18020 \
+  --remote-dir iam-sra-v100-fn-review \
+  --idle-seconds 300
+```
+
+Copy the printed `FN test link` to the reviewer. The URL is temporary, publicly
+reachable and relayed by Cloudflare; use fictional answers only unless
+institutional approval and suitable data controls are in place. The launcher
+uses a separate remote inference directory and does not use or stop the A30 or
+Liono GPUs. Keep the launching terminal/tmux session open while the link is in
+use. A V100/non-thinking preview is a different inference configuration from
+the A30 FP16/thinking evaluation, so do not compare its score stability or
+latency as though they were the same experiment.
+
 Startup now runs **four full live synthetic interviews, including model scoring
 and review, before opening a public API/tunnel**. This occupies the A2 during
 validation and can take a long time. Failures prevent publication; the reports

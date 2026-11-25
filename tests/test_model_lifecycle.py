@@ -45,6 +45,32 @@ def test_no_gpu_for_status_and_model_restarts_after_idle_release():
     m.close();assert b.stops==2
 
 
+def test_review_manager_selects_isolated_davinci_v100_profile(monkeypatch):
+    import iam_sra.model_lifecycle as module
+    class V100:
+        def __init__(self,port,*,remote_dir,variant):
+            self.port=port;self.remote_dir=remote_dir;self.variant=variant
+            self.starts=0;self.stops=0
+        def owns_running_model(self):return False
+        def start(self,deadline):self.starts+=1
+        def stop(self):self.stops+=1;return True
+    monkeypatch.setattr(module,'_manager',None)
+    monkeypatch.setattr(module,'ProjectDavinciV100',V100)
+    monkeypatch.setenv('IAM_SRA_ON_DEMAND_GPU','1')
+    monkeypatch.setenv('IAM_BASE_URL','http://127.0.0.1:18020')
+    monkeypatch.setenv('IAM_SRA_GPU_IDLE_SECONDS','300')
+    monkeypatch.setenv('IAM_SRA_GPU_PROFILE','davinci-v100')
+    monkeypatch.setenv('IAM_SRA_REMOTE_DIR','iam-sra-v100-fn-review-test')
+    monkeypatch.setenv('IAM_MODEL_VARIANT','fp16')
+    monkeypatch.setenv('IAM_MODEL_THINKING','0')
+    managed=module.manager()
+    assert managed.backend.port==18020
+    assert managed.backend.remote_dir=='iam-sra-v100-fn-review-test'
+    assert managed.backend.variant=='fp16' and managed.status()['state']=='idle'
+    assert managed.backend.starts==0
+    managed.close()
+
+
 def test_inflight_inference_is_never_unloaded_even_after_idle_interval():
     m,b,now=controller()
     with m.lease(1000):
