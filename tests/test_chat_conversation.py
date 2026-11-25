@@ -598,6 +598,36 @@ def test_privacy_cleaning_is_explicit_before_chat_retention(api):
     assert b.view['preview'] is None
 
 
+def test_confirmed_safe_privacy_preview_keeps_chat_session_and_original_meaning(api):
+    app,manager=api;b=start_browser(app)
+    b.act('chat_message',{'text':'My personal views'})
+    b.act('chat_message',{'text':'Madrid'})
+    b.act('chat_message',{'text':'20 minutes'})
+    before=b.view['chat']['messages'][-1]['text']
+    b.act('chat_message',{'text':'I do not know what a drone is; email demo@example.com.'})
+    assert b.view['preview'] and 'demo@example.com' not in json.dumps(b.view)
+    assert b.view['chat']['messages'][-1]['text']==before
+    b.act('confirm_cleaned',{'preview_id':b.view['preview']['id']})
+    saved=manager.records[b.view['id']].engine.chat.active_evidence()[-1]['text']
+    assert saved=='I do not know what a drone is; email [private detail removed].'
+    assert b.view['state']=='chat' and b.view['preview'] is None
+    assert 'demo@example.com' not in json.dumps(b.view)
+
+
+def test_credential_privacy_block_keeps_session_available_for_resubmission(api):
+    app,manager=api;b=start_browser(app)
+    b.act('chat_message',{'text':'My personal views'})
+    b.act('chat_message',{'text':'Madrid'})
+    b.act('chat_message',{'text':'20 minutes'})
+    before=(b.view['version'],len(b.view['chat']['messages']))
+    response=b.submit('chat_message',{'text':'My password is synthetic-secret-xyz.'})
+    assert response.status_code==422
+    after=b.read()
+    assert after['state']=='chat' and after['preview'] is None
+    assert (after['version'],len(after['chat']['messages']))==before
+    assert 'synthetic-secret-xyz' not in json.dumps(response.json)
+
+
 def test_no_invented_generic_result_without_model_judgment():
     for profile in ['citizen','organisational','technical']:
         s,c=chat(profile);s.send('stop',c);s.send('looks right',c)
@@ -655,10 +685,10 @@ def test_profile_score_requires_model_explanation_and_boundary_for_numeric_selec
     value['explanation']='This anchor matches these respondent statements and their demonstrated reasoning.'
     with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
     assert exc.value.field=='boundary'
-    value['boundary']=f"{anchors[1]['label']} (level {anchors[1]['level']}) requires evidence that is not present here."
+    value['boundary']='No evidence shows that the respondent has taken part in an actual consultation.'
     result=validate_profile_match(value,payload)
     assert result['explanation'] and result['boundary']
-    value['explanation']='x'*800
+    value['explanation']='x'*1300
     with pytest.raises(ValidationError) as exc:validate_profile_match(value,payload)
     assert exc.value.errors()[0]['loc']==('explanation',)
 
@@ -676,27 +706,30 @@ def test_participant_score_text_removes_complete_internal_alias_ranges_cleanly()
     assert 'level ,' not in text and 'met by and' not in text and 'met by .' not in text
 
 
-def test_profile_score_boundary_must_match_the_adjacent_anchor_it_names():
+def test_profile_score_direction_resolves_adjacent_anchor_without_boundary_format_rule():
     from iam_sra.chat_score import validate_profile_match
     from iam_sra.chat_policy import rubric
     from chat_fixture import ScoreFixture
     s,c=chat();anchors=rubric(s.bank,s.profile,s.depth)['anchors']
     payload={'anchors':anchors,'originals':[{'id':'x','text':'I propose quiet hours.'}]}
     value=ScoreFixture().match_profile(payload)
-    value.update(selected_anchor_id=anchors[3]['id'],alternative_anchor_id=anchors[1]['id'],
-        citations=[{'evidence_id':'x','quote':'I propose quiet hours.'}],
+    value.update(selected_anchor_id=anchors[3]['id'],boundary_direction='higher',
+        citations=[{'evidence_id':'x'}],
         explanation='The exact answer supports the selected level.',
-        boundary=f"{anchors[1]['label']} (level {anchors[1]['level']}) is not demonstrated.",
+        boundary='The record does not show that the proposed conditions were adopted or influenced a decision.',
         material_conflict=False,evidence_incomplete=False)
+    result=validate_profile_match(value,payload)
+    assert result['alternative_anchor_id']==anchors[4]['id']
+    assert result['boundary']==value['boundary']
+    value['boundary_direction']='lower'
+    assert validate_profile_match(value,payload)['alternative_anchor_id']==anchors[2]['id']
+    value['boundary_direction']=None
+    value['alternative_anchor_id']=anchors[0]['id']
     with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
     assert exc.value.field=='alternative_anchor_id'
-    value['alternative_anchor_id']=anchors[2]['id']
-    value['boundary']=f"{anchors[1]['label']} (level {anchors[1]['level']}) is not demonstrated."
-    with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
-    assert exc.value.field=='boundary'
 
 
-def test_profile_score_repairs_only_unique_exact_quote_id_mismatch():
+def test_profile_score_resolves_only_selected_answer_reference_and_rejects_fabricated_quote():
     from iam_sra.chat_score import validate_profile_match
     from iam_sra.chat_policy import rubric
     from chat_fixture import ScoreFixture
@@ -706,27 +739,75 @@ def test_profile_score_repairs_only_unique_exact_quote_id_mismatch():
         {'id':'m2','text':quote}]}
     value=ScoreFixture().match_profile(payload)
     value.update(selected_anchor_id=anchors[2]['id'],alternative_anchor_id=anchors[1]['id'],
-        citations=[{'evidence_id':'m1','quote':quote}],
+        citations=[{'evidence_id':'m2'}],
         explanation='The respondent asks for information before deciding.',
         boundary=f"{anchors[1]['label']} (level {anchors[1]['level']}) requires only recognising relevance, which is demonstrated.",
         material_conflict=False,evidence_incomplete=False)
     result=validate_profile_match(value,payload)
     assert result['citations']==[{'evidence_id':'m2','quote':quote}]
-    payload['originals'].append({'id':'m3','text':quote})
+    value['citations']=[{'evidence_id':'m1','quote':quote}]
     with pytest.raises(AssessmentError) as exc:validate_profile_match(value,payload)
     assert exc.value.field=='citations.quote'
 
 
-def test_score_wire_schema_requires_rationale_boundary_and_alternative_keys():
+def test_score_wire_schema_constrains_anchor_and_evidence_refs_and_omits_quote_and_alt_id():
     from iam_sra.chat_score import ProfileMatch,profile_match_schema
-    schema=profile_match_schema()
+    schema=profile_match_schema({'anchors':[{'id':'crl-1'},{'id':'crl-2'}],
+        'originals':[{'id':'m1','text':'answer'}]})
     required=set(schema['required'])
-    assert {'explanation','boundary','alternative_anchor_id'}<=required
+    assert {'explanation','boundary','selected_anchor_id','citations'}<=required
     keys=list(schema['properties'])
-    assert keys.index('alternative_anchor_id')<keys.index('boundary')
-    assert schema['properties']['explanation']['anyOf'][0]['maxLength']==600
-    assert schema['properties']['boundary']['minLength']==40
-    assert schema['properties']['boundary']['anyOf'][0]['maxLength']==500
+    assert 'alternative_anchor_id' not in keys
+    assert 'quote' not in schema['$defs']['ProfileCitation']['properties']
+    assert schema['properties']['selected_anchor_id']['anyOf'][0]['enum']==['crl-1','crl-2']
+    assert schema['$defs']['ProfileCitation']['properties']['evidence_id']['enum']==['evidence-1']
+    assert schema['properties']['explanation']['anyOf'][0]['maxLength']==1200
+    assert schema['properties']['boundary']['anyOf'][0]['maxLength']==1000
+
+
+@pytest.mark.parametrize(('profile','depth','code'),[
+    ('citizen','short','CRL'),('organisational','short','ORL'),('technical','short','TRL')])
+def test_score_review_uses_profile_specific_scale_label(profile,depth,code):
+    from iam_sra.chat_policy import rubric
+    s,_=chat(profile,depth)
+    anchor=rubric(s.bank,profile,depth)['anchors'][3]
+    s.suggestion={'status':'suggested','level':4,'anchor_id':anchor['id'],'anchor':anchor,'explanation':'A provisional explanation.',
+        'citations':[],'boundary':'Compared with the adjacent anchor, a specific capability is not demonstrated.'}
+    s._review_prompt()
+    message=s.messages[-1]['text']
+    assert f'Provisional result: {code} 4 — {anchor["label"]}.' in message
+    assert 'CRL 4' not in message if code!='CRL' else 'ORL 4' not in message and 'TRL 4' not in message
+
+
+@pytest.mark.parametrize('profile',['citizen','organisational','technical'])
+def test_invalid_score_output_keeps_completed_interview_and_shows_safe_unavailable_result(profile):
+    from iam_sra.assessment import AssessmentError
+    class InvalidScore:
+        last_metrics={'generation_calls':1};last_settings={'enable_thinking':True};last_diagnostics=[]
+        last_score_diagnostics={}
+        def match_profile(self,payload):
+            raise AssessmentError('bad score contract',code='evidence',field='boundary')
+    s,_=chat(profile)
+    s._report(None,InvalidScore())
+    assert s.suggestion['status']=='unavailable'
+    assert s.suggestion['scoring_outcome']=='invalid_model_output'
+    assert s.stage=='review'
+    text=s.messages[-1]['text']
+    assert 'The scoring step did not provide a valid comparison' in text
+    assert not __import__('re').search(r'\b(?:citizen_(?:short|extended)|organisational|technical)-[1-9]\b',text)
+
+
+@pytest.mark.parametrize('profile',['citizen','organisational','technical'])
+def test_genuine_score_abstention_keeps_generic_no_level_review_for_each_profile(profile):
+    s,_=chat(profile)
+    s.suggestion={'status':'abstained','level':None,
+        'explanation':'The respondent has not yet provided evidence about whether the proposed plan was tested.',
+        'gaps':['Testing evidence is unknown.']}
+    s._review_prompt()
+    text=s.messages[-1]['text']
+    assert 'Testing evidence is unknown.' in text
+    assert 'Provisional result:' not in text
+    assert not __import__('re').search(r'\b(?:CRL|ORL|TRL)\s+[1-9]\b',text)
 
 
 def test_profile_score_normalizes_contradictory_selection_to_honest_abstention():

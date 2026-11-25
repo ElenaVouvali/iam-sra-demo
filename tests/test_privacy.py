@@ -321,6 +321,49 @@ def test_commit_metadata_exemption_is_limited_to_exact_structure_and_encoding(mo
             require_safe_data(value)
 
 
+def test_sentence_initial_bird_ecological_compound_is_narrowly_accepted(monkeypatch):
+    from iam_sra import privacy
+    original=privacy.detector()
+    class BirdFalsePositive:
+        def analyze(self,*,text,**kwargs):
+            found=original.analyze(text=text,**kwargs)
+            if text.startswith('Bird'):
+                found.append(privacy.Finding('PERSON',0,4))
+            return found
+    monkeypatch.setattr(privacy,'detector',lambda:BirdFalsePositive())
+    assert require_clean('Bird disturbance may affect nesting habitat.')=='Bird disturbance may affect nesting habitat.'
+    with pytest.raises(PrivacyError) as exc:require_clean('Bird called before the test.')
+    assert exc.value.preview and '[private detail removed]' in exc.value.preview
+
+
+def test_chat_export_reuses_only_hash_receipts_from_same_session_and_policy(monkeypatch):
+    from iam_sra import privacy
+    from iam_sra.chat_session import ChatSession
+    from indicator_fixtures import bank
+    text='A safe synthetic answer about proposed delivery routes.'
+    session=ChatSession(bank(),synthetic=True)
+    session._assistant(text)
+    assert text not in repr(session._screening_receipts)
+    class Envelope:
+        def __init__(self,chat):self.chat=chat;self.privacy_contract=privacy.VERSION
+    calls=[]
+    class CountingDetector:
+        def analyze(self,*,text,**kwargs):
+            calls.append(text)
+            return []
+    monkeypatch.setattr(privacy,'detector',lambda:CountingDetector())
+    privacy.screened_export({'text':text},Envelope(session))
+    assert text not in calls
+    privacy.screened_export({'text':text+' An edited suffix.'},Envelope(session))
+    assert calls==[text+' An edited suffix.']
+    other=ChatSession(bank(),synthetic=True)
+    privacy.screened_export({'text':text},Envelope(other))
+    assert calls[-1]==text
+    monkeypatch.setattr(privacy,'VERSION','privacy-test-next')
+    privacy.screened_export({'text':text},Envelope(session))
+    assert calls[-1]==text
+
+
 @pytest.mark.presidio_live
 def test_real_detector_allows_generated_commit_but_screens_it_in_prose():
     pytest.importorskip('presidio_analyzer');pytest.importorskip('en_core_web_sm')

@@ -1,12 +1,13 @@
 """Mandatory local privacy screening, failing closed when resources are unavailable."""
 from dataclasses import dataclass
 from functools import lru_cache, wraps
+from hashlib import sha256
 import inspect
 import json
 import re
 from .assessment import AssessmentError
 
-VERSION = 'privacy-1.0.0'
+VERSION = 'privacy-1.1.0'
 
 
 def screening_enabled():
@@ -85,6 +86,19 @@ def contextual_findings(text):
     return found
 
 
+def screened_text_receipt(text):
+    """Opaque receipt for one exact successfully screened text under this policy."""
+    return VERSION+':'+sha256(text.encode('utf-8')).hexdigest()
+
+
+def register_screened_text(session, text):
+    """Store a successful exact-text receipt on one in-memory chat session."""
+    chat=getattr(session,'chat',None)
+    receipts=getattr(chat,'_screening_receipts',None)
+    if isinstance(text,str) and isinstance(receipts,set) and len(receipts)<4096:
+        receipts.add(screened_text_receipt(text))
+
+
 @lru_cache(maxsize=1)
 def detector():
     """Require locally installed English NLP; never auto-download at runtime."""
@@ -126,6 +140,13 @@ def screen(text):
     def benign_person(f):
         if f.entity_type!='PERSON':return False
         context=text[max(0,f.start-32):min(len(text),f.end+16)]
+        token=text[f.start:f.end].strip().casefold()
+        # The pinned NER can tag sentence-initial "Bird" as a person's name
+        # in the noun phrase "Bird disturbance". Exempt only this ecological
+        # compound; a standalone Bird or a name in other context remains screened.
+        ecological_bird_compound=(token=='bird' and f.start==0 and
+            re.match(r'\s+(?:disturbance|habitat|nesting|population|activity)\b',text[f.end:],re.I))
+        if ecological_bird_compound:return True
         return bool(re.search(r'\b(?:replace|avoid|reduce|substitute)\s+(?:the\s+)?van\s+(?:trips?|journeys?)\b',context,re.I))
     found = [f for f in found if 0 <= f.start < f.end <= len(text)
         and not (f.entity_type == 'PERSON' and (text[f.start:f.end].strip().casefold() in thematic_labels
@@ -245,7 +266,7 @@ def broad_city_preview(text):
     return None
 
 
-def require_safe_data(value):
+def require_safe_data(value, *, screening_receipts=None):
     """Batch strings through the local NLP engine; no content-result cache."""
     strings = []
     def collect(item,path='root'):
@@ -421,6 +442,8 @@ def require_safe_data(value):
     for text,path in strings:
         if text in screened:continue
         screened.add(text)
+        if screening_receipts and screened_text_receipt(text) in screening_receipts:
+            continue
         try: require_clean(text)
         except PrivacyError as exc:
             # An output/export/request preview cannot replace an audited structure.
@@ -462,8 +485,12 @@ def guarded(*fields):
 
 
 def screened_export(value, session=None):
-    if session is not None: check_contract(session)
-    require_safe_data(value)
+    receipts=None
+    if session is not None:
+        check_contract(session)
+        chat=getattr(session,'chat',None)
+        receipts=getattr(chat,'_screening_receipts',None)
+    require_safe_data(value,screening_receipts=receipts)
     return value
 
 

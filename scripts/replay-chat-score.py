@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Replay only the CRL comparison on screened, already completed synthetic exports."""
-import argparse, json, os, sys, time
+"""Replay CRL, ORL or TRL scoring on screened completed synthetic exports."""
+import argparse, json, os, re, sys, time
 from pathlib import Path
 
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--input',action='append',required=True,help='Completed screened session JSON; repeat for each case.')
+    p.add_argument('--input',action='append',required=True,help='Completed screened session JSON for any profile; repeat for each case.')
     p.add_argument('--base-url',default='http://127.0.0.1:18005')
     p.add_argument('--output',required=True)
     args=p.parse_args(argv)
@@ -38,8 +38,10 @@ def main(argv=None):
         path=Path(raw_path).resolve()
         if not path.is_file():p.error(f'Input export not found: {path}')
         data=screened_export(json.loads(path.read_text()))
-        conversation=data['conversation'];profile=conversation.get('profile');depth=conversation.get('depth')
-        if profile!='citizen' or depth not in {'short','extended'}:p.error(f'Not a citizen CRL export: {path}')
+        conversation=data['conversation'];profile=conversation.get('profile');depth=conversation.get('depth') or 'short'
+        if profile not in {'citizen','organisational','technical'} or depth not in {'short','extended'}:
+            p.error(f'Not a supported CRL/ORL/TRL export: {path}')
+        if profile!='citizen':depth='short'
         scale=rubric(bank,profile,depth)
         originals=[{'id':m['id'],'text':m['text'],'objective':m.get('objective_id'),
                     'evidence_mode':score_evidence_mode(m.get('objective_id')),
@@ -65,8 +67,12 @@ def main(argv=None):
             if findings:
                 error['privacy_findings']=[{'entity_type':row.get('entity_type'),
                     'field_path':row.get('field_path','root')} for row in findings]
-        key=path.stem.replace('.','_')
-        result={'input':str(path),'session_id':data.get('session_id'),'profile':profile,'depth':depth,
+        # Different stakeholder exports commonly share `technical.json` or
+        # `citizen_short.json`; include the containing case directory so one
+        # replay can never overwrite another case's result.
+        key=re.sub(r'[^A-Za-z0-9_.-]+','_',path.parent.name+'_'+path.stem)
+        code={'citizen':'CRL','organisational':'ORL','technical':'TRL'}[profile]
+        result={'input':str(path),'session_id':data.get('session_id'),'profile':profile,'profile_scale':code,'depth':depth,
             'input_completion':conversation.get('completion'),'original_evidence_count':len(originals),
             'original_evidence_ids':[row['id'] for row in originals],
             'input_score_status':(conversation.get('suggestion') or {}).get('status'),
@@ -79,7 +85,7 @@ def main(argv=None):
             'elapsed_seconds':round(time.monotonic()-started,3),
             'reasoning_retention':'discarded; only final structured answer fields retained'}
         target=out/(key+'-score-replay.json');target.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n');target.chmod(0o600)
-        results.append({'case':key,'status':status,'selected_anchor_id':(value or {}).get('selected_anchor_id'),
+        results.append({'case':key,'profile_scale':code,'status':status,'selected_anchor_id':(value or {}).get('selected_anchor_id'),
             'alternative_anchor_id':(value or {}).get('alternative_anchor_id'),
             'validation_field':(error or {}).get('field'),'seconds':result['elapsed_seconds'],
             'artifact':str(target)})

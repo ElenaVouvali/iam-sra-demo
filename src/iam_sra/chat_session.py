@@ -143,6 +143,10 @@ class ChatSession:
         self.review_step = None
         self._paused_stage = None
         self.messages = []
+        # Hash-only, session-local receipts let screened exports avoid
+        # rescanning identical immutable dialogue text. New or edited text has
+        # a different digest and still crosses the full privacy boundary.
+        self._screening_receipts = set()
         self.annotations = []
         self.priorities = []
         self.priority_history = []
@@ -192,14 +196,18 @@ class ChatSession:
                 'processing_seconds': int(os.getenv('IAM_CHAT_PROCESSING_SECONDS', '2400'))}
 
     def _assistant(self, text, objective=None, act='question'):
-        require_safe_data({'text': text})
+        require_safe_data({'text': text},screening_receipts=self._screening_receipts)
+        from .privacy import screened_text_receipt
+        self._screening_receipts.add(screened_text_receipt(text))
         self.messages.append({'id': f'm{len(self.messages)+1}', 'role': 'assistant', 'text': text,
                               'objective_id': objective, 'act': act, 'revision': self.revision})
         if self.profile and act in {'scale_disclosure','methodology'}:
             self.messages[-1]['scale']=deepcopy(self._rubric())
 
     def _user(self, text, evidence=True, act='answer'):
-        require_safe_data({'text': text})
+        require_safe_data({'text': text},screening_receipts=self._screening_receipts)
+        from .privacy import screened_text_receipt
+        self._screening_receipts.add(screened_text_receipt(text))
         row = {'id': f'm{len(self.messages)+1}', 'role': 'respondent', 'text': text,
                'objective_id': self.objective, 'act': act, 'active': True,
                'profile': self.profile, 'scope_revision': 1, 'revision': self.revision,
@@ -1199,7 +1207,11 @@ class ChatSession:
                         getattr(score_client, 'last_score_diagnostics', {}))
                     value = validate_profile_match(value, payload)
                     value['explanation']=participant_score_text(value.get('explanation'))
-                    value['boundary']=participant_score_text(value.get('boundary'))
+                    alternative=next((a for a in scale['anchors'] if a['id']==value['alternative_anchor_id']),None)
+                    code={'citizen':'CRL','organisational':'ORL','technical':'TRL'}[self.profile]
+                    raw_boundary=participant_score_text(value.get('boundary'))
+                    value['boundary']=(f"Compared with {code} {alternative['level']} — {alternative['label']}: {raw_boundary}"
+                                       if alternative and raw_boundary else raw_boundary)
                     anchor = next((a for a in scale['anchors'] if a['id']==value['selected_anchor_id']), None)
                     self.suggestion.update(status='suggested' if anchor else 'abstained',
                         level=anchor['level'] if anchor else None, anchor_id=anchor['id'] if anchor else None,
@@ -1305,7 +1317,8 @@ class ChatSession:
         anchor=(self.suggestion or {}).get('anchor') or {}
         label=anchor.get('label')
         if label:
-            text=f"Provisional result: CRL {self.suggestion['level']} — {label}.\n\n{self.suggestion.get('explanation','')}"
+            code={'citizen':'CRL','organisational':'ORL','technical':'TRL'}[self.profile]
+            text=f"Provisional result: {code} {self.suggestion['level']} — {label}.\n\n{self.suggestion.get('explanation','')}"
             citations=(self.suggestion.get('citations') or [])[:3]
             if citations:
                 text+='\n\nEvidence from your answers:\n'+'\n'.join('“'+c['quote']+'”' for c in citations)

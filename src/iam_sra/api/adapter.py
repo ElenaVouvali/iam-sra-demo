@@ -190,6 +190,7 @@ class ControllerAdapter:
         """Screen BEFORE retention, retry hashing, controller mutation or queueing."""
         cleaned = deepcopy(data)
         changed = False
+        pre_screened=set()
         for key in {'start_assessment': ('use_case','area','organisation_or_unit','responsibilities','technical_object','object_version','intended_environment','materials_or_service','use_case_purpose','origin_destination_types_or_unknown','significant_unknowns'),
                     'indicator_scope': ('organisation_or_unit','responsibilities','technical_object','object_version','intended_environment'),
                     'chat_message': ('text',), 'indicator_add_information': ('text',), 'set_context': ('place', 'function'), 'answer': ('text',),
@@ -198,6 +199,8 @@ class ControllerAdapter:
                     'indicator_correct': ('text',), 'indicator_review': ('explanation',)}.get(action, ()):
             try:
                 require_clean(data[key])
+                from ..privacy import screened_text_receipt
+                pre_screened.add(screened_text_receipt(data[key]))
             except PrivacyError as exc:
                 _log.warning('assessment_privacy_failure stage=input_screening category=input_privacy field_paths=%s entity_types=%s',
                              [key], sorted(exc.entity_types))
@@ -217,13 +220,16 @@ class ControllerAdapter:
                 changed=True
         if action=='select_indicators':
             for key,text in data.get('use_case_fields',{}).items():
-                try: require_clean(text)
+                try:
+                    require_clean(text)
+                    from ..privacy import screened_text_receipt
+                    pre_screened.add(screened_text_receipt(text))
                 except PrivacyError as exc:
                     if exc.preview is None: raise APIError(exc.code,422) from None
                     cleaned['use_case_fields'][key]=exc.preview
                     changed=True
         if changed:
-            try: require_safe_data(cleaned)
+            try: require_safe_data(cleaned,screening_receipts=pre_screened)
             except PrivacyError as exc: raise APIError(exc.code,422) from None
             text = cleaned.get('text', '')
             if '[private detail removed]' in text:
@@ -233,7 +239,7 @@ class ControllerAdapter:
         # Controlled-looking request strings must not smuggle credentials into
         # receipts or jobs before the controller validates their membership.
         try:
-            require_safe_data(cleaned)
+            require_safe_data(cleaned,screening_receipts=pre_screened)
         except PrivacyError as exc:
             _log.warning('assessment_privacy_failure stage=input_screening category=input_privacy entity_types=%s field_paths=%s',
                          sorted(exc.entity_types), sorted({row.get('field_path', 'root') for row in exc.findings}))
