@@ -86,7 +86,9 @@ def test_skip_live_interview_validation_is_limited_to_model_led_strategy():
         m.main(['--gpu-profile','liono-a2','--skip-live-interview-validation','--dry-run'])
 
 
-def test_v100_generation_probe_requests_thinking_for_thinking_backend(monkeypatch):
+@pytest.mark.parametrize(('variant','expected_model'),[
+    ('fp16','Qwen/Qwen3-8B'),('awq','Qwen/Qwen3-8B-AWQ')])
+def test_generation_probe_uses_registered_model_name_and_thinking(monkeypatch,variant,expected_model):
     m=launcher();calls=[]
     class Response:
         is_error=False
@@ -98,11 +100,13 @@ def test_v100_generation_probe_requests_thinking_for_thinking_backend(monkeypatc
         def post(self,url,json):calls.append((url,json));return Response()
     class Backend:
         port=18021;thinking=True
+        def __init__(self):self.variant=variant
         def start(self,deadline):pass
         def stop(self):return True
     monkeypatch.setattr(m.httpx,'Client',Client)
-    m.verify_v100_model(Backend())
+    m.verify_model_generation(Backend())
     assert calls[0][1]['chat_template_kwargs']['enable_thinking'] is True
+    assert calls[0][1]['model']==expected_model
 
 
 @pytest.mark.parametrize(('profile','variant','port'),[

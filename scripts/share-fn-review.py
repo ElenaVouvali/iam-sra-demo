@@ -125,14 +125,17 @@ def prepare_v100(remote_dir, port, *, thinking=False):
     subprocess.run(command,cwd=ROOT,check=True)
 
 
-def verify_v100_model(backend):
-    """Verify one real completion in the selected V100 mode, then release its lease."""
+def verify_model_generation(backend):
+    """Verify one real completion for the registered variant, then release its lease."""
+    variant=getattr(backend,'variant','fp16')
+    spec_path=ROOT/'configs/model-awq.json' if variant=='awq' else ROOT/'configs/model.json'
+    expected_model=json.loads(spec_path.read_text())['model']
     backend.start(time.monotonic()+610)
     probe_error=None
     try:
         with httpx.Client(timeout=180,trust_env=False) as client:
             response=client.post(f'http://127.0.0.1:{backend.port}/v1/chat/completions',json={
-                'model':'Qwen/Qwen3-8B','messages':[{'role':'user','content':'Return only the word READY.'}],
+                'model':expected_model,'messages':[{'role':'user','content':'Return only the word READY.'}],
                 'temperature':0,'max_tokens':512,
                 'chat_template_kwargs':{'enable_thinking':bool(backend.thinking)}})
             if response.is_error:
@@ -487,7 +490,7 @@ def main(argv=None):
         if args.gpu_profile=='davinci-v100':
             print(f'Preparing isolated Davinci directory {args.remote_dir}; this does not modify the A30 service.',flush=True)
             prepare_v100(args.remote_dir,args.model_port,thinking=args.thinking)
-            verify_v100_model(backend)
+            verify_model_generation(backend)
             print('V100 generation probe passed.',flush=True)
             if args.interview_strategy=='model_led_fn':
                 if args.skip_live_interview_validation:
@@ -499,7 +502,7 @@ def main(argv=None):
         elif args.gpu_profile=='liono-v100s':
             spec=prepare_review_model('fp16')
             print('Review checkpoint: '+spec['model']+' / '+spec['revision'],flush=True)
-            verify_v100_model(backend)
+            verify_model_generation(backend)
             print('Liono V100S generation probe passed.',flush=True)
             if args.interview_strategy=='model_led_fn':
                 if args.skip_live_interview_validation:
@@ -513,7 +516,7 @@ def main(argv=None):
             print('Review checkpoint: '+spec['model']+' / '+spec['revision'], flush=True)
             if args.interview_strategy=='model_led_fn':
                 if args.skip_live_interview_validation:
-                    verify_v100_model(backend)
+                    verify_model_generation(backend)
                     print('A2 generation probe passed; complete model-led interviews skipped by request.',flush=True)
                 else:
                     verify_model_led_interviews(backend,args,children)
