@@ -8,6 +8,14 @@ import os
 import re
 
 
+def interview_strategy():
+    """Return the opt-in FN interview strategy; preserve the baseline default."""
+    value = os.getenv('IAM_CHAT_INTERVIEW_STRATEGY', 'controller_fn').strip().lower()
+    if value not in {'controller_fn', 'model_led_fn'}:
+        raise ValueError('IAM_CHAT_INTERVIEW_STRATEGY must be controller_fn or model_led_fn.')
+    return value
+
+
 def enabled():
     return os.getenv('IAM_CHAT_ADAPTIVE_MODE', '0').strip().lower() in {'1', 'true', 'yes'}
 

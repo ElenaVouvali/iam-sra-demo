@@ -48,6 +48,10 @@ class FNInterpretation(Strict):
     scope_disposition: Literal['within_scope', 'outside_remit', 'not_established'] | None = None
     topic_intent: Literal['continue_open','no_more','main_only','suggestions'] | None = None
     topic_intent_quote: str = Field(default='',max_length=1800)
+    # Used only by the opt-in model-led FN strategy. Python resolves the goal
+    # against the registered flow and authorizes the transition.
+    next_goal_id: str | None = Field(default=None, max_length=60)
+    question_purpose: str = Field(default='', max_length=180)
 
 
 class ContextFact(Strict):
@@ -163,6 +167,21 @@ FN_SYSTEM = (
     'Do not assert local operations, attribute experiences or concerns, reveal levels/indicators/source filenames, '
     'or assign a score. An advance or conclude proposal cannot override Python evidence checks.'
 )
+
+MODEL_LED_FN_SYSTEM = FN_SYSTEM.replace(
+    'Python owns questions, routing and scoring.',
+    'You propose the next question and objective; Python validates applicability, evidence, completion and every transition. Python always owns scoring.')
+MODEL_LED_FN_SYSTEM = MODEL_LED_FN_SYSTEM.replace(
+    'Otherwise omit message; Python supplies the next canonical question. Never repeat an answered question.',
+    'For follow_up or clarify, set next_goal_id to the one goal needing clarification and put one neutral question in message. '
+    'For advance, choose one applicable unresolved goal from the full stage_ledger and put one natural question for it in message. '
+    'For conclude, set next_goal_id to null and leave message as a brief acknowledgement. Never repeat an answered or resolved question.')
+MODEL_LED_FN_SYSTEM = MODEL_LED_FN_SYSTEM.replace(
+    'A conclude proposal cannot bypass unfinished goals. If advancing, message may be a short neutral question; Python selects canonical wording.',
+    'Consider evidence already supplied for later stages and reuse it rather than asking again. You may select across stages; do not follow a fixed question order. '
+    'An FN stage is considered when at least one applicable goal in it has grounded evidence or an explicit negative, uncertain, declined or inapplicable disposition; optional/detail questions are not a mandatory checklist. '
+    'A conclude proposal is only a candidate and Python will require every applicable methodological stage to be considered, while retaining unresolved evidence gaps honestly. '
+    'Set question_purpose to a short private rationale; it is not participant-facing.')
 
 
 def _normal(text):
@@ -301,6 +320,12 @@ def validate_reply(raw, request):
                     except ValidationError:optional_warnings.append('interpretation.priority_topics.'+str(index))
                 proposed['priority_topics']=priority_topics[:3]
                 if isinstance(proposed.get('boundary_goals'),list):proposed['boundary_goals']=proposed['boundary_goals'][:2]
+                purpose=proposed.get('question_purpose','')
+                if not isinstance(purpose,str) or len(purpose)>180:
+                    proposed['question_purpose']='';optional_warnings.append('interpretation.question_purpose')
+                next_goal=proposed.get('next_goal_id')
+                if next_goal is not None and (not isinstance(next_goal,str) or len(next_goal)>60):
+                    proposed['next_goal_id']=None;optional_warnings.append('interpretation.next_goal_id')
                 if proposed.get('scope_disposition') not in (None,'within_scope','outside_remit','not_established'):
                     proposed['scope_disposition']=None;optional_warnings.append('interpretation.scope_disposition')
                 topic_goals={'open_priorities','open_more','different_impacts','suggested_topics','priorities'}
@@ -405,7 +430,8 @@ def validate_reply(raw, request):
         value.proposed_action = 'ask_question'
 
     issues = _quality_issues(value.message, request, None, value.proposed_action)
-    if value.interpretation and value.interpretation.action in {'advance','conclude'}:
+    if (value.interpretation and value.interpretation.action in {'advance','conclude'}
+            and not request.get('fn',{}).get('model_led_active')):
         # Python supplies the next canonical question. Ignore only presentation
         # defects in unused wording; retain disclosure/unsupported-claim guards.
         benign={'empty','not_a_question','multiple_questions','repeated_question','answer_echo',
@@ -656,7 +682,7 @@ class ChatClient(ConversationClient):
             'Optional annotations may be empty when uncertain. Justification is a concise decision summary.'
         )
         if interpret_answer:
-            system = FN_SYSTEM
+            system = (MODEL_LED_FN_SYSTEM if request.get('fn',{}).get('model_led_active') else FN_SYSTEM)
         elif request.get('fn') and request.get('adaptive_wording'):
             system = ('You are continuing an FN-guided interview. The Python controller has already '
                 'selected the next evidence goal and canonical FN question. Write exactly ONE natural '
@@ -686,7 +712,10 @@ class ChatClient(ConversationClient):
                     'omitted_context_ids':payload['omitted_context_ids'],
                     'retrieved_source_ids':[row['id'] for group in payload['retrieved_context'].values() for row in group]}
                 try:
+                    plan_attempts=0
                     def validate_turn(raw):
+                        nonlocal plan_attempts
+                        plan_attempts+=1
                         result=validate_reply(raw, {**payload,
                             'previous_questions':request.get('previous_questions',[]),
                             'validation_context':request.get('validation_context',[])})
@@ -702,7 +731,33 @@ class ChatClient(ConversationClient):
                                                 for e in interpretation['coverage'])):
                                 raise AssessmentError('An advance requires grounded coverage of the current evidence goal; clarify if it is ambiguous.',
                                                       code='evidence', field='interpretation.coverage')
+                            if payload.get('fn',{}).get('model_led_active'):
+                                action=interpretation['action']
+                                target=interpretation.get('next_goal_id')
+                                plan_error=None;plan_field='interpretation.next_goal_id'
+                                if action == 'conclude':
+                                    if target is not None or result['message'].count('?'):
+                                        plan_error='A conclusion proposal cannot include another goal or question.'
+                                elif action in {'advance','follow_up','clarify'}:
+                                    if target not in payload['fn']['allowed_objectives']:
+                                        plan_error='Choose a registered objective from the supplied FN stage ledger.'
+                                    if result['message'].count('?') != 1 or result['_quality_issues']:
+                                        plan_error='Propose one new, neutral, non-repeating question for the selected FN objective.'
+                                        plan_field='message'
+                                elif action == 'explain':
+                                    if result['message'].count('?') != 1:
+                                        plan_error='A requested explanation must be followed by one permission question.'
+                                        plan_field='message'
+                                if plan_error:
+                                    if plan_attempts==1:
+                                        raise AssessmentError(plan_error,code='eligibility',field=plan_field)
+                                    result['_model_led_plan_rejected']=plan_error
+                                    interpretation['next_goal_id']=None
                             if priority_annotation_needs_clarification(request,result):
+                                if plan_attempts == 1:
+                                    raise AssessmentError(
+                                        'The answer explicitly selects priorities, but the grounded topic annotations are incomplete. Preserve the interpretation and include every selected issue with its exact quote.',
+                                        code='evidence',field='interpretation.topics')
                                 result['_priority_annotation_missing']=True
                         elif result['_quality_issues']:
                             raise AssessmentError('Ask a different neutral question that moves beyond answered points without assuming new personal concerns.',
@@ -713,6 +768,11 @@ class ChatClient(ConversationClient):
                         semantic_schema = schema['$defs']['FNInterpretation']
                         semantic_schema['properties']['current_goal_addressed'] = {'type':'boolean'}
                         semantic_schema.setdefault('required', []).append('current_goal_addressed')
+                        if payload.get('fn',{}).get('model_led_active'):
+                            semantic_schema['properties']['next_goal_id'] = {
+                                'anyOf':[{'type':'string','enum':list(payload['fn']['allowed_objectives'])},
+                                         {'type':'null'}]}
+                            semantic_schema.setdefault('required', []).extend(['next_goal_id','question_purpose'])
                         # IDs come from the controller, never from respondent
                         # prose. Constrain identifier spelling as well as checking
                         # grounding after generation; semantic coverage stays Qwen's task.
@@ -721,6 +781,12 @@ class ChatClient(ConversationClient):
                         properties['evidence_id']['enum']=list(dict.fromkeys(
                             [payload['current_answer_id']]+[r['id'] for r in payload['original_context']]
                             +[r['answer_id'] for r in payload.get('answered_questions',[])]))
+                    retry_hint=('The previous transition was invalid. Keep the answer interpretation and grounded coverage, '
+                        'but propose a registered currently applicable FN objective and one new neutral question; '
+                        'or propose conclude only if all stages have been considered.'
+                        if payload.get('fn',{}).get('model_led_active') else None)
+                    if payload.get('fn',{}).get('model_led_active'):
+                        return self._request(client, 'chat_turn', system, payload,schema,validate_turn,retry_hint=retry_hint)
                     return self._request(client, 'chat_turn', system, payload,schema,validate_turn)
                 except AssessmentError as exc:
                     if exc.code!='budget':raise

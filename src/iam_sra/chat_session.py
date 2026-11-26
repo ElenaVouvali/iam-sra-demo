@@ -139,6 +139,7 @@ class ChatSession:
         self.objective = 'perspective'
         self.covered = {}
         self.fn = FNInterview()
+        self.inference_configuration['fn_interview_strategy']=self.fn.strategy
         self.partial = False
         self.review_step = None
         self._paused_stage = None
@@ -248,9 +249,18 @@ class ChatSession:
                 'specification_version':self.fn.version} if self.profile else None
 
     def _discussion_progress(self):
-        remaining = self.fn.next(self.profile, self.depth, self.concerns)
-        return {'may_propose_conclusion': self.profile is not None and remaining is None,
+        if self.fn.strategy == 'model_led_fn' and self.fn.model_led_ready(self.profile):
+            gaps=self.fn.model_led_gaps(self.profile,self.depth,self.concerns)
+            remaining=self.fn.current(self.profile,self.depth,gaps[0]) if gaps else None
+            unconsidered=self.fn.model_led_unconsidered_stages(self.profile,self.depth,self.concerns)
+        else:
+            remaining = self.fn.next(self.profile, self.depth, self.concerns)
+        return {'may_propose_conclusion': self.profile is not None and (
+                    not unconsidered if self.fn.strategy == 'model_led_fn' and self.fn.model_led_ready(self.profile)
+                    else remaining is None),
                 'remaining_evidence_goal': (remaining or {}).get('id'),
+                'unconsidered_stage_ids':[s['id'] for s in unconsidered]
+                    if self.fn.strategy == 'model_led_fn' and self.fn.model_led_ready(self.profile) else [],
                 'meaning':'Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard.'}
 
     def _request(self, answer, comparison=False):
@@ -292,10 +302,13 @@ class ChatSession:
         query = answer
         retrieval = retrieve_chat_context(self.corpus, self.profile, self.depth, query)
         self._last_decision['retrieval'] = retrieval
+        model_led_active = self._model_led_active()
+        fn_snapshot=self.fn.snapshot(self.profile,self.depth,self.objective,self.context,self.concerns,
+                                     model_led_active=model_led_active)
         return {'answer': answer, 'profile': self.profile, 'context': self.context,
                 'current_topic': self._current_topic(), 'depth': self.depth,
                 'discussion_progress': self._discussion_progress(),
-                'fn': self.fn.snapshot(self.profile,self.depth,self.objective,self.context,self.concerns),
+                'fn': fn_snapshot,
                 'retrieved_context': retrieval,
                 'indicator_ids': [r['id'] for r in self.bank['indicators']],
                 'original_context': list(reversed(selected)), 'priority_context': deepcopy(priority), 'current_answer_id': current_id, 'omitted_context_ids': [m['id'] for m in self.active_evidence() if m['id'] not in ids],
@@ -303,6 +316,15 @@ class ChatSession:
                 'answered_questions':exchanges[-4:],
                 'validation_context':[{'id':row['id'],'text':row['text']} for row in originals],
                 'comparison': comparison}
+
+    def _model_led_active(self):
+        if self.fn.strategy != 'model_led_fn' or not self.profile:
+            return False
+        if self.fn.model_led_ready(self.profile):
+            return True
+        # The last stable context question hands control to Qwen on its answer.
+        opening={'citizen':'drone_recognition','organisational':'remit','technical':'expertise'}
+        return self.objective == opening.get(self.profile)
 
     def _current_topic(self):
         active = self.active_evidence()
@@ -375,12 +397,13 @@ class ChatSession:
                 retrieval_trace[group].append({key:deepcopy(item.get(key)) for key in
                     ('id','source','source_type','source_status','source_verification','permitted_use') if key in item})
         self.decision_traces.append({'turn_id': len(self.decision_traces) + 1,
-            'profile': self.profile, 'current_topic': self._current_topic(),
+            'profile': self.profile, 'strategy':self.fn.strategy, 'current_topic': self._current_topic(),
             'respondent_evidence_ids': [m['id'] for m in respondents if m.get('evidence_status') == 'respondent_provided'],
             'accepted_actions': [{'act': m.get('act'), 'message_id': m['id']} for m in assistants],
             'accepted_questions': [{'message_id':m['id'],'text':m['text'],'act':m.get('act')}
                 for m in assistants if m.get('act') in {'question','authored_fallback','wrap_offer'}],
-            'model_proposal': {key: decision[key] for key in ('proposed_action','act','topic','respondent_intent','question_goal','justification','considered_alternatives','evidence_ids','source_ids','uncertainty') if key in decision},
+            'model_proposal': {key: decision[key] for key in ('proposed_action','act','topic','respondent_intent','question_goal','justification','considered_alternatives','evidence_ids','source_ids','uncertainty','next_goal_id','question_purpose') if key in decision},
+            'model_led_transition':deepcopy(decision.get('model_led_transition')),
             'action_validation': {'validated_action':decision.get('validated_action'),
                 'decision':'rejected_or_fallback' if decision.get('fallback_used') or decision.get('rejected_action_reasons') else 'accepted',
                 'rejection_reasons':deepcopy(decision.get('rejected_action_reasons',[]))},
@@ -422,6 +445,8 @@ class ChatSession:
             # by the controller below.
             if result.get('_priority_annotation_missing'):
                 checked['_priority_annotation_missing'] = True
+            if result.get('_model_led_plan_rejected'):
+                checked['_model_led_plan_rejected'] = result['_model_led_plan_rejected']
             return checked
         finally:
             metrics = getattr(client, 'last_metrics', {})
@@ -498,6 +523,97 @@ class ChatSession:
                     'prior_knowledge':False,'actual_activity':False,'revision':self.revision})
         if node['id']=='citizen_duration' or (node['id']=='open_more' and len(raised)==1) or node['id']=='priorities':
             self.messages[-1]['source']['wording']='authored adaptation of FN question'
+
+    def _ask_model_led(self, node, text, purpose=''):
+        """Accept a validated model question for one registered FN goal."""
+        self.objective=node['id']
+        if node['id'] not in self.fn.asked:self.fn.asked.append(node['id'])
+        self._assistant(text,node['id'],'question')
+        self.messages[-1]['source']={**deepcopy(self._rubric()['source']),
+            'locator':node['source_locator'],'specification_version':self.fn.version,
+            'wording':'Qwen proposed; FN harness validated'}
+        stage=self.fn.stage_for(self.profile,self.depth,node['id'])
+        self.routing_events.append({'event':'model_led_question_accepted','objective_id':node['id'],
+            'stage_id':stage['id'],'purpose':purpose[:180]})
+
+    def _model_led_route(self, result, indicator_client=None, score_client=None):
+        """Authorize Qwen's objective/question against evidence and FN state."""
+        gaps=self.fn.model_led_gaps(self.profile,self.depth,self.concerns)
+        unconsidered=self.fn.model_led_unconsidered_stages(self.profile,self.depth,self.concerns)
+        interpretation=(result or {}).get('interpretation') or {}
+        action=interpretation.get('action')
+        target=interpretation.get('next_goal_id')
+        question=(result or {}).get('message','')
+        reason=(result or {}).get('_model_led_plan_rejected')
+        if action=='conclude':
+            if not unconsidered:
+                self.fn.next_action='model_led_conclude_accepted'
+                self.stop_reason='fn_goals_explored_with_uncertainty' if self.fn.unresolved_gaps else 'fn_goals_explored'
+                # Uncertainty documented during an otherwise completed interview
+                # is not an early/partial termination or a readiness penalty.
+                self._last_decision['model_led_transition']={'accepted':True,'action':'conclude','remaining_goals':[]}
+                self._report(indicator_client,score_client)
+                return
+            reason='required_fn_stages_remain'
+            first_stage=unconsidered[0]
+            target=next((q['id'] for q in first_stage['questions']
+                         if self.fn.applicable(q,self.concerns)
+                         and self.fn.coverage.get(q['id'],{}).get('status') not in
+                         {'explored','unknown','declined','not_applicable','provided'}),None)
+            if target is None:
+                target=next((q['id'] for q in first_stage['questions']
+                             if self.fn.applicable(q,self.concerns)),None)
+            action='advance'
+            question=self.fn.current(self.profile,self.depth,target)['canonical_question'] if target else ''
+        node=self.fn.current(self.profile,self.depth,target) if isinstance(target,str) else None
+        if action not in {'advance','follow_up','clarify'}:
+            reason=reason or 'unsupported_or_missing_action'
+        elif node is None:
+            reason=reason or 'unknown_goal'
+        elif not self.fn.applicable(node,self.concerns):
+            reason=reason or 'goal_not_applicable'
+        elif self.fn.coverage.get(node['id'],{}).get('status') in {'explored','unknown','declined','not_applicable','provided'}:
+            if action not in {'follow_up','clarify'} or self.fn.followups.get(node['id'],0)>=1:
+                reason=reason or 'goal_already_addressed'
+        elif action in {'follow_up','clarify'} and node['id']!=self.objective:
+            reason=reason or 'clarification_must_target_current_goal'
+        if not reason and action in {'advance','follow_up','clarify'}:
+            from .chat_client import _quality_issues
+            active=self.active_evidence()
+            current=active[-1]['text'] if active else ''
+            request={'answer':current,'context':self.context,'previous_questions':[
+                m['text'] for m in self.messages if m['role']=='assistant' and m.get('act') in {'question','authored_fallback'}],
+                'validation_context':[{'id':m['id'],'text':m['text']} for m in active]}
+            issues=_quality_issues(question,request,None,'ask_question')
+            if issues:reason='question_quality:'+','.join(issues)
+        if not reason and node:
+            if action in {'follow_up','clarify'}:
+                self.fn.followups[node['id']]=self.fn.followups.get(node['id'],0)+1
+            self.fn.next_action='model_led_question'
+            stage=self.fn.stage_for(self.profile,self.depth,target)
+            self._last_decision['model_led_transition']={'accepted':True,'action':action,
+                'proposed_goal':target,'stage_id':stage['id'],
+                'purpose':interpretation.get('question_purpose','')[:180],'remaining_goals':gaps}
+            self._ask_model_led(node,question,interpretation.get('question_purpose',''))
+            return
+        # One controller-owned FN bridge is safer than restoring the old full
+        # first-uncovered scheduler after a rejected model proposal.
+        fallback=next((self.fn.current(self.profile,self.depth,g) for g in gaps
+                       if self.fn.current(self.profile,self.depth,g)
+                       and self.fn.stage_for(self.profile,self.depth,g)['id']==unconsidered[0]['id']),None) if unconsidered else None
+        self._last_decision['fallback_used']=True
+        self._last_decision['model_led_transition']={'accepted':False,'action':action,
+            'proposed_goal':target,'rejection_reason':reason,'remaining_goals':gaps,
+            'fallback_goal':fallback['id'] if fallback else None}
+        self.routing_events.append({'event':'model_led_proposal_rejected','reason':reason,
+            'proposed_goal':target,'fallback_goal':fallback['id'] if fallback else None})
+        if fallback:
+            self.fn.next_action='bounded_methodology_bridge'
+            self._ask_fn(fallback,act='authored_fallback')
+            return
+        self.fn.next_action='model_led_conclude_after_coverage'
+        self.stop_reason='fn_goals_explored_with_uncertainty' if self.fn.unresolved_gaps else 'fn_goals_explored'
+        self._report(indicator_client,score_client)
 
     def _adapt_next_fn_question(self, client, earlier_answer):
         """Present a source-mapped, context-aware next question when available.
@@ -616,6 +732,28 @@ class ChatSession:
 
     def _route_fn(self, indicator_client=None, score_client=None):
         self.failed_turn_id=None
+        if self.fn.strategy=='model_led_fn' and self.fn.model_led_ready(self.profile):
+            gaps=self.fn.model_led_gaps(self.profile,self.depth,self.concerns)
+            unconsidered=self.fn.model_led_unconsidered_stages(self.profile,self.depth,self.concerns)
+            if not unconsidered:
+                self.fn.next_action='conclude_after_covered_stages'
+                self.stop_reason='fn_goals_explored_with_uncertainty' if self.fn.unresolved_gaps else 'fn_goals_explored'
+                self._report(indicator_client,score_client)
+                return
+            first=unconsidered[0]
+            goal=next((q['id'] for q in first['questions'] if self.fn.applicable(q,self.concerns)
+                       and self.fn.coverage.get(q['id'],{}).get('status') not in
+                       {'explored','unknown','declined','not_applicable','provided'}),None)
+            node=self.fn.current(self.profile,self.depth,goal) if goal else None
+            if node is None:
+                self.partial=True;self.stage='ended';self.stop_reason='model_led_stage_gap_without_safe_bridge'
+                self.fn.next_action='operational_failure_partial'
+                self._assistant('I cannot safely choose the next question right now. This is a partial conversation; your answers remain available for export.',act='partial_recovery')
+                return
+            self.fn.next_action='bounded_methodology_bridge'
+            self.routing_events.append({'event':'model_led_controller_bridge','objective_id':node['id']})
+            self._ask_fn(node,act='authored_fallback')
+            return
         while True:
             node = self.fn.next(self.profile,self.depth,self.concerns)
             if not node:
@@ -799,7 +937,8 @@ class ChatSession:
         else:
             # Exact explicit choices need no model. Qualified/nonliteral answers
             # use the same single inference that interprets and proposes wording.
-            kind=literal_answer(text) if node['response_type'] in {'yes_no','permission'} else None
+            kind=(literal_answer(text) if node['response_type'] in {'yes_no','permission'} else None)
+            if self._model_led_active():kind=None
             if self.profile=='citizen' and goal=='drone_explanation':
                 action=educational_choice(text)
                 if action in {'explain','skip_explanation'}:kind='yes' if action=='explain' else 'no'
@@ -853,6 +992,12 @@ class ChatSession:
                                 'evidence_id':row['id'],'verified_local_operation':False})
                     self.failed_turn_id=None
                     for entry in interpretation['coverage']:
+                        if self._model_led_active() and entry['goal'] != goal:
+                            covered_node=self.fn.current(self.profile,self.depth,entry['goal'])
+                            if not covered_node or not self.fn.applicable(covered_node,self.concerns):
+                                self.routing_events.append({'event':'model_led_coverage_rejected',
+                                    'goal':entry['goal'],'evidence_id':row['id'],'reason':'not_applicable'})
+                                continue
                         from .adaptive_interview import explicit_priority_commitment
                         if entry['goal']=='priorities' and goal!='priorities' and not explicit_priority_commitment(row['text']):
                             continue
@@ -906,6 +1051,8 @@ class ChatSession:
                         'dialogue_act':result['act'],'covered_objectives':[e['goal'] for e in interpretation['coverage']],
                         'quote':None,'status':'interpretation_unreviewed','revision':self.revision})
                     self._last_decision.update({key:deepcopy(result.get(key)) for key in ('proposed_action','act','topic','justification','evidence_ids','source_ids','uncertainty')})
+                    self._last_decision['next_goal_id']=interpretation.get('next_goal_id')
+                    self._last_decision['question_purpose']=interpretation.get('question_purpose','')
                     self._last_decision['validated_action']=interpretation['action']
                     self._last_decision['rejected_optional_annotations']=result.get('_annotation_warnings',[])
                     self._last_decision['fn_coverage']=[{k:v for k,v in e.items() if k!='quote'} for e in interpretation['coverage']]
@@ -930,7 +1077,11 @@ class ChatSession:
                         count=self.fn.followups.get(goal,0)
                         if count<1:
                             self.fn.followups[goal]=count+1;self.fn.next_action=interpretation['action']
-                            self._assistant(self._fallback_question(text) if result.get('_quality_issues') else result['message'],goal)
+                            if result.get('_model_led_plan_rejected'):
+                                self.routing_events.append({'event':'model_led_proposal_rejected',
+                                    'reason':'question_plan_rejected_after_retry','objective_id':goal})
+                            self._assistant(self._fallback_question(text) if result.get('_quality_issues')
+                                or result.get('_model_led_plan_rejected') else result['message'],goal)
                             return
                         self.fn.record(goal,row['id'],'unresolved','uncertain')
                 except (AssessmentError,httpx.HTTPError,ValueError) as exc:
@@ -992,9 +1143,13 @@ class ChatSession:
         if result is not None and not any(e.get('kind') in {'retrieved_source_information',
                 'permissioned_explanation'} and e.get('revision')==self.revision for e in self.exposures):
             self._respond_to_information_need(text)
-        self._route_fn(indicator_client,score_client)
+        if result is not None and self._model_led_active():
+            self._model_led_route(result,indicator_client,score_client)
+        else:
+            self._route_fn(indicator_client,score_client)
         if result is not None:
-            self._adapt_next_fn_question(client,text)
+            if not self._model_led_active():
+                self._adapt_next_fn_question(client,text)
 
     def _correction_target(self, text):
         cues = {
@@ -1694,16 +1849,24 @@ class ChatSession:
                 'assisted': self.assisted,
                 'completion': {'conversation': self.stage == 'ended', 'partial':self.partial,
                                'termination_reason':self.stop_reason,
-                               'methodological_progression':'incomplete' if not self.profile or self.fn.next(self.profile,self.depth,self.concerns) else 'goals_explored',
+                               'methodological_progression':('incomplete' if not self.profile or
+                                   (self.fn.model_led_unconsidered_stages(self.profile,self.depth,self.concerns)
+                                    if self.fn.strategy=='model_led_fn' else
+                                    self.fn.next(self.profile,self.depth,self.concerns))
+                                   else 'goals_explored'),
                                'evidence_sufficiency': 'unassessed' if educational_exit else (self.suggestion or {}).get('evidence_sufficiency', 'pending_after_new_evidence' if self.initial_results else 'not_judged'),
                                'participant_review': 'provided' if self.participant_review else 'not_provided',
                                'review': (self.participant_review or {}).get('status', 'not_reviewed')}}
 
     def export(self):
-        progression=self.fn.export(self.profile,self.depth,self.concerns)
+        progression=self.fn.export(self.profile,self.depth,self.concerns,
+                                   model_led=self.fn.strategy=='model_led_fn')
         objective_coverage=[{'objective_id':stage['id'],'status':stage['status'],
             'evidence_ids':list(dict.fromkeys(eid for goal in stage['goals'] for eid in goal['evidence_ids'])),
             'readiness_inferred':False} for stage in progression['stages']]
+        if self.fn.strategy=='model_led_fn':
+            for item,stage in zip(objective_coverage,progression['stages']):
+                item['status']=stage['methodological_status']
         return {**self.view(), 'messages':deepcopy(self.messages), 'schema_version': SCHEMA, 'policy_version': POLICY,
                 'classification': 'synthetic' if self.synthetic else 'unlabelled_not_verified',
                 'model_provenance':deepcopy(self.model_provenance),

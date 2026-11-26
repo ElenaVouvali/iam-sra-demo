@@ -73,6 +73,70 @@ def test_v100_generation_probe_requests_thinking_for_thinking_backend(monkeypatc
     assert calls[0][1]['chat_template_kwargs']['enable_thinking'] is True
 
 
+def test_v100_model_led_prepublication_gate_requires_complete_scored_review(monkeypatch,tmp_path):
+    m=launcher();monkeypatch.setattr(m,'STATE',tmp_path)
+    class Backend:
+        port=18020;thinking=False
+        def __init__(self):self.stopped=False
+        def start(self,deadline):pass
+        def _marker(self):return {'lease_id':'owned-fixture-lease'}
+        def owns_running_model(self):return True
+        def stop(self):self.stopped=True;return True
+    backend=Backend();observed={}
+    class Process:
+        def __init__(self,command,**kwargs):
+            observed.update(kwargs['env'])
+            output=Path(command[command.index('--output')+1]);output.mkdir(parents=True)
+            (output/'metrics.json').write_text(json.dumps({'cases':[{'case':'citizen_short',
+                'protocol_passed':True,'run_incomplete':False,'scoring_generation_calls':1,
+                'score_status':'suggested','level':5,'score_citation_count':2,
+                'score_boundary_present':True}]}))
+        def wait(self,timeout):return 0
+        def poll(self):return 0
+    monkeypatch.setattr(m.subprocess,'Popen',Process)
+    monkeypatch.setattr(m,'close_children',lambda _:None)
+    args=SimpleNamespace(model_port=18020,thinking=False,interview_strategy='model_led_fn',
+        remote_dir='iam-sra-v100-review')
+    result=m.verify_v100_model_led_interview(backend,args,[])
+    assert result.parent==tmp_path and backend.stopped
+    assert observed['IAM_CHAT_INTERVIEW_STRATEGY']=='model_led_fn'
+    assert observed['IAM_SRA_VALIDATION_LEASE']=='owned-fixture-lease'
+    assert observed['IAM_SRA_ON_DEMAND_GPU']=='0'
+    assert observed['IAM_SRA_GPU_PROFILE']=='davinci-v100'
+    assert observed['IAM_SRA_REMOTE_DIR']=='iam-sra-v100-review'
+
+
+def test_live_harness_accepts_only_the_launcher_owned_v100_validation_lease(monkeypatch,tmp_path):
+    import fcntl
+    import importlib.util
+    from iam_sra import model_lifecycle
+
+    spec=importlib.util.spec_from_file_location('smoke_fn_for_v100_lease',Path(__file__).parents[1]/'scripts/smoke-fn-interview.py')
+    smoke=importlib.util.module_from_spec(spec);spec.loader.exec_module(smoke)
+    lock=tmp_path/'.runtime/fn-review/share.lock';lock.parent.mkdir(parents=True)
+    monkeypatch.setenv('IAM_SRA_ON_DEMAND_GPU','0')
+    monkeypatch.setenv('IAM_SRA_GPU_PROFILE','davinci-v100')
+    monkeypatch.setenv('IAM_SRA_REMOTE_DIR','isolated-v100-review')
+    monkeypatch.setenv('IAM_MODEL_VARIANT','fp16')
+    monkeypatch.setenv('IAM_BASE_URL','http://127.0.0.1:18020')
+    monkeypatch.setenv('IAM_SRA_VALIDATION_LEASE','lease-123')
+
+    class OwnedV100:
+        def __init__(self,port,*,root,variant,remote_dir):
+            assert (port,Path(root),variant,remote_dir)==(18020,tmp_path,'fp16','isolated-v100-review')
+        def _marker(self):return {'lease_id':'lease-123'}
+        def owns_running_model(self):return True
+
+    monkeypatch.setattr(model_lifecycle,'ProjectDavinciV100',OwnedV100)
+    with lock.open('a') as handle:
+        fcntl.flock(handle,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        smoke.require_unmanaged_endpoint(tmp_path)
+        monkeypatch.setattr(OwnedV100,'owns_running_model',lambda self:False)
+        with pytest.raises(ValueError,match='Stop the FN sharing launcher'):
+            smoke.require_unmanaged_endpoint(tmp_path)
+        fcntl.flock(handle,fcntl.LOCK_UN)
+
+
 def test_prepare_v100_passes_thinking_flag_only_when_requested(monkeypatch,tmp_path):
     m=launcher();monkeypatch.setattr(m,'ROOT',tmp_path)
     calls=[];monkeypatch.setattr(m.subprocess,'run',lambda command,**kwargs:calls.append(command))

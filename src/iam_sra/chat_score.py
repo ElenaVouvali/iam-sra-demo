@@ -37,6 +37,8 @@ class ProfileMatch(Strict):
     boundary: str | None = Field(..., max_length=1000)
     material_conflict: bool
     evidence_incomplete: bool
+    consistency_check: Literal['consistent','contradiction','not_checked'] = 'not_checked'
+    consistency_evidence_ids: list[str] = Field(default_factory=list, max_length=4)
 
 
 class ProfileCitation(Strict):
@@ -62,6 +64,11 @@ def profile_match_schema(payload=None):
         _string_schema(schema['properties']['selected_anchor_id'],[row['id'] for row in payload['anchors']])
         citation_schema=schema.get('$defs',{}).get('ProfileCitation',{})
         _string_schema(citation_schema.get('properties',{}).get('evidence_id',{}),evidence_aliases(payload))
+        consistency_schema=schema['properties'].get('consistency_evidence_ids',{})
+        if isinstance(consistency_schema,dict):
+            consistency_schema['items']={'type':'string','enum':list(evidence_aliases(payload))}
+        schema['required']=list(dict.fromkeys(schema.get('required',[])+[
+            'consistency_check','consistency_evidence_ids']))
     return schema
 
 
@@ -99,6 +106,13 @@ def validate_profile_match(raw, payload):
     anchors={a['id']:a for a in payload['anchors']}
     evidence={e['id']:e['text'] for e in payload['originals']}
     selected=value.selected_anchor_id
+    active_ids=set(evidence)
+    if any(evidence_id not in active_ids for evidence_id in value.consistency_evidence_ids):
+        raise AssessmentError('Consistency review must cite an active respondent answer.',
+                              code='evidence',field='consistency_evidence_ids')
+    if value.consistency_check=='contradiction' or value.consistency_evidence_ids:
+        raise AssessmentError('Scoring explanation conflicts with active respondent evidence; one bounded revision is required.',
+                              code='evidence',field='consistency_check')
     if selected is not None:
         if selected not in anchors:
             raise AssessmentError('Unsupported or incomplete profile selection.',code='evidence',field='selected_anchor_id')
@@ -205,7 +219,8 @@ class ChatScoreClient(ConversationClient):
             'For CRL Co-design, one concrete respondent-proposed condition, safeguard or service change can support the anchor when it is clearly intended to improve introduction or operation. Do not require formal design authority, adoption, implementation or proof that the proposal changed a decision; distinguish clearly between a proposal and an enacted safeguard. A concern alone, without a suggested condition or change, is not sufficient for Co-design. '
             'For CRL Empowerment, require evidence that the respondent can use or meaningfully access a specific established route to raise concerns, seek answers, influence decisions or participate in monitoring. A wish to participate, conditional willingness, intention to search for a process, or unfamiliarity with whether a local channel exists is not by itself evidence that such a route is established or usable. This is not a penalty for lacking an opportunity; assess demonstrated capability and access evidence separately from whether the respondent has already influenced a decision. '
             'For an organisation assess its own unit/remit; distinguish draft plans, preparation, tested arrangements and embedded processes. '
-            'For technology assess the same object/version/environment, not the expert or whole system when only a component was tested. '
+            'Before selecting, compare every explanation and boundary claim with ALL active answers. Set consistency_check=contradiction and list the exact active evidence references if you state that planning, preparation, testing or implementation is absent when an answer reports it. If no such mismatch exists use consistent and an empty list. A completed supervised pilot with assigned responsibilities/tested procedures is evidence of preparation and validation, even when no routine operations exist. '
+            'For technology assess the same object/version/environment, not the expert or whole system when only a component was tested. For TRL 6 versus 7, the distinction is integrated demonstration in a relevant environment versus a representative system prototype demonstrated in the actual intended operational environment. Lack of final qualification distinguishes TRL 7 from TRL 8; do not use it as the main TRL 6/7 boundary. '
             'For every non-null selection, explanation must be a specific, participant-readable account of why the selected original answers support the full selected anchor. Set boundary_direction to higher or lower to select the adjacent anchor to compare; Python resolves that direction to the registered neighbouring level. Boundary must explain the substantive difference and what evidence for that adjacent level is not demonstrated. Do not name levels, internal IDs or require a special opening phrase in the boundary; Python supplies the official adjacent-level heading. Neither explanation nor boundary may be empty or null for a selected level. For an abstention, explanation must name the specific missing or contradictory evidence. '
             'Keep evidence-N identifiers only in the structured citation evidence_id field. Never put message IDs, evidence-N labels, people’s names, place names or quotations in participant-facing explanation or boundary prose. Use generic evidence descriptions; Python will display the original answer selected by each evidence reference. '
             'material_conflict=true ONLY for unresolved contradictory respondent claims about the same unit or object, same activity and compatible time; draft planning without adoption, testing, or routine operation is NOT a contradiction. '
@@ -218,6 +233,9 @@ class ChatScoreClient(ConversationClient):
         def checked_match(raw):
             candidate = (ProfileMatch.model_validate_json(raw) if isinstance(raw, str)
                          else ProfileMatch.model_validate(raw))
+            if candidate.consistency_check=='not_checked':
+                raise AssessmentError('The scoring response did not complete its evidence-consistency check.',
+                                      code='evidence',field='consistency_check')
             require_safe_data({'explanation':candidate.explanation or '',
                                'boundary':candidate.boundary or '',
                                'citations':[c.model_dump() for c in candidate.citations]})
@@ -235,6 +253,8 @@ class ChatScoreClient(ConversationClient):
                 'model_proposed_citations': [c.model_dump() for c in candidate.citations],
                 'material_conflict': candidate.material_conflict,
                 'evidence_incomplete': candidate.evidence_incomplete,
+                'consistency_check':candidate.consistency_check,
+                'consistency_evidence_ids':candidate.consistency_evidence_ids,
                 'validator_suppressed_proposal': bool(candidate.selected_anchor_id
                     and (candidate.material_conflict or candidate.evidence_incomplete))}
             aliases=evidence_aliases(payload)
@@ -242,6 +262,7 @@ class ChatScoreClient(ConversationClient):
             mapped=candidate.model_dump()
             for citation in mapped['citations']:
                 citation['evidence_id']=inverse.get(citation['evidence_id'],citation['evidence_id'])
+            mapped['consistency_evidence_ids']=[inverse.get(eid,eid) for eid in candidate.consistency_evidence_ids]
             candidate=ProfileMatch.model_validate(mapped)
             self.last_score_diagnostics['model_proposed_citations']=[c.model_dump() for c in candidate.citations]
             validated=validate_profile_match(candidate, payload)
@@ -250,4 +271,4 @@ class ChatScoreClient(ConversationClient):
         with _LOCK,httpx.Client(trust_env=False) as client:
             return self._request(client,'chat_profile_match',system,compact_score_request(payload),
                 profile_match_schema(payload),checked_match,
-                retry_hint=('Return every required field. Keep explanation to 1,200 characters or fewer and boundary to 1,000 characters or fewer, with complete sentences. For a non-null selection, choose boundary_direction as higher or lower; it must identify the immediately adjacent registered anchor. Explain the substantive evidence difference without naming a level or using a required opening format. Do not include IDs, names, places or quotations in prose. Provide no more than four citations; each evidence_id must be selected from the supplied evidence-N values. Citations contain evidence_id only; Python resolves each to the exact original answer. For abstention only, selection, direction and boundary may be null; explanation must state the concrete missing or contradictory evidence.'))
+                retry_hint=('Return every required field. Reconcile your explanation and boundary with every active answer. If any claim contradicts an answer, revise the judgment/rationale or return consistency_check=contradiction with its evidence-N references; do not ignore that answer. Keep explanation to 1,200 characters or fewer and boundary to 1,000 characters or fewer, with complete sentences. For a non-null selection, choose boundary_direction as higher or lower; it must identify the immediately adjacent registered anchor. Explain the substantive evidence difference without naming a level or using a required opening format. Do not include IDs, names, places or quotations in prose. Provide no more than four citations; each evidence_id must be selected from the supplied evidence-N values. Citations contain evidence_id only; Python resolves each to the exact original answer. For abstention only, selection, direction and boundary may be null; explanation must state the concrete missing or contradictory evidence.'))

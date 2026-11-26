@@ -94,7 +94,9 @@ def explicit_answer_uncertainty(answer):
 
 class FNInterview:
     def __init__(self):
+        from .adaptive_interview import interview_strategy
         self.version = VERSION
+        self.strategy = interview_strategy()
         self.coverage = {}
         self.facts = {}
         self.asked = []
@@ -147,7 +149,9 @@ class FNInterview:
             return any(row.get('selected_priority') and row['topic'].casefold() not in {'noise', 'fairness'} for row in concerns) and not any(row.get('selected_priority') and row['topic'].casefold() in {'noise','fairness'} for row in concerns)
         source, value = condition.split(':', 1)
         if source == 'gap': return value in self.boundary_uncertainty
-        if source == 'asked': return (value in self.asked and self.coverage.get(value, {}).get('status')=='explored'
+        if source == 'asked': return ((value in self.asked or
+                                      (self.strategy == 'model_led_fn' and value in self.coverage))
+                                     and self.coverage.get(value, {}).get('status')=='explored'
                                      and self.facts.get(value) not in {'no','uncertain','declined'})
         if source in {'topic', 'raised'}:
             return any(value in row['topic'].casefold() and (row.get('selected_priority') if source == 'topic' else row.get('spontaneously_raised')) for row in concerns)
@@ -166,19 +170,29 @@ class FNInterview:
                 return node
         return None
 
-    def snapshot(self, profile, depth, objective, scope, concerns):
+    def snapshot(self, profile, depth, objective, scope, concerns, model_led_active=None):
         from .adaptive_interview import enabled
         node = self.current(profile, depth, objective)
         stage = self.stage_for(profile, depth, objective)
         stages = self.stages(profile, depth)
-        # Only current-stage goals plus the primary goal of later stages. The
-        # model sees capability purposes, not the complete question bank/PDFs.
-        allowed = {q['id']: s['id'] for s in stages for q in s['questions']
-                   if (not enabled() and (s is stage or q is s['questions'][0] or q['id']=='priorities'))
-                   or (enabled() and (s is stage or (profile=='citizen' and stage
-                       and stage['id']=='recognition' and q['id']=='healthcare_awareness')
-                       or (profile!='citizen' and q is s['questions'][0])))}
-        return {'version': VERSION, 'stage': (stage or {}).get('id'),
+        model_led = (self.strategy == 'model_led_fn' if model_led_active is None
+                     else self.strategy == 'model_led_fn' and bool(model_led_active))
+        # Model-led mode receives compact goal purposes/state, not canonical
+        # participant questions or the underlying FN source documents.
+        if model_led:
+            allowed={q['id']:s['id'] for s in stages for q in s['questions']}
+        else:
+            allowed={}
+            for current_stage in stages:
+                for q in current_stage['questions']:
+                    baseline_allowed=(not enabled() and (current_stage is stage or q is current_stage['questions'][0] or q['id']=='priorities'))
+                    adaptive_allowed=bool(enabled() and (
+                        current_stage is stage or
+                        (profile=='citizen' and stage and stage['id']=='recognition' and q['id']=='healthcare_awareness') or
+                        (profile!='citizen' and q is current_stage['questions'][0])))
+                    if baseline_allowed or adaptive_allowed:
+                        allowed[q['id']]=current_stage['id']
+        result = {'version': VERSION, 'stage': (stage or {}).get('id'),
                 'evidence_goal': (node or {}).get('id'), 'purpose': (stage or {}).get('purpose'),
                 'response_type': (node or {}).get('response_type'),
                 'allowed_objectives': allowed,
@@ -191,6 +205,74 @@ class FNInterview:
                 'boundary_uncertainty': self.boundary_uncertainty[:2],
                 'scope': {k:v for k,v in scope.items() if v and k not in {'language','city_status'}},
                 'next_action': self.next_action}
+        if model_led:
+            result['strategy']='model_led_fn'
+            result['model_led_active']=True
+            def disposition(question):
+                goal=question['id'];row=self.coverage.get(goal)
+                if not self.applicable(question,concerns):return 'not_applicable'
+                if row is None:return 'not_explored'
+                if row.get('status')=='provided':return 'provided'
+                if row.get('status')=='declined':return 'declined'
+                if row.get('status') in {'unknown','unresolved'}:return 'uncertain'
+                if self.facts.get(goal)=='no':return 'explored_negative'
+                return 'supported'
+            result['stage_ledger'] = [{
+                'stage_id':s['id'], 'purpose':s.get('purpose',''),
+                'goals':[{'goal_id':q['id'], 'applicable':self.applicable(q,concerns),
+                    'status':self.coverage.get(q['id'],{}).get('status','not_explored'),
+                    'coverage_state':disposition(q),
+                    'evidence_ids':self.coverage.get(q['id'],{}).get('evidence_ids',[]),
+                    'optional':bool(q.get('optional'))} for q in s['questions']]}
+                for s in stages]
+            for stage_row, stage in zip(result['stage_ledger'], stages):
+                applicable = [q for q in stage['questions'] if self.applicable(q, concerns)]
+                considered = [q for q in applicable if self.coverage.get(q['id'], {}).get('status')
+                              in {'explored', 'unknown', 'declined', 'not_applicable', 'provided'}]
+                stage_row['methodological_status'] = (
+                    'not_applicable' if not applicable else
+                    'considered' if considered else 'not_explored')
+        return result
+
+    def model_led_ready(self, profile):
+        """Leave profile-specific onboarding and scope establishment stable."""
+        covered=set(self.coverage)
+        if profile == 'citizen':
+            return 'area' in covered and ('drone_recognition' in covered or 'drone_explanation' in covered)
+        if profile == 'organisational':
+            return {'organisation_context','remit'} <= covered
+        if profile == 'technical':
+            return {'technical_role','technical_object','expertise'} <= covered
+        return False
+
+    def model_led_gaps(self, profile, depth, concerns):
+        """Return uncovered applicable objectives for model-selected follow-up.
+
+        These are opportunities for useful probing, not a mandatory question
+        queue. Completion is assessed at FN stage level by
+        :meth:`model_led_unconsidered_stages`.
+        """
+        gaps=[]
+        for stage in self.stages(profile,depth):
+            for current in stage['questions']:
+                if self.applicable(current,concerns):
+                    row=self.coverage.get(current['id'])
+                    if row is None or row.get('status') not in {'explored','unknown','declined','not_applicable','provided'}:
+                        gaps.append(current['id'])
+        return gaps
+
+    def model_led_unconsidered_stages(self, profile, depth, concerns):
+        """Stages with no applicable goal explored or explicitly dispositioned."""
+        remaining=[]
+        considered_statuses={'explored','unknown','declined','not_applicable','provided'}
+        for stage in self.stages(profile,depth):
+            applicable=[q for q in stage['questions'] if self.applicable(q,concerns)]
+            if not applicable:
+                continue
+            if not any(self.coverage.get(q['id'],{}).get('status') in considered_statuses
+                       for q in applicable):
+                remaining.append(stage)
+        return remaining
 
     def invalidate(self, active_ids):
         """Corrections remove dependent coverage, never retain superseded support."""
@@ -207,12 +289,21 @@ class FNInterview:
         self.unresolved_gaps = [g for g in self.unresolved_gaps if g in self.coverage]
         return removed
 
-    def export(self, profile, depth, concerns):
+    def export(self, profile, depth, concerns, model_led=False):
         stages=[]
         for stage in self.stages(profile, depth):
             applicable=[q for q in stage['questions'] if self.applicable(q, concerns)]
+            methodological_status=(
+                'not_applicable' if not applicable else
+                'considered' if any(self.coverage.get(q['id'],{}).get('status')
+                    in {'explored','unknown','declined','not_applicable','provided'} for q in applicable)
+                else 'not_explored')
+            stage_status=('not_applicable' if not applicable else
+                'explored' if (model_led and methodological_status=='considered')
+                or all(q['id'] in self.coverage for q in applicable) else 'not_fully_explored')
             stages.append({'id':stage['id'],'source_locator':stage['source_locator'],
-                'status':('not_applicable' if not applicable else 'explored' if all(q['id'] in self.coverage for q in applicable) else 'not_fully_explored'),
+                'status':stage_status,
+                'methodological_status':methodological_status if model_led else None,
                 'goals':[{'id':q['id'], **deepcopy(self.coverage.get(q['id'],{'status':'not_explored','evidence_ids':[]}))} for q in applicable]})
         return {'version': VERSION, 'stages': stages, 'unresolved_gaps':list(self.unresolved_gaps),
                 'boundary_uncertainty':list(self.boundary_uncertainty),
