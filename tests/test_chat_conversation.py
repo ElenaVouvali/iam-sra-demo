@@ -750,6 +750,22 @@ def test_profile_score_resolves_only_selected_answer_reference_and_rejects_fabri
     assert exc.value.field=='citations.quote'
 
 
+def test_duplicate_quote_under_distinct_message_ids_is_one_score_observation():
+    from iam_sra.chat_score import validate_profile_match
+    from iam_sra.chat_policy import rubric
+    s,c=chat();anchors=rubric(s.bank,s.profile,s.depth)['anchors']
+    quote='I have not seen any tested noise evidence.'
+    payload={'anchors':anchors,'originals':[{'id':'m1','text':quote},{'id':'m2','text':quote}]}
+    value={'selected_anchor_id':anchors[2]['id'],'alternative_anchor_id':anchors[1]['id'],
+        'citations':[{'evidence_id':'m1'},{'evidence_id':'m2'}],
+        'explanation':'The respondent reports no noise evidence.',
+        'boundary':'The adjacent anchor requires evidence from an actual assessment, which is not present.',
+        'material_conflict':False,'evidence_incomplete':False,'consistency_check':'consistent',
+        'consistency_evidence_ids':[]}
+    result=validate_profile_match(value,payload)
+    assert result['citations']==[{'evidence_id':'m1','quote':quote}]
+
+
 def test_score_wire_schema_constrains_anchor_and_evidence_refs_and_omits_quote_and_alt_id():
     from iam_sra.chat_score import ProfileMatch,profile_match_schema
     schema=profile_match_schema({'anchors':[{'id':'crl-1'},{'id':'crl-2'}],

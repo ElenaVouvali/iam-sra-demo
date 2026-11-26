@@ -158,7 +158,10 @@ def validate_profile_match(raw, payload):
             quote=evidence[evidence_id]
             citation['quote']=quote
             resolved_ids.append(evidence_id)
-        key=(citation['evidence_id'],quote)
+        # A duplicated respondent statement under two message IDs is one
+        # observation, not independent corroboration. Keep the earliest active
+        # citation while retaining both messages in the transcript.
+        key=re.sub(r'\s+',' ',re.sub(r'[^\w]+',' ',quote.casefold())).strip()
         if key not in seen_citations:
             normalized_citations.append(citation);seen_citations.add(key)
     result['citations']=normalized_citations

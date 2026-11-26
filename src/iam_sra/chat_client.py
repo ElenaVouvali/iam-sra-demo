@@ -55,7 +55,7 @@ class FNInterpretation(Strict):
     question_purpose: str = Field(default='', max_length=180)
     information_request: Literal['drone_definition','drone_uses','drone_mechanics',
         'healthcare_applications','clarify_current_question','local_process',
-        'comparison','accountability','local_activity','other'] | None = None
+        'comparison','accountability','local_activity','sample_delivery_example','other'] | None = None
     information_request_quote: str = Field(default='', max_length=500)
 
 
@@ -193,6 +193,14 @@ MODEL_LED_FN_SYSTEM = MODEL_LED_FN_SYSTEM.replace(
     'An FN stage is considered when at least one applicable goal in it has grounded evidence or an explicit negative, uncertain, declined or inapplicable disposition; optional/detail questions are not a mandatory checklist. '
     'A conclude proposal is only a candidate and Python will require every applicable methodological stage to be considered, while retaining unresolved evidence gaps honestly. '
     'Set question_purpose to a short private rationale; it is not participant-facing.')
+MODEL_LED_FN_SYSTEM += (
+    'The supplied eligible_next_objectives are the only goals you may choose for an advance. '
+    'Do not choose a goal marked covered, unresolved, inapplicable, or already asked. '
+    'Use eligible_current_follow_up only for one material clarification of the current answer; '
+    'if the answer is adequate, choose a different eligible objective or conclude when permitted. '
+    'The question wording is validated separately from evidence interpretation. If unsure, still return '
+    'your best grounded interpretation and choose an eligible goal; Python will use registered FN wording '
+    'if your proposed wording is unsuitable.')
 
 
 def _normal(text):
@@ -762,27 +770,30 @@ class ChatClient(ConversationClient):
                             if payload.get('fn',{}).get('model_led_active'):
                                 action=interpretation['action']
                                 target=interpretation.get('next_goal_id')
-                                plan_error=None;plan_field='interpretation.next_goal_id'
+                                eligible={row['goal_id'] for row in payload['fn'].get('eligible_next_objectives',[])}
+                                current_followup=payload['fn'].get('eligible_current_follow_up')
+                                plan_errors=[]
                                 if action == 'conclude':
                                     if target is not None or result['message'].count('?'):
-                                        plan_error='A conclusion proposal cannot include another goal or question.'
+                                        plan_errors.append('invalid_conclusion_action')
                                 elif action in {'advance','follow_up','clarify'}:
-                                    if target not in payload['fn']['allowed_objectives']:
-                                        plan_error='Choose a registered objective from the supplied FN stage ledger.'
+                                    if action=='advance' and target not in eligible:
+                                        plan_errors.append('next_goal_not_eligible')
+                                    if action in {'follow_up','clarify'} and target!=current_followup:
+                                        plan_errors.append('current_follow_up_not_eligible')
                                     if result['message'].count('?') != 1 or result['_quality_issues']:
-                                        plan_error='Propose one new, neutral, non-repeating question for the selected FN objective.'
-                                        plan_field='message'
+                                        plan_errors.append('invalid_question_wording')
                                 elif action == 'explain':
-                                    if target not in payload['fn']['allowed_objectives']:
-                                        plan_error='An explanation still requires a valid next FN objective.'
+                                    if target not in eligible:
+                                        plan_errors.append('next_goal_not_eligible')
                                     if result['message'].count('?') != 1 or result['_quality_issues']:
-                                        plan_error='Provide the short explanation separately and ask one relevant next FN question.'
-                                        plan_field='message'
-                                if plan_error:
-                                    if plan_attempts==1:
-                                        raise AssessmentError(plan_error,code='eligibility',field=plan_field)
-                                    result['_model_led_plan_rejected']=plan_error
-                                    interpretation['next_goal_id']=None
+                                        plan_errors.append('invalid_question_wording')
+                                if plan_errors:
+                                    # Planning is fallible presentation metadata. Keep
+                                    # a valid answer interpretation and exact coverage;
+                                    # Python selects an eligible bridge or canonical
+                                    # wording without replaying this inference.
+                                    result['_model_led_plan_rejected']=','.join(plan_errors)
                             if priority_annotation_needs_clarification(request,result):
                                 if plan_attempts == 1:
                                     raise AssessmentError(
@@ -799,9 +810,12 @@ class ChatClient(ConversationClient):
                         semantic_schema['properties']['current_goal_addressed'] = {'type':'boolean'}
                         semantic_schema.setdefault('required', []).append('current_goal_addressed')
                         if payload.get('fn',{}).get('model_led_active'):
-                            semantic_schema['properties']['next_goal_id'] = {
-                                'anyOf':[{'type':'string','enum':list(payload['fn']['allowed_objectives'])},
-                                         {'type':'null'}]}
+                            eligible_ids=[row['goal_id'] for row in payload['fn'].get('eligible_next_objectives',[])]
+                            current_followup=payload['fn'].get('eligible_current_follow_up')
+                            next_ids=list(dict.fromkeys(eligible_ids+([current_followup] if current_followup else [])))
+                            semantic_schema['properties']['next_goal_id'] = (
+                                {'anyOf':[{'type':'string','enum':next_ids},{'type':'null'}]}
+                                if next_ids else {'type':'null'})
                             semantic_schema.setdefault('required', []).extend(['next_goal_id','question_purpose'])
                         # IDs come from the controller, never from respondent
                         # prose. Constrain identifier spelling as well as checking

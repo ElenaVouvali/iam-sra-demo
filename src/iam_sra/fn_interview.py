@@ -239,7 +239,66 @@ class FNInterview:
                 stage_row['methodological_status'] = (
                     'not_applicable' if not applicable else
                     'considered' if considered else 'not_explored')
+            candidates=self.model_led_next_objectives(profile,depth,concerns,objective)
+            result['eligible_next_objectives']=[{'goal_id':q['id'],'stage_id':self.stage_for(profile,depth,q['id'])['id'],
+                'purpose':q.get('purpose',''),'priority_relevance':self._priority_relevant(q,concerns)}
+                for q in candidates]
+            current=self.current(profile,depth,objective)
+            current_status=self.coverage.get(objective,{}).get('status')
+            result['eligible_current_follow_up']=(objective if current and self.applicable(current,concerns)
+                and current_status not in {'explored','unknown','declined','not_applicable','provided','unresolved'}
+                and self.followups.get(objective,0)<1 else None)
         return result
+
+    @staticmethod
+    def _priority_relevant(node, concerns):
+        """Whether a registered goal can naturally explore a selected issue."""
+        if not any(row.get('selected_priority') for row in concerns):
+            return False
+        condition=str(node.get('when','')).casefold()
+        terms=('topic:', 'raised:')
+        return any(term in condition for term in terms) or node.get('id') in {
+            'priority_understanding','conditions','conditions_why','evaluation_evidence',
+            'noise_understanding','privacy_understanding','equity_understanding'}
+
+    def model_led_next_objectives(self, profile, depth, concerns, current_goal=None):
+        """Return a bounded cross-stage choice set for model-led progression.
+
+        Evidence annotation may still cite any registered allowed objective. This
+        narrower list is solely for next-question planning and prevents proposals
+        for closed, inapplicable, already-asked goals. Keep at least one useful
+        choice per applicable stage, then use remaining slots for selected-
+        priority-relevant objectives. Python does not choose the next stage.
+        """
+        considered={'explored','unknown','declined','not_applicable','provided','unresolved'}
+        values=[]
+        for node in self.nodes(profile,depth):
+            goal=node['id']
+            if goal==current_goal or goal in self.asked:
+                continue
+            if not self.applicable(node,concerns):
+                continue
+            if self.coverage.get(goal,{}).get('status') in considered:
+                continue
+            values.append(node)
+        if len(values)<=16:return values
+        stage_order={stage['id']:i for i,stage in enumerate(self.stages(profile,depth))}
+        node_order={node['id']:i for i,node in enumerate(self.nodes(profile,depth))}
+        grouped={}
+        for node in values:
+            grouped.setdefault(self.stage_for(profile,depth,node['id'])['id'],[]).append(node)
+        # Preserve choice across stages; within each stage expose the most
+        # priority-relevant available objective first, without forcing it.
+        selected=[]
+        for stage_id,stage_nodes in grouped.items():
+            stage_nodes.sort(key=lambda node:(not self._priority_relevant(node,concerns),
+                                               node_order[node['id']]))
+            selected.append(stage_nodes[0])
+        remainder=[node for node in values if node not in selected]
+        remainder.sort(key=lambda node:(not self._priority_relevant(node,concerns),
+            stage_order[self.stage_for(profile,depth,node['id'])['id']],node_order[node['id']]))
+        selected.extend(remainder[:max(0,16-len(selected))])
+        return sorted(selected,key=lambda node:node_order[node['id']])
 
     def model_led_ready(self, profile):
         """Leave profile-specific onboarding and scope establishment stable."""

@@ -307,6 +307,8 @@ class ChatSession:
         model_led_active = self._model_led_active()
         fn_snapshot=self.fn.snapshot(self.profile,self.depth,self.objective,self.context,self.concerns,
                                      model_led_active=model_led_active)
+        if model_led_active:
+            self._last_decision['eligible_next_objectives']=deepcopy(fn_snapshot.get('eligible_next_objectives',[]))
         return {'answer': answer, 'profile': self.profile, 'context': self.context,
                 'current_topic': self._current_topic(), 'depth': self.depth,
                 'discussion_progress': self._discussion_progress(),
@@ -405,6 +407,9 @@ class ChatSession:
             'accepted_questions': [{'message_id':m['id'],'text':m['text'],'act':m.get('act')}
                 for m in assistants if m.get('act') in {'question','authored_fallback','wrap_offer'}],
             'model_proposal': {key: decision[key] for key in ('proposed_action','act','topic','respondent_intent','question_goal','justification','considered_alternatives','evidence_ids','source_ids','uncertainty','next_goal_id','question_purpose') if key in decision},
+            'eligible_next_objectives':deepcopy(decision.get('eligible_next_objectives',[])),
+            'model_led_plan_rejected':decision.get('model_led_plan_rejected'),
+            'question_wording_fallback':deepcopy(decision.get('question_wording_fallback')),
             'model_led_transition':deepcopy(decision.get('model_led_transition')),
             'action_validation': {'validated_action':decision.get('validated_action'),
                 'decision':'rejected_or_fallback' if decision.get('fallback_used') or decision.get('rejected_action_reasons') else 'accepted',
@@ -553,7 +558,43 @@ class ChatSession:
             interpretation['action']=action
         target=interpretation.get('next_goal_id')
         question=(result or {}).get('message','')
-        reason=(result or {}).get('_model_led_plan_rejected')
+        plan_rejection=(result or {}).get('_model_led_plan_rejected')
+        reason=None
+        candidates=self.fn.model_led_next_objectives(self.profile,self.depth,self.concerns,self.objective)
+        candidate_by_id={node['id']:node for node in candidates}
+        if plan_rejection:
+            codes=set(plan_rejection.split(','))
+            if 'invalid_question_wording' in codes and target in candidate_by_id:
+                question=candidate_by_id[target]['canonical_question']
+                self.routing_events.append({'event':'model_question_wording_fallback',
+                    'objective_id':target,'reason':'invalid_question_wording',
+                    'fallback_source':'registered_fn_question','interpretation_reused':True})
+                self._last_decision['question_wording_fallback']={'objective_id':target,
+                    'fallback_source':'registered_fn_question','interpretation_reused':True}
+                plan_rejection=','.join(code for code in plan_rejection.split(',') if code!='invalid_question_wording') or None
+            if plan_rejection:
+                reason='rejected_model_plan:'+plan_rejection
+        # If a validly interpreted answer is followed by an invalid target, the
+        # evidence remains committed. Select a bounded bridge from the currently
+        # eligible candidates rather than rerunning interpretation or asking a
+        # closed question again.
+        if reason:
+            eligible=[node for node in candidates if node['id']!=self.objective]
+            if eligible:
+                stage_ids=[stage['id'] for stage in unconsidered]
+                first_stage=next((sid for sid in stage_ids if any(
+                    self.fn.stage_for(self.profile,self.depth,n['id'])['id']==sid for n in eligible)),None)
+                pool=[n for n in eligible if self.fn.stage_for(self.profile,self.depth,n['id'])['id']==first_stage] if first_stage else eligible
+                pool.sort(key=lambda n:(not self.fn._priority_relevant(n,self.concerns),
+                    self.fn.nodes(self.profile,self.depth).index(n)))
+                replacement=pool[0]
+                self.routing_events.append({'event':'model_next_goal_fallback',
+                    'rejected_goal':target,'fallback_goal':replacement['id'],
+                    'reason':reason,'fallback_source':'eligible_fn_objective'})
+                self._last_decision['next_goal_fallback']={'rejected_goal':target,
+                    'fallback_goal':replacement['id'],'reason':reason,
+                    'fallback_source':'eligible_fn_objective'}
+                action='advance';target=replacement['id'];question=replacement['canonical_question'];reason=None
         topic_bridge=self._required_topic_sequence_goal(action, target, reason)
         if topic_bridge:
             target=topic_bridge['id']
@@ -575,8 +616,7 @@ class ChatSession:
             first_stage=unconsidered[0]
             target=next((q['id'] for q in first_stage['questions']
                          if self.fn.applicable(q,self.concerns)
-                         and self.fn.coverage.get(q['id'],{}).get('status') not in
-                         {'explored','unknown','declined','not_applicable','provided','unresolved'}),None)
+                         and q['id'] in candidate_by_id),None)
             if target is None:
                 target=next((q['id'] for q in first_stage['questions']
                              if self.fn.applicable(q,self.concerns)),None)
@@ -587,6 +627,14 @@ class ChatSession:
             reason=reason or 'unsupported_or_missing_action'
         elif node is None:
             reason=reason or 'unknown_goal'
+        elif action=='advance' and target not in candidate_by_id:
+            reason=reason or 'goal_not_eligible'
+        elif action in {'follow_up','clarify'} and (
+                target!=self.objective or self.fn.followups.get(target,0)>=1 or
+                (self.fn.coverage.get(target,{}).get('status') in
+                 {'explored','unknown','declined','not_applicable','provided','unresolved'}
+                 and interpretation.get('answer_kind') not in {'partial','uncertain'})):
+            reason=reason or 'follow_up_not_materially_unresolved'
         elif not self.fn.applicable(node,self.concerns):
             reason=reason or 'goal_not_applicable'
         elif (self.profile=='citizen' and self.fn.coverage.get('drone_explanation',{}).get('status')=='provided'
@@ -627,11 +675,13 @@ class ChatSession:
                 return
             self._ask_model_led(node,question,interpretation.get('question_purpose',''))
             return
-        # One controller-owned FN bridge is safer than restoring the old full
-        # first-uncovered scheduler after a rejected model proposal.
-        fallback=next((self.fn.current(self.profile,self.depth,g) for g in gaps
-                       if self.fn.current(self.profile,self.depth,g)
-                       and self.fn.stage_for(self.profile,self.depth,g)['id']==unconsidered[0]['id']),None) if unconsidered else None
+        # A rejection after valid answer interpretation never invalidates its
+        # coverage. Fall back only to an eligible, unanswered registered goal.
+        fallback=next((node for stage in unconsidered for node in candidates
+                       if self.fn.stage_for(self.profile,self.depth,node['id'])['id']==stage['id']),None)
+        if fallback is None and candidates:
+            fallback=sorted(candidates,key=lambda n:(not self.fn._priority_relevant(n,self.concerns),
+                self.fn.nodes(self.profile,self.depth).index(n)))[0]
         self._last_decision['fallback_used']=True
         self._last_decision['model_led_transition']={'accepted':False,'action':action,
             'proposed_goal':target,'rejection_reason':reason,'remaining_goals':gaps,
@@ -640,7 +690,7 @@ class ChatSession:
             'proposed_goal':target,'fallback_goal':fallback['id'] if fallback else None})
         if fallback:
             self.fn.next_action='bounded_methodology_bridge'
-            self._ask_fn(fallback,act='authored_fallback')
+            self._ask_model_led(fallback,fallback['canonical_question'],'bounded eligible-goal fallback')
             return
         self.fn.next_action='model_led_conclude_after_coverage'
         self.stop_reason='fn_goals_explored_with_uncertainty' if self.fn.unresolved_gaps else 'fn_goals_explored'
@@ -686,6 +736,12 @@ class ChatSession:
         if pending:return None
         has_concern=any(row.get('topic_type','concern')=='concern' and row.get('evidence_ids')
             and row.get('kind')!='suggested_topic' for row in self.concerns)
+        distinct_concerns={row['topic'].casefold() for row in self.concerns
+            if row.get('topic_type')=='concern' and row.get('evidence_ids') and row.get('kind')!='suggested_topic'}
+        priority_goal=self.fn.current(self.profile,self.depth,'priorities')
+        if (len(distinct_concerns)>1 and priority_goal and self.fn.applicable(priority_goal,self.concerns)
+                and self.fn.coverage.get('priorities',{}).get('status') not in considered and target!='priorities'):
+            return priority_goal
         menu_id=self._topic_menu_goal()
         menu=self.fn.current(self.profile,self.depth,menu_id) if menu_id else None
         if (not has_concern and menu and self.fn.applicable(menu,self.concerns)
@@ -809,6 +865,7 @@ class ChatSession:
             category=aliases.get(requested,requested)
             if category not in categories:categories.append(category)
         explanations=[]
+        linked_question=next((m for m in self.messages if row and m.get('id')==row.get('in_reply_to')),None)
         for category in categories:
             background=GENERAL_BACKGROUND.get(category)
             if retrieved and len(categories)==1:
@@ -819,16 +876,42 @@ class ChatSession:
                     'or navigated, so I will not guess.')
             if not retrieved and category=='clarify_current_question':
                 node=self.fn.current(self.profile,self.depth,current_goal)
-                current_question=(node or {}).get('canonical_question','')
-                if re.search(r'\b(?:decision|decid|complaint|responsib|who is involved)\b',current_question,re.I):
-                    background=('I mean who would be involved in deciding whether a service should operate, '
-                        'who could raise concerns, and whether affected people could express their views. '
-                        'I do not have verified information about how this works in your city. If you do not '
-                        'know the current process, you can say so or describe how you think it should work.')
-                elif re.search(r'\b(?:how.*work|how.*operate)\b',text,re.I):
+                current_question=(linked_question or {}).get('text') or (node or {}).get('canonical_question','')
+                city=self.context.get('city') or 'your area'
+                if re.search(r'\b(?:why are you asking|why do you ask)\b',quote or text,re.I):
+                    background=('I ask to understand what people know, have experienced and would want considered. '
+                        'There are no right answers, and the questions do not assume that a drone service operates in '+city+'.')
+                elif current_goal in {'decisions','decisions_should','meaningful'}:
+                    background=('I mean who might be involved in deciding whether a healthcare drone service is introduced, '
+                        'and how people affected could share their views. I do not have verified information about the '
+                        'actual process in '+city+'. It is fine to say you do not know.')
+                elif current_goal in {'conditions','requirements_open'}:
+                    background=('I am asking what, if anything, you would want changed, added or required before a service '
+                        'became regular. You can say you would require nothing or that you are unsure.')
+                elif current_goal=='evaluation_evidence':
+                    background=('I mean what information or experience would help you judge whether a proposed service is '
+                        'useful and compare its effects with alternatives. It is fine to say you do not know yet.')
+                elif current_goal=='opportunity':
+                    background=('I mean whether you have ever had a real chance or invitation to share your views about '
+                        'this kind of decision. A hypothetical future opportunity does not count as past participation.')
+                elif current_goal=='participation':
+                    background=('I am asking what you actually did on that occasion. If nothing happened or you would '
+                        'rather not describe it, you can say so.')
+                elif current_goal in {'problem_action','accountability','escalation'}:
+                    background=('I mean what you would expect to do if a service were operating and you noticed a problem. '
+                        'I do not have verified local complaint or escalation details for '+city+'.')
+                elif current_goal=='ongoing_role':
+                    background=('I am asking whether residents should continue to have a role if a service becomes regular, '
+                        'and what that role might look like. This is about your view, not a claim that a service exists.')
+                elif re.search(r'\b(?:how.*work|how.*operate)\b',current_question,re.I):
                     background=('The approved description establishes that a drone is an aircraft that can fly '
                         'without a pilot sitting inside it. I do not have verified technical details here about '
                         'how a particular model is controlled or powered.')
+                else:
+                    stage=self.fn.stage_for(self.profile,self.depth,current_goal)
+                    purpose=(stage or {}).get('purpose') or 'the topic in this question'
+                    background=('I am asking about '+purpose[:1].lower()+purpose[1:]+'. '
+                        'You can answer from your own experience or expectations, or say that you do not know.')
             if not background:
                 background=('I do not have verified information to answer that specific question. I can keep '
                             'the point open and continue using what you know or would expect.')
@@ -857,7 +940,9 @@ class ChatSession:
             self.exposures.append({'id':exposure_id,'kind':exposure_kind,'categories':[category],
                 'text':background,'source':source_meta,'source_id':retrieved.get('id') if retrieved else None,
                 'request_evidence_id':row.get('id') if row else None,
-                'request_objective':current_goal,'prior_knowledge':False,
+                'request_objective':current_goal,'clarifies_question_id':(linked_question or {}).get('id') if category=='clarify_current_question' else None,
+                'clarifies_question':(linked_question or {}).get('text') if category=='clarify_current_question' else None,
+                'prior_knowledge':False,
                 'newly_supplied_information':True,'actual_activity':False,'revision':self.revision})
             if row is not None:row.setdefault('information_exposure_ids',[]).append(exposure_id)
         answer_text=' '.join(text for _,text in explanations)
@@ -992,6 +1077,7 @@ class ChatSession:
             return
         stage=self.fn.stage_for(self.profile,self.depth,self.objective)
         spontaneous=self.objective in {'open_priorities','open_more','different_impacts','requirements_open'}
+        self._recover_explicit_topics(row,interpretation)
         from .adaptive_interview import explicit_priority_commitment
         explicit_earlier=(explicit_priority_commitment(row['text']) and
                           any(e['goal']=='priorities' and e['quote'] in row['text']
@@ -1012,7 +1098,12 @@ class ChatSession:
         for item in interpreted_topics:
             topic=item.get('matches_topic') or item['topic'].strip()
             topic_type=item.get('topic_type','other')
-            old=next((c for c in self.concerns if c['topic'].casefold()==topic.casefold()),None)
+            if topic_type=='other':
+                topic_type=self._infer_topic_type(topic,item.get('quote',''),row['text'],self.objective)
+            topic_identity=self._topic_identity(topic,item.get('quote',''))
+            old=next((c for c in self.concerns if
+                c['topic'].casefold()==topic.casefold() or
+                (topic_identity and self._topic_identity(c['topic'])==topic_identity)),None)
             if old is None:
                 old={'topic':topic,'kind':'emerging_topic','evidence_ids':[],
                      'spontaneously_raised':False,'suggested_by_interviewer':False,
@@ -1021,6 +1112,7 @@ class ChatSession:
                      'topic_type':topic_type}
                 self.concerns.append(old)
             old['evidence_ids']=list(dict.fromkeys(old['evidence_ids']+[row['id']]))
+            if old.get('topic_type') in {None,'other'} and topic_type!='other':old['topic_type']=topic_type
             old['spontaneously_raised'] |= spontaneous
             old['suggested_by_interviewer'] |= self.objective=='suggested_topics'
             if selecting and update=='none' and len([c for c in self.concerns if c['selected_priority']])<3:
@@ -1072,6 +1164,73 @@ class ChatSession:
             self.priority_history.append({'action':update,'evidence_id':row['id'],
                 'quote':interpretation['priority_quote'],'previous_topics':previous,
                 'current_topics':[p['topic'] for p in selected],'revision':self.revision})
+
+    @staticmethod
+    def _topic_identity(topic, quote=''):
+        """Collapse grounded wording variants for the same issue, not distinct issues."""
+        label=(topic or '').casefold()
+        if re.search(r'\bnoise\b',label):return 'noise'
+        if re.search(r'\b(?:accountab\w*|responsib\w*)\b',label):return 'accountability'
+        text=(quote or '').casefold()
+        if re.search(r'\bnoise\b',text) and not re.search(r'\b(?:accountab\w*|responsib\w*)\b',text):return 'noise'
+        if re.search(r'\b(?:accountab\w*|responsib\w*)\b',text) and not re.search(r'\bnoise\b',text):return 'accountability'
+        return None
+
+    @staticmethod
+    def _infer_topic_type(topic, quote, answer, objective):
+        """Narrow semantic recovery for explicitly expressed topic types."""
+        text=(quote or answer).casefold()
+        if re.search(r'\b(?:concerned|worr(?:y|ied)|fear|afraid|risk|problem|oppose|against|bothered)\b',text):
+            return 'concern'
+        if objective in {'conditions','conditions_why','requirements_open','decisions_should'}:
+            return 'proposal'
+        if re.search(r'\b(?:benefit|helpful|useful|improv\w*|faster|better access)\b',text):
+            return 'benefit'
+        if '?' in text and re.search(r'\b(?:who|what|how|whether|which)\b',text):
+            return 'question'
+        return 'other'
+
+    def _recover_explicit_topics(self, row, interpretation):
+        """Supplement omitted model topics only from explicit, exact source spans.
+
+        Concern cues recover concerns; imperative conditions are separately
+        recorded as proposals. This is not a general keyword-to-concern map.
+        """
+        goal=self.objective;text=row['text'];items=interpretation.setdefault('topics',[])
+        def add(label,quote,kind):
+            label=' '.join(label.split()).strip(' ,.;:')
+            quote=quote.strip()
+            if not label or not quote or quote not in text:return
+            identity=self._topic_identity(label,quote)
+            if any((item.get('matches_topic') or item.get('topic','')).casefold()==label.casefold()
+                   or item.get('quote')==quote
+                   or (identity and self._topic_identity(item.get('matches_topic') or item.get('topic',''),item.get('quote',''))==identity)
+                   for item in items):return
+            items.append({'topic':label[:70],'quote':quote[:1800],
+                'matches_topic':None,'topic_type':kind})
+        if goal in {'open_priorities','open_more','different_impacts','requirements_open'}:
+            for match in re.finditer(r'\b(?:concerned about|worried about|concern about|worry about|fear of)\s+([^.!?;]+)',text,re.I):
+                tail=match.group(1)
+                segments=re.split(r'\s+and\s+(?=(?:who\b|whether\b|how\b|the\s+responsib|accountab))',tail,flags=re.I)
+                cursor=match.start(1)
+                for segment in segments:
+                    start=text.casefold().find(segment.casefold(),cursor)
+                    if start<0:continue
+                    end=start+len(segment);phrase=segment.strip(' ,')
+                    quote=text[match.start():end]
+                    label=('accountability' if re.search(r'accountab|responsib',phrase,re.I)
+                           else ' '.join(re.findall(r"[\w'-]+",phrase)[:5]))
+                    add(label,quote,'concern');cursor=end
+        if goal in {'conditions','requirements_open','decisions_should'}:
+            clauses=re.split(r',\s*|\s+and\s+(?=(?:show|compare|publish|explain|provide|require|ensure|establish|demonstrate)\b)',text,flags=re.I)
+            for clause in clauses:
+                match=re.match(r'\s*(show|compare|publish|explain|provide|require|ensure|establish|demonstrate)\s+(.+?)\s*$',clause,re.I)
+                if not match:continue
+                verb,obj=match.groups();obj=obj.strip(' .;')
+                if not obj:continue
+                label=('road options' if verb.casefold()=='compare' and re.search(r'road|transport|delivery',obj,re.I)
+                       else ' '.join(re.findall(r"[\w'-]+",obj)[:5]))
+                add(label,clause,'proposal')
 
     def _topic_disposition(self, row, interpretation):
         if self.profile!='citizen' or self.objective not in {'open_priorities','open_more','different_impacts','suggested_topics','priorities'}:return False
@@ -1256,6 +1415,7 @@ class ChatSession:
                     self._last_decision['next_goal_id']=interpretation.get('next_goal_id')
                     self._last_decision['question_purpose']=interpretation.get('question_purpose','')
                     self._last_decision['validated_action']=interpretation['action']
+                    self._last_decision['model_led_plan_rejected']=result.get('_model_led_plan_rejected')
                     self._last_decision['rejected_optional_annotations']=result.get('_annotation_warnings',[])
                     self._last_decision['fn_coverage']=[{k:v for k,v in e.items() if k!='quote'} for e in interpretation['coverage']]
                     information_request=interpretation.get('information_request')
@@ -2161,7 +2321,14 @@ class ChatSession:
                 'priority_history':deepcopy(self.priority_history),
                 'objectives': self._all_objectives(), 'information_exposures': deepcopy(self.exposures),
                 'response_preferences': deepcopy(self.preferences), 'initial_results': deepcopy(self.initial_results),
-                'indicator_projection': {'participant_reviewed': False, 'results': deepcopy(self.indicator_results),
+                'concern_projection':deepcopy(self.concern_projection),
+                'individual_indicator_assessments': {'status':'not_run' if not self.indicator_results else 'completed_or_abstained',
+                    'result_type':'optional profile-specific indicator statement assessment',
+                    'participant_reviewed':False,'results':deepcopy(self.indicator_results)},
+                'indicator_projection': {'participant_reviewed': False,
+                    'result_type':'legacy alias for individual_indicator_assessments; not concern candidate mapping',
+                    'candidate_mapping_field':'concern_projection',
+                    'results': deepcopy(self.indicator_results),
                     'coverage': [{'indicator_id': i['id'], 'status': next((r['status'] for r in self.indicator_results if r['indicator_id']==i['id']), 'explored_unmatched' if any(i['id'] in a['indicator_ids'] and a['evidence_id'] in {m['id'] for m in self.active_evidence()} for a in self.annotations) else 'not_explored'),
                         'evidence_ids': [a['evidence_id'] for a in self.annotations if i['id'] in a['indicator_ids'] and a['evidence_id'] in {m['id'] for m in self.active_evidence()}]} for i in self.bank['indicators']]},
                 'concern_ledger': deepcopy(self.concerns), 'reviewer_feedback':deepcopy(self.reviewer_feedback),

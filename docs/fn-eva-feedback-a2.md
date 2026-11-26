@@ -105,6 +105,79 @@ remain screened.
 The A2 model process remains running. Firefox previously exited before opening
 the application, so no genuine Vue-browser interview was performed.
 
+## Final conversational-stabilisation pass — 26 November 2026
+
+This pass continues from the saved S8 diagnosis above; it does not replace or
+rewrite the earlier artifacts.
+
+### Targeted implementation changes
+
+- `chat_client.py` now treats a next-goal or question-wording defect as a
+  planning rejection after validating the answer interpretation. Valid
+  evidence, topics, uncertainty and information-request annotations therefore
+  survive; the controller selects an eligible FN bridge or uses registered
+  wording without repeating interpretation.
+- `fn_interview.py` supplies the model with only applicable, uncovered,
+  unasked next objectives, while retaining the current goal as a separately
+  bounded clarification option. The model can still select across FN stages.
+- `chat_session.py` records eligible choices and rejected proposals in
+  developer traces, falls back to an eligible registered goal/question, and
+  supplements omitted concern annotations only from exact participant spans.
+  Grounded noise and accountability label variants are reconciled without
+  adding internal mapping IDs to participant prose. Multiple evidence-backed
+  concerns can trigger a natural priority invitation; only respondent choice
+  changes selected priorities.
+- `adaptive_interview.py` distinguishes direct questions from condition lists
+  such as “publish evidence and explain accountability”; these conditions no
+  longer cause unsolicited background. Explicit direct requests remain
+  answerable, with question-specific clarifications recorded as separate
+  information exposures.
+- `chat_score.py` collapses identical normalized quotations across message IDs
+  to one supporting observation. It does not remove the original transcript
+  messages or count them as independent evidence.
+
+The registered FN sources, official scales and 15-indicator bank were not
+changed. Stage consideration remains distinct from demonstrated readiness.
+
+### Verification
+
+- Focused and relevant Python/API/privacy suite, with the isolated local
+  `TLDEXTRACT_CACHE`: **465 passed**, one upstream spaCy deprecation warning
+  (final run: 159.09 seconds).
+- Vue chat component tests: **19 passed**.
+- Vue production build: **passed**.
+- The first broad privacy/API run omitted the required isolated cache and failed
+  closed with `privacy_unavailable`; rerunning with the configured cache passed.
+- A headless Firefox startup probe against `about:blank` passed after the
+  earlier browser-process startup issue. A real-browser application interview
+  was not completed: no app/API interview flow was exercised, so this is not
+  browser acceptance.
+
+### Requested live A2 evaluations
+
+The A2 model ownership record inspected in
+`/home/elvouvali/IAM_CC/iam-sra-model-led-v100/.runtime/vllm.pid.json` identifies
+the project-owned `liono-a2` service at port 18023: Qwen3-8B-AWQ snapshot
+`4da05a8edb55c6046cce958586c33b61da07bb79`, AWQ-Marlin, `--enable-reasoning`,
+`deepseek_r1`, `--max-model-len 8192`, and `IAM_MODEL_THINKING=1`. The service
+was not restarted. `model-host.py check` refused a second start because the A2
+is occupied, as intended.
+
+The S8 and Coimbra live commands were attempted from this isolated execution
+environment. The Python harness could not connect to `127.0.0.1:18023`
+(`Operation not permitted` in the restricted run and `Connection refused` in
+the escalated run). No new transcript, score or live inference is claimed from
+these attempts. The existing S8 and Coimbra results above remain diagnostic
+baseline evidence, not validation of this refinement.
+
+New bounded offline regressions cover the S8 `evaluation_evidence` failure,
+eligible-goal exclusion, multi-concern retention, priority invitation,
+condition-vs-request classification and duplicate score citations. The current
+code has therefore passed deterministic tests but still requires the two live
+A2 runs and a real-browser flow from an execution environment that can reach
+the owning A2 service. Do not treat this pass as completed live generalisation
+or as independent FN validation.
+
 ## Reproduce the offline checks
 
 ```bash

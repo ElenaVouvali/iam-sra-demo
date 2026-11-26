@@ -31,7 +31,10 @@ def test_specific_medical_sample_question_is_not_misread_as_a_request_for_drone_
 
 def test_information_request_detection_stays_with_the_clause_that_asks():
     x='Show a clear medical need, compare road options, publish impact evidence and explain who is responsible.'
-    assert information_need_kinds(x)==['accountability']
+    # This is a list of requested safeguards for the proposed service, not a
+    # question to the interviewer. A direct request is answered separately.
+    assert information_need_kinds(x)==[]
+    assert information_need_kinds('Could you explain who would handle complaints?')==['local_process']
     assert information_need_kinds('I oppose the flights and worry about noise and responsibility.')==[]
     assert information_need_kinds('How do drones work?')==['drone_mechanics']
 

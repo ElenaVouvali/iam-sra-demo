@@ -79,8 +79,16 @@ def information_need_kinds(answer):
         for part in parts:
             clauses.extend(re.split(r'\s+(?:and|but)\s+(?=(?:could you|can you|how\b|what\b|who\b|explain\b|tell me\b|give me\b))',part))
     found=[]
+    proposal_list=bool(re.match(r'\s*(?:show|compare|publish|provide|require|ensure|establish|demonstrate)\b',text))
     for clause in clauses:
         if not re.search(cue_pattern,clause):continue
+        # In a list of conditions for a decision-maker, "explain who is
+        # responsible" is a requested safeguard, not a question to the
+        # interviewer. A separately addressed request ("could you explain")
+        # remains eligible for an answer.
+        direct_address=bool(re.search(r'\b(?:could|can) you\b|\bplease explain\b|\bi (?:want|would like) to know\b|\btell me\b',clause))
+        if proposal_list and re.match(r'\s*(?:and\s+)?explain\s+(?:who|how|what)\b',clause) and not direct_address:
+            continue
         healthcare_request=bool(re.search(r'\b(?:healthcare|medical|medicin\w*|blood|laboratory samples?|hospital|clinic|lab)\b',clause))
         if re.search(r'\b(?:complaint|complaints|escalat|who handles|who receives|responsib|decision process|'
                      r'how (?:are|is) decisions? (?:made|taken)|who decides)\b',clause):
@@ -185,6 +193,7 @@ def explicit_priority_commitment(answer):
     return bool(re.search(
         r'\b(?:my|our)\s+(?:(?:two|three|main|top|only|biggest|first)\s+){0,3}'
         r'(?:priorities|concerns|issues)\s+(?:are|would be|is)\b|'
+        r'(?:^|[.!?]\s*)[^.!?]{1,100}\s+(?:are|is)\s+my\s+(?:main|top|two|three)\s+priorities\b|'
         r'\b(?:i (?:only )?want to focus on|what matters most to me is|'
         r'the (?:one|two|three) issues? i care most about)\b', answer, re.I))
 

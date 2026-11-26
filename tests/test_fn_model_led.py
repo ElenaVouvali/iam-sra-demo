@@ -118,7 +118,7 @@ def test_conclusion_proposal_cannot_bypass_fn_goals(monkeypatch):
     s._model_led_route(result)
     assert s.stage=='conversation'
     assert s.objective=='healthcare_awareness'
-    assert s.messages[-1]['act']=='authored_fallback'
+    assert s.messages[-1]['act']=='question'
     assert s._last_decision['model_led_transition']['rejection_reason']=='required_fn_stages_remain'
 
 
@@ -309,7 +309,7 @@ def test_model_led_cannot_repeat_prior_knowledge_probe_after_definition_was_supp
         'interpretation':{'action':'follow_up','next_goal_id':'drone_recognition',
             'question_purpose':'Ask the participant to define a drone again.'}})
     assert s._last_decision['model_led_transition']['accepted'] is False
-    assert s._last_decision['model_led_transition']['rejection_reason']=='prior_knowledge_probe_closed_after_explanation'
+    assert s._last_decision['model_led_transition']['rejection_reason']=='follow_up_not_materially_unresolved'
     assert s.objective!='drone_recognition'
 
 
@@ -346,11 +346,98 @@ def test_fn_keeps_open_discussion_before_suggested_topics(monkeypatch,profile,de
     s.context.update({'city':'Madrid','organisation_or_unit':'planning unit',
         'responsibilities':'advisory role','technical_object':'delivery subsystem'})
     _complete_pre_topic_stages(s)
-    s.objective='open_priorities'
+    # Model routing is called after an answer. Keep the current answer in an
+    # earlier, already-considered stage so open_priorities remains eligible.
+    s.objective=next(q['id'] for stage in s.fn.stages(profile,depth)
+        for q in stage['questions'] if q['id'] in s.fn.coverage)
     s._model_led_route({'message':'What issue should we discuss?',
         'interpretation':{'action':'advance','next_goal_id':later_goal,'question_purpose':'Move to later section.'}})
     assert s.objective=='open_priorities'
     assert s._last_decision['topic_sequence_bridge']['goal']=='open_priorities'
+
+
+def test_model_led_candidate_set_excludes_closed_and_inapplicable_goals(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short'
+    s.fn.record('area','m-area','explored')
+    s.fn.record('drone_recognition','m-recognition','explored','yes')
+    s.fn.asked.extend(['drone_recognition','healthcare_awareness'])
+    candidates={n['id'] for n in s.fn.model_led_next_objectives('citizen','short',s.concerns,'healthcare_awareness')}
+    assert 'drone_recognition' not in candidates
+    assert 'healthcare_awareness' not in candidates
+    assert 'drone_explanation' not in candidates
+    assert 'conditions' in candidates
+
+
+def test_model_led_candidate_set_is_bounded_and_preserves_stage_and_priority_choices(monkeypatch):
+    fn=FNInterview();stages=[{'id':f'stage-{i}'} for i in range(3)]
+    nodes=[{'id':f'g{stage}-{index}'} for stage in range(3) for index in range(8)]
+    stage_by_goal={node['id']:f"stage-{node['id'][1]}" for node in nodes}
+    monkeypatch.setattr(fn,'nodes',lambda profile,depth:nodes)
+    monkeypatch.setattr(fn,'stages',lambda profile,depth:stages)
+    monkeypatch.setattr(fn,'stage_for',lambda profile,depth,goal:{'id':stage_by_goal[goal]})
+    monkeypatch.setattr(fn,'applicable',lambda node,concerns:True)
+    monkeypatch.setattr(fn,'_priority_relevant',lambda node,concerns:node['id'].endswith('7'))
+    selected=fn.model_led_next_objectives('citizen','short',[{'selected_priority':True}])
+    assert len(selected)==16
+    assert {stage_by_goal[node['id']] for node in selected}=={'stage-0','stage-1','stage-2'}
+    assert all(f'g{stage}-7' in {node['id'] for node in selected} for stage in range(3))
+
+
+def test_invalid_next_question_preserves_valid_evaluation_evidence(monkeypatch):
+    """Question validation cannot erase the respondent's accepted evidence."""
+    from iam_sra.chat_client import ChatClient
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.context.update(city='Coimbra',scope_status='respondent_described')
+    s.objective='evaluation_evidence'
+    s.fn.record('area','m-area','explored')
+    s.fn.record('drone_recognition','m-recognition','explored','yes')
+    answer='I would want an independent comparison of noise measurements and delivery times.'
+    s._ask_fn(s.fn.current('citizen','short','evaluation_evidence'))
+    def controlled_request(self, http_client, stage, system, request, schema, validator, retry_hint=None):
+        raw=reply(request,kind='substantive',status='explored',action='advance',coverage=[{
+            'goal':'evaluation_evidence','evidence_id':request['current_answer_id'],'quote':answer,
+            'status':'explored','answer_kind':'substantive'}])
+        raw['message']='Thank you.'  # invalid next-question wording, valid interpretation
+        raw['interpretation']['next_goal_id']='evaluation_evidence'
+        return validator(raw)
+    monkeypatch.setattr(ChatClient,'_request',controlled_request)
+    s._fn_turn(answer,ChatClient())
+    assert s.fn.coverage['evaluation_evidence']['status']=='explored'
+    assert s.objective!='evaluation_evidence'
+    assert s._last_decision['next_goal_fallback']['fallback_source']=='eligible_fn_objective'
+
+
+def test_grounded_multi_concerns_survive_missing_model_classification(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.objective='open_priorities'
+    answer='I am concerned about noise near homes and who would be accountable if something went wrong.'
+    row={'id':'m-concerns','text':answer}
+    interpretation={'topics':[{'topic':'noise concerns','quote':answer,'topic_type':'other'}]}
+    s._recover_explicit_topics(row,interpretation)
+    # The explicit recovery adds the distinct accountability clause; label
+    # variants of noise remain one issue.
+    assert len(interpretation['topics'])==2
+    s._fn_topics(row,interpretation)
+    concerns=[c for c in s.concerns if c['topic_type']=='concern']
+    assert {s._topic_identity(c['topic']) for c in concerns}=={'noise','accountability'}
+    assert all('m-concerns' in c['evidence_ids'] for c in concerns)
+    assert not any(c['selected_priority'] for c in concerns)
+
+
+def test_multiple_concerns_route_to_natural_priority_choice(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.objective='open_priorities'
+    _complete_pre_topic_stages(s)
+    s.concerns=[{'topic':'noise','topic_type':'concern','evidence_ids':['m1'],'kind':'emerging_topic'},
+        {'topic':'accountability','topic_type':'concern','evidence_ids':['m1'],'kind':'emerging_topic'}]
+    s.fn.record('area','m0','explored')
+    for goal in ('drone_recognition','drone_description','drone_uses','healthcare_awareness','local_awareness'):
+        s.fn.record(goal,'m0','unknown','uncertain')
+    s.fn.record('open_priorities','m1','explored')
+    s.fn.record('open_more','m1','explored')
+    s.fn.record('different_impacts','m1','explored')
+    bridge=s._required_topic_sequence_goal('advance','evaluation_evidence',None)
+    assert bridge and bridge['id']=='priorities'
 
 
 @pytest.mark.parametrize(('profile','depth','later_goal'),[
