@@ -67,6 +67,18 @@ def test_liono_v100s_review_dry_run_uses_fp16_thinking_and_separate_model_port(m
     assert plan['full_model_led_validation'] is True
 
 
+def test_a2_review_dry_run_requires_model_led_live_validation(monkeypatch,capsys):
+    m=launcher()
+    monkeypatch.setattr(m,'free_ports',lambda _:pytest.fail('Opened socket'))
+    monkeypatch.setattr(m.subprocess,'run',lambda *a,**k:pytest.fail('Started model'))
+    monkeypatch.setattr(m,'cloudflared',lambda _:pytest.fail('Started tunnel'))
+    assert m.main(['--gpu-profile','liono-a2','--model-variant','awq','--thinking',
+        '--interview-strategy','model_led_fn','--dry-run'])==0
+    plan=json.loads(capsys.readouterr().out)
+    assert plan['profile']=='liono-a2' and plan['model_variant']=='awq'
+    assert plan['thinking_enabled'] is True and plan['full_model_led_validation'] is True
+
+
 def test_v100_generation_probe_requests_thinking_for_thinking_backend(monkeypatch):
     m=launcher();calls=[]
     class Response:
@@ -86,12 +98,14 @@ def test_v100_generation_probe_requests_thinking_for_thinking_backend(monkeypatc
     assert calls[0][1]['chat_template_kwargs']['enable_thinking'] is True
 
 
-def test_v100_model_led_prepublication_gate_requires_complete_scored_review(monkeypatch,tmp_path):
+@pytest.mark.parametrize(('profile','variant','port'),[
+    ('davinci-v100','fp16',18020),('liono-v100s','fp16',18022),('liono-a2','awq',18021)])
+def test_model_led_prepublication_gate_requires_complete_scored_review(monkeypatch,tmp_path,profile,variant,port):
     m=launcher();monkeypatch.setattr(m,'STATE',tmp_path)
     class Backend:
-        port=18020;thinking=False
-        def __init__(self):self.stopped=False
+        thinking=True
         marker=tmp_path/'owner.json'
+        def __init__(self):self.stopped=False;self.port=port
         def start(self,deadline):pass
         def _marker(self):return {'lease_id':'owned-fixture-lease'}
         def owns_running_model(self):return True
@@ -100,6 +114,7 @@ def test_v100_model_led_prepublication_gate_requires_complete_scored_review(monk
     class Process:
         def __init__(self,command,**kwargs):
             observed.update(kwargs['env'])
+            observed['command']=command
             output=Path(command[command.index('--output')+1]);output.mkdir(parents=True)
             case=command[command.index('--case')+1]
             (output/'metrics.json').write_text(json.dumps({'cases':[{'case':case,
@@ -110,18 +125,21 @@ def test_v100_model_led_prepublication_gate_requires_complete_scored_review(monk
         def poll(self):return 0
     monkeypatch.setattr(m.subprocess,'Popen',Process)
     monkeypatch.setattr(m,'close_children',lambda _:None)
-    args=SimpleNamespace(model_port=18020,thinking=False,interview_strategy='model_led_fn',
-        remote_dir='iam-sra-v100-review')
-    result=m.verify_v100_model_led_interview(backend,args,[])
+    args=SimpleNamespace(model_port=port,thinking=True,model_variant=variant,gpu_profile=profile,
+        interview_strategy='model_led_fn',remote_dir='iam-sra-v100-review')
+    result=m.verify_model_led_interviews(backend,args,[])
     assert len(result)==3 and all(path.parent==tmp_path for path in result) and backend.stopped
     assert [next(case for case in ('citizen_short','organisational','technical') if case in p.name)
         for p in result]==['citizen_short','organisational','technical']
-    assert observed['IAM_SRA_GPU_PROFILE']=='davinci-v100'
+    assert observed['IAM_SRA_GPU_PROFILE']==profile
     assert observed['IAM_CHAT_INTERVIEW_STRATEGY']=='model_led_fn'
+    assert observed['IAM_MODEL_VARIANT']==variant
     assert observed['IAM_SRA_VALIDATION_LEASE']=='owned-fixture-lease'
     assert observed['IAM_SRA_ON_DEMAND_GPU']=='0'
-    assert observed['IAM_SRA_GPU_PROFILE']=='davinci-v100'
-    assert observed['IAM_SRA_REMOTE_DIR']=='iam-sra-v100-review'
+    assert observed['command'][observed['command'].index('--model-variant')+1]==variant
+    assert '--respondent-no-think' in observed['command']
+    if profile=='davinci-v100':
+        assert observed['IAM_SRA_REMOTE_DIR']=='iam-sra-v100-review'
 
 
 def test_live_harness_accepts_only_the_launcher_owned_v100_validation_lease(monkeypatch,tmp_path):

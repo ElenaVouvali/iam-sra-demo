@@ -329,15 +329,16 @@ def verify_live_interviews(backend, args, children):
     return output
 
 
-def verify_v100_model_led_interview(backend,args,children):
-    """Run complete model-led interviews before opening a V100/V100S URL."""
+def verify_model_led_interviews(backend,args,children):
+    """Run complete model-led interviews on the selected profile before opening a URL."""
     gpu_profile=getattr(args,'gpu_profile','davinci-v100')
+    variant=getattr(args,'model_variant','awq' if gpu_profile=='liono-a2' else 'fp16')
     backend.start(time.monotonic()+610)
     marker=backend._marker() or {}
     if not backend.owns_running_model() or not marker.get('lease_id'):
-        raise ValueError('V100 model-led validation could not verify its model lease.')
+        raise ValueError(f'{gpu_profile} model-led validation could not verify its model lease.')
     env=os.environ.copy()
-    env.update(IAM_BASE_URL=f'http://127.0.0.1:{args.model_port}',IAM_MODEL_VARIANT='fp16',
+    env.update(IAM_BASE_URL=f'http://127.0.0.1:{args.model_port}',IAM_MODEL_VARIANT=variant,
         IAM_MODEL_THINKING='1' if args.thinking else '0',IAM_SRA_ON_DEMAND_GPU='0',
         IAM_SRA_VALIDATION_LEASE=marker['lease_id'],IAM_MODEL_TIMEOUT_SECONDS='900',
         IAM_SRA_JOB_TIMEOUT='1800',IAM_CHAT_PROCESSING_SECONDS='3600',
@@ -354,7 +355,7 @@ def verify_v100_model_led_interview(backend,args,children):
             output=STATE/(gpu_profile+'-model-led-'+case+'-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid4().hex[:8])
             outputs.append(output)
             command=[sys.executable,str(ROOT/'scripts/smoke-fn-interview.py'),'--allow-live',
-                '--respondent','agent','--persona-id',persona,'--model-variant','fp16',
+                '--respondent','agent','--persona-id',persona,'--model-variant',variant,
                 '--case',case,'--base-url',env['IAM_BASE_URL'],'--max-turns','120',
                 '--max-agent-calls','100','--case-timeout-seconds','1800','--save-traces','--output',str(output)]
             if args.thinking:command.append('--thinking')
@@ -427,7 +428,7 @@ def main(argv=None):
             'model_variant': args.model_variant, 'cpu_offload_gb': 0 if args.gpu_profile in {'davinci-v100','liono-v100s'} or args.model_variant == 'awq' else 8,
             'thinking_enabled':args.thinking,'live_scoring_required':True,'validation_only':args.validation_only,
             'interview_strategy':args.interview_strategy,
-            'full_model_led_validation':args.gpu_profile in {'davinci-v100','liono-v100s'} and args.interview_strategy=='model_led_fn',
+            'full_model_led_validation':args.interview_strategy=='model_led_fn',
             'approved_public_origin':args.public_origin,
             'release_previous_review_model': args.release_existing_a2,
             'stops_existing_services': args.release_existing_a2, 'changes_firewall': False}, indent=2))
@@ -484,7 +485,7 @@ def main(argv=None):
             verify_v100_model(backend)
             print('V100 generation probe passed.',flush=True)
             if args.interview_strategy=='model_led_fn':
-                verify_v100_model_led_interview(backend,args,children)
+                verify_model_led_interviews(backend,args,children)
             else:
                 print('Full-interview prepublication validation is available when --interview-strategy model_led_fn is selected.',flush=True)
         elif args.gpu_profile=='liono-v100s':
@@ -493,13 +494,16 @@ def main(argv=None):
             verify_v100_model(backend)
             print('Liono V100S generation probe passed.',flush=True)
             if args.interview_strategy=='model_led_fn':
-                verify_v100_model_led_interview(backend,args,children)
+                verify_model_led_interviews(backend,args,children)
             else:
                 raise ValueError('V100S review requires --interview-strategy model_led_fn for complete prepublication validation.')
         else:
             spec = prepare_review_model(args.model_variant)
             print('Review checkpoint: '+spec['model']+' / '+spec['revision'], flush=True)
-            verify_live_interviews(backend,args,children)
+            if args.interview_strategy=='model_led_fn':
+                verify_model_led_interviews(backend,args,children)
+            else:
+                verify_live_interviews(backend,args,children)
         if args.validation_only:return 0
         children.clear()  # The finished validation child cannot trip service health checks.
         if not args.public_origin:
