@@ -67,16 +67,23 @@ def test_liono_v100s_review_dry_run_uses_fp16_thinking_and_separate_model_port(m
     assert plan['full_model_led_validation'] is True
 
 
-def test_a2_review_dry_run_requires_model_led_live_validation(monkeypatch,capsys):
+def test_a2_review_dry_run_can_skip_only_the_full_interview_gate(monkeypatch,capsys):
     m=launcher()
     monkeypatch.setattr(m,'free_ports',lambda _:pytest.fail('Opened socket'))
     monkeypatch.setattr(m.subprocess,'run',lambda *a,**k:pytest.fail('Started model'))
     monkeypatch.setattr(m,'cloudflared',lambda _:pytest.fail('Started tunnel'))
     assert m.main(['--gpu-profile','liono-a2','--model-variant','awq','--thinking',
-        '--interview-strategy','model_led_fn','--dry-run'])==0
+        '--interview-strategy','model_led_fn','--skip-live-interview-validation','--dry-run'])==0
     plan=json.loads(capsys.readouterr().out)
     assert plan['profile']=='liono-a2' and plan['model_variant']=='awq'
-    assert plan['thinking_enabled'] is True and plan['full_model_led_validation'] is True
+    assert plan['thinking_enabled'] is True and plan['full_model_led_validation'] is False
+    assert plan['live_interview_validation_skipped'] is True
+
+
+def test_skip_live_interview_validation_is_limited_to_model_led_strategy():
+    m=launcher()
+    with pytest.raises(SystemExit):
+        m.main(['--gpu-profile','liono-a2','--skip-live-interview-validation','--dry-run'])
 
 
 def test_v100_generation_probe_requests_thinking_for_thinking_backend(monkeypatch):

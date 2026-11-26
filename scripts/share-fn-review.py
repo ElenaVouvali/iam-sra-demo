@@ -401,6 +401,8 @@ def main(argv=None):
         default=os.getenv('IAM_CHAT_INTERVIEW_STRATEGY','controller_fn'),
         help='Use the isolated model-led FN interviewer only when explicitly selected.')
     parser.add_argument('--validation-only',action='store_true',help='Run live model validation and exit without publishing.')
+    parser.add_argument('--skip-live-interview-validation',action='store_true',
+        help='Skip the synthetic full interviews/scoring gate; retain the single real generation probe and service/link checks.')
     parser.add_argument('--public-origin',type=public_origin,help='Existing approved HTTPS reverse proxy pointing at --ui-port; no Cloudflare Quick Tunnel is started.')
     parser.add_argument('--gpu-uuid', help='An allocated Liono A2, if multiple matching idle GPUs exist')
     parser.add_argument('--idle-seconds', type=int, default=60, help='Release the review model after this many idle seconds (10–3600)')
@@ -416,6 +418,8 @@ def main(argv=None):
     if not 1024<=args.model_port<=65535:parser.error('--model-port must be in 1024–65535.')
     if args.thinking and (args.gpu_profile,args.model_variant) not in {('liono-a2','awq'),('liono-v100s','fp16'),('davinci-v100','fp16')}:
         parser.error('--thinking requires Liono A2/AWQ or a validated FP16 profile.')
+    if args.skip_live_interview_validation and args.interview_strategy!='model_led_fn':
+        parser.error('--skip-live-interview-validation is only supported with --interview-strategy model_led_fn.')
     if not 10 <= args.idle_seconds <= 3600:
         parser.error('--idle-seconds must be in 10–3600')
     if args.dry_run:
@@ -428,7 +432,8 @@ def main(argv=None):
             'model_variant': args.model_variant, 'cpu_offload_gb': 0 if args.gpu_profile in {'davinci-v100','liono-v100s'} or args.model_variant == 'awq' else 8,
             'thinking_enabled':args.thinking,'live_scoring_required':True,'validation_only':args.validation_only,
             'interview_strategy':args.interview_strategy,
-            'full_model_led_validation':args.interview_strategy=='model_led_fn',
+            'full_model_led_validation':args.interview_strategy=='model_led_fn' and not args.skip_live_interview_validation,
+            'live_interview_validation_skipped':args.skip_live_interview_validation,
             'approved_public_origin':args.public_origin,
             'release_previous_review_model': args.release_existing_a2,
             'stops_existing_services': args.release_existing_a2, 'changes_firewall': False}, indent=2))
@@ -485,7 +490,10 @@ def main(argv=None):
             verify_v100_model(backend)
             print('V100 generation probe passed.',flush=True)
             if args.interview_strategy=='model_led_fn':
-                verify_model_led_interviews(backend,args,children)
+                if args.skip_live_interview_validation:
+                    print('Skipping complete model-led interviews by request; generation and service checks remain active.',flush=True)
+                else:
+                    verify_model_led_interviews(backend,args,children)
             else:
                 print('Full-interview prepublication validation is available when --interview-strategy model_led_fn is selected.',flush=True)
         elif args.gpu_profile=='liono-v100s':
@@ -494,14 +502,21 @@ def main(argv=None):
             verify_v100_model(backend)
             print('Liono V100S generation probe passed.',flush=True)
             if args.interview_strategy=='model_led_fn':
-                verify_model_led_interviews(backend,args,children)
+                if args.skip_live_interview_validation:
+                    print('Skipping complete model-led interviews by request; generation and service checks remain active.',flush=True)
+                else:
+                    verify_model_led_interviews(backend,args,children)
             else:
                 raise ValueError('V100S review requires --interview-strategy model_led_fn for complete prepublication validation.')
         else:
             spec = prepare_review_model(args.model_variant)
             print('Review checkpoint: '+spec['model']+' / '+spec['revision'], flush=True)
             if args.interview_strategy=='model_led_fn':
-                verify_model_led_interviews(backend,args,children)
+                if args.skip_live_interview_validation:
+                    verify_v100_model(backend)
+                    print('A2 generation probe passed; complete model-led interviews skipped by request.',flush=True)
+                else:
+                    verify_model_led_interviews(backend,args,children)
             else:
                 verify_live_interviews(backend,args,children)
         if args.validation_only:return 0
