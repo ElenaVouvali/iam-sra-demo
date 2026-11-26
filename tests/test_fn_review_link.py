@@ -54,6 +54,19 @@ def test_davinci_v100_dry_run_can_match_a30_thinking_context(monkeypatch,capsys)
     assert plan['thinking_enabled'] is True and plan['cpu_offload_gb']==0
 
 
+def test_liono_v100s_review_dry_run_uses_fp16_thinking_and_separate_model_port(monkeypatch,capsys):
+    m=launcher()
+    monkeypatch.setattr(m,'free_ports',lambda _:pytest.fail('Opened socket'))
+    monkeypatch.setattr(m.subprocess,'run',lambda *a,**k:pytest.fail('Started model'))
+    monkeypatch.setattr(m,'cloudflared',lambda _:pytest.fail('Started tunnel'))
+    assert m.main(['--gpu-profile','liono-v100s','--model-port','18022','--thinking',
+        '--interview-strategy','model_led_fn','--dry-run'])==0
+    plan=json.loads(capsys.readouterr().out)
+    assert plan['profile']=='liono-v100s' and plan['model_variant']=='fp16'
+    assert plan['thinking_enabled'] is True and plan['cpu_offload_gb']==0
+    assert plan['full_model_led_validation'] is True
+
+
 def test_v100_generation_probe_requests_thinking_for_thinking_backend(monkeypatch):
     m=launcher();calls=[]
     class Response:
@@ -78,6 +91,7 @@ def test_v100_model_led_prepublication_gate_requires_complete_scored_review(monk
     class Backend:
         port=18020;thinking=False
         def __init__(self):self.stopped=False
+        marker=tmp_path/'owner.json'
         def start(self,deadline):pass
         def _marker(self):return {'lease_id':'owned-fixture-lease'}
         def owns_running_model(self):return True
@@ -87,7 +101,8 @@ def test_v100_model_led_prepublication_gate_requires_complete_scored_review(monk
         def __init__(self,command,**kwargs):
             observed.update(kwargs['env'])
             output=Path(command[command.index('--output')+1]);output.mkdir(parents=True)
-            (output/'metrics.json').write_text(json.dumps({'cases':[{'case':'citizen_short',
+            case=command[command.index('--case')+1]
+            (output/'metrics.json').write_text(json.dumps({'cases':[{'case':case,
                 'protocol_passed':True,'run_incomplete':False,'scoring_generation_calls':1,
                 'score_status':'suggested','level':5,'score_citation_count':2,
                 'score_boundary_present':True}]}))
@@ -98,7 +113,10 @@ def test_v100_model_led_prepublication_gate_requires_complete_scored_review(monk
     args=SimpleNamespace(model_port=18020,thinking=False,interview_strategy='model_led_fn',
         remote_dir='iam-sra-v100-review')
     result=m.verify_v100_model_led_interview(backend,args,[])
-    assert result.parent==tmp_path and backend.stopped
+    assert len(result)==3 and all(path.parent==tmp_path for path in result) and backend.stopped
+    assert [next(case for case in ('citizen_short','organisational','technical') if case in p.name)
+        for p in result]==['citizen_short','organisational','technical']
+    assert observed['IAM_SRA_GPU_PROFILE']=='davinci-v100'
     assert observed['IAM_CHAT_INTERVIEW_STRATEGY']=='model_led_fn'
     assert observed['IAM_SRA_VALIDATION_LEASE']=='owned-fixture-lease'
     assert observed['IAM_SRA_ON_DEMAND_GPU']=='0'

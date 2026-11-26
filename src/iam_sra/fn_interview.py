@@ -129,6 +129,13 @@ class FNInterview:
             self.unresolved_gaps.remove(goal)
 
     def applicable(self, node, concerns):
+        # In the model-led flow, FN's optional profile-specific topic menu is
+        # still offered after an open discussion with no participant concern.
+        # "Nothing else comes to mind" closes further spontaneous probing; it
+        # does not mean the respondent has seen FN's suggested topics yet.
+        if (self.strategy == 'model_led_fn' and node.get('id') == 'suggested_topics'
+                and self.facts.get('topic_scope_closed')):
+            return True
         # A citizen may recognise the term without being able to describe it.
         # Offer the existing FN explanation after the prior-knowledge probes.
         if (node.get('id') == 'drone_explanation'

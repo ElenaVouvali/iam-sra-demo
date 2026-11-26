@@ -11,6 +11,7 @@ import re
 import socket
 import subprocess
 import sys
+import time
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"src"))
 try:
@@ -76,18 +77,63 @@ def check_offload_memory(row):
         if available<offload+4:
             raise RuntimeError(f"CPU offloading needs at least {offload+4:g} GiB available host RAM")
         print(f"CPU weight offload: {offload:g} GiB; generation will be slower. Available host RAM: {available:.1f} GiB")
+
+def complete_cached_snapshot():
+    """Confirm the pinned FP16/AWQ files are already present and readable."""
+    try:
+        model=load_model(ROOT)
+        snapshot=snapshot_path(ROOT,model)
+        if model_variant()=='awq':
+            validate_awq_snapshot(snapshot)
+            return True
+        config=json.loads((snapshot/'config.json').read_text())
+        index=json.loads((snapshot/'model.safetensors.index.json').read_text())
+        shards=set(index.get('weight_map',{}).values())
+        if config.get('model_type')!='qwen3' or not shards:
+            return False
+        required={'config.json','model.safetensors.index.json','tokenizer.json','tokenizer_config.json',*shards}
+        return all((snapshot/name).is_file() and (snapshot/name).stat().st_size>0
+                   for name in required if Path(name).name==name) and all(Path(name).name==name for name in required)
+    except (OSError,ValueError,KeyError,TypeError):
+        return False
+
 def port_free(port):
     with socket.socket() as s:
         # Ignore closed connections in TIME_WAIT, while rejecting active listeners.
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(("127.0.0.1",port))
+
+def model_tmpdir(base=Path('/tmp')):
+    """Return a private, short path for vLLM Unix-domain IPC sockets.
+
+    vLLM appends UUID/socket names to TMPDIR and AF_UNIX paths have a small
+    platform limit. The checkout-local .runtime path can exceed it in worktrees.
+    """
+    profile=re.sub(r'[^a-z0-9-]','',PROFILE.lower()) or 'model'
+    path=Path(base)/f'iam-{os.getuid()}-{profile}-{VPORT}'
+    if len(str(path))+52>=104:
+        path=Path(base)/f'i{os.getuid()}-{VPORT}'
+    try:
+        path.mkdir(mode=0o700,parents=False,exist_ok=True)
+        info=path.lstat()
+        if not path.is_dir() or path.is_symlink() or info.st_uid!=os.getuid():
+            raise RuntimeError('Model temporary directory is not owned by this user.')
+        path.chmod(0o700)
+    except OSError as exc:
+        raise RuntimeError('Could not create a private model temporary directory.') from exc
+    if len(str(path))+52>=104:
+        raise RuntimeError('Model temporary path is too long for local IPC sockets.')
+    return path
+
 def preflight(check_ui_port=True):
     print("Python",sys.version,"OS",Path('/etc/os-release').read_text())
     row=gpu()
     check_offload_memory(row)
     stat=os.statvfs(ROOT)
     print("Home available GiB",stat.f_bavail*stat.f_frsize/1024**3)
-    required=8 if model_variant()=="awq" else 30
+    cached=complete_cached_snapshot()
+    required=8 if model_variant()=="awq" else (4 if cached else 30)
+    if cached:print("Pinned model snapshot verified; applying cached-model runtime disk headroom.")
     if stat.f_bavail*stat.f_frsize<required*1024**3: raise RuntimeError(f"Require {required} GiB /home headroom")
     port_free(VPORT)
     if check_ui_port: port_free(UPORT)
@@ -105,8 +151,8 @@ def vllm_command(row):
     if not list(snapshot.glob("*.safetensors")): raise RuntimeError("Pinned model snapshot missing; run download-model.py")
     utilization=float(os.getenv("IAM_GPU_MEMORY_UTILIZATION","0.80"))
     if not 0.1<=utilization<=0.85: raise RuntimeError("Memory utilization must be 0.1–0.85")
-    if thinking_enabled() and (gpu_class(row),model_variant()) not in {('a2','awq'),('a30','fp16'),('v100','fp16')}:
-        raise RuntimeError('Experimental thinking requires A2/AWQ or Davinci FP16; validate it live before sharing.')
+    if thinking_enabled() and (gpu_class(row),model_variant()) not in {('a2','awq'),('a30','fp16'),('v100','fp16'),('v100s','fp16')}:
+        raise RuntimeError('Experimental thinking requires A2/AWQ or a validated FP16 profile.')
     command=[sys.executable,"-m","vllm.entrypoints.openai.api_server","--model",str(snapshot),"--served-model-name",model["model"],"--dtype","half","--host","127.0.0.1","--port",str(VPORT),"--max-model-len",str(context_tokens()),"--max-num-seqs","1","--tensor-parallel-size","1","--gpu-memory-utilization",str(utilization),"--cpu-offload-gb",str(cpu_offload(row)),"--enforce-eager","--disable-log-requests","--guided-decoding-backend","xgrammar"]
     if model_variant()=="awq": command += ["--quantization",model["quantization"]]
     if thinking_enabled():command += ['--enable-reasoning','--reasoning-parser','deepseek_r1']
@@ -114,6 +160,16 @@ def vllm_command(row):
 def identity(pid):
     # start-time field protects against PID reuse.
     return Path(f"/proc/{pid}/stat").read_text().split(") ",1)[1].split()[19]
+
+def wait_for_exit(pid, start_time, timeout=15, *, clock=time.monotonic, sleep=time.sleep):
+    """Wait for this exact process instance to disappear; never signal a replacement PID."""
+    deadline=clock()+timeout
+    while True:
+        try:current=identity(pid)
+        except FileNotFoundError:return True
+        if current!=start_time:return True
+        if clock()>=deadline:return False
+        sleep(min(.1,max(0,deadline-clock())))
 def recover_record(kind):
     """Recover only this user's exact project supervisor, never a port owner."""
     matches=[]
@@ -145,8 +201,7 @@ def start(kind):
             if identity(old['pid'])==old['start_time']: raise RuntimeError("Project process already running")
         except FileNotFoundError: pass
     env=os.environ.copy()
-    env.update({"PYTHONPATH":str(ROOT/"src"),"OMP_NUM_THREADS":"2","MKL_NUM_THREADS":"2","OPENBLAS_NUM_THREADS":"2","NUMEXPR_NUM_THREADS":"2","RAYON_NUM_THREADS":"2","TOKENIZERS_PARALLELISM":"false","HF_HOME":str(RUNTIME/"huggingface"),"TMPDIR":str(RUNTIME/"tmp"),"IAM_BASE_URL":BASE_URL,"VLLM_NO_USAGE_STATS":"1","DO_NOT_TRACK":"1"})
-    (RUNTIME/"tmp").mkdir(exist_ok=True)
+    env.update({"PYTHONPATH":str(ROOT/"src"),"OMP_NUM_THREADS":"2","MKL_NUM_THREADS":"2","OPENBLAS_NUM_THREADS":"2","NUMEXPR_NUM_THREADS":"2","RAYON_NUM_THREADS":"2","TOKENIZERS_PARALLELISM":"false","HF_HOME":str(RUNTIME/"huggingface"),"TMPDIR":str(model_tmpdir()),"IAM_BASE_URL":BASE_URL,"VLLM_NO_USAGE_STATS":"1","DO_NOT_TRACK":"1"})
     if kind=="vllm":
         row=preflight(check_ui_port=False)
         env.update({"IAM_MODEL_VARIANT":model_variant(),"IAM_MODEL_THINKING":'1' if thinking_enabled() else '0',"CUDA_VISIBLE_DEVICES":row[0],"CUDA_DEVICE_ORDER":"PCI_BUS_ID","VLLM_USE_V1":"0","VLLM_ATTENTION_BACKEND":"XFORMERS","IAM_GPU_PROFILE":PROFILE})
@@ -169,6 +224,8 @@ def stop(kind):
         if info['root']!=str(ROOT) or identity(info['pid'])!=info['start_time'] or actual[:-1]!=expected or os.getpgid(info['pid'])!=info['pid']:
             raise RuntimeError("Process identity mismatch; refusing to signal")
         os.killpg(info['pid'],signal.SIGTERM)
+        if not wait_for_exit(info['pid'],info['start_time']):
+            raise RuntimeError("Owned project process did not exit; retaining its record for safe recovery")
         print("Stopped project-owned",kind)
     except FileNotFoundError:
         # A restricted PID namespace may hide a still-running host process.

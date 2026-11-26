@@ -61,31 +61,37 @@ def explicit_priority_list(answer):
 
 
 def information_need_kinds(answer):
-    """Detect explicit general questions only, not a concern stated as an opinion."""
-    text = answer.casefold()
-    cue = bool(re.search(r'\b(?:explain|tell me|could you|can you|how (?:does|would|do|is)|'
-                         r'i (?:would|d) (?:like|want) to know|i want to know|who (?:handles|is responsible)|'
-                         r'what happens if|how (?:it|they) (?:work|compare)|not sure how)\b', text))
-    if not cue:
-        return []
-    found = []
-    if re.search(r'\b(?:transport|deliver|medicine|medicines|blood|samples)\b', text) and \
-            re.search(r'\b(?:how|explain|work|process|would|could)\b', text):
+    """Map natural, explicit requests to bounded explanations; ignore mere opinions."""
+    text=answer.casefold()
+    cue=bool(re.search(r'\b(?:explain|what do you mean|what does .{1,50} mean|don.t understand|'
+        r'could you|can you|tell me|how (?:does|do|would|is|are)|what (?:are|is|do|does)|'
+        r'i (?:would like|want) to know|who (?:handles|is responsible)|what happens if|'
+        r'not sure how|give me an example)\b',text))
+    if not cue:return []
+    found=[]
+    if re.search(r'\b(?:complaint|complaints|escalat|who handles|who receives|responsib|decision process|'
+                 r'how (?:are|is) decisions? (?:made|taken)|who decides)\b',text):
+        found.append('local_process')
+    if re.search(r'\b(?:healthcare|medical|medicin\w*|blood|laboratory samples?|hospital)\b',text):
         found.append('delivery_basics')
-    if re.search(r'\b(?:compar|better than|worse than|regular deliveries|road deliver|vans?\b|trucks?\b)', text):
+    if re.search(r'\b(?:compar|better than|worse than|regular deliveries|road deliver|vans?\b|trucks?\b)',text):
         found.append('comparison')
-    if re.search(r'\b(?:who (?:handles|is responsible)|complaint|issues if|problems? (?:occur|arise)|accountab|what happens if)\b', text):
+    if re.search(r'\b(?:who (?:handles|is responsible)|complaint|issues if|problems? (?:occur|arise)|accountab|what happens if)\b',text):
         found.append('accountability')
-    if re.search(r'\b(?:already|currently|local|my city|in madrid|in \w+ city)\b', text) and \
-            re.search(r'\b(?:operate|operation|service|route|deliver)\b', text):
+    if re.search(r'\b(?:already|currently|local|my city|in madrid|in \w+ city)\b',text) and \
+            re.search(r'\b(?:operate|operation|service|route|deliver)\b',text):
         found.append('local_activity')
+    if re.search(r'\b(?:drone|aircraft|fly|flying|pilot)\b',text):
+        found.append('drone_uses' if re.search(r'\b(?:use|used|purpose|application|example|what for)\b',text)
+                     else 'drone_definition')
+    if not found:found.append('clarify_current_question')
     return list(dict.fromkeys(found))
 
 
 GENERAL_BACKGROUND = {
     'delivery_basics': (
-        'In the healthcare-drone example, the aircraft transports items such as medicines, blood or '
-        'laboratory samples. The precise arrangements depend on the particular service; this does not '
+        'Healthcare drones could transport medicines, blood, laboratory samples and other medical supplies. '
+        'The precise arrangements depend on the particular service; this does not '
         'establish that such deliveries are operating in your city.'),
     'comparison': (
         'Whether a drone delivery is preferable to road delivery depends on the route and comparable '
@@ -98,6 +104,19 @@ GENERAL_BACKGROUND = {
     'local_activity': (
         'I do not have verified information establishing that this service operates in your city. '
         'We can keep that as an open question rather than assume a local operation exists.'),
+    'drone_definition': (
+        'A drone is an aircraft that can fly without a pilot sitting inside it. Drones can have different sizes '
+        'and can be used for many different purposes.'),
+    'drone_uses': (
+        'Drones can have different sizes and can be used for many different purposes. Healthcare transport is one possible '
+        'application discussed in this interview, not evidence that a service operates locally.'),
+    'local_process': (
+        'I do not have verified information about the actual drone-service decision or complaint process in your '
+        'city. For a real service, it would be important to identify who decides, who receives concerns, how they '
+        'are investigated and how responses can affect decisions.'),
+    'clarify_current_question': (
+        'I can clarify the question in simpler terms. If the details are not known to you, it is fine to say so; '
+        'that will be recorded as uncertainty rather than treated as a lack of readiness.'),
 }
 
 

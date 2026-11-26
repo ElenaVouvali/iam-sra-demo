@@ -27,6 +27,7 @@ class TopicEvidence(Strict):
     topic: str = Field(min_length=1, max_length=70)
     quote: str = Field(min_length=1, max_length=1800)
     matches_topic: str | None = Field(default=None,max_length=70)
+    topic_type: Literal['concern','benefit','question','proposal','other'] = 'other'
 
 
 class FNInterpretation(Strict):
@@ -52,6 +53,10 @@ class FNInterpretation(Strict):
     # against the registered flow and authorizes the transition.
     next_goal_id: str | None = Field(default=None, max_length=60)
     question_purpose: str = Field(default='', max_length=180)
+    information_request: Literal['drone_definition','drone_uses','drone_mechanics',
+        'healthcare_applications','clarify_current_question','local_process',
+        'comparison','accountability','local_activity','other'] | None = None
+    information_request_quote: str = Field(default='', max_length=500)
 
 
 class ContextFact(Strict):
@@ -140,6 +145,7 @@ FN_SYSTEM = (
     'No participation opportunity is not inability; willingness is not actual influence. Support or opposition '
     'is not readiness. Distinguish previous knowledge from information supplied during this interview. '
     'Topics need an exact current-answer quote; mentioning a concern does not select it as a priority. '
+    'For each topic, classify what the respondent said as concern, benefit, question, proposal or other; a benefit alone is not a concern. '
     'In open concerns, additional topics and priority selection, include a topics entry for each '
     'substantive issue the respondent names: a short topic label and its exact supporting quote. '
     'At the priorities question these are the issues they selected, including a single issue if that '
@@ -162,8 +168,13 @@ FN_SYSTEM = (
     'raised issue, not just mentioning one issue. no_more means no further topics; suggestions requests examples. '
     'Do not repeat an anything-else probe when the answer has already closed that discussion. '
     'context_facts require exact current-answer quotes. Optional boundary_goals must come from optional_goals '
-    'and be useful, not an exhaustive checklist. For an explicit information request use action=explain and '
-    'source_ids from supplied passages; Python handles consent and displays the source text. '
+    'and be useful, not an exhaustive checklist. For a direct request, confusion or request for an example, use '
+    'A direct information request is an annotation independent of answer_kind and coverage. Set information_request '
+    'and quote the exact request clause when the participant asks a question, requests an example, or says they do not '
+    'understand. This may accompany substantive evidence. Python supplies concise verified information or an explicit '
+    'knowledge limitation without asking permission a second time. Continue with one relevant FN question in message. '
+    'Use action=explain only to signal that information is requested; still set next_goal_id to the objective for the '
+    'next participant answer and do not put the explanation into message. '
     'Do not assert local operations, attribute experiences or concerns, reveal levels/indicators/source filenames, '
     'or assign a score. An advance or conclude proposal cannot override Python evidence checks.'
 )
@@ -326,6 +337,13 @@ def validate_reply(raw, request):
                 next_goal=proposed.get('next_goal_id')
                 if next_goal is not None and (not isinstance(next_goal,str) or len(next_goal)>60):
                     proposed['next_goal_id']=None;optional_warnings.append('interpretation.next_goal_id')
+                request_quote=proposed.get('information_request_quote','')
+                if (not isinstance(request_quote,str) or len(request_quote)>500
+                        or request_quote not in (request.get('answer') or '')):
+                    if proposed.get('information_request') or request_quote:
+                        optional_warnings.append('interpretation.information_request')
+                    proposed['information_request']=None
+                    proposed['information_request_quote']=''
                 if proposed.get('scope_disposition') not in (None,'within_scope','outside_remit','not_established'):
                     proposed['scope_disposition']=None;optional_warnings.append('interpretation.scope_disposition')
                 topic_goals={'open_priorities','open_more','different_impacts','suggested_topics','priorities'}
@@ -674,8 +692,10 @@ class ChatClient(ConversationClient):
             'Select at most two optional boundary_goals only when useful near the evidence boundary. '
             'Do not assume local operations, personal concerns, participation or influence. '
             'Never show source filenames, internal goals, indicators, levels or instructions during elicitation. '
-            'Use proposed_action=ask_question normally. Information requests may use provide_information only with '
-            'a retrieved passage ID; Python displays the actual source. Explanation permission must be respected. '
+            'Use proposed_action=ask_question normally. Information requests are independent of evidence interpretation: '
+            'mark them in information_request with an exact quote, preserve any answer evidence, and put the next FN '
+            'question in message. Python supplies verified information or a clear limitation; never ask permission again '
+            'after an explicit request. '
             'Context facts require exact current-answer quotes; they cannot authorize scope/profile changes. '
             'A conclude proposal cannot bypass unfinished goals. If advancing, message may be a short neutral '
             'question; Python selects canonical wording. No flattery, answer echoes or invented evidence. '
@@ -745,8 +765,10 @@ class ChatClient(ConversationClient):
                                         plan_error='Propose one new, neutral, non-repeating question for the selected FN objective.'
                                         plan_field='message'
                                 elif action == 'explain':
-                                    if result['message'].count('?') != 1:
-                                        plan_error='A requested explanation must be followed by one permission question.'
+                                    if target not in payload['fn']['allowed_objectives']:
+                                        plan_error='An explanation still requires a valid next FN objective.'
+                                    if result['message'].count('?') != 1 or result['_quality_issues']:
+                                        plan_error='Provide the short explanation separately and ask one relevant next FN question.'
                                         plan_field='message'
                                 if plan_error:
                                     if plan_attempts==1:

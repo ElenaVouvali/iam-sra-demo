@@ -1,5 +1,6 @@
 """Administrative product adaptations plus grounded topic semantics, not model quality claims."""
 from copy import deepcopy
+import re
 import pytest
 from iam_sra.chat_session import ChatSession
 from iam_sra.chat_policy import INTRODUCTION, PERSPECTIVE, ACKNOWLEDGEMENTS, EASA_BASICS, educational_choice
@@ -34,6 +35,7 @@ def test_full_introduction_roles_acknowledgement_then_city(answer,profile):
 
 
 @pytest.mark.parametrize('choice,depth,provenance',[('A','short','participant_choice'),('B','extended','participant_choice'),
+    ('short','short','participant_choice'),('extended','extended','participant_choice'),
     ('20 minutes','short','participant_choice'),('around thirty-five minutes','extended','participant_choice'),
     ('a brief conversation','short','participant_choice'),('more detail','extended','participant_choice'),
     ('not sure','short','default_after_uncertainty'),('skip this question','short','default_after_skip')])
@@ -45,6 +47,18 @@ def test_depth_choice_is_explicit_non_scoring_and_source_versioned(choice,depth,
     assert ('35min' if depth=='extended' else '20min') in selected['source']['document']
     assert selected==s.decision_traces[-1]['depth_change']
     assert selected['evidence_id'] not in {e['id'] for e in s.active_evidence()}
+
+
+def test_citizen_depth_question_offers_only_short_and_extended_styles():
+    s=ChatSession(bank(),synthetic=True);c=SyntheticInterpreter()
+    s.send('A',c);s.send('Madrid',c)
+    prompt=next(m for m in s.messages if m.get('objective_id')=='citizen_duration' and m['role']=='assistant')
+    assert prompt['text']=='Which interview style would you prefer?'
+    assert not any(re.search(r'\b(?:20|35)\s*minutes?\b',m['text'],re.I)
+                   for m in s.messages if m['role']=='assistant')
+    assert s.view()['response_options']==[
+        {'value':'short','label':'Short — focused on the most relevant issues'},
+        {'value':'extended','label':'Extended — explores selected issues in more depth'}]
 
 
 @pytest.mark.parametrize('choice',['A','B'])

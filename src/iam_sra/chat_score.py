@@ -163,6 +163,29 @@ def validate_profile_match(raw, payload):
             normalized_citations.append(citation);seen_citations.add(key)
     result['citations']=normalized_citations
     result['_citation_quote_resolved_ids']=resolved_ids
+    if selected is not None:
+        chosen=anchors[selected]
+        # A registered anchor that explicitly requires the ability to use
+        # established participation/complaint routes cannot be supported by a
+        # hypothetical intention or by evidence that the route is unknown.
+        # This is a narrow evidence-boundary check derived from the anchor text,
+        # not a numeric target or a general scoring formula.
+        description=(chosen.get('description') or '').casefold()
+        requires_established_route=('established ways' in description and
+            any(term in description for term in ('raise concerns','seek answers','influence decisions')))
+        if requires_established_route:
+            route=re.compile(r'\b(?:complaint|feedback|participation|consultation|monitoring|appeal|reporting|'
+                r'contact channel|published hotline|online form)\b',re.I)
+            route_usable=re.compile(r'\b(?:i have used|i use|i know where|i know how to|i can use|'
+                r'i have access to|is an established|is an existing|is available through|'
+                r'there is an established|there is an existing|the published|the existing)\b',re.I)
+            qualifying=any(route.search(c['quote']) and route_usable.search(c['quote'])
+                           for c in normalized_citations)
+            if not qualifying:
+                raise AssessmentError(
+                    'The selected registered anchor requires evidence that an established route is known or usable; '
+                    'a hypothetical intention or uncertainty does not establish that capability.',
+                    code='evidence',field='citations')
     for field in ('explanation','boundary'):
         if result[field] and re.search(r'\b(?:PDFs?|workbook|rubric|source document|interview example)\b|\.(?:pdf|xlsx|docx)\b', result[field], re.I):
             result[field] = None

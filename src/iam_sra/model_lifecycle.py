@@ -28,8 +28,11 @@ _log = logging.getLogger(__name__)
 
 
 class ProjectA2:
-    def __init__(self, port, *, root=ROOT, gpu_uuid=None, variant=None):
+    profile = 'liono-a2'
+
+    def __init__(self, port, *, root=ROOT, gpu_uuid=None, variant=None, profile=None):
         self.port, self.root, self.gpu_uuid = port, Path(root), gpu_uuid
+        self.profile = profile or type(self).profile
         self.variant = model_variant(variant)
         self.thinking = thinking_enabled()
         self.record = self.root / '.runtime/vllm.pid.json'
@@ -46,7 +49,7 @@ class ProjectA2:
                     and started == row['start_time'] and command == row['command']
                     and command[1:3] == [str(self.root / 'scripts/supervise.py'), 'vllm']
                     and os.getpgid(row['pid']) == row['pid']
-                    and row['environment'].get('IAM_GPU_PROFILE') == 'liono-a2'
+                    and row['environment'].get('IAM_GPU_PROFILE') == self.profile
                     and row['environment'].get('IAM_BASE_URL') == f'http://127.0.0.1:{self.port}'):
                 return row
         except (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError):
@@ -87,7 +90,7 @@ class ProjectA2:
         spec = importlib.util.spec_from_file_location('iam_sra_review_ops', self.root / 'scripts/ops.py')
         ops = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(ops)
-        ops.PROFILE, ops.UUID = 'liono-a2', self.gpu_uuid or ''
+        ops.PROFILE, ops.UUID = self.profile, self.gpu_uuid or ''
         row = ops.gpu()
         processes = subprocess.check_output(['nvidia-smi', '--query-compute-apps=gpu_uuid,pid',
             '--format=csv,noheader,nounits'], text=True, timeout=10)
@@ -115,7 +118,7 @@ class ProjectA2:
         env['IAM_MODEL_VARIANT'] = self.variant
         env['IAM_MODEL_THINKING'] = '1' if self.thinking else '0'
         command = [sys.executable, str(self.root / 'scripts/model-host.py'),
-                   'start', 'liono-a2', '--port', str(self.port)]
+                   'start', self.profile, '--port', str(self.port)]
         command += ['--gpu-uuid', selected_uuid, '--variant', self.variant]
         if self.thinking:command.append('--thinking')
         try:
@@ -188,6 +191,21 @@ class ProjectA2:
         return self.stop()
 
 
+class ProjectLionoV100S(ProjectA2):
+    """Ownership-checked local V100S backend for isolated review/testing."""
+    profile = 'liono-v100s'
+
+    def __init__(self, port, *, root=ROOT, gpu_uuid=None, variant=None):
+        selected = model_variant(variant)
+        if selected != 'fp16':
+            raise ValueError('Liono V100S review requires FP16.')
+        super().__init__(port, root=root, gpu_uuid=gpu_uuid, variant=selected,
+                         profile='liono-v100s')
+        # Distinct from the existing A2 review owner marker. The process
+        # record is checkout-local; deployments use an isolated worktree.
+        self.marker = self.root / '.runtime/fn-review/model-owner-liono-v100s.json'
+
+
 class ProjectDavinciV100:
     """On-demand V100 lease using the separately supervised Davinci model host."""
     profile='davinci-v100'
@@ -204,6 +222,9 @@ class ProjectDavinciV100:
             value=json.loads(path.read_text())
             return value if isinstance(value,dict) else None
         except (OSError,ValueError):return None
+
+    def _marker(self):
+        return self._read(self.marker)
 
     def _process(self,row):
         try:
@@ -258,6 +279,7 @@ class ProjectDavinciV100:
             IAM_SRA_MODEL_LEASE_ID=lease)
         command=[sys.executable,str(self.root/'scripts/model-host.py'),'start',self.profile,
             '--variant',self.variant,'--port',str(self.port),'--remote-dir',self.remote_dir]
+        if self.thinking:command.append('--thinking')
         process=None
         launch_log=self.root/'.runtime/fn-review/davinci-v100-model-host.log'
         try:
@@ -404,6 +426,11 @@ def manager():
             profile = os.getenv('IAM_SRA_GPU_PROFILE', 'liono-a2')
             if profile == 'liono-a2':
                 backend = ProjectA2(origin.port, gpu_uuid=os.getenv('IAM_SRA_REVIEW_GPU_UUID') or None)
+            elif profile == 'liono-v100s':
+                if os.getenv('IAM_MODEL_VARIANT', 'fp16') != 'fp16':
+                    raise ValueError('Liono V100S review requires FP16.')
+                backend = ProjectLionoV100S(origin.port, gpu_uuid=os.getenv('IAM_SRA_REVIEW_GPU_UUID') or None,
+                                            variant='fp16')
             elif profile == 'davinci-v100':
                 remote_dir = os.getenv('IAM_SRA_REMOTE_DIR', '')
                 if not remote_dir or os.getenv('IAM_MODEL_VARIANT', 'fp16') != 'fp16':

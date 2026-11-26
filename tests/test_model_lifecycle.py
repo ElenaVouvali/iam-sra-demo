@@ -12,7 +12,7 @@ import httpx
 import pytest
 
 from iam_sra.assessment import AssessmentError
-from iam_sra.model_lifecycle import OnDemandModel, ProjectA2
+from iam_sra.model_lifecycle import OnDemandModel, ProjectA2, ProjectLionoV100S
 
 
 class Backend:
@@ -88,6 +88,27 @@ def test_v100_review_manager_preserves_thinking_setting_without_starting_gpu(mon
     manager.close()
 
 
+def test_liono_v100s_manager_selects_fp16_thinking_backend_without_starting_gpu(monkeypatch):
+    import iam_sra.model_lifecycle as module
+    monkeypatch.setattr(module,'_manager',None)
+    for key,value in {
+        'IAM_SRA_ON_DEMAND_GPU':'1','IAM_BASE_URL':'http://127.0.0.1:18022',
+        'IAM_SRA_GPU_IDLE_SECONDS':'300','IAM_SRA_GPU_PROFILE':'liono-v100s',
+        'IAM_MODEL_VARIANT':'fp16','IAM_MODEL_THINKING':'1',
+    }.items():monkeypatch.setenv(key,value)
+    managed=module.manager()
+    assert isinstance(managed.backend,ProjectLionoV100S)
+    assert managed.backend.port==18022 and managed.backend.profile=='liono-v100s'
+    assert managed.backend.variant=='fp16' and managed.backend.thinking is True
+    assert managed.status()['state']=='idle'
+    managed.close()
+
+
+def test_liono_v100s_rejects_awq_variant(tmp_path):
+    with pytest.raises(ValueError,match='requires FP16'):
+        ProjectLionoV100S(18022,root=tmp_path,variant='awq')
+
+
 def test_v100_remote_start_command_carries_thinking_settings(monkeypatch,tmp_path):
     from iam_sra.model_lifecycle import ProjectDavinciV100
     from types import SimpleNamespace
@@ -102,6 +123,43 @@ def test_v100_remote_start_command_carries_thinking_settings(monkeypatch,tmp_pat
     command,kwargs=calls[0]
     assert '--thinking' in command
     assert kwargs['env']['IAM_MODEL_THINKING']=='1'
+
+
+def test_v100_thinking_model_start_stop_start_reuses_only_released_lease(monkeypatch,tmp_path):
+    import os
+    from iam_sra.model_lifecycle import ProjectDavinciV100
+    monkeypatch.setenv('IAM_MODEL_THINKING','1')
+    monkeypatch.setenv('IAM_MODEL_VARIANT','fp16')
+    state={'running':False};commands=[]
+    class Process:
+        pid=os.getpid()
+        returncode=None
+        def poll(self):return None
+    def popen(command,**kwargs):
+        commands.append(command);state['running']=True
+        return Process()
+    monkeypatch.setattr(subprocess,'Popen',popen)
+    backend=ProjectDavinciV100(18021,root=tmp_path,remote_dir='iam-sra-v100-restart-test',variant='fp16')
+    monkeypatch.setattr(backend,'owns_running_model',lambda:state['running'])
+    monkeypatch.setattr(backend,'_process',lambda row:state['running'])
+    def killpg(_pid,_signal):state['running']=False
+    monkeypatch.setattr('iam_sra.model_lifecycle.os.killpg',killpg)
+    monkeypatch.setattr(backend,'_remote_command',lambda action,lease:action=='stop')
+    backend.start(time.monotonic()+30)
+    assert '--thinking' in commands[-1]
+    assert backend.stop()
+    assert not backend.record.exists() and not backend.marker.exists()
+    backend.start(time.monotonic()+30)
+    assert len(commands)==2 and '--thinking' in commands[-1]
+    assert backend.stop()
+
+
+def test_v100_marker_reader_matches_review_launcher_contract(tmp_path):
+    from iam_sra.model_lifecycle import ProjectDavinciV100
+    backend=ProjectDavinciV100(18021,root=tmp_path,remote_dir='iam-sra-v100-marker-test',variant='fp16')
+    backend.marker.parent.mkdir(parents=True)
+    backend.marker.write_text(json.dumps({'lease_id':'test-lease'}))
+    assert backend._marker()=={'lease_id':'test-lease'}
 
 
 def test_inflight_inference_is_never_unloaded_even_after_idle_interval():

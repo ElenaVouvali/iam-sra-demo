@@ -330,50 +330,58 @@ def verify_live_interviews(backend, args, children):
 
 
 def verify_v100_model_led_interview(backend,args,children):
-    """Run one complete real-Qwen model-led interview before opening its URL."""
+    """Run complete model-led interviews before opening a V100/V100S URL."""
+    gpu_profile=getattr(args,'gpu_profile','davinci-v100')
     backend.start(time.monotonic()+610)
     marker=backend._marker() or {}
     if not backend.owns_running_model() or not marker.get('lease_id'):
         raise ValueError('V100 model-led validation could not verify its model lease.')
-    output=STATE/('v100-model-led-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid4().hex[:8])
     env=os.environ.copy()
     env.update(IAM_BASE_URL=f'http://127.0.0.1:{args.model_port}',IAM_MODEL_VARIANT='fp16',
         IAM_MODEL_THINKING='1' if args.thinking else '0',IAM_SRA_ON_DEMAND_GPU='0',
         IAM_SRA_VALIDATION_LEASE=marker['lease_id'],IAM_MODEL_TIMEOUT_SECONDS='900',
         IAM_SRA_JOB_TIMEOUT='1800',IAM_CHAT_PROCESSING_SECONDS='3600',
-        IAM_SRA_GPU_PROFILE='davinci-v100',IAM_SRA_REMOTE_DIR=args.remote_dir,
+        IAM_SRA_GPU_PROFILE=gpu_profile,
         IAM_CHAT_INTERVIEW_STRATEGY='model_led_fn',
         TLDEXTRACT_CACHE=os.environ.get('TLDEXTRACT_CACHE',str(STATE/'tldextract')))
-    command=[sys.executable,str(ROOT/'scripts/smoke-fn-interview.py'),'--allow-live',
-        '--respondent','agent','--persona-id','fn_unfamiliar_citizen','--model-variant','fp16',
-        '--case','citizen_short','--base-url',env['IAM_BASE_URL'],'--max-turns','120',
-        '--max-agent-calls','100','--case-timeout-seconds','7200','--save-traces','--output',str(output)]
-    if args.thinking:command.append('--thinking')
-    command.append('--respondent-no-think') if args.thinking else None
-    print('Running one complete V100 model-led interview, scoring, review and export before publication.',flush=True)
-    log=STATE/('v100-model-led-validation-'+uuid4().hex+'.log')
+    if gpu_profile=='davinci-v100':env['IAM_SRA_REMOTE_DIR']=args.remote_dir
+    scenarios=[('citizen_short','fn_unfamiliar_citizen'),
+               ('organisational','fn_planning_unit'),
+               ('technical','fn_container_component')]
+    outputs=[]
     try:
-        with log.open('x') as stdout:
-            log.chmod(0o600)
-            process=subprocess.Popen(command,cwd=ROOT,env=env,start_new_session=True,stdout=stdout)
-            children.append(process)
-            try:code=process.wait(timeout=7500)
-            finally:
-                if process.poll() is None:close_children([process])
-        if code!=0:
-            raise ValueError(f'V100 model-led interview failed; inspect {output}/metrics.json and {log}. No link was opened.')
-        report=json.loads((output/'metrics.json').read_text())
-        cases=report.get('cases',[])
-        row=next((item for item in cases if item.get('case')=='citizen_short'),None)
-        if not row or not row.get('protocol_passed') or row.get('run_incomplete'):
-            raise ValueError(f'V100 model-led interview did not satisfy completion/review/export checks: {output}. No link was opened.')
-        if row.get('scoring_generation_calls',0)<1 or row.get('score_status') not in {'suggested','abstained'}:
-            raise ValueError(f'V100 model-led scoring was not completed: {output}. No link was opened.')
-        if row.get('score_status')=='suggested' and (not 1<=int(row.get('level') or 0)<=9
-                or not row.get('score_citation_count') or not row.get('score_boundary_present')):
-            raise ValueError(f'V100 model-led numeric score lacked a validated citation/boundary: {output}. No link was opened.')
-        print('V100 model-led completion, scoring/review and export checks passed. Inspect semantic quality before sharing: '+str(output),flush=True)
-        return output
+        for case,persona in scenarios:
+            output=STATE/(gpu_profile+'-model-led-'+case+'-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid4().hex[:8])
+            outputs.append(output)
+            command=[sys.executable,str(ROOT/'scripts/smoke-fn-interview.py'),'--allow-live',
+                '--respondent','agent','--persona-id',persona,'--model-variant','fp16',
+                '--case',case,'--base-url',env['IAM_BASE_URL'],'--max-turns','120',
+                '--max-agent-calls','100','--case-timeout-seconds','1800','--save-traces','--output',str(output)]
+            if args.thinking:command.append('--thinking')
+            if args.thinking:command.append('--respondent-no-think')
+            print(f'Running complete {gpu_profile} model-led {case} interview, score, review and export.',flush=True)
+            log=STATE/(gpu_profile+'-model-led-validation-'+case+'-'+uuid4().hex+'.log')
+            with log.open('x') as stdout:
+                log.chmod(0o600)
+                process=subprocess.Popen(command,cwd=ROOT,env=env,start_new_session=True,stdout=stdout)
+                children.append(process)
+                try:code=process.wait(timeout=1950)
+                finally:
+                    if process.poll() is None:close_children([process])
+                children.remove(process)
+            if code!=0:
+                raise ValueError(f'{gpu_profile} model-led {case} interview failed; inspect {output}/metrics.json and {log}. No link was opened.')
+            report=json.loads((output/'metrics.json').read_text())
+            row=next((item for item in report.get('cases',[]) if item.get('case')==case),None)
+            if not row or not row.get('protocol_passed') or row.get('run_incomplete'):
+                raise ValueError(f'{gpu_profile} model-led {case} interview did not satisfy completion/review/export checks: {output}. No link was opened.')
+            if row.get('scoring_generation_calls',0)<1 or row.get('score_status') not in {'suggested','abstained'}:
+                raise ValueError(f'{gpu_profile} model-led {case} scoring was not completed: {output}. No link was opened.')
+            if row.get('score_status')=='suggested' and (not 1<=int(row.get('level') or 0)<=9
+                    or not row.get('score_citation_count') or not row.get('score_boundary_present')):
+                raise ValueError(f'{gpu_profile} model-led {case} score lacked a validated citation/boundary: {output}. No link was opened.')
+            print(f'{gpu_profile} model-led {case} completion, scoring/review and export checks passed: {output}',flush=True)
+        return outputs
     finally:
         if not backend.stop():
             raise ValueError('The V100 model-led validation model could not be safely released.')
@@ -383,7 +391,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--ui-port', type=int, help='Explicit frontend port; otherwise try 5018–5117')
     parser.add_argument('--api-port', type=int, help='Explicit API port; otherwise try 8018–8117')
-    parser.add_argument('--gpu-profile',choices=['liono-a2','davinci-v100'],default='liono-a2')
+    parser.add_argument('--gpu-profile',choices=['liono-a2','liono-v100s','davinci-v100'],default='liono-a2')
     parser.add_argument('--remote-dir',default='iam-sra-v100-review',help='Separate Davinci inference directory')
     parser.add_argument('--model-variant', choices=['awq','fp16'], default=None, help='Defaults to AWQ for A2 and FP16 for V100')
     parser.add_argument('--model-port', type=int, default=None)
@@ -399,14 +407,14 @@ def main(argv=None):
     parser.add_argument('--dry-run', action='store_true', help='Show the plan without sockets, installs or service changes')
     args = parser.parse_args(argv)
     args.model_variant=args.model_variant or ('awq' if args.gpu_profile=='liono-a2' else 'fp16')
-    args.model_port=args.model_port or (18003 if args.gpu_profile=='liono-a2' else 18010)
+    args.model_port=args.model_port or {'liono-a2':18003,'liono-v100s':18022,'davinci-v100':18010}[args.gpu_profile]
     if args.gpu_profile=='davinci-v100' and args.model_variant!='fp16':
         parser.error('Davinci V100 preview requires FP16.')
     if args.gpu_profile=='davinci-v100' and not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',args.remote_dir):
         parser.error('--remote-dir must be a simple isolated directory name.')
     if not 1024<=args.model_port<=65535:parser.error('--model-port must be in 1024–65535.')
-    if args.thinking and (args.gpu_profile,args.model_variant) not in {('liono-a2','awq'),('davinci-v100','fp16')}:
-        parser.error('--thinking requires Liono A2/AWQ or Davinci V100/FP16.')
+    if args.thinking and (args.gpu_profile,args.model_variant) not in {('liono-a2','awq'),('liono-v100s','fp16'),('davinci-v100','fp16')}:
+        parser.error('--thinking requires Liono A2/AWQ or a validated FP16 profile.')
     if not 10 <= args.idle_seconds <= 3600:
         parser.error('--idle-seconds must be in 10–3600')
     if args.dry_run:
@@ -416,10 +424,10 @@ def main(argv=None):
             'public_link': args.public_origin or 'Issued by Cloudflare at runtime; verified before printing',
             'third_party_relay': None if args.public_origin else 'Cloudflare', 'cookie_secure': True,
             'model_lifecycle': 'on_demand', 'idle_seconds': args.idle_seconds,
-            'model_variant': args.model_variant, 'cpu_offload_gb': 0 if args.gpu_profile == 'davinci-v100' or args.model_variant == 'awq' else 8,
+            'model_variant': args.model_variant, 'cpu_offload_gb': 0 if args.gpu_profile in {'davinci-v100','liono-v100s'} or args.model_variant == 'awq' else 8,
             'thinking_enabled':args.thinking,'live_scoring_required':True,'validation_only':args.validation_only,
             'interview_strategy':args.interview_strategy,
-            'full_model_led_validation':args.gpu_profile=='davinci-v100' and args.interview_strategy=='model_led_fn',
+            'full_model_led_validation':args.gpu_profile in {'davinci-v100','liono-v100s'} and args.interview_strategy=='model_led_fn',
             'approved_public_origin':args.public_origin,
             'release_previous_review_model': args.release_existing_a2,
             'stops_existing_services': args.release_existing_a2, 'changes_firewall': False}, indent=2))
@@ -453,9 +461,11 @@ def main(argv=None):
         sys.path.insert(0, str(ROOT / 'src'))
         os.environ['IAM_MODEL_THINKING']='1' if args.thinking else '0'
         os.environ['IAM_MODEL_VARIANT']=args.model_variant
-        from iam_sra.model_lifecycle import ProjectA2, ProjectDavinciV100
+        from iam_sra.model_lifecycle import ProjectA2, ProjectDavinciV100, ProjectLionoV100S
         if args.gpu_profile=='liono-a2':
             backend = ProjectA2(args.model_port, root=ROOT, gpu_uuid=args.gpu_uuid, variant=args.model_variant)
+        elif args.gpu_profile=='liono-v100s':
+            backend = ProjectLionoV100S(args.model_port,root=ROOT,gpu_uuid=args.gpu_uuid,variant='fp16')
         else:
             backend = ProjectDavinciV100(args.model_port,root=ROOT,remote_dir=args.remote_dir,variant='fp16')
         if backend.marker.exists() and not backend.stop():
@@ -477,6 +487,15 @@ def main(argv=None):
                 verify_v100_model_led_interview(backend,args,children)
             else:
                 print('Full-interview prepublication validation is available when --interview-strategy model_led_fn is selected.',flush=True)
+        elif args.gpu_profile=='liono-v100s':
+            spec=prepare_review_model('fp16')
+            print('Review checkpoint: '+spec['model']+' / '+spec['revision'],flush=True)
+            verify_v100_model(backend)
+            print('Liono V100S generation probe passed.',flush=True)
+            if args.interview_strategy=='model_led_fn':
+                verify_v100_model_led_interview(backend,args,children)
+            else:
+                raise ValueError('V100S review requires --interview-strategy model_led_fn for complete prepublication validation.')
         else:
             spec = prepare_review_model(args.model_variant)
             print('Review checkpoint: '+spec['model']+' / '+spec['revision'], flush=True)

@@ -37,12 +37,7 @@ ACKNOWLEDGEMENTS = {
     'technical': 'Thank you. I will ask the following questions from a technical perspective.',
 }
 CITIZEN_DURATION = (
-    "How much time would you like to spend on this conversation?\n\n"
-    "A. Around 20 minutes — a shorter conversation focusing on the most relevant issues.\n\n"
-    "B. Around 35 minutes — a more detailed conversation exploring selected issues, decision-making, "
-    "evidence, participation and influence more deeply.\n\n"
-    "If you're not sure, we can use the shorter version. These are interview styles, not deadlines; "
-    "you can ask for more detail, shorten, pause or stop later."
+    "Which interview style would you prefer?"
 )
 EASA_BASICS = {
     'id':'easa_basics', 'label':'Read the EASA guide to drones and air mobility',

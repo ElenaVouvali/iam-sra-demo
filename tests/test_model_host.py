@@ -52,20 +52,106 @@ def test_v100_fp16_thinking_dry_run_uses_8192_token_configuration(monkeypatch,ca
     assert 'IAM_GPU_PROFILE=davinci-v100' in output
 
 
+def test_liono_v100s_fp16_thinking_dry_run_uses_8192_configuration(monkeypatch,capsys):
+    module=runner(monkeypatch)
+    monkeypatch.setattr(module.subprocess,'run',lambda *a,**k:pytest.fail('Dry run executed'))
+    assert module.main(['start','liono-v100s','--thinking','--variant','fp16','--port','18022','--dry-run'])==0
+    output=capsys.readouterr().out
+    assert 'IAM_GPU_PROFILE=liono-v100s' in output
+    assert 'IAM_MODEL_THINKING=1' in output
+
+
+def test_v100_thinking_generates_fp16_reasoning_parser_and_8192_context(monkeypatch,tmp_path):
+    spec=importlib.util.spec_from_file_location('project_ops_thinking',Path(__file__).parents[1]/'scripts/ops.py')
+    ops=importlib.util.module_from_spec(spec);spec.loader.exec_module(ops)
+    snapshot=tmp_path/'model';snapshot.mkdir();(snapshot/'model.safetensors').touch()
+    monkeypatch.setattr(ops,'load_model',lambda *a:{'model':'Qwen/Qwen3-8B'})
+    monkeypatch.setattr(ops,'snapshot_path',lambda *a:snapshot)
+    monkeypatch.setattr(ops,'model_variant',lambda:'fp16')
+    monkeypatch.setattr(ops,'thinking_enabled',lambda:True)
+    monkeypatch.setattr(ops,'context_tokens',lambda:8192)
+    monkeypatch.setattr(ops,'gpu_class',lambda row:'v100')
+    monkeypatch.setattr(ops,'cpu_offload',lambda row:0)
+    command=ops.vllm_command(['0','GPU-v100','Tesla V100-PCIE-32GB','7.0','32768','0','550'])
+    assert '--dtype' in command and command[command.index('--dtype')+1]=='half'
+    assert command[command.index('--max-model-len')+1]=='8192'
+    assert command[-3:]==['--enable-reasoning','--reasoning-parser','deepseek_r1']
+
+
+def test_liono_v100s_thinking_generates_fp16_reasoning_parser_and_8192_context(monkeypatch,tmp_path):
+    spec=importlib.util.spec_from_file_location('project_ops_v100s_thinking',Path(__file__).parents[1]/'scripts/ops.py')
+    ops=importlib.util.module_from_spec(spec);spec.loader.exec_module(ops)
+    snapshot=tmp_path/'model';snapshot.mkdir();(snapshot/'model.safetensors').touch()
+    monkeypatch.setattr(ops,'load_model',lambda *a:{'model':'Qwen/Qwen3-8B'})
+    monkeypatch.setattr(ops,'snapshot_path',lambda *a:snapshot)
+    monkeypatch.setattr(ops,'model_variant',lambda:'fp16')
+    monkeypatch.setattr(ops,'thinking_enabled',lambda:True)
+    monkeypatch.setattr(ops,'context_tokens',lambda:8192)
+    monkeypatch.setattr(ops,'gpu_class',lambda row:'v100s')
+    monkeypatch.setattr(ops,'cpu_offload',lambda row:0)
+    command=ops.vllm_command(['0','GPU-v100s','Tesla V100S-PCIE-32GB','7.0','32768','0','550'])
+    assert command[command.index('--dtype')+1]=='half'
+    assert command[command.index('--max-model-len')+1]=='8192'
+    assert command[-3:]==['--enable-reasoning','--reasoning-parser','deepseek_r1']
+
+
+def test_fp16_cached_snapshot_is_checked_before_using_runtime_disk_headroom(monkeypatch,tmp_path):
+    spec=importlib.util.spec_from_file_location('project_ops_cached_snapshot',Path(__file__).parents[1]/'scripts/ops.py')
+    ops=importlib.util.module_from_spec(spec);spec.loader.exec_module(ops)
+    snapshot=tmp_path/'snapshot';snapshot.mkdir()
+    (snapshot/'config.json').write_text('{"model_type":"qwen3"}')
+    (snapshot/'model.safetensors.index.json').write_text('{"weight_map":{"layer":"model-00001.safetensors"}}')
+    for name in ('tokenizer.json','tokenizer_config.json','model-00001.safetensors'):(snapshot/name).write_text('present')
+    monkeypatch.setattr(ops,'load_model',lambda *a:{'model':'Qwen/Qwen3-8B'})
+    monkeypatch.setattr(ops,'snapshot_path',lambda *a:snapshot)
+    monkeypatch.setattr(ops,'model_variant',lambda:'fp16')
+    assert ops.complete_cached_snapshot()
+    (snapshot/'model-00001.safetensors').unlink()
+    assert not ops.complete_cached_snapshot()
+
+
+def test_vllm_ipc_temp_path_is_private_and_short(tmp_path,monkeypatch):
+    spec=importlib.util.spec_from_file_location('project_ops_short_tmp',Path(__file__).parents[1]/'scripts/ops.py')
+    ops=importlib.util.module_from_spec(spec);spec.loader.exec_module(ops)
+    monkeypatch.setattr(ops,'PROFILE','liono-v100s')
+    monkeypatch.setattr(ops,'VPORT',65530)
+    path=ops.model_tmpdir()
+    assert path.parent==Path('/tmp') and len(str(path))+52<104
+    assert path.stat().st_mode & 0o777 == 0o700
+    assert ops.model_tmpdir()==path
+
+
 def test_remote_start_checks_local_port_then_starts_waits_and_forwards(monkeypatch):
     module = runner(monkeypatch)
     calls = []
     monkeypatch.setattr(module, 'port_free', lambda port: calls.append(('port', port)))
     monkeypatch.setattr(module.subprocess, 'run', lambda command, **kw: calls.append(command))
-    assert module.main(['start', 'davinci-v100', '--port', '18002']) == 0
+    assert module.main(['start', 'davinci-v100', '--port', '18002','--thinking']) == 0
     assert calls[0] == ('port', 18002)
     assert len(calls) == 4
     assert 'scripts/ops.py start vllm' in calls[1][-1]
     assert 'IAM_GPU_PROFILE=davinci-v100' in calls[1][-1]
+    assert 'IAM_MODEL_THINKING=1' in calls[1][-1]
     assert 'scripts/wait-model.py --timeout 600' in calls[2][-1]
     assert calls[3][calls[3].index('-L') + 1] == '127.0.0.1:18002:127.0.0.1:18002'
     assert calls[3][-1] == 'evouvali@davinci.microlab.ntua.gr'
     assert 'stop' not in ' '.join(str(call) for call in calls)
+
+
+def test_project_supervisor_release_is_bounded_and_checks_process_identity(monkeypatch):
+    module=importlib.util.spec_from_file_location('project_ops',Path(__file__).parents[1]/'scripts/ops.py')
+    ops=importlib.util.module_from_spec(module);module.loader.exec_module(ops)
+    readings=iter(['123','123','124'])
+    monkeypatch.setattr(ops,'identity',lambda pid:next(readings))
+    ticks=[0.0]
+    def sleep(value):ticks[0]+=value
+    assert ops.wait_for_exit(77,'123',timeout=1,clock=lambda:ticks[0],sleep=sleep)
+    assert ticks[0]>0
+
+    monkeypatch.setattr(ops,'identity',lambda pid:'123')
+    ticks[0]=0
+    assert not ops.wait_for_exit(77,'123',timeout=.25,clock=lambda:ticks[0],sleep=sleep)
+    assert ticks[0]>=.25
 
 
 def test_remote_start_refuses_busy_local_endpoint_before_any_ssh(monkeypatch, capsys):

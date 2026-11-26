@@ -542,9 +542,24 @@ class ChatSession:
         unconsidered=self.fn.model_led_unconsidered_stages(self.profile,self.depth,self.concerns)
         interpretation=(result or {}).get('interpretation') or {}
         action=interpretation.get('action')
+        if action=='explain':
+            # An explanation is orthogonal to progression. The current answer
+            # has already been retained; continue to the model's validated FN
+            # target rather than asking permission or restarting the question.
+            action=('advance' if self.fn.coverage.get(self.objective,{}).get('status')
+                    in {'explored','unknown','declined','provided'} else 'clarify')
+            interpretation['action']=action
         target=interpretation.get('next_goal_id')
         question=(result or {}).get('message','')
         reason=(result or {}).get('_model_led_plan_rejected')
+        topic_bridge=self._required_topic_sequence_goal(action, target, reason)
+        if topic_bridge:
+            target=topic_bridge['id']
+            action='advance'
+            question=topic_bridge['canonical_question']
+            reason=None
+            self._last_decision['topic_sequence_bridge']={'goal':target,
+                'source_locator':topic_bridge['source_locator'],'reason':'open discussion precedes suggested issues; no respondent concern recorded'}
         if action=='conclude':
             if not unconsidered:
                 self.fn.next_action='model_led_conclude_accepted'
@@ -572,6 +587,10 @@ class ChatSession:
             reason=reason or 'unknown_goal'
         elif not self.fn.applicable(node,self.concerns):
             reason=reason or 'goal_not_applicable'
+        elif (self.profile=='citizen' and self.fn.coverage.get('drone_explanation',{}).get('status')=='provided'
+              and node['id'] in {'drone_recognition','drone_description'}
+              and action in {'follow_up','clarify'}):
+            reason=reason or 'prior_knowledge_probe_closed_after_explanation'
         elif self.fn.coverage.get(node['id'],{}).get('status') in {'explored','unknown','declined','not_applicable','provided'}:
             if action not in {'follow_up','clarify'} or self.fn.followups.get(node['id'],0)>=1:
                 reason=reason or 'goal_already_addressed'
@@ -594,6 +613,16 @@ class ChatSession:
             self._last_decision['model_led_transition']={'accepted':True,'action':action,
                 'proposed_goal':target,'stage_id':stage['id'],
                 'purpose':interpretation.get('question_purpose','')[:180],'remaining_goals':gaps}
+            if node['id']==self._topic_menu_goal():
+                # These profile-specific, source-defined topic prompts include
+                # FN's own examples. Model-led progression may choose this
+                # objective, but the approved prompt/list remains controller-owned.
+                self._ask_fn(node)
+                if node.get('response_type') in {'display','suggested_topics'}:
+                    self.fn.record(node['id'],None,'provided','provided')
+                self.routing_events.append({'event':'fn_topic_menu_presented','objective_id':node['id'],
+                    'profile':self.profile,'depth':self.depth,'respondent_concern_previously_raised':False})
+                return
             self._ask_model_led(node,question,interpretation.get('question_purpose',''))
             return
         # One controller-owned FN bridge is safer than restoring the old full
@@ -614,6 +643,54 @@ class ChatSession:
         self.fn.next_action='model_led_conclude_after_coverage'
         self.stop_reason='fn_goals_explored_with_uncertainty' if self.fn.unresolved_gaps else 'fn_goals_explored'
         self._report(indicator_client,score_client)
+
+    def _topic_menu_goal(self):
+        """Return the registered profile's FN additional-topic prompt."""
+        if not self.profile:return None
+        key=flow_key(self.profile,self.depth)
+        for stage in specification()['flows'].get(key,[]):
+            for node in stage['questions']:
+                if node['id']=='suggested_topics':return node['id']
+                if self.profile=='technical' and node['id']=='priorities':return node['id']
+        return None
+
+    def _required_topic_sequence_goal(self, action, target, reason):
+        """Preserve open-topic-before-suggestions and surface the FN menu when
+        a respondent has not raised a concern. Uses profile-specific registered
+        goals; it never assigns participant topics or readiness evidence.
+        """
+        if action not in {'advance','conclude'} or reason or not self.profile:
+            return None
+        key=flow_key(self.profile,self.depth)
+        stages=specification()['flows'].get(key,[])
+        topic_stage=next((stage for stage in stages if any(q['id'] in {
+            'open_priorities','open_more','different_impacts','requirements_open'}
+            for q in stage['questions'])),None)
+        if not topic_stage:return None
+        considered={'explored','unknown','declined','not_applicable','provided','unresolved'}
+        topic_index=stages.index(topic_stage)
+        if any(self.fn.applicable(q,self.concerns)
+               and self.fn.coverage.get(q['id'],{}).get('status') not in considered
+               for stage in stages[:topic_index] for q in stage['questions']):
+            # Do not let the no-concern branch jump over recognition or
+            # awareness merely because later objectives are selectable.
+            return None
+        open_nodes=[q for q in topic_stage['questions'] if q['id'] in {
+            'open_priorities','open_more','different_impacts','requirements_open'}]
+        pending=next((q for q in open_nodes if self.fn.applicable(q,self.concerns)
+                      and self.fn.coverage.get(q['id'],{}).get('status') not in considered),None)
+        if pending and target!=pending['id']:
+            return pending
+        if pending:return None
+        has_concern=any(row.get('topic_type','concern')=='concern' and row.get('evidence_ids')
+            and row.get('kind')!='suggested_topic' for row in self.concerns)
+        menu_id=self._topic_menu_goal()
+        menu=self.fn.current(self.profile,self.depth,menu_id) if menu_id else None
+        if (not has_concern and menu and self.fn.applicable(menu,self.concerns)
+                and self.fn.coverage.get(menu_id,{}).get('status') not in considered
+                and target!=menu_id):
+            return menu
+        return None
 
     def _adapt_next_fn_question(self, client, earlier_answer):
         """Present a source-mapped, context-aware next question when available.
@@ -662,26 +739,90 @@ class ChatSession:
             self.routing_events.append({'event':'adaptive_question_fallback','objective_id':node['id'],
                                         'reason':getattr(exc,'code','unavailable_or_ineligible')})
 
-    def _respond_to_information_need(self, text):
-        """Offer conservative general background without treating it as prior knowledge."""
-        from .adaptive_interview import enabled, new_background
-        if not enabled() or self.profile != 'citizen':
-            return
-        kinds, background=new_background(text,self.information_needs_handled)
-        if not kinds:
-            return
-        # Authored contextual background. Neither local operations nor comparisons
-        # are represented as established facts. Exposed after recording the answer.
-        self.information_needs_handled.extend(kinds)
+    def _respond_to_information_need(self, text, result=None, row=None, goal=None, retrieved_context=None):
+        """Answer a direct request once, separately from respondent evidence.
+
+        Source-critical definitions use registered FN wording. Other answers
+        are short, clearly authored general explanations; city-specific facts
+        are never inferred. This works independently of legacy adaptive mode.
+        """
+        from .adaptive_interview import GENERAL_BACKGROUND, information_need_kinds
+        interpretation=(result or {}).get('interpretation') or {}
+        retrieved=None
+        if (result or {}).get('proposed_action')=='provide_information':
+            allowed={p['id']:p for p in (retrieved_context or {}).get('passages',[])}
+            retrieved=next((allowed[sid] for sid in (result or {}).get('source_ids',[]) if sid in allowed),None)
+        kind=interpretation.get('information_request')
+        quote=interpretation.get('information_request_quote') or ''
+        if kind and (not quote or quote not in text):
+            kind=None
+        inferred=information_need_kinds(text)
+        if not kind and inferred:
+            kind=inferred[0]
+        if not kind and retrieved and ('?' in text or re.search(r'\b(?:explain|tell me|what|how|could you|can you)\b',text,re.I)):
+            kind='clarify_current_question'
+        current_goal=goal or self.objective
+        if kind in {'clarify_current_question','other'}:
+            if current_goal in {'drone_recognition','drone_description','drone_explanation'} and re.search(r'\b(?:drone|what do you mean|don.t understand|explain|example)\b',text,re.I):
+                kind='drone_definition'
+            elif current_goal in {'healthcare_awareness','healthcare_detail','delivery_purpose'} and re.search(r'\b(?:healthcare|medical|hospital|medicine|blood|sample|example|use)\b',text,re.I):
+                kind='healthcare_applications'
+        if not kind:
+            return False
+        aliases={'healthcare_applications':'delivery_basics','other':'clarify_current_question'}
+        category=aliases.get(kind,kind)
+        background=GENERAL_BACKGROUND.get(category)
+        if retrieved:
+            background=retrieved['text']
+        if not retrieved and category=='drone_mechanics':
+            background=('The approved description tells us that a drone can fly without a pilot sitting inside it. '
+                'I do not have verified technical details here about how a particular drone is powered, controlled '
+                'or navigated, so I will not guess.')
+        if not retrieved and category=='clarify_current_question':
+            node=self.fn.current(self.profile,self.depth,current_goal)
+            current_question=(node or {}).get('canonical_question','')
+            if re.search(r'\b(?:decision|decid|complaint|responsib|who is involved)\b',current_question,re.I):
+                background=('I mean who would be involved in deciding whether a service should operate, '
+                    'who could raise concerns, and whether affected people could express their views. '
+                    'I do not have verified information about how this works in your city. If you do not '
+                    'know the current process, you can say so or describe how you think it should work.')
+            elif re.search(r'\b(?:how.*work|how.*operate)\b',text,re.I):
+                background=('The approved description establishes that a drone is an aircraft that can fly '
+                    'without a pilot sitting inside it. I do not have verified technical details here about '
+                    'how a particular model is controlled or powered.')
+        if not background:
+            background=('I do not have verified information to answer that specific question. I can keep '
+                        'the point open and continue using what you know or would expect.')
+        # Information about actual local services is always qualified, including
+        # repeated requests; an earlier reply does not make local facts known.
+        self.information_needs_handled.append(category)
+        exposure_id=f'x{len(self.exposures)+1}'
+        source_record=deepcopy(self._rubric()['source']) if self.profile else {}
+        if retrieved:
+            source_meta=deepcopy(retrieved.get('source',{}))
+            locator=source_meta.get('locator','registered retrieved passage')
+            source_meta['status']=source_meta.get('status','registered_retrieval')
+            exposure_kind='retrieved_source_information'
+        elif category=='drone_definition':
+            locator='SRAA Citizen interview example, drone explanation (registered FN wording)'
+            source_meta={**source_record,'locator':locator,'status':'registered_source_wording'}
+            exposure_kind='FN_explanation'
+        else:
+            locator='Authored general explanation; not a claim about local deployment'
+            source_meta={**source_record,'locator':locator,'status':'author_adaptation_not_verbatim_FN'}
+            exposure_kind='authored_general_background'
         self._assistant(background,act='supplied_information')
-        self.exposures.append({'id':f'x{len(self.exposures)+1}',
-            'kind':'authored_general_background','categories':kinds,'text':background,
-            'source':{**deepcopy(self._rubric()['source']),
-                'locator':'FN citizen concerns and questions; authored contextual background',
-                'status':'author_adaptation_not_verbatim_FN'},
-            'prior_knowledge':False,'actual_activity':False,'revision':self.revision})
+        self.exposures.append({'id':exposure_id,'kind':exposure_kind,'categories':[category],
+            'text':background,'source':source_meta,'source_id':retrieved.get('id') if retrieved else None,
+            'request_evidence_id':row.get('id') if row else None,
+            'request_objective':current_goal,'prior_knowledge':False,
+            'newly_supplied_information':True,'actual_activity':False,'revision':self.revision})
+        if row is not None:
+            row.setdefault('information_exposure_ids',[]).append(exposure_id)
         self.routing_events.append({'event':'responded_to_information_need',
-                                    'categories':kinds,'evidence_scope':'general_only'})
+            'categories':[category],'request_evidence_id':row.get('id') if row else None,
+            'evidence_scope':'information_exposure_only','prior_knowledge':False})
+        return True
 
     def _raised_topics(self):
         return [row for row in self.concerns if row.get('evidence_ids') and (
@@ -711,7 +852,7 @@ class ChatSession:
         row=self._user(text,False,'duration_selection')
         choice=('short','default_after_skip') if skipped else citizen_depth_choice(text,letters=True)
         if choice is None:
-            self._assistant('Would you prefer around 20 minutes (A) or around 35 minutes (B)? If you are unsure, say so and we will use the shorter style.','citizen_duration')
+            self._assistant('Would you prefer the short or extended conversation? If you are unsure, we can use the short style.', 'citizen_duration')
             return
         self._select_depth(*choice,row['id'])
         self.fn.record('citizen_duration',row['id'],'explored')
@@ -820,12 +961,14 @@ class ChatSession:
                            for old in interpreted_topics))
         for item in interpreted_topics:
             topic=item.get('matches_topic') or item['topic'].strip()
+            topic_type=item.get('topic_type','other')
             old=next((c for c in self.concerns if c['topic'].casefold()==topic.casefold()),None)
             if old is None:
                 old={'topic':topic,'kind':'emerging_topic','evidence_ids':[],
                      'spontaneously_raised':False,'suggested_by_interviewer':False,
                      'selected_priority':False,'explored':False,'priority':False,
-                     'indicator_ids':[],'mapping_status':'not_mapped','interpretation_status':'unreviewed'}
+                     'indicator_ids':[],'mapping_status':'not_mapped','interpretation_status':'unreviewed',
+                     'topic_type':topic_type}
                 self.concerns.append(old)
             old['evidence_ids']=list(dict.fromkeys(old['evidence_ids']+[row['id']]))
             old['spontaneously_raised'] |= spontaneous
@@ -915,6 +1058,7 @@ class ChatSession:
         row=retry_row or self._user(text,not skipped and node['response_type'] not in {'opinion','permission'},'advance_request' if skipped and direct_intent(text)=='advance' else 'skip' if skipped else 'opinion' if node['response_type']=='opinion' else 'answer')
         goal=node['id']
         result=None
+        information_answered=False
         self._last_decision['fn_stage']=self.fn.stage_for(self.profile,self.depth,goal)['id']
         if skipped:
             self.fn.record(goal,row['id'],'declined','declined')
@@ -1056,23 +1200,37 @@ class ChatSession:
                     self._last_decision['validated_action']=interpretation['action']
                     self._last_decision['rejected_optional_annotations']=result.get('_annotation_warnings',[])
                     self._last_decision['fn_coverage']=[{k:v for k,v in e.items() if k!='quote'} for e in interpretation['coverage']]
-                    if ((result['act']=='explanation_offer' or interpretation['action']=='explain'
-                         or result['proposed_action']=='provide_information')
-                            and not (self.profile=='citizen' and goal in {'drone_recognition','drone_description'})):
-                        passages=request.get('retrieved_context',{}).get('passages',[])
-                        passage=next((p for p in passages if p['id'] in result['source_ids']),None)
-                        requested=text.strip().endswith('?') or bool(re.search(r'\b(?:what|how|explain|tell me|information|understand)\b',text,re.I))
-                        if not passage or not requested or result['act']=='explanation_offer':
-                            self.pending_explanation={'goal':goal,'text':passage['text'] if passage else 'A drone is an aircraft that can fly without a pilot sitting inside it. Drones can be different sizes and can be used for many different purposes.',
-                                'source':deepcopy(passage.get('source',{})) if passage else deepcopy(self._rubric()['source'])}
-                            self._assistant('Would you like a short explanation before we continue?',goal,'explanation_permission')
-                            return
-                        if passage:
-                            self._assistant(passage['text']+' This is general information; it does not establish local operations.',act='supplied_information')
-                            self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'retrieved_source_information','source':deepcopy(passage.get('source',{})),
-                                'source_id':passage['id'],'text':passage['text'],'prior_knowledge':False,'actual_activity':False,'revision':self.revision})
-                            self._last_decision.update(accepted_action='provide_information',postcondition={'exposure_recorded':True,
-                                'exposure_id':self.exposures[-1]['id'],'participant_text_from_source':passage['id']})
+                    information_request=interpretation.get('information_request')
+                    if result['act']=='explanation_offer' and not information_request:
+                        # FN's optional offer remains available when the person
+                        # has not asked for an explanation themselves.
+                        passage=next((p for p in request.get('retrieved_context',{}).get('passages',[])
+                                      if p['id'] in result['source_ids']),None)
+                        self.pending_explanation={'goal':goal,'text':passage['text'] if passage else
+                            'A drone is an aircraft that can fly without a pilot sitting inside it. Drones can have different sizes and can be used for many different purposes.',
+                            'source':deepcopy(passage.get('source',{})) if passage else deepcopy(self._rubric()['source'])}
+                        self._assistant('Would a short explanation be helpful before we continue?',goal,'explanation_permission')
+                        return
+                    if (self.profile=='citizen' and goal in {'drone_recognition','drone_description'}
+                            and information_request=='drone_definition'):
+                        # Record exposure only. The definition does not become
+                        # prior recognition or respondent knowledge.
+                        if 'drone_explanation' not in self.fn.coverage:
+                            self.fn.record('drone_explanation',row['id'],'provided','provided')
+                        if (goal=='drone_recognition' and interpretation['answer_kind'] in {'no','uncertain','partial'}
+                                and 'drone_description' not in self.fn.coverage):
+                            # The request follows an explicit inability/uncertainty
+                            # to describe the concept. Record that boundary as
+                            # unknown; do not ask the participant to reproduce
+                            # wording the chatbot just supplied.
+                            self.fn.record('drone_description',row['id'],'unknown','uncertain')
+                    information_answered=self._respond_to_information_need(
+                        text,result,row,goal,request.get('retrieved_context',{}))
+                    if information_answered:
+                        self._last_decision.update(accepted_action='provide_information',
+                            postcondition={'exposure_recorded':True,'exposure_id':self.exposures[-1]['id'],
+                                           'prior_knowledge':False,
+                                           'participant_text_from_source':self.exposures[-1].get('source_id')})
                     if goal not in self.fn.coverage:
                         count=self.fn.followups.get(goal,0)
                         if count<1:
@@ -1133,16 +1291,14 @@ class ChatSession:
                 and self.adaptive_probes < (3 if self.depth=='short' else 7)):
             self.fn.followups[goal]=self.fn.followups.get(goal,0)+1
             self.adaptive_probes+=1
-            self._respond_to_information_need(text)
+            if not information_answered:
+                self._respond_to_information_need(text,result,row,goal,request.get('retrieved_context',{}))
             self._assistant(result['message'],goal,act='question')
             self.messages[-1]['source']={**deepcopy(self._rubric()['source']),
                 'locator':node['source_locator'],'specification_version':self.fn.version,
                 'wording':'LLM_contextual_probe_pending_review'}
             self.routing_events.append({'event':'adaptive_probe','objective_id':goal})
             return
-        if result is not None and not any(e.get('kind') in {'retrieved_source_information',
-                'permissioned_explanation'} and e.get('revision')==self.revision for e in self.exposures):
-            self._respond_to_information_need(text)
         if result is not None and self._model_led_active():
             self._model_led_route(result,indicator_client,score_client)
         else:
@@ -1773,7 +1929,7 @@ class ChatSession:
             question = {
                 'perspective': 'Are you answering for yourself, an organisation, or a technology?',
                 'area': 'Which city or broad area should we discuss? You can say you prefer not to answer.',
-                'citizen_duration': 'Would you prefer a shorter conversation, around 20 minutes (A), or more detail, around 35 minutes (B)? If unsure, we can start short.',
+                'citizen_duration': 'Would you prefer the short or extended conversation? If unsure, we can use the short style.',
                 'drone_recognition': 'Do you know what a drone is?',
                 'drone_description': 'How would you describe a drone in your own words?',
                 'organisation_context': 'What kind of organisation are you speaking for? Its name is not needed.',
@@ -1824,7 +1980,9 @@ class ChatSession:
             return []
         if self.stage=='conversation':
             if self.objective=='perspective':return letter_options(PERSPECTIVE)
-            if self.profile=='citizen' and self.objective=='citizen_duration':return letter_options(CITIZEN_DURATION)
+            if self.profile=='citizen' and self.objective=='citizen_duration':
+                return [{'value':'short','label':'Short — focused on the most relevant issues'},
+                        {'value':'extended','label':'Extended — explores selected issues in more depth'}]
             if self.profile=='citizen' and self.objective=='drone_explanation':return letter_options(EDUCATIONAL_OPTIONS)
         if self.stage=='review' and self._has_model_score():
             config=specification()['review'][flow_key(self.profile,self.depth)]

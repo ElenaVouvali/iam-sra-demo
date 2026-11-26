@@ -476,6 +476,21 @@ def test_generated_preview_id_exemption_is_structural_only(monkeypatch):
     with pytest.raises(PrivacyError): require_safe_data({'preview_id': 'Alice Example'})
 
 
+def test_model_led_source_wording_metadata_exemption_is_structural_only(monkeypatch):
+    from iam_sra import privacy
+    original=privacy.detector()
+    label='Qwen proposed; FN harness validated'
+    class WordingFalsePositive:
+        def analyze(self,*,text,**kwargs):
+            findings=list(original.analyze(text=text,**kwargs))
+            if text==label:findings.append(privacy.Finding('PERSON',0,len(text)))
+            return findings
+    monkeypatch.setattr(privacy,'detector',lambda:WordingFalsePositive())
+    require_safe_data({'conversation':{'messages':[{'source':{'wording':label}}]}})
+    with pytest.raises(PrivacyError):require_safe_data({'answer':label})
+    with pytest.raises(PrivacyError):require_safe_data({'conversation':{'messages':[{'source':{'wording':label+' Alice Example'}}]}})
+
+
 @pytest.mark.presidio_live
 def test_real_privacy_questionnaire_module_reference_false_positive():
     pytest.importorskip('presidio_analyzer'); pytest.importorskip('en_core_web_sm')

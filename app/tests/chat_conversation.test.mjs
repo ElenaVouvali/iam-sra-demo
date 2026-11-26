@@ -87,7 +87,7 @@ test('perspective selection uses the current chat action, then restores free tex
  } finally { ui.unmount() }
 })
 for (const [name, options] of [
- ['duration', [{ value: 'A', label: 'Around 20 minutes' }, { value: 'B', label: 'Around 35 minutes' }]],
+ ['duration', [{ value: 'short', label: 'Short — focused on the most relevant issues' }, { value: 'extended', label: 'Extended — explores selected issues in more depth' }]],
  ['educational exit', [{ value: 'A', label: 'Explanation and continue' }, { value: 'B', label: 'Educational resource and finish' }]],
  ['FN validation', 'ABCDE'.split('').map((value) => ({ value, label: `Synthetic validation ${value}` }))],
 ]) test(`${name} is selectable on a resumed conversation`, async () => {
@@ -145,7 +145,7 @@ test('a new question clears the previous selection', async () => {
   ui.all().find((n) => n.props.type === 'radio' && n.props.value === 'B').props.onChange()
   await Vue.nextTick(); await ui.click(ui.button('Send selected answer'))
   ui.flow.session.value = { ...ui.flow.session.value, chat: { ...ui.flow.session.value.chat,
-   response_options: [{ value: 'A', label: 'Around 20 minutes' }, { value: 'B', label: 'Around 35 minutes' }],
+   response_options: [{ value: 'short', label: 'Short — focused on the most relevant issues' }, { value: 'extended', label: 'Extended — explores selected issues in more depth' }],
    messages: [...ui.flow.session.value.chat.messages, { id: 'm6', role: 'assistant', act: 'question', text: 'How much time?' }] } }
   await Vue.nextTick()
   assert.ok(ui.all().filter((n) => n.props.type === 'radio').every((n) => !n.props.checked))

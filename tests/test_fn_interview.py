@@ -302,8 +302,8 @@ def test_all_fn_flows_through_owned_api_jobs_and_both_exports(key):
         for row in GOLDEN[key]:
             assert row['question'] in b.view['chat']['messages'][-1]['text']
             b.act('chat_message',{'text':row['answer']})
-            if 'How much time' in b.view['chat']['messages'][-1]['text']:
-                b.act('chat_message',{'text':'35 minutes' if key=='citizen_extended' else '20 minutes'})
+            if b.view['chat']['messages'][-1]['text']=='Which interview style would you prefer?':
+                b.act('chat_message',{'text':'extended' if key=='citizen_extended' else 'short'})
         assert b.view['chat']['stage']=='review'
         b.act('chat_message',{'text':'A'})
         assert b.view['chat']['stage']=='ended' and b.view['chat']['participant_review']['validation']=='agrees'

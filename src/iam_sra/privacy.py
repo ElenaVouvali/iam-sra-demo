@@ -368,6 +368,12 @@ def require_safe_data(value, *, screening_receipts=None):
             generated_fn_review_message=(
                 (path=='root.text' or re.fullmatch(r'root(?:\.(?:chat|conversation))?\.messages\[\d+\]\.text',path) is not None)
                 and item in reviewed_interview_messages())
+            # Server-owned FN message provenance is not participant prose. The
+            # pinned PERSON recognizer flags this exact label; keep the exception
+            # limited to source.wording metadata and this fixed value.
+            generated_fn_wording_reference=(
+                re.fullmatch(r'root(?:\.conversation)?\.messages\[\d+\]\.source\.wording',path) is not None
+                and item=='Qwen proposed; FN harness validated')
             # Controller-generated chat message IDs use m<N>. The NLP model
             # tags some values (for example m16) as PERSON. Exempt only this
             # narrow syntax in application-owned reference fields; respondent
@@ -398,7 +404,7 @@ def require_safe_data(value, *, screening_receipts=None):
                     exposure_base+r'\.(?:information_exposures|supplied_information)\[\d+\]\.id',
                     r'root\.turns\[\d+\]\.controller_execution\.postcondition\.exposure_id',
                 )))
-            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not trace_schema_reference and not generated_chat_message_reference and not generated_exposure_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference and not generated_fn_anchor_reference and not generated_fn_review_message:
+            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not trace_schema_reference and not generated_chat_message_reference and not generated_exposure_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference and not generated_fn_anchor_reference and not generated_fn_review_message and not generated_fn_wording_reference:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():

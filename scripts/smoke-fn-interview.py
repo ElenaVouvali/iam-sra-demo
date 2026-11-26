@@ -83,7 +83,7 @@ def require_unmanaged_endpoint(root):
             except BlockingIOError:
                 # Only the sharing launcher's pre-publication child may use
                 # its exact owned model. No API/idle watcher exists yet.
-                from iam_sra.model_lifecycle import ProjectA2, ProjectDavinciV100
+                from iam_sra.model_lifecycle import ProjectA2, ProjectDavinciV100, ProjectLionoV100S
                 origin=urlsplit(os.getenv('IAM_BASE_URL',''))
                 token=os.getenv('IAM_SRA_VALIDATION_LEASE','')
                 if origin.hostname=='127.0.0.1' and origin.port and token:
@@ -91,6 +91,8 @@ def require_unmanaged_endpoint(root):
                     if profile=='davinci-v100':
                         backend=ProjectDavinciV100(origin.port,root=root,variant=os.getenv('IAM_MODEL_VARIANT','fp16'),
                             remote_dir=os.getenv('IAM_SRA_REMOTE_DIR','iam-sra-v100-review'))
+                    elif profile=='liono-v100s':
+                        backend=ProjectLionoV100S(origin.port,root=root,variant=os.getenv('IAM_MODEL_VARIANT','fp16'))
                     else:
                         backend=ProjectA2(origin.port,root=root,variant=os.getenv('IAM_MODEL_VARIANT'))
                     marker=backend._marker() or {}
