@@ -256,7 +256,8 @@ class FNInterview:
         """Return uncovered applicable objectives for model-selected follow-up.
 
         These are opportunities for useful probing, not a mandatory question
-        queue. Completion is assessed at FN stage level by
+        queue. A documented unresolved goal is not auto-asked repeatedly; it
+        remains visible in unresolved_gaps and is not positive evidence. Completion is assessed at FN stage level by
         :meth:`model_led_unconsidered_stages`.
         """
         gaps=[]
@@ -264,14 +265,14 @@ class FNInterview:
             for current in stage['questions']:
                 if self.applicable(current,concerns):
                     row=self.coverage.get(current['id'])
-                    if row is None or row.get('status') not in {'explored','unknown','declined','not_applicable','provided'}:
+                    if row is None or row.get('status') not in {'explored','unknown','declined','not_applicable','provided','unresolved'}:
                         gaps.append(current['id'])
         return gaps
 
     def model_led_unconsidered_stages(self, profile, depth, concerns):
-        """Stages with no applicable goal explored or explicitly dispositioned."""
+        """Stages with no applicable goal explored, dispositioned, or documented unresolved."""
         remaining=[]
-        considered_statuses={'explored','unknown','declined','not_applicable','provided'}
+        considered_statuses={'explored','unknown','declined','not_applicable','provided','unresolved'}
         for stage in self.stages(profile,depth):
             applicable=[q for q in stage['questions'] if self.applicable(q,concerns)]
             if not applicable:
@@ -303,7 +304,7 @@ class FNInterview:
             methodological_status=(
                 'not_applicable' if not applicable else
                 'considered' if any(self.coverage.get(q['id'],{}).get('status')
-                    in {'explored','unknown','declined','not_applicable','provided'} for q in applicable)
+                in {'explored','unknown','declined','not_applicable','provided','unresolved'} for q in applicable)
                 else 'not_explored')
             stage_status=('not_applicable' if not applicable else
                 'explored' if (model_led and methodological_status=='considered')

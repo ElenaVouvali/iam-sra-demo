@@ -67,6 +67,37 @@ def test_final_private_content_is_still_blocked_with_thinking_enabled(monkeypatc
     assert 'alice@example.com' not in json.dumps([c.last_trace,c.last_diagnostics])
 
 
+def test_model_output_screening_treats_only_exact_screened_answer_quote_as_reference(monkeypatch):
+    from iam_sra import llm_client, privacy
+    screened=[]
+    monkeypatch.setattr(privacy,'require_safe_data',lambda value:screened.append(value))
+    answer='I do not know who makes that decision in my city. Could you explain?'
+    content={'message':'What would you want to know?','interpretation':{
+        'information_request':'clarify_current_question',
+        'information_request_quote':'Could you explain?','justification':'A short safe explanation is requested.'}}
+    body={'choices':[{'message':{'content':json.dumps(content)}}]}
+    original=json.loads(body['choices'][0]['message']['content'])
+    llm_client._screen_generation_body(body,{'answer':answer},'chat_turn')
+    copy=json.loads(screened[-1]['choices'][0]['message']['content'])
+    assert copy['interpretation']['information_request_quote']==''
+    assert original['interpretation']['information_request_quote']=='Could you explain?'
+    assert json.loads(body['choices'][0]['message']['content'])==original
+    assert copy['interpretation']['justification']==original['interpretation']['justification']
+
+
+def test_model_output_screening_does_not_exempt_nonmatching_quote_or_other_prose(monkeypatch):
+    from iam_sra import llm_client, privacy
+    screened=[]
+    monkeypatch.setattr(privacy,'require_safe_data',lambda value:screened.append(value))
+    content={'message':'Could you tell me more?','interpretation':{
+        'information_request':'drone_definition','information_request_quote':'A different unsupported name.'}}
+    body={'choices':[{'message':{'content':json.dumps(content)}}]}
+    llm_client._screen_generation_body(body,{'answer':'No, I do not know.'},'chat_turn')
+    copy=json.loads(screened[-1]['choices'][0]['message']['content'])
+    assert copy['interpretation']['information_request_quote']=='A different unsupported name.'
+    assert copy['message']=='Could you tell me more?'
+
+
 def test_thinking_context_overflow_keeps_originals_and_does_not_generate(monkeypatch):
     c,sent,error=request(monkeypatch,count=7000)
     assert error.code=='budget' and [p for p,_ in sent]==['/tokenize']

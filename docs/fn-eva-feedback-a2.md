@@ -158,3 +158,59 @@ The synthetic respondent is Qwen-generated and is not independent human
 validation. Inspect the complete transcript, question repeats, information
 exposures, concern evidence, projection, score/abstention, adjacent boundary,
 participant review and export before making any review-readiness claim.
+
+## A2 sceptical-citizen live run and corrective refinements
+
+The new fictional persona `S8_uninformed_project_sceptic_short` is registered
+in `eval/fn_citizen_stress_v1.json`. It is a Coimbra resident with no prior
+drone knowledge, no participation experience and a consistently sceptical
+view. It has no target readiness score. Its answers are scripted; the
+interviewer, interpretation, routing, scorer and participant-review flow use
+the live A2 Qwen endpoint.
+
+The initial run completed through review and exported a provisional CRL 5. The
+saved retest, after the first source-bound privacy change, also completed with
+CRL 5, JSON/JSONL export and a participant response of `E` (uncertain), leaving
+the result pending human review. The two exact citations were valid and the
+adjacent distinction was CRL 6 Informed evaluation. The rationale is plausible:
+the respondent proposed conditions and evidence comparisons, but had not
+demonstrated using evidence to evaluate options and provide feedback. This
+boundary still needs FN adjudication; no ground-truth score exists for the
+fictional persona.
+
+The live retest established the following failure chain and changes:
+
+| Observation | Change | Evidence and remaining limitation |
+|---|---|---|
+| A model-generated request quote exactly echoed screened respondent text and was falsely flagged as PERSON. | Screen a temporary copy of the model response with only an exact quote substring removed from its metadata location, after the original answer has passed request screening. Preserve the untouched model response for exact-source validation. | Retest had no privacy failures; deterministic tests verify non-matching quotes and all other generated prose remain screened. |
+| Two model question outputs failed the bounded `eligibility/message` check. Previously, such an error appeared to the participant. | Save the original answer, record its goal as unresolved, answer only a detectable explicit information request, and continue using a different registered FN objective. | Retest completed without a participant-facing technical-error message; trace records two recovered interpretation failures. |
+| A request for accountability was accompanied by unrelated medical-need and road-comparison statements; the model annotation led to extra background being supplied. | Restrict request detection to the clause containing the request cue, validate model labels against their exact quoted request, and cap responses to the requested categories. | Deterministic regressions pass. The full A2 retest preceded this last clause-scoping change, so its live effect remains unverified. |
+| The same conditions answer was elicited again after the first copy was left unresolved, producing duplicate score citations. | Treat a documented unresolved goal as considered for stage completion, retain it in `unresolved_gaps`, and exclude it from automatic repeated routing. It is not positive readiness evidence. | Deterministic routing/export regressions pass. The live retest preceded this final unresolved-goal change; no live confirmation is claimed. |
+
+The retest took 1,016.59 seconds (16m 57s), with 18 respondent turns, 24
+generation calls including retries, one scoring call, 13 timed generation HTTP
+requests, median 76.591 seconds and p95 88.356 seconds. There were 11
+controller question fallbacks and two recovered interpretation failures; no
+timeouts, token-budget failures or privacy failures. These timings show that
+the app is still slow on this A2 setup. The implementation keeps thinking,
+AWQ, 8,192 context and the existing model capacity. It does not claim a measured
+latency reduction; explanations are deterministic and use the existing turn
+generation, with no separate explanatory inference call.
+
+Retest artifacts are preserved in the ignored local runtime directory and a synthetic-only GitHub bundle at `eval/fn-eva-a2-s8-live-retest-20261126/`. The bundle contains the transcript, export, JSONL, structured developer trace and metrics; it contains no private FN PDFs or model weights. Original runtime artifacts remain untouched.
+
+Original local runtime paths:
+
+- `.runtime/fn-eva-a2-s8-live-retest-20261126/S8_uninformed_project_sceptic_short.md`
+- `.runtime/fn-eva-a2-s8-live-retest-20261126/S8_uninformed_project_sceptic_short.json`
+- `.runtime/fn-eva-a2-s8-live-retest-20261126/S8_uninformed_project_sceptic_short.jsonl`
+- `.runtime/fn-eva-a2-s8-live-retest-20261126/S8_uninformed_project_sceptic_short-trace.json`
+- `.runtime/fn-eva-a2-s8-live-retest-20261126/metrics.json`
+
+Final focused local validation after the request-scoping and unresolved-routing
+changes: 285 passed across model-led, adaptive helper, thinking/privacy,
+persona, interpretation and conversation tests. A separate selected API/privacy
+run had 168 passes and one environment failure because the private corpus was
+unavailable in this isolated worktree; that test is not a live-app pass. The
+last request-scoping and unresolved-routing changes have only deterministic
+verification, not a subsequent full live interview.

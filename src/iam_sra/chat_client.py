@@ -592,7 +592,15 @@ def validate_reply(raw, request):
             # are questions to explore, never a proposed numerical score.
             interpretation['boundary_goals'] = [g for g in interpretation['boundary_goals']
                 if g in request['fn'].get('optional_goals', [])][:2]
-            require_safe_data(interpretation)
+            # information_request_quote has already been checked as an exact
+            # substring of the respondent answer above. That full source answer
+            # crossed the input privacy boundary before inference; rescreening
+            # a short excerpt can produce PERSON false positives. Screen every
+            # other model-produced annotation, while retaining the validated
+            # quote only as a reference to that screened source.
+            screened_interpretation={key:value for key,value in interpretation.items()
+                                     if key!='information_request_quote'}
+            require_safe_data(screened_interpretation)
         result['interpretation'] = interpretation
     result['_quality_issues'] = issues
     result['_annotation_warnings'] = sorted(set(warnings))

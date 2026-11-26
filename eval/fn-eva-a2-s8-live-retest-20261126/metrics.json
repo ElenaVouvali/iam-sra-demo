@@ -1,0 +1,200 @@
+{
+  "schema_version": "iam-sra-citizen-stress-results-1.0.0",
+  "model_expected": "Qwen/Qwen3-8B-AWQ",
+  "base_url": "http://127.0.0.1:18023",
+  "thinking_enabled": true,
+  "respondent": "scripted",
+  "adaptive_questions": 0,
+  "independent_validation": false,
+  "cases": [
+    {
+      "case": "S8_uninformed_project_sceptic_short",
+      "persona_id": "S8_uninformed_project_sceptic_short",
+      "depth": "short",
+      "respondent": "scripted",
+      "adaptive_questions": 0,
+      "stage": "ended",
+      "partial": false,
+      "failure": null,
+      "fallback_count": 11,
+      "interpretation_failures": 2,
+      "technical_failures": 0,
+      "token_budget_failures": 0,
+      "timeout_failures": 0,
+      "scoring_executed": true,
+      "score_diagnostics": {},
+      "score_status": "suggested",
+      "level": 5,
+      "interview_turns": 18,
+      "generation_calls": 24,
+      "scoring_generation_calls": 1,
+      "generation_http_seconds": [
+        36.646806,
+        69.504843,
+        68.953129,
+        71.834997,
+        82.849005,
+        76.590937,
+        84.080089,
+        88.355888,
+        72.966024,
+        76.777194,
+        81.852199,
+        77.127164,
+        72.336762
+      ],
+      "interviewer_latency_median_seconds": 76.591,
+      "interviewer_latency_p95_seconds": 88.355888,
+      "respondent_generation_seconds": [],
+      "adaptive_question_events": 0,
+      "adaptive_probe_events": 0,
+      "routing_events": [
+        {
+          "event": "responded_to_information_need",
+          "categories": [
+            "drone_definition"
+          ],
+          "request_evidence_id": "m12",
+          "evidence_scope": "information_exposure_only",
+          "prior_knowledge": false
+        },
+        {
+          "event": "model_led_proposal_rejected",
+          "reason": "goal_already_addressed",
+          "proposed_goal": "drone_explanation",
+          "fallback_goal": "healthcare_awareness"
+        },
+        {
+          "event": "responded_to_information_need",
+          "categories": [
+            "sample_delivery_example"
+          ],
+          "request_evidence_id": "m15",
+          "evidence_scope": "information_exposure_only",
+          "prior_knowledge": false
+        },
+        {
+          "event": "model_led_proposal_rejected",
+          "reason": "goal_already_addressed",
+          "proposed_goal": "drone_recognition",
+          "fallback_goal": "open_priorities"
+        },
+        {
+          "event": "model_led_proposal_rejected",
+          "reason": "goal_not_applicable",
+          "proposed_goal": "noise_understanding",
+          "fallback_goal": "decisions"
+        },
+        {
+          "event": "question_fallback",
+          "issues": [
+            "not_a_question"
+          ],
+          "evidence_id": "m20"
+        },
+        {
+          "event": "model_led_proposal_rejected",
+          "reason": "Propose one new, neutral, non-repeating question for the selected FN objective.",
+          "proposed_goal": null,
+          "fallback_goal": "conditions"
+        },
+        {
+          "event": "responded_to_information_need",
+          "categories": [
+            "delivery_basics",
+            "comparison"
+          ],
+          "request_evidence_id": "m22",
+          "evidence_scope": "information_exposure_only",
+          "prior_knowledge": false
+        },
+        {
+          "event": "model_question_recovered",
+          "failed_objective": "conditions",
+          "recovered_to_objective": "conditions_why",
+          "answer_evidence_id": "m22",
+          "failed_goal_status": "unresolved"
+        },
+        {
+          "event": "model_led_proposal_rejected",
+          "reason": "goal_already_addressed",
+          "proposed_goal": "conditions_why",
+          "fallback_goal": "evaluation_evidence"
+        },
+        {
+          "event": "model_question_recovered",
+          "failed_objective": "evaluation_evidence",
+          "recovered_to_objective": "demonstration",
+          "answer_evidence_id": "m27",
+          "failed_goal_status": "unresolved"
+        },
+        {
+          "event": "model_led_proposal_rejected",
+          "reason": "goal_already_addressed",
+          "proposed_goal": "drone_recognition",
+          "fallback_goal": "opportunity"
+        },
+        {
+          "event": "model_led_proposal_rejected",
+          "reason": "goal_already_addressed",
+          "proposed_goal": "opportunity",
+          "fallback_goal": "problem_action"
+        },
+        {
+          "event": "responded_to_information_need",
+          "categories": [
+            "accountability"
+          ],
+          "request_evidence_id": "m33",
+          "evidence_scope": "information_exposure_only",
+          "prior_knowledge": false
+        },
+        {
+          "event": "model_led_proposal_rejected",
+          "reason": "goal_already_addressed",
+          "proposed_goal": "problem_action",
+          "fallback_goal": "ongoing_role"
+        },
+        {
+          "event": "model_led_question_accepted",
+          "objective_id": "conditions",
+          "stage_id": "co_design",
+          "purpose": "Clarify decision-making processes and accountability mechanisms for the drone service."
+        },
+        {
+          "event": "question_fallback",
+          "issues": [
+            "not_a_question"
+          ],
+          "evidence_id": "m38"
+        },
+        {
+          "event": "responded_to_information_need",
+          "categories": [
+            "delivery_basics",
+            "comparison"
+          ],
+          "request_evidence_id": "m38",
+          "evidence_scope": "information_exposure_only",
+          "prior_knowledge": false
+        },
+        {
+          "event": "model_led_proposal_rejected",
+          "reason": "Propose one new, neutral, non-repeating question for the selected FN objective.",
+          "proposed_goal": null,
+          "fallback_goal": "opinion"
+        }
+      ],
+      "json_export": true,
+      "jsonl_export": true,
+      "trace_saved": true,
+      "elapsed_seconds": 1016.59,
+      "artifacts": {
+        "json": "/home/elvouvali/IAM_CC/iam-sra-eva-feedback-a2/.runtime/fn-eva-a2-s8-live-retest-20261126/S8_uninformed_project_sceptic_short.json",
+        "jsonl": "/home/elvouvali/IAM_CC/iam-sra-eva-feedback-a2/.runtime/fn-eva-a2-s8-live-retest-20261126/S8_uninformed_project_sceptic_short.jsonl",
+        "markdown": "/home/elvouvali/IAM_CC/iam-sra-eva-feedback-a2/.runtime/fn-eva-a2-s8-live-retest-20261126/S8_uninformed_project_sceptic_short.md",
+        "trace": "/home/elvouvali/IAM_CC/iam-sra-eva-feedback-a2/.runtime/fn-eva-a2-s8-live-retest-20261126/S8_uninformed_project_sceptic_short-trace.json"
+      }
+    }
+  ]
+}

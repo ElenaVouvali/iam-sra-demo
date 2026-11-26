@@ -1,0 +1,4584 @@
+{
+  "session_id": "5b249d5b-f9f3-49db-be61-57789d5e1eaa",
+  "trace_schema": "iam-sra-chat-decision-trace-1.0.0",
+  "turns": [
+    {
+      "turn_id": 1,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "opening",
+      "respondent_evidence_ids": [
+        "m3"
+      ],
+      "accepted_actions": [
+        {
+          "act": "profile_acknowledgement",
+          "message_id": "m4"
+        },
+        {
+          "act": "question",
+          "message_id": "m5"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m5",
+          "text": "Which EU city or urban area would you like your answers to refer to?",
+          "act": "question"
+        }
+      ],
+      "model_proposal": {},
+      "model_led_transition": null,
+      "action_validation": {
+        "validated_action": null,
+        "decision": "accepted",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "not_used",
+        "guidance": [],
+        "passages": [],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "area",
+        "unconsidered_stage_ids": [],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": null,
+      "fn_coverage": [],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [],
+      "indicator_mappings": [],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "question",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 2,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "perspective",
+          "profile": null,
+          "revision": 0
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "area",
+          "profile": "citizen",
+          "revision": 1
+        }
+      },
+      "execution": {
+        "model_calls": 0,
+        "latency_seconds": 0.026,
+        "prompt_context_selection": null,
+        "fallback_used": false,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 2,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "opening",
+      "respondent_evidence_ids": [
+        "m6"
+      ],
+      "accepted_actions": [
+        {
+          "act": "city_acknowledgement",
+          "message_id": "m7"
+        },
+        {
+          "act": "question",
+          "message_id": "m8"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m8",
+          "text": "Which interview style would you prefer?",
+          "act": "question"
+        }
+      ],
+      "model_proposal": {},
+      "model_led_transition": null,
+      "action_validation": {
+        "validated_action": null,
+        "decision": "accepted",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "not_used",
+        "guidance": [],
+        "passages": [],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "citizen_duration",
+        "unconsidered_stage_ids": [],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "context",
+      "fn_coverage": [],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [
+        {
+          "field": "city",
+          "evidence_id": "m6",
+          "status": "respondent_provided_unverified"
+        }
+      ],
+      "concerns": [],
+      "indicator_mappings": [],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "question",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 2,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "area",
+          "profile": "citizen",
+          "revision": 1
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "citizen_duration",
+          "profile": "citizen",
+          "revision": 2
+        }
+      },
+      "execution": {
+        "model_calls": 0,
+        "latency_seconds": 0.018,
+        "prompt_context_selection": null,
+        "fallback_used": false,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 3,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "opening",
+      "respondent_evidence_ids": [],
+      "accepted_actions": [
+        {
+          "act": "depth_acknowledgement",
+          "message_id": "m10"
+        },
+        {
+          "act": "question",
+          "message_id": "m11"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m11",
+          "text": "Do you know what a drone is?",
+          "act": "question"
+        }
+      ],
+      "model_proposal": {},
+      "model_led_transition": null,
+      "action_validation": {
+        "validated_action": null,
+        "decision": "accepted",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "not_used",
+        "guidance": [],
+        "passages": [],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "drone_recognition",
+        "unconsidered_stage_ids": [],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": null,
+      "fn_coverage": [],
+      "score_flag_diagnostics": null,
+      "depth_change": {
+        "depth": "short",
+        "previous_depth": "short",
+        "provenance": "participant_choice",
+        "evidence_id": "m9",
+        "source": {
+          "document": "SRAA Citizen interview example 20min.pdf",
+          "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+          "scale_pdf_pages": [
+            12,
+            13
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+        },
+        "revision": 3,
+        "readiness_inferred": false,
+        "earlier_added_probes_not_reasked": []
+      },
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [],
+      "indicator_mappings": [],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "question",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 2,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "citizen_duration",
+          "profile": "citizen",
+          "revision": 2
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "drone_recognition",
+          "profile": "citizen",
+          "revision": 3
+        }
+      },
+      "execution": {
+        "model_calls": 0,
+        "latency_seconds": 0.019,
+        "prompt_context_selection": null,
+        "fallback_used": false,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 4,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "opening",
+      "respondent_evidence_ids": [
+        "m12"
+      ],
+      "accepted_actions": [
+        {
+          "act": "supplied_information",
+          "message_id": "m13"
+        },
+        {
+          "act": "authored_fallback",
+          "message_id": "m14"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m14",
+          "text": "Before today, had you heard about drones being used to transport healthcare items such as medicines, blood, laboratory samples or other medical supplies?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": "drone_explanation",
+        "question_purpose": "Recognition and prior knowledge before information exposure"
+      },
+      "model_led_transition": {
+        "accepted": false,
+        "action": "advance",
+        "proposed_goal": "drone_explanation",
+        "rejection_reason": "goal_already_addressed",
+        "remaining_goals": [
+          "healthcare_awareness",
+          "local_awareness",
+          "open_priorities",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions",
+          "meaningful",
+          "informing",
+          "conditions",
+          "conditions_why",
+          "evaluation_evidence",
+          "demonstration",
+          "opportunity",
+          "influence_evidence",
+          "problem_action",
+          "problem_response",
+          "escalation",
+          "ongoing_role",
+          "opinion",
+          "opinion_why"
+        ],
+        "fallback_goal": "healthcare_awareness"
+      },
+      "action_validation": {
+        "validated_action": "advance",
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:recognition",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 2,3",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:understanding",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 6",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:opinion",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "page 12",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-OPPORTUNITY",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "Read me!L12:L13; SRA IAM indicators!I15:I16; Use case(s) per LL!A2",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-NOISE-UNKNOWN",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "p.5; pp.8–9 hypothetical examples",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "project_background",
+            "source_status": "explanatory_proposal",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-PRIVACY-UNKNOWN",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "p.5; p.8 hypothetical privacy gate",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "project_background",
+            "source_status": "explanatory_proposal",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "healthcare_awareness",
+        "unconsidered_stage_ids": [
+          "awareness",
+          "topics",
+          "engagement",
+          "co_design",
+          "evaluation",
+          "influence",
+          "accountability",
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "recognition",
+      "fn_coverage": [
+        {
+          "goal": "drone_recognition",
+          "evidence_id": "m12",
+          "status": "unknown",
+          "answer_kind": "uncertain"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "provide_information",
+        "postcondition": {
+          "exposure_recorded": true,
+          "exposure_id": "x1",
+          "prior_knowledge": false,
+          "participant_text_from_source": null,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "drone_recognition",
+          "profile": "citizen",
+          "revision": 3
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "healthcare_awareness",
+          "profile": "citizen",
+          "revision": 4
+        }
+      },
+      "execution": {
+        "model_calls": 1,
+        "latency_seconds": 38.447,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:recognition",
+            "guidance:understanding",
+            "MC-OPPORTUNITY",
+            "MC-NOISE-UNKNOWN"
+          ]
+        },
+        "fallback_used": true,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 5,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "opening",
+      "respondent_evidence_ids": [
+        "m15"
+      ],
+      "accepted_actions": [
+        {
+          "act": "supplied_information",
+          "message_id": "m16"
+        },
+        {
+          "act": "authored_fallback",
+          "message_id": "m17"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m17",
+          "text": "Thinking about drones transporting healthcare items in your city, what comes to mind?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": "drone_recognition",
+        "question_purpose": "Clarify drone recognition"
+      },
+      "model_led_transition": {
+        "accepted": false,
+        "action": "advance",
+        "proposed_goal": "drone_recognition",
+        "rejection_reason": "goal_already_addressed",
+        "remaining_goals": [
+          "local_awareness",
+          "open_priorities",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions",
+          "meaningful",
+          "informing",
+          "conditions",
+          "conditions_why",
+          "evaluation_evidence",
+          "demonstration",
+          "opportunity",
+          "influence_evidence",
+          "problem_action",
+          "problem_response",
+          "escalation",
+          "ongoing_role",
+          "opinion",
+          "opinion_why"
+        ],
+        "fallback_goal": "open_priorities"
+      },
+      "action_validation": {
+        "validated_action": "advance",
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:awareness",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 3,4",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:understanding",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 6",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:engagement",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 7",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "WP3-REVIEW",
+            "source": {
+              "document": "WP3_IAM-CC_Minutes_20261008.docx",
+              "locator": "Discussion and Decision; Action Points 1–2",
+              "sha256": "1b65188970fadabc8d58ebb36228cb92c5282670878548106fd66243d4899048",
+              "version": "1b65188970fadabc8d58ebb36228cb92c5282670878548106fd66243d4899048",
+              "source_status": "partner_draft"
+            },
+            "source_type": "source_context",
+            "source_status": "methodological_draft",
+            "permitted_use": [
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-MITIGATION",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "pp.8–9",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "illustrative_example",
+            "source_status": "historical_hypothesis",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-SCENARIO",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "p.5",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "illustrative_example",
+            "source_status": "scenario_facts",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "topics",
+          "engagement",
+          "co_design",
+          "evaluation",
+          "influence",
+          "accountability",
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "awareness",
+      "fn_coverage": [
+        {
+          "goal": "healthcare_awareness",
+          "evidence_id": "m15",
+          "status": "explored",
+          "answer_kind": "substantive"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "provide_information",
+        "postcondition": {
+          "exposure_recorded": true,
+          "exposure_id": "x2",
+          "prior_knowledge": false,
+          "participant_text_from_source": null,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "healthcare_awareness",
+          "profile": "citizen",
+          "revision": 4
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "open_priorities",
+          "profile": "citizen",
+          "revision": 5
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 71.423,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:awareness",
+            "guidance:understanding",
+            "WP3-REVIEW",
+            "MC-MITIGATION"
+          ]
+        },
+        "fallback_used": true,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 6,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m18"
+      ],
+      "accepted_actions": [
+        {
+          "act": "authored_fallback",
+          "message_id": "m19"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m19",
+          "text": "How are decisions about drone services taken in your city?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": "noise_understanding",
+        "question_purpose": "elaborate on specific noise impacts and accountability mechanisms"
+      },
+      "model_led_transition": {
+        "accepted": false,
+        "action": "advance",
+        "proposed_goal": "noise_understanding",
+        "rejection_reason": "goal_not_applicable",
+        "remaining_goals": [
+          "local_awareness",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions",
+          "meaningful",
+          "informing",
+          "conditions",
+          "conditions_why",
+          "evaluation_evidence",
+          "demonstration",
+          "opportunity",
+          "influence_evidence",
+          "problem_action",
+          "problem_response",
+          "escalation",
+          "ongoing_role",
+          "opinion",
+          "opinion_why"
+        ],
+        "fallback_goal": "decisions"
+      },
+      "action_validation": {
+        "validated_action": "advance",
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:accountability",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 11",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:understanding",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 6",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:co_design",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 8",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-NOISE-UNKNOWN",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "p.5; pp.8–9 hypothetical examples",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "project_background",
+            "source_status": "explanatory_proposal",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-NOISE-FACTORS",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8; comments C8/D8/H8/J8 and J8 revisions",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "FN-HISTORICAL",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "pp.6–7",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "source_context",
+            "source_status": "historical_example",
+            "permitted_use": [
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "engagement",
+          "co_design",
+          "evaluation",
+          "influence",
+          "accountability",
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "topics",
+      "fn_coverage": [
+        {
+          "goal": "open_priorities",
+          "evidence_id": "m18",
+          "status": "explored",
+          "answer_kind": "substantive"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "authored_fallback",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 1,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "open_priorities",
+          "profile": "citizen",
+          "revision": 5
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "decisions",
+          "profile": "citizen",
+          "revision": 6
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 70.977,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:accountability",
+            "guidance:understanding",
+            "MC-NOISE-UNKNOWN",
+            "MC-NOISE-FACTORS"
+          ]
+        },
+        "fallback_used": true,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 7,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m20"
+      ],
+      "accepted_actions": [
+        {
+          "act": "authored_fallback",
+          "message_id": "m21"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m21",
+          "text": "Imagine your city is considering introducing the healthcare drone service we have been discussing.\n\nWhat, if anything, would you want to change, add or require before it operates regularly?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": null,
+        "question_purpose": "Clarify the respondent's uncertainty about decision-making processes for drone services"
+      },
+      "model_led_transition": {
+        "accepted": false,
+        "action": "clarify",
+        "proposed_goal": null,
+        "rejection_reason": "Propose one new, neutral, non-repeating question for the selected FN objective.",
+        "remaining_goals": [
+          "local_awareness",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions_should",
+          "meaningful",
+          "informing",
+          "conditions",
+          "conditions_why",
+          "evaluation_evidence",
+          "demonstration",
+          "opportunity",
+          "influence_evidence",
+          "problem_action",
+          "problem_response",
+          "escalation",
+          "ongoing_role",
+          "opinion",
+          "opinion_why"
+        ],
+        "fallback_goal": "conditions"
+      },
+      "action_validation": {
+        "validated_action": "clarify",
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:recognition",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 2,3",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:engagement",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 7",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:influence",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 9,10",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-OPPORTUNITY",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "Read me!L12:L13; SRA IAM indicators!I15:I16; Use case(s) per LL!A2",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-PARTICIPATION",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "Read me!L8:L13; SRA IAM indicators!I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-UNDERSTANDING",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8,I14:I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "co_design",
+          "evaluation",
+          "influence",
+          "accountability",
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "engagement",
+      "fn_coverage": [
+        {
+          "goal": "decisions",
+          "evidence_id": "m20",
+          "status": "unknown",
+          "answer_kind": "uncertain"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "authored_fallback",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 1,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "decisions",
+          "profile": "citizen",
+          "revision": 6
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "conditions",
+          "profile": "citizen",
+          "revision": 7
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 73.791,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15",
+            "m18"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:recognition",
+            "guidance:engagement",
+            "MC-OPPORTUNITY",
+            "MC-PARTICIPATION"
+          ]
+        },
+        "fallback_used": true,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 8,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m22"
+      ],
+      "accepted_actions": [
+        {
+          "act": "supplied_information",
+          "message_id": "m23"
+        },
+        {
+          "act": "authored_fallback",
+          "message_id": "m24"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m24",
+          "text": "Why are those important to you?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {},
+      "model_led_transition": null,
+      "action_validation": {
+        "validated_action": null,
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:understanding",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 6",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:evaluation",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 8–10",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:awareness",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 3,4",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-UNDERSTANDING",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8,I14:I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-NOISE-FACTORS",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8; comments C8/D8/H8/J8 and J8 revisions",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "FN-HISTORICAL",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "pp.6–7",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "source_context",
+            "source_status": "historical_example",
+            "permitted_use": [
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "co_design",
+          "evaluation",
+          "influence",
+          "accountability",
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "co_design",
+      "fn_coverage": [],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "bounded_question_recovery",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 2,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "conditions",
+          "profile": "citizen",
+          "revision": 7
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "conditions_why",
+          "profile": "citizen",
+          "revision": 8
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 84.816,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15",
+            "m18",
+            "m20"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:understanding",
+            "guidance:evaluation",
+            "MC-UNDERSTANDING",
+            "MC-NOISE-FACTORS"
+          ]
+        },
+        "fallback_used": true,
+        "error": "eligibility"
+      }
+    },
+    {
+      "turn_id": 9,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m25"
+      ],
+      "accepted_actions": [
+        {
+          "act": "authored_fallback",
+          "message_id": "m26"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m26",
+          "text": "What information or experience would help you decide whether the healthcare drone service we are talking about works well enough for your city?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": "conditions_why",
+        "question_purpose": "Specify the types of evidence required to address noise concerns and accountability."
+      },
+      "model_led_transition": {
+        "accepted": false,
+        "action": "advance",
+        "proposed_goal": "conditions_why",
+        "rejection_reason": "goal_already_addressed",
+        "remaining_goals": [
+          "local_awareness",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions_should",
+          "meaningful",
+          "informing",
+          "conditions",
+          "evaluation_evidence",
+          "demonstration",
+          "opportunity",
+          "influence_evidence",
+          "problem_action",
+          "problem_response",
+          "escalation",
+          "ongoing_role",
+          "opinion",
+          "opinion_why"
+        ],
+        "fallback_goal": "evaluation_evidence"
+      },
+      "action_validation": {
+        "validated_action": "advance",
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:evaluation",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 8–10",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:accountability",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 11",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:opinion",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "page 12",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-UNDERSTANDING",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8,I14:I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-SCENARIO",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "p.5",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "illustrative_example",
+            "source_status": "scenario_facts",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-PARTICIPATION",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "Read me!L8:L13; SRA IAM indicators!I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "evaluation",
+          "influence",
+          "accountability",
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "co_design",
+      "fn_coverage": [
+        {
+          "goal": "conditions_why",
+          "evidence_id": "m25",
+          "status": "explored",
+          "answer_kind": "substantive"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "authored_fallback",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 1,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "conditions_why",
+          "profile": "citizen",
+          "revision": 8
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "evaluation_evidence",
+          "profile": "citizen",
+          "revision": 9
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 78.689,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15",
+            "m18",
+            "m20",
+            "m22"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:evaluation",
+            "guidance:accountability",
+            "MC-UNDERSTANDING",
+            "MC-SCENARIO"
+          ]
+        },
+        "fallback_used": true,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 10,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m27"
+      ],
+      "accepted_actions": [
+        {
+          "act": "authored_fallback",
+          "message_id": "m28"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m28",
+          "text": "Have you ever seen, heard or experienced a drone demonstration, simulation or similar activity that helped you judge any of these things?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {},
+      "model_led_transition": null,
+      "action_validation": {
+        "validated_action": null,
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:opinion",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "page 12",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:evaluation",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 8–10",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:awareness",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 3,4",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-UNDERSTANDING",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8,I14:I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-NOISE-FACTORS",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8; comments C8/D8/H8/J8 and J8 revisions",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-MITIGATION",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "pp.8–9",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "illustrative_example",
+            "source_status": "historical_hypothesis",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "evaluation",
+          "influence",
+          "accountability",
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "evaluation",
+      "fn_coverage": [],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "bounded_question_recovery",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 1,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "evaluation_evidence",
+          "profile": "citizen",
+          "revision": 9
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "demonstration",
+          "profile": "citizen",
+          "revision": 10
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 86.064,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15",
+            "m18",
+            "m20",
+            "m22",
+            "m25"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:opinion",
+            "guidance:evaluation",
+            "MC-UNDERSTANDING",
+            "MC-NOISE-FACTORS"
+          ]
+        },
+        "fallback_used": true,
+        "error": "eligibility"
+      }
+    },
+    {
+      "turn_id": 11,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m29"
+      ],
+      "accepted_actions": [
+        {
+          "act": "authored_fallback",
+          "message_id": "m30"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m30",
+          "text": "Have you ever had a chance to give your views about drones, a new transport service, a new facility or another decision affecting your area?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": "drone_recognition",
+        "question_purpose": "explore recognition of drones"
+      },
+      "model_led_transition": {
+        "accepted": false,
+        "action": "advance",
+        "proposed_goal": "drone_recognition",
+        "rejection_reason": "goal_already_addressed",
+        "remaining_goals": [
+          "local_awareness",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions_should",
+          "meaningful",
+          "informing",
+          "conditions",
+          "evaluation_evidence",
+          "hypothetical_comparison",
+          "opportunity",
+          "influence_evidence",
+          "problem_action",
+          "problem_response",
+          "escalation",
+          "ongoing_role",
+          "opinion",
+          "opinion_why"
+        ],
+        "fallback_goal": "opportunity"
+      },
+      "action_validation": {
+        "validated_action": "advance",
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:sustained",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 11",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:influence",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 9,10",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:co_design",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 8",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-MITIGATION",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "pp.8–9",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "illustrative_example",
+            "source_status": "historical_hypothesis",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-OPPORTUNITY",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "Read me!L12:L13; SRA IAM indicators!I15:I16; Use case(s) per LL!A2",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-NOISE-UNKNOWN",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "p.5; pp.8–9 hypothetical examples",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "project_background",
+            "source_status": "explanatory_proposal",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "influence",
+          "accountability",
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "evaluation",
+      "fn_coverage": [
+        {
+          "goal": "demonstration",
+          "evidence_id": "m29",
+          "status": "explored",
+          "answer_kind": "substantive"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m29",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "authored_fallback",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 1,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "demonstration",
+          "profile": "citizen",
+          "revision": 10
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "opportunity",
+          "profile": "citizen",
+          "revision": 11
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 90.694,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15",
+            "m18",
+            "m20",
+            "m22",
+            "m25",
+            "m27"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:sustained",
+            "guidance:influence",
+            "MC-MITIGATION",
+            "MC-OPPORTUNITY"
+          ]
+        },
+        "fallback_used": true,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 12,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m31"
+      ],
+      "accepted_actions": [
+        {
+          "act": "authored_fallback",
+          "message_id": "m32"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m32",
+          "text": "Imagine the healthcare drone service we have been discussing was already operating and you noticed a problem—for example repeated noise, a safety issue or a privacy concern.\n\nWhat would you do?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": "opportunity",
+        "question_purpose": "Clarify participation opportunities"
+      },
+      "model_led_transition": {
+        "accepted": false,
+        "action": "advance",
+        "proposed_goal": "opportunity",
+        "rejection_reason": "goal_already_addressed",
+        "remaining_goals": [
+          "local_awareness",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions_should",
+          "meaningful",
+          "informing",
+          "conditions",
+          "evaluation_evidence",
+          "hypothetical_comparison",
+          "participation_capability",
+          "influence_evidence",
+          "problem_action",
+          "problem_response",
+          "escalation",
+          "ongoing_role",
+          "opinion",
+          "opinion_why"
+        ],
+        "fallback_goal": "problem_action"
+      },
+      "action_validation": {
+        "validated_action": "advance",
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:engagement",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 7",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:sustained",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 11",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:awareness",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 3,4",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-PARTICIPATION",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "Read me!L8:L13; SRA IAM indicators!I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-OPPORTUNITY",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "Read me!L12:L13; SRA IAM indicators!I15:I16; Use case(s) per LL!A2",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-NOISE-UNKNOWN",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "p.5; pp.8–9 hypothetical examples",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "project_background",
+            "source_status": "explanatory_proposal",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "accountability",
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "influence",
+      "fn_coverage": [
+        {
+          "goal": "opportunity",
+          "evidence_id": "m31",
+          "status": "explored",
+          "answer_kind": "yes"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m29",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m31",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "authored_fallback",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 1,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "opportunity",
+          "profile": "citizen",
+          "revision": 11
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "problem_action",
+          "profile": "citizen",
+          "revision": 12
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 75.057,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15",
+            "m18",
+            "m20",
+            "m22",
+            "m25",
+            "m27",
+            "m29"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:engagement",
+            "guidance:sustained",
+            "MC-PARTICIPATION",
+            "MC-OPPORTUNITY"
+          ]
+        },
+        "fallback_used": true,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 13,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m33"
+      ],
+      "accepted_actions": [
+        {
+          "act": "supplied_information",
+          "message_id": "m34"
+        },
+        {
+          "act": "authored_fallback",
+          "message_id": "m35"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m35",
+          "text": "If drone services became a regular part of the city, should citizens continue to have a role over time? What should that role be?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": "problem_action",
+        "question_purpose": "Clarify available mechanisms for reporting issues related to healthcare drones"
+      },
+      "model_led_transition": {
+        "accepted": false,
+        "action": "advance",
+        "proposed_goal": "problem_action",
+        "rejection_reason": "goal_already_addressed",
+        "remaining_goals": [
+          "local_awareness",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions_should",
+          "meaningful",
+          "informing",
+          "conditions",
+          "evaluation_evidence",
+          "hypothetical_comparison",
+          "participation_capability",
+          "influence_evidence",
+          "problem_response",
+          "escalation",
+          "ongoing_role",
+          "opinion",
+          "opinion_why"
+        ],
+        "fallback_goal": "ongoing_role"
+      },
+      "action_validation": {
+        "validated_action": "advance",
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:recognition",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 2,3",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:accountability",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 11",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:co_design",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 8",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-PARTICIPATION",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "Read me!L8:L13; SRA IAM indicators!I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "FN-HISTORICAL",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "pp.6–7",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "source_context",
+            "source_status": "historical_example",
+            "permitted_use": [
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-MITIGATION",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "pp.8–9",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "illustrative_example",
+            "source_status": "historical_hypothesis",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "sustained",
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "accountability",
+      "fn_coverage": [
+        {
+          "goal": "problem_action",
+          "evidence_id": "m33",
+          "status": "explored",
+          "answer_kind": "substantive"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m29",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m31",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m33",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "provide_information",
+        "postcondition": {
+          "exposure_recorded": true,
+          "exposure_id": "x5",
+          "prior_knowledge": false,
+          "participant_text_from_source": null,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "problem_action",
+          "profile": "citizen",
+          "revision": 12
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "ongoing_role",
+          "profile": "citizen",
+          "revision": 13
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 78.925,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15",
+            "m18",
+            "m20",
+            "m22",
+            "m25",
+            "m27",
+            "m29",
+            "m31"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:recognition",
+            "guidance:accountability",
+            "MC-PARTICIPATION",
+            "FN-HISTORICAL"
+          ]
+        },
+        "fallback_used": true,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 14,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m36"
+      ],
+      "accepted_actions": [
+        {
+          "act": "question",
+          "message_id": "m37"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m37",
+          "text": "How should decisions about the drone service be made, and who should be responsible for ensuring accountability?",
+          "act": "question"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": "conditions",
+        "question_purpose": "Clarify decision-making processes and accountability mechanisms for the drone service."
+      },
+      "model_led_transition": {
+        "accepted": true,
+        "action": "advance",
+        "proposed_goal": "conditions",
+        "stage_id": "co_design",
+        "purpose": "Clarify decision-making processes and accountability mechanisms for the drone service.",
+        "remaining_goals": [
+          "local_awareness",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions_should",
+          "meaningful",
+          "informing",
+          "conditions",
+          "evaluation_evidence",
+          "hypothetical_comparison",
+          "participation_capability",
+          "influence_evidence",
+          "problem_response",
+          "escalation",
+          "opinion",
+          "opinion_why"
+        ]
+      },
+      "action_validation": {
+        "validated_action": "advance",
+        "decision": "accepted",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:sustained",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 11",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:accountability",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 11",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:topics",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 4,5",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-NOISE-FACTORS",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8; comments C8/D8/H8/J8 and J8 revisions",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-PARTICIPATION",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "Read me!L8:L13; SRA IAM indicators!I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "WP3-REVIEW",
+            "source": {
+              "document": "WP3_IAM-CC_Minutes_20261008.docx",
+              "locator": "Discussion and Decision; Action Points 1–2",
+              "sha256": "1b65188970fadabc8d58ebb36228cb92c5282670878548106fd66243d4899048",
+              "version": "1b65188970fadabc8d58ebb36228cb92c5282670878548106fd66243d4899048",
+              "source_status": "partner_draft"
+            },
+            "source_type": "source_context",
+            "source_status": "methodological_draft",
+            "permitted_use": [
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "sustained",
+      "fn_coverage": [
+        {
+          "goal": "ongoing_role",
+          "evidence_id": "m36",
+          "status": "explored",
+          "answer_kind": "substantive"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m29",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m31",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m33",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m36",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "question",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 1,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "ongoing_role",
+          "profile": "citizen",
+          "revision": 13
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "conditions",
+          "profile": "citizen",
+          "revision": 14
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 84.026,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15",
+            "m18",
+            "m20",
+            "m22",
+            "m25",
+            "m27",
+            "m29",
+            "m31",
+            "m33"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:sustained",
+            "guidance:accountability",
+            "MC-NOISE-FACTORS",
+            "MC-PARTICIPATION"
+          ]
+        },
+        "fallback_used": false,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 15,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [
+        "m38"
+      ],
+      "accepted_actions": [
+        {
+          "act": "supplied_information",
+          "message_id": "m39"
+        },
+        {
+          "act": "authored_fallback",
+          "message_id": "m40"
+        }
+      ],
+      "accepted_questions": [
+        {
+          "message_id": "m40",
+          "text": "Overall, what do you currently think about using drones to transport healthcare items in your city?",
+          "act": "authored_fallback"
+        }
+      ],
+      "model_proposal": {
+        "proposed_action": "ask_question",
+        "act": "continue",
+        "topic": "",
+        "justification": "",
+        "evidence_ids": [],
+        "source_ids": [],
+        "uncertainty": "",
+        "next_goal_id": null,
+        "question_purpose": "elaborate on comparison of road transport and drone deliveries for medical need and impact evidence"
+      },
+      "model_led_transition": {
+        "accepted": false,
+        "action": "advance",
+        "proposed_goal": null,
+        "rejection_reason": "Propose one new, neutral, non-repeating question for the selected FN objective.",
+        "remaining_goals": [
+          "local_awareness",
+          "open_more",
+          "different_impacts",
+          "suggested_topics",
+          "priorities",
+          "decisions_should",
+          "meaningful",
+          "informing",
+          "evaluation_evidence",
+          "hypothetical_comparison",
+          "participation_capability",
+          "influence_evidence",
+          "problem_response",
+          "escalation",
+          "opinion",
+          "opinion_why"
+        ],
+        "fallback_goal": "opinion"
+      },
+      "action_validation": {
+        "validated_action": "advance",
+        "decision": "rejected_or_fallback",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "retrieved",
+        "guidance": [
+          {
+            "id": "guidance:understanding",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 6",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:evaluation",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 8–10",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          },
+          {
+            "id": "guidance:awareness",
+            "source": {
+              "document": "SRAA Citizen interview example 20min.pdf",
+              "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+              "scale_pdf_pages": [
+                12,
+                13
+              ],
+              "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+              "locator": "pages 3,4",
+              "status": "prototype pending partner review",
+              "policy_version": "fn-adaptive-interview-1.1.0"
+            },
+            "source_type": "methodological_guidance",
+            "permitted_use": "Interviewing guidance only; not respondent evidence or scoring authority."
+          }
+        ],
+        "passages": [
+          {
+            "id": "MC-UNDERSTANDING",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8,I14:I16",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "MC-NOISE-FACTORS",
+            "source": {
+              "document": "IAM-CC_Topic_experts.xlsx",
+              "locator": "SRA IAM indicators!I8; comments C8/D8/H8/J8 and J8 revisions",
+              "sha256": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "version": "c6ce7de93cf63ffe5adb0f432b0e685a7930108f9a71ad2c9c6bd8b064ecc873",
+              "source_status": "partner_draft"
+            },
+            "source_type": "project_background",
+            "source_status": "draft_explanation",
+            "permitted_use": [
+              "citizen_explanation",
+              "researcher_reference"
+            ]
+          },
+          {
+            "id": "FN-HISTORICAL",
+            "source": {
+              "document": "SRA_LLM_FN_concept.pdf",
+              "locator": "pp.6–7",
+              "sha256": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "version": "c3f780e368193f45e83827e27fc7438bedc9e38d1a68f31f60835dbf1525866a",
+              "source_status": "historical_concept"
+            },
+            "source_type": "source_context",
+            "source_status": "historical_example",
+            "permitted_use": [
+              "researcher_reference"
+            ]
+          }
+        ],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": false,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [
+          "opinion"
+        ],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "co_design",
+      "fn_coverage": [
+        {
+          "goal": "conditions",
+          "evidence_id": "m38",
+          "status": "explored",
+          "answer_kind": "substantive"
+        }
+      ],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m29",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m31",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m33",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m36",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m38",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "provide_information",
+        "postcondition": {
+          "exposure_recorded": true,
+          "exposure_id": "x7",
+          "prior_knowledge": false,
+          "participant_text_from_source": null,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "conditions",
+          "profile": "citizen",
+          "revision": 14
+        },
+        "state_after": {
+          "stage": "conversation",
+          "objective": "opinion",
+          "profile": "citizen",
+          "revision": 15
+        }
+      },
+      "execution": {
+        "model_calls": 2,
+        "latency_seconds": 79.366,
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m12",
+            "m15",
+            "m18",
+            "m20",
+            "m22",
+            "m25",
+            "m27",
+            "m29",
+            "m31",
+            "m33",
+            "m36"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:understanding",
+            "guidance:evaluation",
+            "MC-UNDERSTANDING",
+            "MC-NOISE-FACTORS"
+          ]
+        },
+        "fallback_used": true,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 16,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [],
+      "accepted_actions": [
+        {
+          "act": "scale_disclosure",
+          "message_id": "m42"
+        },
+        {
+          "act": "scale_notice",
+          "message_id": "m43"
+        },
+        {
+          "act": "uncertainty",
+          "message_id": "m44"
+        },
+        {
+          "act": "result_review",
+          "message_id": "m45"
+        }
+      ],
+      "accepted_questions": [],
+      "model_proposal": {},
+      "model_led_transition": null,
+      "action_validation": {
+        "validated_action": null,
+        "decision": "accepted",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "not_used",
+        "guidance": [],
+        "passages": [],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": true,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": "opinion",
+      "fn_coverage": [],
+      "score_flag_diagnostics": {
+        "model_proposed_anchor": true,
+        "model_proposed_anchor_id": "citizen_short-5",
+        "model_proposed_boundary_direction": "higher",
+        "model_proposed_alternative_anchor_id": null,
+        "model_provided_explanation": true,
+        "model_provided_boundary": true,
+        "explanation_characters": 532,
+        "boundary_characters": 355,
+        "model_proposed_explanation": "The respondent proposes specific conditions for improving drone healthcare deliveries, such as demonstrating medical need, comparing road options, publishing impact evidence, and clarifying accountability. These proposals align with the Co-design anchor's requirement to suggest safeguards or changes that could enhance service introduction. The boundary to the next level (Informed evaluation) requires using information to compare options and give feedback, which the respondent partially addresses but does not fully demonstrate.",
+        "model_proposed_boundary": "The next level, Informed evaluation, would require the respondent to use information or experience to compare options, consider trade-offs, and provide feedback. While the respondent asks for evidence comparisons (evidence-9), they do not explicitly state they would use such evidence to evaluate options or give informed feedback as required for level 6.",
+        "model_proposed_citations": [
+          {
+            "evidence_id": "m22",
+            "quote": null
+          },
+          {
+            "evidence_id": "m38",
+            "quote": null
+          }
+        ],
+        "material_conflict": false,
+        "evidence_incomplete": false,
+        "consistency_check": "consistent",
+        "consistency_evidence_ids": [],
+        "validator_suppressed_proposal": false,
+        "citation_quote_resolved_ids": [
+          "m22",
+          "m38"
+        ]
+      },
+      "depth_change": null,
+      "assessment": {
+        "profile": "citizen",
+        "scope": {
+          "organisation_or_unit": {
+            "present": false,
+            "status": "not_established"
+          },
+          "responsibilities": {
+            "present": false,
+            "status": "not_established"
+          },
+          "technical_object": {
+            "present": false,
+            "status": "not_established"
+          },
+          "object_version": {
+            "present": false,
+            "status": "not_established"
+          },
+          "intended_environment": {
+            "present": false,
+            "status": "not_established"
+          }
+        },
+        "scale_source": {
+          "document": "SRAA Citizen interview example 20min.pdf",
+          "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+          "scale_pdf_pages": [
+            12,
+            13
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+        },
+        "scale_version": "eva-interviews-2026-11-04-v1",
+        "candidate_anchor_ids": [
+          "citizen_short-1",
+          "citizen_short-2",
+          "citizen_short-3",
+          "citizen_short-4",
+          "citizen_short-5",
+          "citizen_short-6",
+          "citizen_short-7",
+          "citizen_short-8",
+          "citizen_short-9"
+        ],
+        "candidate_scope": "all nine anchors were supplied to the bounded comparison request; model reasoning is not independently observable",
+        "selected_anchor_id": "citizen_short-5",
+        "closest_alternative_anchor_id": "citizen_short-6",
+        "supporting_evidence_ids": [
+          "m22",
+          "m38"
+        ],
+        "contradictory_evidence_ids": null,
+        "contradiction_note": "The score response reports a conflict flag, not message-level contradiction attribution.",
+        "material_conflict_flag": false,
+        "evidence_incomplete_flag": false,
+        "missing_evidence": [],
+        "considered_evidence_ids": [
+          "m3",
+          "m6",
+          "m12",
+          "m15",
+          "m18",
+          "m20",
+          "m22",
+          "m25",
+          "m27",
+          "m29",
+          "m31",
+          "m33",
+          "m36",
+          "m38"
+        ],
+        "omitted_evidence_ids": [],
+        "status": "suggested",
+        "validation": "exact_quote_and_active_evidence_checked",
+        "uncertainty": "provisionally_sufficient"
+      },
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m29",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m31",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m33",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m36",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m38",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "result_review",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 4,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true,
+          "assessment_matches_controller_result": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "conversation",
+          "objective": "opinion",
+          "profile": "citizen",
+          "revision": 15
+        },
+        "state_after": {
+          "stage": "review",
+          "objective": "opinion",
+          "profile": "citizen",
+          "revision": 16
+        }
+      },
+      "execution": {
+        "model_calls": 1,
+        "latency_seconds": 74.127,
+        "prompt_context_selection": null,
+        "fallback_used": false,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 17,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [],
+      "accepted_actions": [
+        {
+          "act": "review_addition",
+          "message_id": "m47"
+        }
+      ],
+      "accepted_questions": [],
+      "model_proposal": {},
+      "model_led_transition": null,
+      "action_validation": {
+        "validated_action": null,
+        "decision": "accepted",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "not_used",
+        "guidance": [],
+        "passages": [],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": true,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": null,
+      "fn_coverage": [],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m29",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m31",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m33",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m36",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m38",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "review_addition",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 1,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "review",
+          "objective": "opinion",
+          "profile": "citizen",
+          "revision": 16
+        },
+        "state_after": {
+          "stage": "review_addition",
+          "objective": "opinion",
+          "profile": "citizen",
+          "revision": 17
+        }
+      },
+      "execution": {
+        "model_calls": 0,
+        "latency_seconds": 0.009,
+        "prompt_context_selection": null,
+        "fallback_used": false,
+        "error": null
+      }
+    },
+    {
+      "turn_id": 18,
+      "profile": "citizen",
+      "strategy": "model_led_fn",
+      "current_topic": "noise concerns",
+      "respondent_evidence_ids": [],
+      "accepted_actions": [
+        {
+          "act": "end",
+          "message_id": "m49"
+        }
+      ],
+      "accepted_questions": [],
+      "model_proposal": {},
+      "model_led_transition": null,
+      "action_validation": {
+        "validated_action": null,
+        "decision": "accepted",
+        "rejection_reasons": []
+      },
+      "retrieval": {
+        "status": "not_used",
+        "guidance": [],
+        "passages": [],
+        "model_referenced_source_ids": [],
+        "controller_rendered_source_id": null
+      },
+      "fallback_source": null,
+      "closing_policy": {
+        "may_propose_conclusion": true,
+        "remaining_evidence_goal": "local_awareness",
+        "unconsidered_stage_ids": [],
+        "meaning": "Exploration and acknowledged uncertainty control completion; turn count is only an operational safeguard."
+      },
+      "fn_stage": null,
+      "fn_coverage": [],
+      "score_flag_diagnostics": null,
+      "depth_change": null,
+      "assessment": null,
+      "validated_context_facts": [],
+      "concerns": [
+        {
+          "topic": "noise concerns",
+          "kind": "emerging_topic",
+          "evidence_ids": [
+            "m18"
+          ],
+          "spontaneously_raised": true,
+          "suggested_by_interviewer": false,
+          "selected_priority": false,
+          "explored": false,
+          "priority": false,
+          "indicator_ids": [],
+          "mapping_status": "not_mapped",
+          "interpretation_status": "unreviewed",
+          "topic_type": "other",
+          "last_turn_id": "m18"
+        }
+      ],
+      "indicator_mappings": [
+        {
+          "evidence_id": "m12",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m15",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m18",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m20",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m25",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m29",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m31",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m33",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m36",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        },
+        {
+          "evidence_id": "m38",
+          "indicator_ids": [],
+          "status": "candidate_unreviewed"
+        }
+      ],
+      "validation": {
+        "privacy": "passed",
+        "evidence_integrity": "original_text_authoritative"
+      },
+      "rejected_optional_annotations": [],
+      "controller_execution": {
+        "accepted_action": "end",
+        "postcondition": {
+          "respondent_messages_added": 1,
+          "assistant_messages_added": 1,
+          "state_transition_applied": true,
+          "profile_unchanged": true
+        },
+        "observed_postcondition_checks": {
+          "respondent_evidence_ids_exist": true,
+          "accepted_question_ids_exist": true,
+          "profile_remains_controller_selected": true,
+          "recorded_exposure_ids_exist": true,
+          "controller_state_matches_observation": true
+        },
+        "all_observed_postconditions_passed": true,
+        "state_before": {
+          "stage": "review_addition",
+          "objective": "opinion",
+          "profile": "citizen",
+          "revision": 17
+        },
+        "state_after": {
+          "stage": "ended",
+          "objective": "opinion",
+          "profile": "citizen",
+          "revision": 18
+        }
+      },
+      "execution": {
+        "model_calls": 0,
+        "latency_seconds": 0.01,
+        "prompt_context_selection": null,
+        "fallback_used": false,
+        "error": null
+      }
+    }
+  ],
+  "concern_projection": {
+    "status": "available",
+    "version": 1,
+    "bank_version": "fn-v4-1.0.0",
+    "bank_sha256": "9fa561bcfd20e847ff9b64353e06b6ac95201903cdc86a49fabffbfd12175695",
+    "mapping_role": "internal provisional concern projection; not readiness scoring or complete indicator assessment",
+    "participant_reviewed": false,
+    "results": [
+      {
+        "evidence_id": "m18",
+        "quote": "I am against adding these flights without proof they are needed. I am concerned about noise near homes and who would be accountable if something went wrong.",
+        "topics": [
+          "noise concerns"
+        ],
+        "spontaneously_raised": true,
+        "suggested_by_interviewer": false,
+        "selected_priority": false,
+        "explored": false,
+        "status": "candidate_unreviewed",
+        "candidate_mappings": [
+          {
+            "indicator_id": "indicator-07",
+            "indicator_name": "Noise",
+            "status": "candidate_unreviewed",
+            "rationale": "The answer explicitly addresses acoustic effects, soundscapes, or noise-related responses.",
+            "evidence_id": "m18",
+            "evidence_quote": "I am against adding these flights without proof they are needed. I am concerned about noise near homes and who would be accountable if something went wrong.",
+            "matched_cue": "noise"
+          }
+        ],
+        "possible_indicator_ids": []
+      }
+    ]
+  },
+  "assessment": {
+    "profile": "citizen",
+    "scope": {
+      "organisation_or_unit": {
+        "present": false,
+        "status": "not_established"
+      },
+      "responsibilities": {
+        "present": false,
+        "status": "not_established"
+      },
+      "technical_object": {
+        "present": false,
+        "status": "not_established"
+      },
+      "object_version": {
+        "present": false,
+        "status": "not_established"
+      },
+      "intended_environment": {
+        "present": false,
+        "status": "not_established"
+      }
+    },
+    "scale_source": {
+      "document": "SRAA Citizen interview example 20min.pdf",
+      "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+      "scale_pdf_pages": [
+        12,
+        13
+      ],
+      "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+    },
+    "scale_version": "eva-interviews-2026-11-04-v1",
+    "candidate_anchor_ids": [
+      "citizen_short-1",
+      "citizen_short-2",
+      "citizen_short-3",
+      "citizen_short-4",
+      "citizen_short-5",
+      "citizen_short-6",
+      "citizen_short-7",
+      "citizen_short-8",
+      "citizen_short-9"
+    ],
+    "candidate_scope": "all nine anchors were supplied to the bounded comparison request; model reasoning is not independently observable",
+    "selected_anchor_id": "citizen_short-5",
+    "closest_alternative_anchor_id": "citizen_short-6",
+    "supporting_evidence_ids": [
+      "m22",
+      "m38"
+    ],
+    "contradictory_evidence_ids": null,
+    "contradiction_note": "The score response reports a conflict flag, not message-level contradiction attribution.",
+    "material_conflict_flag": false,
+    "evidence_incomplete_flag": false,
+    "missing_evidence": [],
+    "considered_evidence_ids": [
+      "m3",
+      "m6",
+      "m12",
+      "m15",
+      "m18",
+      "m20",
+      "m22",
+      "m25",
+      "m27",
+      "m29",
+      "m31",
+      "m33",
+      "m36",
+      "m38"
+    ],
+    "omitted_evidence_ids": [],
+    "status": "suggested",
+    "validation": "exact_quote_and_active_evidence_checked",
+    "uncertainty": "provisionally_sufficient"
+  }
+}

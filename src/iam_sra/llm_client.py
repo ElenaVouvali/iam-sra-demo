@@ -2,6 +2,7 @@
 import json
 import hashlib
 import os
+from copy import deepcopy
 import threading
 import time
 import httpx
@@ -13,6 +14,31 @@ from .model_spec import thinking_enabled, context_tokens, reasoning_tokens
 _LOCK=threading.Lock()
 STAGE_LIMITS = {'readiness_evidence': 1600, 'readiness_grounding': 1400, 'workbook_score': 500}
 BACKEND="xgrammar:no-fallback,disable-any-whitespace"
+
+def _screen_generation_body(body, user, stage):
+    """Screen model output while treating exact echoes of screened evidence as references.
+
+    The response content stays untouched for validation. Only the temporary
+    screening copy omits an information-request quote that is an exact substring
+    of the participant answer already screened in the request. Arbitrary text,
+    non-matching quotes and every other model field remain screened normally.
+    """
+    from .privacy import require_safe_data
+    screening_copy=deepcopy(body)
+    answer=user.get('answer') if isinstance(user,dict) else None
+    if stage=='chat_turn' and isinstance(answer,str) and answer:
+        for choice in screening_copy.get('choices',[]) if isinstance(screening_copy,dict) else []:
+            message=choice.get('message') if isinstance(choice,dict) else None
+            content=message.get('content') if isinstance(message,dict) else None
+            if not isinstance(content,str):continue
+            try:decoded=json.loads(content)
+            except (ValueError,TypeError):continue
+            interpretation=decoded.get('interpretation') if isinstance(decoded,dict) else None
+            quote=interpretation.get('information_request_quote') if isinstance(interpretation,dict) else None
+            if isinstance(quote,str) and quote and quote in answer:
+                interpretation['information_request_quote']=''
+                message['content']=json.dumps(decoded,ensure_ascii=False,separators=(',',':'))
+    require_safe_data(screening_copy)
 
 def guided_schema(value):
     # Pinned XGrammar constrains structure/types/enums; local Pydantic enforces
@@ -139,7 +165,7 @@ class LLMTransport:
             # With thinking disabled, unexpected reasoning is screened/rejected
             # exactly as before. Never strip think tags out of final JSON.
             try:
-                require_safe_data(body)
+                _screen_generation_body(body,user,stage)
             except PrivacyError as exc:
                 self.last_diagnostics.append({'stage':stage,'attempt':attempt,'failure':'privacy',
                     'privacy_boundary':'model_output','entity_types':list(exc.entity_types),

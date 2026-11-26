@@ -63,28 +63,54 @@ def explicit_priority_list(answer):
 def information_need_kinds(answer):
     """Map natural, explicit requests to bounded explanations; ignore mere opinions."""
     text=answer.casefold()
-    cue=bool(re.search(r'\b(?:explain|what do you mean|what does .{1,50} mean|don.t understand|'
+    cue_pattern=(r'\b(?:explain|what do you mean|what does .{1,50} mean|don.t understand|'
         r'could you|can you|tell me|how (?:does|do|would|is|are)|what (?:are|is|do|does)|'
         r'i (?:would like|want) to know|who (?:handles|is responsible)|what happens if|'
-        r'not sure how|give me an example)\b',text))
-    if not cue:return []
+        r'not sure how|give me an example|why are you asking|why do you ask|'
+        r'what would people normally do|does (?:this|that|it|the service)|'
+        r'is there|are there)\b')
+    # Scope topic detection to the clause containing the request cue. Otherwise
+    # a concern/condition elsewhere in the same answer can spuriously trigger
+    # unrelated background (for example, "explain who is responsible" plus a
+    # separate proposal to compare road transport).
+    clauses=[]
+    for sentence in re.split(r'[.!?;\n]+',text):
+        parts=re.split(r',\s*(?=(?:could you|can you|how\b|what\b|who\b|explain\b|tell me\b|give me\b))',sentence)
+        for part in parts:
+            clauses.extend(re.split(r'\s+(?:and|but)\s+(?=(?:could you|can you|how\b|what\b|who\b|explain\b|tell me\b|give me\b))',part))
     found=[]
-    if re.search(r'\b(?:complaint|complaints|escalat|who handles|who receives|responsib|decision process|'
-                 r'how (?:are|is) decisions? (?:made|taken)|who decides)\b',text):
-        found.append('local_process')
-    if re.search(r'\b(?:healthcare|medical|medicin\w*|blood|laboratory samples?|hospital)\b',text):
-        found.append('delivery_basics')
-    if re.search(r'\b(?:compar|better than|worse than|regular deliveries|road deliver|vans?\b|trucks?\b)',text):
-        found.append('comparison')
-    if re.search(r'\b(?:who (?:handles|is responsible)|complaint|issues if|problems? (?:occur|arise)|accountab|what happens if)\b',text):
-        found.append('accountability')
-    if re.search(r'\b(?:already|currently|local|my city|in madrid|in \w+ city)\b',text) and \
-            re.search(r'\b(?:operate|operation|service|route|deliver)\b',text):
-        found.append('local_activity')
-    if re.search(r'\b(?:drone|aircraft|fly|flying|pilot)\b',text):
-        found.append('drone_uses' if re.search(r'\b(?:use|used|purpose|application|example|what for)\b',text)
-                     else 'drone_definition')
-    if not found:found.append('clarify_current_question')
+    for clause in clauses:
+        if not re.search(cue_pattern,clause):continue
+        healthcare_request=bool(re.search(r'\b(?:healthcare|medical|medicin\w*|blood|laboratory samples?|hospital|clinic|lab)\b',clause))
+        if re.search(r'\b(?:complaint|complaints|escalat|who handles|who receives|responsib|decision process|'
+                     r'how (?:are|is) decisions? (?:made|taken)|who decides)\b',clause):
+            found.append('local_process')
+        if healthcare_request:
+            if (re.search(r'\b(?:how|example|for instance|what would happen)\b',clause)
+                    and re.search(r'\b(?:sample|clinic|laboratory|lab|hospital)\b',clause)):
+                found.append('sample_delivery_example')
+            else:
+                found.append('delivery_basics')
+        if re.search(r'\b(?:compar|better than|worse than|regular deliveries|road deliver|vans?\b|trucks?\b)',clause):
+            found.append('comparison')
+        if re.search(r'\b(?:who (?:handles|is responsible)|complaint|issues if|problems? (?:occur|arise)|accountab|what happens if)\b',clause):
+            found.append('accountability')
+        if (re.search(r'\b(?:already|currently|local|my city|in madrid|in \w+ city)\b',clause)
+                and re.search(r'\b(?:operate|operation|service|route|deliver)\b',clause)):
+            found.append('local_activity')
+        if re.search(r'\b(?:drones?|aircraft|fly|flying|pilot)\b',clause):
+            if re.search(r'\bhow (?:does|do|can) (?:a |the )?drones?\b.*\bwork\b|\bhow it works\b',clause):
+                found.append('drone_mechanics')
+            elif (re.search(r'\b(?:what is|what are|explain|define) (?:a |an )?drone\b',clause)
+                    or re.search(r'\bwhat (?:a |an )?drone is\b',clause)):
+                found.append('drone_definition')
+            elif not healthcare_request:
+                found.append('drone_uses' if re.search(r'\b(?:use|used|purpose|application|example|what for)\b',clause)
+                             else 'drone_definition')
+        if not re.search(r'\b(?:complaint\w*|escalat\w*|responsib\w*|accountab\w*|decision\w*|healthcare|medical|'
+                         r'medicin\w*|blood|sample|clinic|laboratory|lab|hospital|road|deliver|'
+                         r'drones?|aircraft|fly|flying|pilot)\b',clause):
+            found.append('clarify_current_question')
     return list(dict.fromkeys(found))
 
 
@@ -93,6 +119,11 @@ GENERAL_BACKGROUND = {
         'Healthcare drones could transport medicines, blood, laboratory samples and other medical supplies. '
         'The precise arrangements depend on the particular service; this does not '
         'establish that such deliveries are operating in your city.'),
+    'sample_delivery_example': (
+        'As a general example, a healthcare team could arrange for a collected sample to be securely prepared '
+        'and carried between a clinic and a laboratory, where it would be received for testing. The exact '
+        'handling, route and responsibility would depend on the service. This is an illustrative possibility, '
+        'not a claim that such a service operates in your city.'),
     'comparison': (
         'Whether a drone delivery is preferable to road delivery depends on the route and comparable '
         'evidence about travel time, reliability, noise, environmental effects and cost. We cannot '

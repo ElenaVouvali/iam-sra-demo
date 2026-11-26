@@ -389,17 +389,47 @@
         "stakeholder_role": "resident",
         "city": "Madrid",
         "background": "A resident considering healthcare drone services who has read general local notices but does not know whether any flights have occurred.",
-        "known_facts": ["urgent medical deliveries might be faster"],
-        "unknown_facts": ["whether a drone has flown locally", "measured wildlife effects", "whether cameras or personal data are used", "how routes would be chosen"],
-        "actual_experiences": ["saw a public notice about a proposed route"],
+        "known_facts": [
+          "urgent medical deliveries might be faster"
+        ],
+        "unknown_facts": [
+          "whether a drone has flown locally",
+          "measured wildlife effects",
+          "whether cameras or personal data are used",
+          "how routes would be chosen"
+        ],
+        "actual_experiences": [
+          "saw a public notice about a proposed route"
+        ],
         "actual_participation": [],
         "actual_contributions": [],
         "reported_outcomes": [],
-        "benefits_perceived": ["faster delivery of urgent medical supplies"],
-        "concerns": ["nesting birds near a wetland", "residential noise and sleep", "possible observation of private spaces or personal data collection", "unequal distribution of benefits and impacts", "transparent route decisions and public influence"],
-        "conditions": ["independent monitoring", "clear information about data", "fair routes and benefits", "a response showing what public input changed"],
-        "information_needs": ["wildlife and noise evidence", "camera and data rules", "who benefits", "how residents can influence decisions"],
-        "priorities": ["privacy and data handling", "transparency and influence"],
+        "benefits_perceived": [
+          "faster delivery of urgent medical supplies"
+        ],
+        "concerns": [
+          "nesting birds near a wetland",
+          "residential noise and sleep",
+          "possible observation of private spaces or personal data collection",
+          "unequal distribution of benefits and impacts",
+          "transparent route decisions and public influence"
+        ],
+        "conditions": [
+          "independent monitoring",
+          "clear information about data",
+          "fair routes and benefits",
+          "a response showing what public input changed"
+        ],
+        "information_needs": [
+          "wildlife and noise evidence",
+          "camera and data rules",
+          "who benefits",
+          "how residents can influence decisions"
+        ],
+        "priorities": [
+          "privacy and data handling",
+          "transparency and influence"
+        ],
         "acceptance_position": "open but undecided until evidence and safeguards are clear",
         "trust_position": "not established; wants transparent evidence and accountability",
         "communication_style": "plain, specific and cautious",
@@ -420,7 +450,10 @@
         "open_more": "Those are the concerns I can think of right now. I have not chosen which matter most yet.",
         "different_impacts": "There are two separate issues: disturbance to nesting birds and noise reaching homes. Birds could be affected even where people hear little sound, while nighttime noise could disturb sleep. I do not know actual measurements.",
         "suggested_topics": "The other topics you mentioned are relevant, but I do not want to add another concern at this point.",
-        "priorities": ["For now, I would choose wildlife disturbance and privacy as my two priority issues.", "I want to revise that: privacy remains a priority, but transparency and whether residents can actually influence route decisions now matters more to me than wildlife."],
+        "priorities": [
+          "For now, I would choose wildlife disturbance and privacy as my two priority issues.",
+          "I want to revise that: privacy remains a priority, but transparency and whether residents can actually influence route decisions now matters more to me than wildlife."
+        ],
         "priority_understanding": "I want to revise my earlier choice. Privacy stays important; transparency about route decisions and whether input changes them now matters more to me than wildlife.",
         "noise_understanding": "Nesting birds could be disturbed by repeated flights independently of whether people hear them. Residential noise is about effects on people at home, including sleep. I do not know actual measurements.",
         "noise_information": "I would want independent measurements by route and time of day, including comparison with road delivery. I have not seen local measurements.",
@@ -444,6 +477,97 @@
         "informing": "I do not know whether an information notice after a decision would be enough; people should have a chance to influence it before it is final.",
         "opinion": "I can see the potential benefit, but I remain undecided until the evidence, safeguards and public process are clearer.",
         "opinion_why": "My view depends on actual impacts and whether affected residents can influence decisions and receive an accountable response."
+      }
+    },
+    {
+      "id": "S8_uninformed_project_sceptic_short",
+      "depth": "short",
+      "persona": {
+        "perspective": "citizen",
+        "stakeholder_role": "resident",
+        "city": "Coimbra",
+        "background": "A resident with no previous knowledge of drones who is sceptical of adding healthcare drone flights to local transport.",
+        "known_facts": [],
+        "unknown_facts": [
+          "whether any healthcare drone service operates in Coimbra",
+          "how sample transport would work",
+          "actual noise, privacy or environmental effects",
+          "who would operate or oversee a service"
+        ],
+        "actual_experiences": [],
+        "actual_participation": [],
+        "actual_contributions": [],
+        "reported_outcomes": [],
+        "benefits_perceived": [],
+        "concerns": [
+          "possible residential noise",
+          "unclear accountability",
+          "privacy if cameras or data collection were involved",
+          "uncertain public benefit compared with road transport"
+        ],
+        "conditions": [
+          "independent evidence of need and impacts",
+          "clear responsibility and complaint handling",
+          "public input before routes are decided"
+        ],
+        "information_needs": [
+          "what a drone is",
+          "how a medical sample delivery could work",
+          "whether any verified local service exists"
+        ],
+        "priorities": [
+          "noise",
+          "accountability"
+        ],
+        "acceptance_position": "opposed unless a clear need and safeguards are demonstrated",
+        "trust_position": "low; no local information or evidence has been seen",
+        "communication_style": "plain-spoken, brief and sceptical; asks direct questions and distinguishes assumptions from facts",
+        "response_length_preference": "short",
+        "uncertainty_tolerance": "readily says when facts are unknown",
+        "behavioural_traits": [
+          "does not accept hypothetical claims as local facts"
+        ],
+        "contradiction_policy": "do not claim knowledge, participation, local operations or measured impacts; retain opposition even after receiving an explanation",
+        "scenario_preference": "answer from the facts given; no invented drone experience"
+      },
+      "answers": {
+        "drone_recognition": "No. I don't know what a drone is. Could you explain it simply?",
+        "drone_explanation": "Yes, please.",
+        "drone_description": "I only know what you just explained; I had not known it before.",
+        "drone_uses": "I still do not know much about other uses.",
+        "healthcare_awareness": "I had not heard of healthcare drone deliveries. Could you explain how a medical sample might get from a clinic to a lab?",
+        "healthcare_detail": "I understand that is a possible example, but I do not know of a service in Coimbra.",
+        "local_awareness": "I do not know whether this operates here. I have not seen evidence that it does.",
+        "local_basis": "I have no confirmed local source or experience.",
+        "open_priorities": "I am against adding these flights without proof they are needed. I am concerned about noise near homes and who would be accountable if something went wrong.",
+        "open_more": "Those are my main concerns. I do not have another one to add.",
+        "different_impacts": "People living under routes could hear more flights, but I do not know what the actual impact would be.",
+        "suggested_topics": "No, I do not want to add another concern from that list.",
+        "priorities": "Noise and accountability are my main priorities.",
+        "noise_understanding": "Noise could affect residents, especially at night, but I have not heard or measured these drones.",
+        "noise_information": "I would want independent measurements by time and place, compared with current deliveries.",
+        "decisions": "I do not know how decisions about this would be made here.",
+        "decisions_should": "Residents affected by routes should be able to comment before a decision is final.",
+        "meaningful": "A response explaining what was changed and why would matter.",
+        "informing": "A notice after the route is decided would not be enough for me.",
+        "conditions": "Show a clear medical need, compare road options, publish impact evidence and explain who is responsible.",
+        "conditions_why": "Without that evidence I would not support adding flights.",
+        "evaluation_evidence": "Compare delivery reliability, cost and impacts with road transport, using independent evidence.",
+        "demonstration": "No, I have not seen a demonstration.",
+        "demonstration_view": "I cannot judge a demonstration I have not seen.",
+        "tradeoff": "I do not think a possible faster delivery alone proves this is worthwhile.",
+        "hypothetical_comparison": "I would need evidence about the specific route and medical need before comparing options.",
+        "opportunity": "No one has invited me to take part in such a decision.",
+        "participation": "I have not participated in any drone-service decision.",
+        "participation_capability": "If invited, I could read clear evidence and state my concerns, but I have not done that in this context.",
+        "feedback_outcome": "I have not given input, so nothing I said has changed a decision.",
+        "influence_evidence": "I would need a real opportunity and a clear response showing whether input affected the decision.",
+        "problem_action": "I would want to know who is responsible and how residents can report a problem.",
+        "problem_response": "There should be an explanation of what was investigated and what action followed.",
+        "escalation": "I do not know what escalation route would exist.",
+        "ongoing_role": "If it operated, residents should be able to review impact reports and raise concerns.",
+        "opinion": "I remain opposed unless the need, alternatives, impacts and accountability are demonstrated.",
+        "opinion_why": "The explanation helped me understand the proposal, but it did not provide evidence that it is needed or suitable for Coimbra."
       }
     }
   ]

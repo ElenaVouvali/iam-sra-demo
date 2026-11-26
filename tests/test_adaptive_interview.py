@@ -24,6 +24,18 @@ def test_information_requests_are_specific_and_safely_bounded():
     assert new_background(x, kinds) == ([], '')
 
 
+def test_specific_medical_sample_question_is_not_misread_as_a_request_for_drone_definition():
+    x='Could you explain how a medical sample might get from a clinic to a lab?'
+    assert information_need_kinds(x)==['sample_delivery_example']
+
+
+def test_information_request_detection_stays_with_the_clause_that_asks():
+    x='Show a clear medical need, compare road options, publish impact evidence and explain who is responsible.'
+    assert information_need_kinds(x)==['accountability']
+    assert information_need_kinds('I oppose the flights and worry about noise and responsibility.')==[]
+    assert information_need_kinds('How do drones work?')==['drone_mechanics']
+
+
 def test_onboarding_cannot_be_rewritten():
     assert not adaptive_goal({'id':'area','response_type':'city'})
     assert not adaptive_goal({'id':'healthcare_awareness','response_type':'yes_no'})

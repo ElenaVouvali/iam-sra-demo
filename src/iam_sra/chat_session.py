@@ -576,7 +576,7 @@ class ChatSession:
             target=next((q['id'] for q in first_stage['questions']
                          if self.fn.applicable(q,self.concerns)
                          and self.fn.coverage.get(q['id'],{}).get('status') not in
-                         {'explored','unknown','declined','not_applicable','provided'}),None)
+                         {'explored','unknown','declined','not_applicable','provided','unresolved'}),None)
             if target is None:
                 target=next((q['id'] for q in first_stage['questions']
                              if self.fn.applicable(q,self.concerns)),None)
@@ -593,7 +593,7 @@ class ChatSession:
               and node['id'] in {'drone_recognition','drone_description'}
               and action in {'follow_up','clarify'}):
             reason=reason or 'prior_knowledge_probe_closed_after_explanation'
-        elif self.fn.coverage.get(node['id'],{}).get('status') in {'explored','unknown','declined','not_applicable','provided'}:
+        elif self.fn.coverage.get(node['id'],{}).get('status') in {'explored','unknown','declined','not_applicable','provided','unresolved'}:
             if action not in {'follow_up','clarify'} or self.fn.followups.get(node['id'],0)>=1:
                 reason=reason or 'goal_already_addressed'
         elif action in {'follow_up','clarify'} and node['id']!=self.objective:
@@ -756,73 +756,114 @@ class ChatSession:
             retrieved=next((allowed[sid] for sid in (result or {}).get('source_ids',[]) if sid in allowed),None)
         kind=interpretation.get('information_request')
         quote=interpretation.get('information_request_quote') or ''
-        if kind and (not quote or quote not in text):
+        if kind and (not quote or quote not in text or not information_need_kinds(quote)):
             kind=None
+        # Answer only requests actually present in the participant's message.
+        # The model annotation can identify the request, while the conservative
+        # request detector catches a second explicit question in a mixed answer.
         inferred=information_need_kinds(text)
-        if not kind and inferred:
-            kind=inferred[0]
-        if not kind and retrieved and ('?' in text or re.search(r'\b(?:explain|tell me|what|how|could you|can you)\b',text,re.I)):
-            kind='clarify_current_question'
         current_goal=goal or self.objective
-        if kind in {'clarify_current_question','other'}:
-            if current_goal in {'drone_recognition','drone_description','drone_explanation'} and re.search(r'\b(?:drone|what do you mean|don.t understand|explain|example)\b',text,re.I):
-                kind='drone_definition'
+        kind_is_grounded=False
+        if kind:
+            quote_kinds=information_need_kinds(quote)
+            aliases={'healthcare_applications':'delivery_basics','other':'clarify_current_question'}
+            tagged=aliases.get(kind,kind)
+            quote_categories={aliases.get(value,value) for value in quote_kinds}
+            kind_is_grounded=tagged in quote_categories
+            # Generic clarification language is interpreted against the active
+            # objective, but cannot override a more specific request category.
+            if quote_categories=={'clarify_current_question'}:
+                if current_goal in {'drone_recognition','drone_description','drone_explanation'}:
+                    kind_is_grounded=tagged=='drone_definition'
+                elif current_goal in {'healthcare_awareness','healthcare_detail','delivery_purpose'}:
+                    kind_is_grounded=tagged in {'delivery_basics','sample_delivery_example'}
+                    if (not kind_is_grounded and tagged=='drone_definition'
+                            and re.search(r'\bdrone\b',text,re.I)
+                            and re.search(r"\b(?:don't know|do not know|what|explain)\b",text,re.I)):
+                        kind_is_grounded=True
+                elif (current_goal in {'accountability','decisions','decisions_should'}
+                        and tagged in {'local_process','accountability'}
+                        and re.search(r'\b(?:complaint\w*|responsib\w*|accountab\w*|decision\w*|who decides|who is involved)\b',text,re.I)):
+                    kind_is_grounded=True
+        grounded_kind=kind if kind and kind_is_grounded else None
+        if grounded_kind and inferred==['clarify_current_question']:
+            inferred=[]
+        kinds=list(dict.fromkeys(([grounded_kind] if grounded_kind else [])+inferred))[:2]
+        if not kinds and retrieved and ('?' in text or re.search(r'\b(?:explain|tell me|what|how|could you|can you)\b',text,re.I)):
+            kinds=['clarify_current_question']
+        if kinds and kinds[0] in {'clarify_current_question','other'}:
+            if (current_goal in {'drone_recognition','drone_description','drone_explanation','drone_uses'}
+                    and re.search(r'\bhow (?:does|do|can) (?:a |the )?(?:drone|it)\b.*\bwork\b',text,re.I)):
+                kinds[0]='drone_mechanics'
+            elif current_goal in {'drone_recognition','drone_description','drone_explanation'} and re.search(r'\b(?:drone|what do you mean|don.t understand|explain|example)\b',text,re.I):
+                kinds[0]='drone_definition'
             elif current_goal in {'healthcare_awareness','healthcare_detail','delivery_purpose'} and re.search(r'\b(?:healthcare|medical|hospital|medicine|blood|sample|example|use)\b',text,re.I):
-                kind='healthcare_applications'
-        if not kind:
+                kinds[0]='healthcare_applications'
+            elif current_goal in {'accountability','decisions','decisions_should'} and re.search(r'\b(?:complaint\w*|responsib\w*|accountab\w*|decision\w*|who decides|who is involved)\b',text,re.I):
+                kinds[0]='local_process'
+        if not kinds:
             return False
         aliases={'healthcare_applications':'delivery_basics','other':'clarify_current_question'}
-        category=aliases.get(kind,kind)
-        background=GENERAL_BACKGROUND.get(category)
-        if retrieved:
-            background=retrieved['text']
-        if not retrieved and category=='drone_mechanics':
-            background=('The approved description tells us that a drone can fly without a pilot sitting inside it. '
-                'I do not have verified technical details here about how a particular drone is powered, controlled '
-                'or navigated, so I will not guess.')
-        if not retrieved and category=='clarify_current_question':
-            node=self.fn.current(self.profile,self.depth,current_goal)
-            current_question=(node or {}).get('canonical_question','')
-            if re.search(r'\b(?:decision|decid|complaint|responsib|who is involved)\b',current_question,re.I):
-                background=('I mean who would be involved in deciding whether a service should operate, '
-                    'who could raise concerns, and whether affected people could express their views. '
-                    'I do not have verified information about how this works in your city. If you do not '
-                    'know the current process, you can say so or describe how you think it should work.')
-            elif re.search(r'\b(?:how.*work|how.*operate)\b',text,re.I):
-                background=('The approved description establishes that a drone is an aircraft that can fly '
-                    'without a pilot sitting inside it. I do not have verified technical details here about '
-                    'how a particular model is controlled or powered.')
-        if not background:
-            background=('I do not have verified information to answer that specific question. I can keep '
-                        'the point open and continue using what you know or would expect.')
-        # Information about actual local services is always qualified, including
-        # repeated requests; an earlier reply does not make local facts known.
-        self.information_needs_handled.append(category)
-        exposure_id=f'x{len(self.exposures)+1}'
+        categories=[]
+        for requested in kinds:
+            category=aliases.get(requested,requested)
+            if category not in categories:categories.append(category)
+        explanations=[]
+        for category in categories:
+            background=GENERAL_BACKGROUND.get(category)
+            if retrieved and len(categories)==1:
+                background=retrieved['text']
+            if not retrieved and category=='drone_mechanics':
+                background=('The approved description tells us that a drone can fly without a pilot sitting inside it. '
+                    'I do not have verified technical details here about how a particular drone is powered, controlled '
+                    'or navigated, so I will not guess.')
+            if not retrieved and category=='clarify_current_question':
+                node=self.fn.current(self.profile,self.depth,current_goal)
+                current_question=(node or {}).get('canonical_question','')
+                if re.search(r'\b(?:decision|decid|complaint|responsib|who is involved)\b',current_question,re.I):
+                    background=('I mean who would be involved in deciding whether a service should operate, '
+                        'who could raise concerns, and whether affected people could express their views. '
+                        'I do not have verified information about how this works in your city. If you do not '
+                        'know the current process, you can say so or describe how you think it should work.')
+                elif re.search(r'\b(?:how.*work|how.*operate)\b',text,re.I):
+                    background=('The approved description establishes that a drone is an aircraft that can fly '
+                        'without a pilot sitting inside it. I do not have verified technical details here about '
+                        'how a particular model is controlled or powered.')
+            if not background:
+                background=('I do not have verified information to answer that specific question. I can keep '
+                            'the point open and continue using what you know or would expect.')
+            explanations.append((category,background))
+        # Keep answers concise and in the participant's requested scope. Each
+        # source/request remains a separately traceable exposure, not evidence.
+        self.information_needs_handled.extend(categories)
         source_record=deepcopy(self._rubric()['source']) if self.profile else {}
-        if retrieved:
-            source_meta=deepcopy(retrieved.get('source',{}))
-            locator=source_meta.get('locator','registered retrieved passage')
-            source_meta['status']=source_meta.get('status','registered_retrieval')
-            exposure_kind='retrieved_source_information'
-        elif category=='drone_definition':
-            locator='SRAA Citizen interview example, drone explanation (registered FN wording)'
-            source_meta={**source_record,'locator':locator,'status':'registered_source_wording'}
-            exposure_kind='FN_explanation'
-        else:
-            locator='Authored general explanation; not a claim about local deployment'
-            source_meta={**source_record,'locator':locator,'status':'author_adaptation_not_verbatim_FN'}
-            exposure_kind='authored_general_background'
-        self._assistant(background,act='supplied_information')
-        self.exposures.append({'id':exposure_id,'kind':exposure_kind,'categories':[category],
-            'text':background,'source':source_meta,'source_id':retrieved.get('id') if retrieved else None,
-            'request_evidence_id':row.get('id') if row else None,
-            'request_objective':current_goal,'prior_knowledge':False,
-            'newly_supplied_information':True,'actual_activity':False,'revision':self.revision})
-        if row is not None:
-            row.setdefault('information_exposure_ids',[]).append(exposure_id)
+        exposure_ids=[]
+        for category,background in explanations:
+            if retrieved:
+                source_meta=deepcopy(retrieved.get('source',{}))
+                source_meta['locator']=source_meta.get('locator','registered retrieved passage')
+                source_meta['status']=source_meta.get('status','registered_retrieval')
+                exposure_kind='retrieved_source_information'
+            elif category=='drone_definition':
+                source_meta={**source_record,'locator':'SRAA Citizen interview example, drone explanation (registered FN wording)',
+                             'status':'registered_source_wording'}
+                exposure_kind='FN_explanation'
+            else:
+                source_meta={**source_record,'locator':'Authored general explanation; not a claim about local deployment',
+                             'status':'author_adaptation_not_verbatim_FN'}
+                exposure_kind='authored_general_background'
+            exposure_id=f'x{len(self.exposures)+1}'
+            exposure_ids.append(exposure_id)
+            self.exposures.append({'id':exposure_id,'kind':exposure_kind,'categories':[category],
+                'text':background,'source':source_meta,'source_id':retrieved.get('id') if retrieved else None,
+                'request_evidence_id':row.get('id') if row else None,
+                'request_objective':current_goal,'prior_knowledge':False,
+                'newly_supplied_information':True,'actual_activity':False,'revision':self.revision})
+            if row is not None:row.setdefault('information_exposure_ids',[]).append(exposure_id)
+        answer_text=' '.join(text for _,text in explanations)
+        self._assistant(answer_text,act='supplied_information')
         self.routing_events.append({'event':'responded_to_information_need',
-            'categories':[category],'request_evidence_id':row.get('id') if row else None,
+            'categories':categories,'request_evidence_id':row.get('id') if row else None,
             'evidence_scope':'information_exposure_only','prior_knowledge':False})
         return True
 
@@ -893,7 +934,7 @@ class ChatSession:
             first=unconsidered[0]
             goal=next((q['id'] for q in first['questions'] if self.fn.applicable(q,self.concerns)
                        and self.fn.coverage.get(q['id'],{}).get('status') not in
-                       {'explored','unknown','declined','not_applicable','provided'}),None)
+                       {'explored','unknown','declined','not_applicable','provided','unresolved'}),None)
             node=self.fn.current(self.profile,self.depth,goal) if goal else None
             if node is None:
                 self.partial=True;self.stage='ended';self.stop_reason='model_led_stage_gap_without_safe_bridge'
@@ -1250,6 +1291,17 @@ class ChatSession:
                             postcondition={'exposure_recorded':True,'exposure_id':self.exposures[-1]['id'],
                                            'prior_knowledge':False,
                                            'participant_text_from_source':self.exposures[-1].get('source_id')})
+                    if (goal not in self.fn.coverage and self.fn.strategy=='model_led_fn'
+                            and information_answered and (result.get('_quality_issues')
+                            or result.get('_model_led_plan_rejected'))):
+                        # Keep the answer and explanation, acknowledge that this
+                        # objective remains unresolved, and move through the
+                        # bounded FN bridge instead of repeating its canonical
+                        # question after a rejected model proposal.
+                        self.fn.record(goal,row['id'],'unresolved','uncertain')
+                        self._last_decision['answered_information_without_valid_question']=True
+                        self._model_led_route(result,indicator_client,score_client)
+                        return
                     if goal not in self.fn.coverage:
                         count=self.fn.followups.get(goal,0)
                         if count<1:
@@ -1270,6 +1322,36 @@ class ChatSession:
                         'privacy_entities':list(getattr(exc,'entity_types',())),
                         'privacy_field_paths':[f.get('field_path','root') for f in getattr(exc,'findings',())],
                         'validation_fields':deepcopy(getattr(exc,'validation_fields',[]))})
+                    if (self._model_led_active() and code=='eligibility' and field=='message'
+                            and self.profile and row.get('evidence_status')=='respondent_provided'):
+                        # The bounded wording retry has already failed. Keep the
+                        # original answer, leave this FN objective explicitly
+                        # unresolved, answer only a detectable direct request,
+                        # then use one registered bridge to a different goal.
+                        self._respond_to_information_need(text,{},row,goal,{})
+                        if goal not in self.fn.coverage:
+                            self.fn.record(goal,row['id'],'unresolved','uncertain')
+                        nodes=self.fn.nodes(self.profile,self.depth)
+                        current_index=next((i for i,node in enumerate(nodes) if node['id']==goal),-1)
+                        remaining=set(self.fn.model_led_gaps(self.profile,self.depth,self.concerns))
+                        next_goal=next((node['id'] for node in nodes[current_index+1:]
+                            if node['id'] in remaining and self.fn.applicable(node,self.concerns)),None)
+                        bridge=self.fn.current(self.profile,self.depth,next_goal) if next_goal else None
+                        self.failed_turn_id=None
+                        self._last_decision.update(fallback_used=True,error=code,
+                            accepted_action='bounded_question_recovery',failed_objective=goal,
+                            recovered_to_objective=next_goal,answer_retained=True,
+                            failed_goal_status='unresolved')
+                        self.routing_events.append({'event':'model_question_recovered',
+                            'failed_objective':goal,'recovered_to_objective':next_goal,
+                            'answer_evidence_id':row['id'],'failed_goal_status':'unresolved'})
+                        if bridge:
+                            self.fn.next_action='bounded_methodology_bridge'
+                            self._ask_fn(bridge,act='authored_fallback')
+                        else:
+                            self.partial=True
+                            self.finish('model_question_unavailable_partial')
+                        return
                     _log.warning('chat_interpretation_failure code=%s field=%s goal=%s',code,field,goal)
                     self._last_decision.update(fallback_used=True,error=code,accepted_action='answer_processing_failed')
                     self.failed_turn_id=row['id']

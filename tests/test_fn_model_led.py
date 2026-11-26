@@ -202,6 +202,102 @@ def test_explicit_drone_explanation_is_supplied_once_without_becoming_prior_know
     assert s.fn.coverage['drone_description']['status']=='unknown'
 
 
+def test_mixed_explicit_requests_get_bounded_answers_and_separate_exposures(monkeypatch):
+    from iam_sra.chat_session import ChatSession
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.objective='healthcare_awareness';s.context['city']='Coimbra'
+    text="I don't know what a drone is. Could you explain it, and give an example of how a clinic sample could reach a lab?"
+    row={'id':'m-request','text':text}
+    result={'interpretation':{'information_request':'drone_definition',
+        'information_request_quote':'Could you explain it'},'source_ids':[]}
+    assert s._respond_to_information_need(text,result,row,'healthcare_awareness',{})
+    supplied=next(m for m in reversed(s.messages) if m.get('act')=='supplied_information')
+    assert 'aircraft that can fly without a pilot sitting inside it' in supplied['text']
+    assert 'clinic' in supplied['text'] and 'laboratory' in supplied['text']
+    assert len(s.exposures)==2
+    assert {e['categories'][0] for e in s.exposures}=={'drone_definition','sample_delivery_example'}
+    assert all(e['request_evidence_id']=='m-request' and e['prior_knowledge'] is False
+               and e['newly_supplied_information'] is True for e in s.exposures)
+
+
+def test_no_question_means_no_unsolicited_background(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.objective='healthcare_awareness';s.context['city']='Coimbra'
+    text='I had not heard about healthcare drones before.'
+    assert not s._respond_to_information_need(text,{'interpretation':{}},{'id':'m-noask','text':text},
+                                              'healthcare_awareness',{})
+    assert not s.exposures
+
+
+def test_model_information_label_cannot_add_definition_absent_from_quoted_request(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.objective='healthcare_awareness';s.context['city']='Coimbra'
+    text='Could you explain how a medical sample might get from a clinic to a lab?'
+    row={'id':'m-request','text':text}
+    result={'interpretation':{'information_request':'drone_definition',
+        'information_request_quote':text},'source_ids':[]}
+    assert s._respond_to_information_need(text,result,row,'healthcare_awareness',{})
+    supplied=next(m for m in reversed(s.messages) if m.get('act')=='supplied_information')
+    assert 'clinic' in supplied['text'] and 'laboratory' in supplied['text']
+    assert 'aircraft that can fly without a pilot' not in supplied['text']
+    assert [e['categories'][0] for e in s.exposures]==['sample_delivery_example']
+
+
+def test_information_answer_does_not_repeat_open_question_after_invalid_plan(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.context.update(city='Coimbra',scope_status='respondent_described')
+    s.objective='healthcare_awareness';s.fn.record('area','m-area','explored')
+    text='I do not know how this works. Could you explain medical deliveries?'
+    row=s._user(text)
+    result={'message':'', '_quality_issues':['eligibility'],
+        '_model_led_plan_rejected':'invalid_message',
+        'interpretation':{'action':'advance','next_goal_id':'healthcare_awareness',
+            'question_purpose':'','coverage':[]}}
+    assert s._respond_to_information_need(text,result,row,'healthcare_awareness',{})
+    s.fn.record('healthcare_awareness',row['id'],'unresolved','uncertain')
+    s._last_decision={}
+    s._model_led_route(result)
+    assert s.messages[-1]['text'] != s.fn.current(s.profile,s.depth,'healthcare_awareness')['canonical_question']
+    assert s.fn.coverage['healthcare_awareness']['status']=='unresolved'
+
+
+def test_bounded_question_generation_failure_retains_answer_and_uses_fn_bridge(monkeypatch):
+    from iam_sra.assessment import AssessmentError
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.context.update(city='Coimbra',scope_status='respondent_described')
+    for goal in ('area','citizen_duration','drone_recognition','drone_description','drone_uses',
+                 'drone_explanation','healthcare_awareness','local_awareness'):
+        s.fn.record(goal,f'm-{goal}','unknown','uncertain')
+    s.objective='decisions'
+    class InvalidQuestionClient:
+        last_metrics={'generation_calls':2};last_diagnostics=[];last_context_selection={}
+        def turn(self,request):raise AssessmentError('Generated question invalid.',code='eligibility',field='message')
+    answer='I do not know how decisions about a service would be made here.'
+    s._fn_turn(answer,InvalidQuestionClient())
+    assert s.active_evidence()[-1]['text']==answer
+    assert s.fn.coverage['decisions']['status']=='unresolved'
+    assert s.failed_turn_id is None and s.stage=='conversation'
+    assert s.objective!='decisions'
+    assert s.messages[-1]['act']=='authored_fallback'
+    assert s.routing_events[-1]['event']=='model_question_recovered'
+    s._model_led_route({'message':'How are decisions made?','interpretation':{
+        'action':'advance','next_goal_id':'decisions','question_purpose':'Repeat unresolved question.'}})
+    assert s.objective!='decisions'
+
+
+def test_documented_unresolved_goal_is_not_reasked_or_counted_as_readiness(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short'
+    s.fn.record('area','m-area','unresolved','uncertain')
+    assert 'area' not in s.fn.model_led_gaps('citizen','short',[])
+    assert 'context' not in {stage['id'] for stage in
+        s.fn.model_led_unconsidered_stages('citizen','short',[])}
+    exported=s.fn.export('citizen','short',[],model_led=True)
+    context=next(stage for stage in exported['stages'] if stage['id']=='context')
+    area=next(goal for goal in context['goals'] if goal['id']=='area')
+    assert area['status']=='unresolved' and context['methodological_status']=='considered'
+    assert 'area' in exported['unresolved_gaps']
+
+
 def test_model_led_cannot_repeat_prior_knowledge_probe_after_definition_was_supplied(monkeypatch):
     s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
     s.context['city']='Madrid';s.objective='drone_recognition'

@@ -8,9 +8,10 @@ def test_citizen_stress_personas_cover_both_depths_without_score_targets():
     bank=json.loads((ROOT/'eval/fn_citizen_stress_v1.json').read_text())
     scenarios=bank['scenarios']
     ids={x['id'] for x in scenarios}
-    assert len(ids)==7
+    assert len(ids)==8
     assert {f'S{i}_' for i in range(1,7)}<= {value[:3] for value in ids}
     assert 'S7_multi_concern_evolving_priorities_extended' in ids
+    assert 'S8_uninformed_project_sceptic_short' in ids
     assert {x['depth'] for x in scenarios}=={'short','extended'}
     text=json.dumps(bank).casefold()
     assert 'target_score' not in text and 'target_level' not in text and 'expected_crl' not in text
@@ -29,6 +30,17 @@ def test_stress_scenarios_include_unfamiliarity_priority_change_uncertainty_and_
     assert 'never had an opportunity' in rows['S4_supportive_inexperienced_extended']['answers']['opportunity'].casefold()
     assert 'do not know' in rows['S5_engaged_influence_uncertain_extended']['answers']['feedback_outcome'].casefold()
     assert 'prefer not to answer' in rows['S6_challenging_correction_refusal_extended']['answers']['opportunity'].casefold()
+
+
+def test_s8_is_uninformed_sceptical_and_has_no_score_target():
+    bank=json.loads((ROOT/'eval/fn_citizen_stress_v1.json').read_text())
+    row=next(x for x in bank['scenarios'] if x['id']=='S8_uninformed_project_sceptic_short')
+    assert row['depth']=='short' and row['persona']['city']=='Coimbra'
+    assert not row['persona']['known_facts'] and not row['persona']['actual_participation']
+    assert 'against' in row['answers']['open_priorities'].casefold()
+    assert 'could you explain' in row['answers']['healthcare_awareness'].casefold()
+    text=json.dumps(row).casefold()
+    assert not any(key in text for key in ('target_score','target_level','expected_crl'))
 
 
 def test_s7_preserves_distinct_concerns_priority_change_correction_and_no_influence_claim():
