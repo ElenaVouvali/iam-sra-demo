@@ -135,7 +135,11 @@ class ControllerAdapter:
 
     def allowed(self, engine):
         if getattr(engine, 'chat', None):
-            return ['reset'] + (['chat_message'] if engine.chat.stage != 'ended' else [])
+            result=['reset'] + (['chat_message'] if engine.chat.stage != 'ended' else [])
+            if (engine.chat.stage == 'ended' and engine.chat.participant_review
+                    and engine.chat.reviewer_feedback is None):
+                result += ['chat_feedback']
+            return result
         result = ['reset']
         state = engine.state
         if state in {'general_welcome', 'general_context'}:
@@ -193,7 +197,7 @@ class ControllerAdapter:
         pre_screened=set()
         for key in {'start_assessment': ('use_case','area','organisation_or_unit','responsibilities','technical_object','object_version','intended_environment','materials_or_service','use_case_purpose','origin_destination_types_or_unknown','significant_unknowns'),
                     'indicator_scope': ('organisation_or_unit','responsibilities','technical_object','object_version','intended_environment'),
-                    'chat_message': ('text',), 'indicator_add_information': ('text',), 'set_context': ('place', 'function'), 'answer': ('text',),
+                    'chat_message': ('text',), 'chat_feedback': ('text',), 'indicator_add_information': ('text',), 'set_context': ('place', 'function'), 'answer': ('text',),
                     'correct_interpretation': ('text',), 'ask_information': ('question',),
                     'select_indicators': ('use_case','area','organisation_or_unit','responsibilities','technical_object','object_version','intended_environment'), 'indicator_answer': ('text',),
                     'indicator_correct': ('text',), 'indicator_review': ('explanation',)}.get(action, ()):
@@ -313,6 +317,12 @@ class ControllerAdapter:
             self.readiness()
             if engine.corpus_sha256 != sha256(json.dumps(self._collection, sort_keys=True, ensure_ascii=False).encode()).hexdigest():
                 raise APIError('source_unavailable', 503)
+        if action == 'chat_feedback':
+            if not getattr(engine,'chat',None) or engine.chat.stage!='ended' or not engine.chat.participant_review:
+                raise APIError('invalid_action',409)
+            try: engine.chat.record_reviewer_feedback(data.get('text',''))
+            except ValueError: raise APIError('invalid_action',409) from None
+            return None
         clients = self.clients(engine, deadline)
         returned = None
         try:

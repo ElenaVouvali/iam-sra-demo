@@ -309,7 +309,7 @@ class AssessmentService:
                 record.version += 1
                 return self._receipt(record, key, fingerprint, (200, {'session': self._view(record)}))
             self.adapter.validate_action(record.engine, action, cleaned)
-            if action=='chat_message' and isinstance(cleaned.get('text'),str):
+            if action in {'chat_message','chat_feedback'} and isinstance(cleaned.get('text'),str):
                 from ..privacy import register_screened_text
                 register_screened_text(record.engine,cleaned['text'])
             if changed:

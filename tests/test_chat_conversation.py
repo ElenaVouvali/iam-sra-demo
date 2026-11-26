@@ -1443,8 +1443,8 @@ def test_address_city_cleanup_is_screened_before_confirmed_question_two(api):
     assert b.view['chat']['messages'][-1]['text'].startswith('Which EU city')
     assert not any(m['text']=='Madrid' for m in b.view['chat']['messages'])
     b.act('confirm_cleaned',{'preview_id':b.view['preview']['id']})
-    assert 'How much time' in b.view['chat']['messages'][-1]['text']
-    b.act('chat_message',{'text':'20 minutes'})
+    assert 'Which interview style' in b.view['chat']['messages'][-1]['text']
+    b.act('chat_message',{'text':'short'})
     assert b.view['chat']['messages'][-1]['text']=='Do you know what a drone is?'
 
 

@@ -46,6 +46,10 @@ export const flows = {
   const optionText = await page.$eval('[data-testid="chat-answer-options"]', el => el.textContent)
   expect(optionText.includes('Citizen') && optionText.includes('Organisation or institution') && optionText.includes('Technology expert or researcher'), 'Explained profile choices missing')
   expect(await page.$('[data-testid="chat-answer-options"] input[type="radio"][value="A"]'), 'Citizen choice is not selectable')
+  const freeText=await page.$('#chat-message')
+  expect(freeText && await page.$eval('#chat-message',el=>!el.disabled), 'Free-text input is unavailable beside profile suggestions')
+  await fill(page,'#chat-message','I am a citizen.')
+  expect(await page.$eval('#chat-message',el=>el.value==='I am a citizen.'), 'Natural-language profile answer could not be entered')
   expect(!await page.$('[data-testid="indicator-assessment"]'), 'Internal indicator form appeared during onboarding')
  },
   'catalogue, detail, keyboard and Back': async (page, _errors, { go, back, expect, clickText }) => {

@@ -1,10 +1,10 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAssessment } from '@/composables/useAssessment'
 const flow = useAssessment({ mode: 'chat', depth: 'short', assisted: new URLSearchParams(location.search).get('assisted') === '1' })
 const { session, boot, operation, working, inferenceStatus, ended: sessionEnded } = flow
 const chat = computed(() => session.value?.chat)
-const draft = ref(''), notice = ref(''), endDialog = ref(null), ending = ref(false)
+const draft = ref(''), feedbackDraft = ref(''), notice = ref(''), endDialog = ref(null), ending = ref(false)
 const ended = computed(() => chat.value?.stage === 'ended')
 const introducedSession = ref(null), conversationStart = ref(null)
 const introduction = computed(() => chat.value?.messages.find((m) => m.act === 'introduction'))
@@ -36,6 +36,13 @@ const choiceDisplay = computed(() => {
 })
 const responseOptions = computed(() => choiceDisplay.value.options)
 const selectedChoice = ref('')
+const longWait = ref(false)
+let longWaitTimer = null
+watch(working, (busy) => {
+ clearTimeout(longWaitTimer); longWait.value = false
+ if (busy) longWaitTimer = setTimeout(() => { longWait.value = true }, 30000)
+})
+onBeforeUnmount(() => clearTimeout(longWaitTimer))
 watch(() => `${session.value?.id}:${chat.value?.messages.at(-1)?.id}`, () => {
  selectedChoice.value = ''
 })
@@ -56,6 +63,14 @@ async function send() {
  if (ok && !session.value?.preview && draft.value === submitted) draft.value = ''
  if (!session.value) return
  notice.value = ok ? 'Response ready below.' : 'Your draft is retained. Please check the error.'
+}
+async function submitFeedback() {
+ if (working.value || chat.value?.reviewer_feedback) return
+ const ok = await flow.act('chat_feedback', { text: feedbackDraft.value })
+ if (ok) notice.value = feedbackDraft.value.trim() ? 'Thank you. Your feedback was recorded separately.' : 'Feedback skipped.'
+}
+async function sendControl(text) {
+ if (!working.value) await flow.act('chat_message', { text })
 }
 async function confirmCleaned() {
  const ok = await flow.act('confirm_cleaned', { preview_id: session.value.preview.id })
@@ -108,12 +123,12 @@ onMounted(start)
    <button v-if="chat?.profile === 'citizen' && chat?.depth_selection && chat?.stage === 'conversation'" class="btn secondary sm" :disabled="working" @click="flow.act('chat_message', { text: chat?.depth === 'extended' ? 'keep it short' : 'extended conversation' })">{{ chat?.depth === 'extended' ? 'Use short citizen interview (~20 min)' : 'Use extended citizen interview (~35 min)' }}</button>
    <p v-if="chat?.assisted">Facilitator mode: type the respondent's own words. Do not supply answers for them. This assistance is recorded in the report.</p>
    <RouterLink to="/privacy">Full privacy and retention details</RouterLink>
-   <div class="row"><button class="btn secondary sm" :disabled="working" @click="restart">New conversation</button><button v-if="session" class="btn secondary sm" :disabled="ending" @click="endDialog.showModal()">End and clear session</button></div>
+   <div class="row"><button v-if="chat && !ended" class="btn secondary sm" :disabled="working" @click="sendControl('pause')">Pause</button><button v-if="chat && !ended && chat.stage==='conversation'" class="btn secondary sm" :disabled="working" @click="sendControl('skip this question')">Skip this question</button><button v-if="chat && !ended" class="btn secondary sm" :disabled="working" @click="sendControl('stop')">Finish with a partial record</button><button class="btn secondary sm" :disabled="working" @click="restart">New conversation</button><button v-if="session" class="btn secondary sm" :disabled="ending || working" @click="endDialog.showModal()">End and clear session</button></div>
   </details>
   <p v-if="sessionEnded" role="status">Your temporary session has ended. Downloaded copies remain with you.</p>
   <p v-if="boot.state.value === 'loading'" role="status">Opening the conversation…</p>
   <div v-if="boot.error.value" role="alert"><p>{{ boot.error.value.userMessage }}</p><button class="btn secondary" @click="start">Retry opening</button></div>
-  <div v-if="operation.error.value" role="alert"><p>{{ operation.error.value.userMessage }}</p><button class="btn secondary" :disabled="working" @click="flow.act('refresh')">Refresh conversation</button></div>
+  <div v-if="operation.error.value" role="alert"><p>{{ operation.error.value.userMessage }} Earlier answers are retained.</p><button class="btn secondary" :disabled="working" @click="session?.retry_draft ? flow.retry() : flow.act('refresh')">{{ session?.retry_draft ? 'Retry this response' : 'Refresh conversation' }}</button></div>
   <ol v-if="chat" ref="conversationStart" tabindex="-1" class="messages" aria-label="Conversation">
    <li v-for="message in conversationMessages" :key="message.id" :class="message.role">
     <b>{{ message.role === 'assistant' ? 'AI assistant' : 'You' }}</b>
@@ -139,12 +154,18 @@ onMounted(start)
    </label>
    <div class="row"><button class="btn accent" type="button" :disabled="working || !selectedChoice" @click="sendChoice">Send selected answer</button></div>
   </fieldset>
-  <form v-if="chat && !ended && !session.preview && !responseOptions.length" class="composer" @submit.prevent="send">
-   <label for="chat-message">Your message</label><textarea id="chat-message" v-model="draft" class="input" rows="4" maxlength="1800" aria-describedby="chat-hint" />
-   <p id="chat-hint" class="t-small">Write in your own words. Enter adds a new line; use Send when ready.</p>
+  <form v-if="chat && !ended && !session.preview" class="composer" @submit.prevent="send">
+   <label for="chat-message">Your message <span v-if="responseOptions.length">(or write another answer)</span></label><textarea id="chat-message" v-model="draft" class="input" rows="4" maxlength="1800" aria-describedby="chat-hint" />
+   <p id="chat-hint" class="t-small">Write in your own words or ask a question. Enter adds a new line; use Send when ready.</p>
    <button class="btn accent" :disabled="working || !draft.trim()">Send</button>
   </form>
-  <p v-if="working" role="status">Responding…</p>
+  <section v-if="ended && chat?.participant_review && !chat?.reviewer_feedback" class="composer" aria-label="Optional feedback about the conversation">
+   <h2>Optional feedback about this conversation</h2><p>Would you like to tell us whether the questions were clear, repetitive, helpful or difficult to answer? This does not change your interview answers or result.</p>
+   <label for="reviewer-feedback">Your feedback (optional)</label><textarea id="reviewer-feedback" v-model="feedbackDraft" class="input" rows="3" maxlength="1200" />
+   <div class="row"><button class="btn accent" :disabled="working" @click="submitFeedback">{{ feedbackDraft.trim() ? 'Send feedback' : 'Skip feedback' }}</button></div>
+  </section>
+  <p v-if="ended && chat?.reviewer_feedback" role="status">{{ chat.reviewer_feedback.provided ? 'Thank you. Your optional feedback is stored separately from the readiness evidence.' : 'Optional feedback skipped.' }}</p>
+  <p v-if="working" role="status">{{ longWait ? 'This is taking longer than usual. Your response is still being processed.' : 'Preparing your response…' }}</p>
   <p class="sr-only" role="status" aria-live="polite">{{ notice }}</p>
   <details v-if="session" class="sra-disclosure"><summary>Download a copy</summary><p>This downloads the screened conversation so far, including partial results and any unresolved review.</p><div class="row"><button class="btn secondary" :disabled="working" @click="flow.act('export', { format:'json' })">Download JSON</button><button class="btn secondary" :disabled="working" @click="flow.act('export', { format:'jsonl' })">Download JSONL</button></div></details>
   </template>

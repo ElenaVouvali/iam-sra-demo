@@ -36,7 +36,7 @@ async function mount(initial = snapshot()) {
      { id: 'm5', role: 'assistant', act: 'question', text: 'Which EU city or urban area?' }] } }
    return true
   } }
- const context = vm.createContext({ location: { search: '' }, URLSearchParams })
+ const context = vm.createContext({ location: { search: '' }, URLSearchParams, setTimeout, clearTimeout })
  const component = new vm.SourceTextModule(compiled, { context })
  const vueModule = new vm.SyntheticModule(Object.keys(Vue), function () {
   for (const [key, value] of Object.entries(Vue)) this.setExport(key, value)
@@ -71,7 +71,7 @@ test('full introduction is separate until Continue, without submitting an answer
   await ui.click(ui.button('Continue to the conversation'))
   assert.ok(!ui.text().includes(intro)); assert.ok(ui.text().includes('Which point of view'))
   assert.equal(ui.all().filter((n) => n.props.type === 'radio').length, 3)
-  assert.equal(ui.all().filter((n) => n.type === 'textarea').length, 0)
+  assert.equal(ui.all().filter((n) => n.type === 'textarea').length, 1)
   assert.equal(ui.calls.length, 0); assert.ok(ui.all().find((n) => n.type === 'ol').focused)
  } finally { ui.unmount() }
 })
@@ -95,26 +95,20 @@ for (const [name, options] of [
  try {
   assert.ok(!ui.button('Continue to the conversation'))
   assert.equal(ui.all().filter((n) => n.props.type === 'radio').length, options.length)
-  assert.equal(ui.all().filter((n) => n.type === 'textarea').length, 0)
-  assert.equal(ui.button('Answer in my own words'), undefined)
+  assert.equal(ui.all().filter((n) => n.type === 'textarea').length, 1)
   const value = options.at(-1).value
   ui.all().find((n) => n.props.type === 'radio' && n.props.value === value).props.onChange()
   await Vue.nextTick(); await ui.click(ui.button('Send selected answer')); assert.equal(ui.calls[0].data.text, value)
  } finally { ui.unmount() }
 })
-test('choice questions offer selection only, then restore open questions', async () => {
+test('choice questions keep free text available and route both answer forms through chat_message', async () => {
  const ui = await mount(snapshot(roles, true))
  try {
-  assert.equal(ui.button('Answer in my own words'), undefined)
-  assert.equal(ui.button('Hide text reply'), undefined)
-  assert.equal(ui.all().filter((n) => n.type === 'textarea' || n.type === 'form').length, 0)
-  ui.all().find((n) => n.props.type === 'radio' && n.props.value === 'A').props.onChange()
-  await Vue.nextTick(); await ui.click(ui.button('Send selected answer'))
+  assert.equal(ui.all().filter((n) => n.type === 'textarea' || n.type === 'form').length, 2)
   const input = ui.all().find((n) => n.type === 'textarea')
-  input.value = 'Madrid'; input.listeners.input({ target: input }); await Vue.nextTick()
+  input.value = 'I am a citizen.'; input.listeners.input({ target: input }); await Vue.nextTick()
   await ui.all().find((n) => n.type === 'form').props.onSubmit({ preventDefault() {} }); await Vue.nextTick()
-  assert.equal(ui.calls[0].data.text, 'A')
-  assert.equal(ui.calls[1].data.text, 'Madrid')
+  assert.equal(ui.calls[0].action, 'chat_message'); assert.equal(ui.calls[0].data.text, 'I am a citizen.')
  } finally { ui.unmount() }
 })
 for (const [depth, command, target] of [
@@ -166,6 +160,19 @@ test('welcome-screen session-clear errors remain visible', async () => {
  try {
   ui.flow.operation.error.value = { userMessage: 'Synthetic session-clear error' }; await Vue.nextTick()
   assert.ok(ui.text().includes('Synthetic session-clear error'))
+ } finally { ui.unmount() }
+})
+test('post-review UX feedback is optional and sent through the separate feedback action', async () => {
+ const initial = snapshot([], true)
+ Object.assign(initial.chat, { stage: 'ended', profile: 'citizen', participant_review: { status: 'agreed' }, reviewer_feedback: null })
+ const ui = await mount(initial)
+ try {
+  assert.ok(ui.text().includes('does not change your interview answers or result'))
+  const field = ui.all().find((n) => n.type === 'textarea' && n.props.id === 'reviewer-feedback')
+  field.value = 'The questions were clear.'; field.listeners.input({ target: field }); await Vue.nextTick()
+  await ui.click(ui.button('Send feedback'))
+  assert.equal(ui.calls.at(-1).action, 'chat_feedback')
+  assert.equal(ui.calls.at(-1).data.text, 'The questions were clear.')
  } finally { ui.unmount() }
 })
 test('profile labels and explanatory descriptions appear once, inside selectable cards', async () => {

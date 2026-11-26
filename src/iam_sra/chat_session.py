@@ -143,6 +143,7 @@ class ChatSession:
         self.partial = False
         self.review_step = None
         self._paused_stage = None
+        self._paused_prompt = None
         self.messages = []
         # Hash-only, session-local receipts let screened exports avoid
         # rescanning identical immutable dialogue text. New or edited text has
@@ -172,6 +173,7 @@ class ChatSession:
         self.suggestion = None
         self.initial_results = []
         self.participant_review = None
+        self.reviewer_feedback = None
         self.indicator_results = []
         self.concern_projection = {'status':'not_run','version':1,'results':[]}
         self.stop_reason = None
@@ -852,6 +854,13 @@ class ChatSession:
         row=self._user(text,False,'duration_selection')
         choice=('short','default_after_skip') if skipped else citizen_depth_choice(text,letters=True)
         if choice is None:
+            if re.search(r'\b(?:what does|what is|explain|mean|how long|difference|what happens)\b',text,re.I):
+                explanation=('The short style focuses on the most relevant issues. The extended style explores selected issues in more depth; it is not a promise of a fixed duration. You can still answer freely and ask questions in either style.')
+                self._assistant(explanation,act='supplied_information')
+                self.exposures.append({'id':f'x{len(self.exposures)+1}','kind':'authored_interaction_explanation',
+                    'categories':['interview_depth'],'text':explanation,'source':{'status':'authored_application_explanation'},
+                    'request_evidence_id':row['id'],'request_objective':'citizen_duration','prior_knowledge':False,
+                    'newly_supplied_information':True,'actual_activity':False,'revision':self.revision})
             self._assistant('Would you prefer the short or extended conversation? If you are unsure, we can use the short style.', 'citizen_duration')
             return
         self._select_depth(*choice,row['id'])
@@ -1122,6 +1131,14 @@ class ChatSession:
                                 entry['status']='unknown' if explicit_uncertainty=='uncertain' else 'explored'
                         if node['response_type'] in {'yes_no','permission'}:
                             interpretation['answer_polarity']=explicit_uncertainty
+                    if (self.profile=='citizen' and goal=='drone_recognition'
+                            and interpretation.get('answer_kind') in {'no','uncertain','declined'}):
+                        # A negative recognition response must enter FN's
+                        # optional explanation branch before later knowledge
+                        # or healthcare-awareness questions are considered.
+                        interpretation['next_goal_id']='drone_explanation'
+                        interpretation['action']='advance'
+                        result['message']=self.fn.current(self.profile,self.depth,'drone_explanation')['canonical_question']
                     if goal=='local_awareness':
                         from .fn_interview import tentative_local_operation_report
                         if tentative_local_operation_report(row['text']):
@@ -1227,6 +1244,8 @@ class ChatSession:
                     information_answered=self._respond_to_information_need(
                         text,result,row,goal,request.get('retrieved_context',{}))
                     if information_answered:
+                        if self.profile=='citizen' and goal in {'drone_recognition','drone_description'} and 'drone_explanation' not in self.fn.coverage:
+                            self.fn.record('drone_explanation',row['id'],'provided','provided')
                         self._last_decision.update(accepted_action='provide_information',
                             postcondition={'exposure_recorded':True,'exposure_id':self.exposures[-1]['id'],
                                            'prior_knowledge':False,
@@ -1367,7 +1386,9 @@ class ChatSession:
 
     def _summary(self):
         """Compact exact-passages overview; scoring always uses all originals."""
-        originals = self.active_evidence()
+        originals = [m for m in self.active_evidence()
+                     if m.get('objective_id') not in {'perspective','area','citizen_duration'}
+                     and not (m.get('context_fields') and 'city' in m.get('context_fields',[]))]
         groups = {}
         for message in originals:
             if message['objective_id']=='perspective':
@@ -1399,6 +1420,18 @@ class ChatSession:
         self.stop_reason = reason
         self.stage = 'summary'
         self._assistant('Here is a copy of the points you shared, including uncertainties. Please tell me anything to correct or add. If nothing needs changing, write “no changes” to see the scale and provisional summary.', act='summary')
+
+    def record_reviewer_feedback(self, text=''):
+        """Store optional UX feedback separately from respondent evidence and scoring."""
+        if self.stage != 'ended' or not self.participant_review:
+            raise ValueError('feedback is available only after respondent review')
+        if self.reviewer_feedback is not None:
+            raise ValueError('feedback has already been recorded')
+        value=(text or '').strip()
+        if value:
+            require_safe_data({'text':value}, screening_receipts=self._screening_receipts)
+        self.reviewer_feedback={'text':value,'provided':bool(value),'evidence':False,
+                                'training_eligible':False,'readiness_revision':self.revision}
 
     def _indicator_report(self, client):
         """At most two scoped matches, never fifteen calls per turn or score averaging."""
@@ -1772,6 +1805,9 @@ class ChatSession:
         if intent == 'pause':
             self._user(text, False, 'pause')
             self._paused_stage = self.stage
+            last_prompt=next((m for m in reversed(self.messages[:-1]) if m.get('role')=='assistant'
+                              and m.get('act') in {'question','authored_fallback'}),None)
+            self._paused_prompt={'objective':self.objective,'text':last_prompt.get('text') if last_prompt else None}
             self.stage = 'paused'
             self._assistant('We can pause here. Progress remains temporary; download a copy if you need to leave. Say “continue” when you are ready.', act='pause')
             return
@@ -1782,8 +1818,14 @@ class ChatSession:
         if self.stage == 'paused':
             self._user(text, False, 'resume')
             self.stage = self._paused_stage or 'conversation'
-            node=self.fn.current(self.profile,self.depth,self.objective)
-            self._assistant('Welcome back. '+(node['canonical_question'] if node else 'You can continue the review or stop.'), self.objective)
+            saved=self._paused_prompt or {}
+            if saved.get('objective')==self.objective and saved.get('text'):
+                prompt=saved['text']
+            else:
+                node=self.fn.current(self.profile,self.depth,self.objective)
+                prompt=node['canonical_question'] if node else 'You can continue the review or stop.'
+            self._assistant('Welcome back. '+prompt, self.objective)
+            self._paused_prompt=None
             return
         if (self.profile=='citizen' and self.objective=='drone_explanation' and self.stage=='conversation'
                 and (educational_choice(text)=='finish' or intent=='stop')):
@@ -2000,9 +2042,10 @@ class ChatSession:
                 'answer_processing': {'status':'retry_required' if self.failed_turn_id else 'ready',
                                       'evidence_id':self.failed_turn_id},
                 'messages': deepcopy(participant_messages), 'pending_comparison': deepcopy(self.pending_comparison),
-                'summary': self._summary() if self.stage != 'conversation' else [],
+                'summary': self._summary() if self.stage in {'summary','review','review_addition'} or (self.stage=='ended' and self.participant_review and not self.partial) else [],
                 'scale': self._rubric() if self.profile and not educational_exit and (self.stage in {'review','review_addition','ended'} or any(e.get('kind')=='reference_scale' for e in self.exposures)) else None,
                 'suggestion': deepcopy(self.suggestion), 'self_assessment_available':self.stage=='review' and self._has_model_score(), 'participant_review': deepcopy(self.participant_review),
+                'reviewer_feedback':deepcopy(self.reviewer_feedback),
                 'initial_suggestion': deepcopy(self.initial_results[0]['suggestion']) if self.initial_results and self.participant_review else None,
                 'assisted': self.assisted,
                 'completion': {'conversation': self.stage == 'ended', 'partial':self.partial,
@@ -2039,7 +2082,7 @@ class ChatSession:
                 'indicator_projection': {'participant_reviewed': False, 'results': deepcopy(self.indicator_results),
                     'coverage': [{'indicator_id': i['id'], 'status': next((r['status'] for r in self.indicator_results if r['indicator_id']==i['id']), 'explored_unmatched' if any(i['id'] in a['indicator_ids'] and a['evidence_id'] in {m['id'] for m in self.active_evidence()} for a in self.annotations) else 'not_explored'),
                         'evidence_ids': [a['evidence_id'] for a in self.annotations if i['id'] in a['indicator_ids'] and a['evidence_id'] in {m['id'] for m in self.active_evidence()}]} for i in self.bank['indicators']]},
-                'concern_ledger': deepcopy(self.concerns),
+                'concern_ledger': deepcopy(self.concerns), 'reviewer_feedback':deepcopy(self.reviewer_feedback),
                 'stop_reason': self.stop_reason, 'failures': deepcopy(self.failures), 'observable_metrics': deepcopy(self.metrics),
                 'limits': self.limits, 'overall_srl': None, 'retention': 'temporary_memory_download_required',
                 'source_versions': {'interview_version': self.source_register['version'], 'interview_sources':self.source_register['sources'],

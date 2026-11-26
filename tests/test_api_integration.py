@@ -29,8 +29,8 @@ class Browser:
         self.capabilities = bootstrap.json
         self.view = None
 
-    def new(self):
-        response = self.client.post('/v1/sessions', json={}, headers={'X-CSRF-Token': self.csrf})
+    def new(self, data=None):
+        response = self.client.post('/v1/sessions', json=data or {}, headers={'X-CSRF-Token': self.csrf})
         assert response.status_code == 201, response.json
         self.view = response.json['session']
         return self.view
@@ -412,6 +412,21 @@ def test_information_projection_preserves_citations():
                         'content': {'excerpts': [{'passage_id': 'p1', 'quotation': 'Synthetic source text.'}],
                                     'passages': [{'id': 'p1', 'document_title': 'Synthetic reference', 'location': 'section 1'}]}})
     assert data['content']['excerpts'][0]['source'] == {'document_title': 'Synthetic reference', 'location': 'section 1'}
+
+
+def test_chat_feedback_action_is_screened_separate_and_only_available_after_review(make_api):
+    app,manager=make_api();browser=Browser(app);browser.new({'mode':'chat'})
+    record=manager.records[browser.view['id']]
+    chat=record.engine.chat
+    assert 'chat_feedback' not in browser.view['allowed_actions']
+    chat.stage='ended';chat.participant_review={'status':'agreed','choice':'A'}
+    record.view=manager.adapter.present(record.engine,record.id,record.version)
+    browser.read()
+    assert 'chat_feedback' in browser.view['allowed_actions']
+    browser.act('chat_feedback',{'text':'The questions were clear.'})
+    assert browser.view['chat']['reviewer_feedback']['text']=='The questions were clear.'
+    assert browser.view['chat']['reviewer_feedback']['evidence'] is False
+    assert 'chat_feedback' not in browser.view['allowed_actions']
 
 
 def test_production_adapter_checks_corpus_and_creates_private_clients():

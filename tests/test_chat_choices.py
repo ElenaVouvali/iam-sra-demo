@@ -16,7 +16,8 @@ def test_role_options_do_not_turn_subsequent_open_questions_into_choices(letter,
     s.send(letter,c)
     assert s.profile==profile and s.objective=='area' and not s.view()['response_options']
     s.send('Madrid',c)
-    assert s.view()['response_options']==(letter_options(CITIZEN_DURATION) if profile=='citizen' else [])
+    assert s.view()['response_options']==([{'value':'short','label':'Short — focused on the most relevant issues'},
+        {'value':'extended','label':'Extended — explores selected issues in more depth'}] if profile=='citizen' else [])
     assert s.calls==0
 
 

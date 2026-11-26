@@ -73,10 +73,25 @@ def test_same_question_can_lead_to_answer_dependent_valid_objectives(monkeypatch
     client=PlanningClient(target,question,kind=kind)
     s.send(answer,client)
     assert s.objective==target
-    assert s.messages[-1]['text']==question
+    if answer.startswith('No,'):
+        assert 'Would you like a short explanation?' in s.messages[-1]['text']
+        assert 'explanation' in s.messages[-1]['text'].casefold()
+    else:
+        assert s.messages[-1]['text']==question
     assert s.messages[-1]['source']['wording']=='Qwen proposed; FN harness validated'
     accepted=[e for e in s.routing_events if e['event']=='model_led_question_accepted']
     assert accepted[-1]['objective_id']==target
+
+
+def test_negative_drone_recognition_cannot_skip_fn_explanation_offer(monkeypatch):
+    s=_start(monkeypatch);_onboard_citizen(s,PlanningClient(None,''))
+    # Even if Qwen proposes moving to healthcare awareness, the controller
+    # requires FN's optional explanation offer after explicit unfamiliarity.
+    s.send('No, I do not know what a drone is.',PlanningClient('healthcare_awareness',
+        'Have you heard of healthcare drone services?',kind='no'))
+    assert s.objective=='drone_explanation'
+    assert 'explanation' in s.messages[-1]['text'].casefold()
+    assert s.fn.coverage['drone_recognition']['status'] in {'explored','unknown'}
 
 
 def test_one_answer_can_ground_multiple_applicable_goals_and_avoid_reasking(monkeypatch):

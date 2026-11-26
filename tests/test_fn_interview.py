@@ -113,6 +113,30 @@ def test_unknown_citizen_explanation_and_local_uncertainty_not_prior_knowledge()
     assert s.objective=='open_priorities' and s.suggestion is None
 
 
+def test_pause_resume_restores_pending_wording_and_pause_hides_evidence_summary():
+    s,c=start()
+    s.objective='healthcare_awareness'
+    s.messages.append({'id':'m-pending','role':'assistant','text':'Before today, had you heard of medical deliveries by drone?',
+        'act':'question','objective_id':'healthcare_awareness'})
+    s.send('pause',c)
+    assert s.stage=='paused'
+    assert s.view()['summary']==[]
+    s.send('continue',c)
+    assert s.objective=='healthcare_awareness'
+    assert s.messages[-1]['text']=='Welcome back. Before today, had you heard of medical deliveries by drone?'
+
+
+def test_reviewer_feedback_is_separate_from_readiness_evidence():
+    s=ChatSession(bank(),synthetic=True)
+    s.stage='ended';s.participant_review={'status':'agreed','choice':'A'}
+    before=deepcopy(s.active_evidence());score=deepcopy(s.suggestion)
+    s.record_reviewer_feedback('The questions were clear and helpful.')
+    assert s.active_evidence()==before and s.suggestion==score
+    exported=s.export()['reviewer_feedback']
+    assert exported['provided'] and exported['evidence'] is False and exported['training_eligible'] is False
+    with pytest.raises(ValueError):s.record_reviewer_feedback('A second submission')
+
+
 def test_qualified_yes_uses_semantics_in_same_call_and_follows_correct_branch():
     s,c=start()
     class Pilot:

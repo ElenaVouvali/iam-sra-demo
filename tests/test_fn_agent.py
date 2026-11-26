@@ -30,6 +30,7 @@ def test_four_distinct_personas_have_no_target_levels():
 
 @pytest.mark.parametrize(('persona_id','case'),[
     ('fn_unfamiliar_citizen','citizen_short'),('G3_multiconcern_priority_revision','citizen_extended'),
+    ('eva_coimbra_extended_multiconcern','citizen_extended'),
     ('fn_planning_unit','organisational'),('G8_routine_health_logistics','organisational'),
     ('fn_container_component','technical'),('G11_representative_system_validation','technical'),
 ])
