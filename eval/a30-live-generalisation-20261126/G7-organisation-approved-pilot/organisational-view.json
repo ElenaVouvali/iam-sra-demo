@@ -1,0 +1,1158 @@
+{
+  "allowed_actions": [
+    "reset"
+  ],
+  "busy_job": null,
+  "chat": {
+    "answer_processing": {
+      "evidence_id": null,
+      "status": "ready"
+    },
+    "assisted": false,
+    "citizen_depth": null,
+    "completion": {
+      "conversation": true,
+      "evidence_sufficiency": "provisionally_sufficient",
+      "methodological_progression": "goals_explored",
+      "partial": false,
+      "participant_review": "provided",
+      "review": "pending_human_review",
+      "termination_reason": "respondent_review_complete"
+    },
+    "depth": "short",
+    "depth_history": [],
+    "depth_selection": null,
+    "initial_suggestion": null,
+    "messages": [
+      {
+        "act": "introduction",
+        "id": "m1",
+        "role": "assistant",
+        "text": "Thank you for taking part. I'm an AI assistant for this IAM-CC research interview.\n\nWe would like to hear your views and experiences to help us understand how ready society is to use and engage with new and emerging technologies. In this interview, we will talk about drones and services that use drones.\n\nThere are no right or wrong answers. Your opinions and your own experiences matter. You can skip any question, pause, correct an answer, stop or withdraw at any time.\n\nPlease avoid personal names, addresses, contact details and sensitive information. Messages are screened before processing, but screening can miss personal details. Progress is held temporarily in memory; download a copy if you want to keep it. Contact follow-up and cross-day resume are unavailable."
+      },
+      {
+        "act": "question",
+        "id": "m2",
+        "role": "assistant",
+        "text": "Which point of view would you like to use in this conversation?\n\nA. Citizen\nA member of the public answering from their own point of view. For example, a resident, patient, service user, worker, member of a community organisation, or anyone who could be affected by drone services.\n\nB. Organisation or institution\nSomeone answering on behalf of an organisation involved in planning, providing, regulating, supporting or overseeing drone services. For example, a municipality, regional authority, regulator, policymaker, city planner, transport authority, healthcare organisation, logistics organisation or infrastructure provider.\n\nC. Technology expert or researcher\nSomeone working directly with drone technology or related technical systems. For example, a drone operator, manufacturer, engineer, researcher, technology developer, take-off and landing infrastructure developer or airspace-service provider.\n\nIf more than one applies, please choose the perspective you would prefer to use today."
+      },
+      {
+        "act": "profile_selection",
+        "id": "m3",
+        "role": "respondent",
+        "text": "B. Organisation or institution"
+      },
+      {
+        "act": "profile_acknowledgement",
+        "id": "m4",
+        "role": "assistant",
+        "text": "Thank you. I will ask the following questions from the perspective of your organisation."
+      },
+      {
+        "act": "question",
+        "id": "m5",
+        "role": "assistant",
+        "text": "Which EU city or urban area would you like your answers to refer to?"
+      },
+      {
+        "act": "answer",
+        "id": "m6",
+        "role": "respondent",
+        "text": "Lyon"
+      },
+      {
+        "act": "city_acknowledgement",
+        "id": "m7",
+        "role": "assistant",
+        "text": "Thank you. I will use that city or urban area as the context for your answers."
+      },
+      {
+        "act": "question",
+        "id": "m8",
+        "role": "assistant",
+        "text": "You do not need to name it. If you prefer not to name it, please briefly describe what kind of organisation it is and what it does.\n\nWhat organisation do you work for?"
+      },
+      {
+        "act": "answer",
+        "id": "m9",
+        "role": "respondent",
+        "text": "A regional health authority responsible for coordinating healthcare drone pilots and managing logistics in Lyon's hospitals."
+      },
+      {
+        "act": "question",
+        "id": "m10",
+        "role": "assistant",
+        "text": "What role does your organisation currently have—or could it potentially have—in relation to drone services?"
+      },
+      {
+        "act": "answer",
+        "id": "m11",
+        "role": "respondent",
+        "text": "Our organisation currently coordinates one supervised healthcare-drone pilot at two hospital sites. We could potentially expand this role if interoperability and staff training concerns are addressed."
+      },
+      {
+        "act": "question",
+        "id": "m12",
+        "role": "assistant",
+        "text": "Are you familiar with drone technology?"
+      },
+      {
+        "act": "answer",
+        "id": "m13",
+        "role": "respondent",
+        "text": "Yes, we are familiar with drone technology through our supervised pilot program. We focused on healthcare logistics and identified specific operational challenges."
+      },
+      {
+        "act": "question",
+        "id": "m14",
+        "role": "assistant",
+        "text": "In your own words, how would you describe a drone?"
+      },
+      {
+        "act": "answer",
+        "id": "m15",
+        "role": "respondent",
+        "text": "A drone is an unmanned aerial vehicle used in our pilot to transport urgent medical samples between hospitals, demonstrating potential time savings while highlighting interoperability and training challenges."
+      },
+      {
+        "act": "question",
+        "id": "m16",
+        "role": "assistant",
+        "text": "What kinds of services or uses involving drones are you familiar with?"
+      },
+      {
+        "act": "answer",
+        "id": "m17",
+        "role": "respondent",
+        "text": "We are familiar with using drones for transporting urgent medical samples between hospitals in a supervised pilot. This demonstrated potential time savings but highlighted interoperability and training challenges."
+      },
+      {
+        "act": "question",
+        "id": "m18",
+        "role": "assistant",
+        "text": "As far as you know, are drones already being used in your city?"
+      },
+      {
+        "act": "answer",
+        "id": "m19",
+        "role": "respondent",
+        "text": "Yes, we are familiar with drone technology through our supervised pilot program. We focused on healthcare logistics and identified specific operational challenges."
+      },
+      {
+        "act": "question",
+        "id": "m20",
+        "role": "assistant",
+        "text": "What are they being used for?"
+      },
+      {
+        "act": "answer",
+        "id": "m21",
+        "role": "respondent",
+        "text": "Drones are used in our supervised pilot to transport urgent medical samples between hospitals, demonstrating potential time savings while highlighting interoperability and training challenges."
+      },
+      {
+        "act": "question",
+        "id": "m22",
+        "role": "assistant",
+        "text": "Do you know which organisations are involved?"
+      },
+      {
+        "act": "answer",
+        "id": "m23",
+        "role": "respondent",
+        "text": "The pilot involved our regional health authority, two hospital sites, and external drone operators contracted for the trial. No routine-service authorization or expanded monitoring is in place."
+      },
+      {
+        "act": "question",
+        "id": "m24",
+        "role": "assistant",
+        "text": "For the rest of the interview, I would like you to think about one specific type of drone service: drones transporting healthcare items such as medicines, blood, laboratory samples or other medical supplies.\n\nCould this type of healthcare drone service be relevant to your organisation?"
+      },
+      {
+        "act": "answer",
+        "id": "m25",
+        "role": "respondent",
+        "text": "Yes, we are familiar with drone technology through our supervised pilot program. We focused on healthcare logistics and identified specific operational challenges."
+      },
+      {
+        "act": "question",
+        "id": "m26",
+        "role": "assistant",
+        "text": "In what way?"
+      },
+      {
+        "act": "answer",
+        "id": "m27",
+        "role": "respondent",
+        "text": "The pilot demonstrated time savings for urgent samples but highlighted interoperability issues with hospital dispatch systems and challenges in repeatable staff training."
+      },
+      {
+        "act": "question",
+        "id": "m28",
+        "role": "assistant",
+        "text": "What possible opportunities, challenges or responsibilities come to mind for your organisation?"
+      },
+      {
+        "act": "answer",
+        "id": "m29",
+        "role": "respondent",
+        "text": "Our organisation faces challenges in interoperability and staff training. We need evidence on repeatability and routine authorization. Responsibilities include ensuring safe, bounded pilots without expanding beyond approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m30",
+        "role": "assistant",
+        "text": "If this healthcare drone service were proposed for your city, what would your organisation need to consider before deciding what role to play or what position to take?"
+      },
+      {
+        "act": "answer",
+        "id": "m31",
+        "role": "respondent",
+        "text": "We need to assess repeatability evidence, routine authorization protocols, and ensure interoperability with existing dispatch systems. Staff training must be repeatable and within allocated resources. Our role would remain bounded to approved pilots without expanding into routine operations."
+      },
+      {
+        "act": "question",
+        "id": "m32",
+        "role": "assistant",
+        "text": "Anything else?"
+      },
+      {
+        "act": "answer",
+        "id": "m33",
+        "role": "respondent",
+        "text": "We need to confirm repeatability across sites and secure routine monitoring responsibilities before considering expansion. Our focus remains on bounded pilots within allocated resources and approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m34",
+        "role": "assistant",
+        "text": "Are any of these particularly relevant to your organisation's role?\n• how the service fits with existing transport and city plans\n• where drones take off and land and how land is used\n• energy use and environmental effects\n• costs, funding and long-term financial arrangements\n• access for remote areas or people who may face barriers\n• interaction with other transport and traffic\n• noise\n• visual impacts\n• public concerns about safety and privacy\n• technical safety, security and protection of information\n• wind and strong air movement around take-off and landing areas\n• the number of drones and use of airspace\n• how benefits and negative effects are distributed\n• public information and engagement\n• staff knowledge, expertise and training"
+      },
+      {
+        "act": "question",
+        "id": "m35",
+        "role": "assistant",
+        "text": "Which two or three are most important for your organisation?\nYou can choose just one issue if that is what matters to you."
+      },
+      {
+        "act": "answer",
+        "id": "m36",
+        "role": "respondent",
+        "text": "Repeatability evidence, interoperability with dispatch systems, and routine authorization protocols are most critical. Our focus remains on bounded pilots within approved scope and allocated resources."
+      },
+      {
+        "act": "question",
+        "id": "m37",
+        "role": "assistant",
+        "text": "To make sure I understood your choice, which issue or issues would you like us to focus on first? You can choose one, a few, or say you do not want to select any."
+      },
+      {
+        "act": "answer",
+        "id": "m38",
+        "role": "respondent",
+        "text": "Repeatability across sites and routine monitoring responsibilities are our top priorities. We need clarity on staffing, funding, and how to align with existing dispatch systems before expanding."
+      },
+      {
+        "act": "question",
+        "id": "m39",
+        "role": "assistant",
+        "text": "Thinking about the issues you identified as most important, what would your organisation need to have in place to deal with the healthcare drone service properly?"
+      },
+      {
+        "act": "answer",
+        "id": "m40",
+        "role": "respondent",
+        "text": "Repeatability evidence, interoperability with hospital dispatch, and routine authorization protocols are most critical. Our focus remains on bounded pilots within approved scope and allocated resources."
+      },
+      {
+        "act": "question",
+        "id": "m41",
+        "role": "assistant",
+        "text": "How well does your organisation currently understand what would be required?"
+      },
+      {
+        "act": "answer",
+        "id": "m42",
+        "role": "respondent",
+        "text": "Repeatability evidence, interoperability with dispatch systems, and routine authorization protocols are most critical. Our focus remains on bounded pilots within approved scope and allocated resources."
+      },
+      {
+        "act": "question",
+        "id": "m43",
+        "role": "assistant",
+        "text": "What are the main gaps?"
+      },
+      {
+        "act": "answer",
+        "id": "m44",
+        "role": "respondent",
+        "text": "Repeatability across sites, routine monitoring responsibilities, and staffing/funding clarity are the main gaps. Interoperability with hospital dispatch remains a key concern before expansion."
+      },
+      {
+        "act": "question",
+        "id": "m45",
+        "role": "assistant",
+        "text": "Are there any laws, regulations, permissions or public authorities that your organisation thinks would be relevant to this service?"
+      },
+      {
+        "act": "answer",
+        "id": "m46",
+        "role": "respondent",
+        "text": "Repeatability evidence, interoperability with hospital dispatch, and routine authorization protocols are most critical. Our focus remains on bounded pilots within approved scope and allocated resources."
+      },
+      {
+        "act": "question",
+        "id": "m47",
+        "role": "assistant",
+        "text": "Has your organisation started planning how it would deal with the healthcare drone service we are discussing?"
+      },
+      {
+        "act": "answer",
+        "id": "m48",
+        "role": "respondent",
+        "text": "Repeatability evidence, interoperability with hospital dispatch, and routine authorization protocols are most critical. Our focus remains on bounded pilots within approved scope and allocated resources."
+      },
+      {
+        "act": "question",
+        "id": "m49",
+        "role": "assistant",
+        "text": "What has been planned so far?"
+      },
+      {
+        "act": "answer",
+        "id": "m50",
+        "role": "respondent",
+        "text": "A supervised pilot was completed at two hospitals with a lessons log. Routine dispatch procedures remain unchanged. No sustained monitoring programme is established. Repeatability and staffing/funding are ongoing gaps."
+      },
+      {
+        "act": "question",
+        "id": "m51",
+        "role": "assistant",
+        "text": "Have responsibilities already been assigned?"
+      },
+      {
+        "act": "answer",
+        "id": "m52",
+        "role": "respondent",
+        "text": "Roles for health logistics, operator liaison, and safety review are assigned. The pilot was supervised with two hospitals. Routine dispatch procedures remain unchanged. No sustained monitoring programme is established."
+      },
+      {
+        "act": "question",
+        "id": "m53",
+        "role": "assistant",
+        "text": "What about coordination with organisations outside your organisation?"
+      },
+      {
+        "act": "answer",
+        "id": "m54",
+        "role": "respondent",
+        "text": "Coordination with external organisations is limited to the supervised pilot sites. We focus on bounded pilots within approved scope, ensuring interoperability with hospital dispatch and addressing staffing needs before expansion."
+      },
+      {
+        "act": "question",
+        "id": "m55",
+        "role": "assistant",
+        "text": "Has your organisation moved beyond planning and started putting arrangements in place for testing or potentially implementing this healthcare drone service?"
+      },
+      {
+        "act": "answer",
+        "id": "m56",
+        "role": "respondent",
+        "text": "A supervised pilot was completed at two hospitals with a lessons log. Routine dispatch procedures remain unchanged. No sustained monitoring programme is established. Repeatability and staffing/funding are ongoing gaps."
+      },
+      {
+        "act": "question",
+        "id": "m57",
+        "role": "assistant",
+        "text": "What has been put in place?"
+      },
+      {
+        "act": "answer",
+        "id": "m58",
+        "role": "respondent",
+        "text": "Roles for health logistics, operator liaison, and safety review are assigned. The pilot was supervised with two hospitals. Routine dispatch procedures remain unchanged. No sustained monitoring programme is established."
+      },
+      {
+        "act": "question",
+        "id": "m59",
+        "role": "assistant",
+        "text": "What about staff, expertise and other resources?"
+      },
+      {
+        "act": "answer",
+        "id": "m60",
+        "role": "respondent",
+        "text": "Coordination is limited to the supervised pilot sites. Staff roles are assigned, but staffing and funding for routine operation remain gaps. We focus on bounded pilots within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m61",
+        "role": "assistant",
+        "text": "Are the necessary procedures or approval processes clear?"
+      },
+      {
+        "act": "answer",
+        "id": "m62",
+        "role": "respondent",
+        "text": "The supervised pilot had clear roles and procedures. Routine dispatch remains unchanged. Approval is limited to the pilot scope. Repeatability and monitoring processes are still under review."
+      },
+      {
+        "act": "question",
+        "id": "m63",
+        "role": "assistant",
+        "text": "Have your organisation's plans, procedures or coordination arrangements actually been tested through a pilot, demonstration, simulation or another realistic activity?"
+      },
+      {
+        "act": "answer",
+        "id": "m64",
+        "role": "respondent",
+        "text": "A supervised pilot was completed with two hospitals. Roles and procedures were tested, but no sustained monitoring or routine authorization exists. The focus remains on bounded pilots within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m65",
+        "role": "assistant",
+        "text": "What parts of your organisation's role were tested?"
+      },
+      {
+        "act": "answer",
+        "id": "m66",
+        "role": "respondent",
+        "text": "Coordination is limited to the supervised pilot sites. Staff roles are assigned, but staffing and funding for routine operation remain gaps. We focus on bounded pilots within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m67",
+        "role": "assistant",
+        "text": "What did your organisation learn?"
+      },
+      {
+        "act": "answer",
+        "id": "m68",
+        "role": "respondent",
+        "text": "The supervised pilot demonstrated possible time savings for urgent samples. Interoperability and staff training repeatability remain key concerns. Routine authorization and monitoring processes are still under review."
+      },
+      {
+        "act": "question",
+        "id": "m69",
+        "role": "assistant",
+        "text": "Were any changes identified as a result?"
+      },
+      {
+        "act": "answer",
+        "id": "m70",
+        "role": "respondent",
+        "text": "No sustained changes beyond the supervised pilot. Routine dispatch procedures remain unchanged. The focus is on bounded pilots within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m71",
+        "role": "assistant",
+        "text": "Were any relevant permissions, approval procedures or compliance processes also tested or used?"
+      },
+      {
+        "act": "answer",
+        "id": "m72",
+        "role": "respondent",
+        "text": "Permissions and compliance processes were used within the approved supervised pilot. Routine authorization and monitoring are still under review. We focus on bounded pilots within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m73",
+        "role": "assistant",
+        "text": "Have those lessons now been incorporated into your organisation's regular plans, policies or procedures?"
+      },
+      {
+        "act": "answer",
+        "id": "m74",
+        "role": "respondent",
+        "text": "No sustained changes beyond the supervised pilot. Routine dispatch procedures remain unchanged. The focus is on bounded pilots within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m75",
+        "role": "assistant",
+        "text": "Imagine the healthcare drone service was ready to move from a pilot to regular operation.\n\nWould your organisation currently be able to fulfil its role?"
+      },
+      {
+        "act": "answer",
+        "id": "m76",
+        "role": "respondent",
+        "text": "No sustained changes beyond the supervised pilot. Routine dispatch procedures remain unchanged. The focus is on bounded pilots within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m77",
+        "role": "assistant",
+        "text": "What is already in place?"
+      },
+      {
+        "act": "answer",
+        "id": "m78",
+        "role": "respondent",
+        "text": "Permissions and compliance processes were used within the approved supervised pilot. Routine authorization and monitoring are still under review. We focus on bounded pilots within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m79",
+        "role": "assistant",
+        "text": "What is still missing?"
+      },
+      {
+        "act": "answer",
+        "id": "m80",
+        "role": "respondent",
+        "text": "Repeatability evidence, routine authorization, and long-term staffing/monitoring plans are still missing. Bounded pilots remain the focus within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m81",
+        "role": "assistant",
+        "text": "If healthcare drone services became a normal part of the city's activities, how would your organisation know whether its arrangements were still working well over time?"
+      },
+      {
+        "act": "answer",
+        "id": "m82",
+        "role": "respondent",
+        "text": "We would need sustained monitoring, routine authorization processes, and evidence of repeatability. These are still under review. Bounded pilots remain the focus within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m83",
+        "role": "assistant",
+        "text": "What would happen if, for example, the number of flights increased significantly, the service changed, or new requirements were introduced?"
+      },
+      {
+        "act": "answer",
+        "id": "m84",
+        "role": "respondent",
+        "text": "Permissions and compliance processes were used within the approved supervised pilot. Routine authorization and monitoring are still under review. We focus on bounded pilots within approved scope."
+      },
+      {
+        "act": "question",
+        "id": "m85",
+        "role": "assistant",
+        "text": "Does your organisation already have an established process for doing this, or is this what you think should happen?"
+      },
+      {
+        "act": "answer",
+        "id": "m86",
+        "role": "respondent",
+        "text": "We have an established process for supervised pilots within approved scope. Routine operation and sustained monitoring are still under review. Bounded pilots remain the focus."
+      },
+      {
+        "act": "scale_disclosure",
+        "id": "m87",
+        "role": "assistant",
+        "scale": {
+          "anchors": [
+            {
+              "description": "The organisation recognises that the drone service could be relevant to its responsibilities, objectives or the communities it serves.",
+              "id": "organisational-1",
+              "label": "Recognition",
+              "level": 1,
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "description": "The organisation identifies possible opportunities, challenges, stakeholders, requirements and relevant regulatory issues.",
+              "id": "organisational-2",
+              "label": "Awareness",
+              "level": 2,
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "description": "The organisation assesses what the service would require operationally, financially, organisationally, in terms of regulation and governance, and identifies gaps in its preparedness.",
+              "id": "organisational-3",
+              "label": "Assessment",
+              "level": 3,
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "description": "The organisation develops preliminary plans, including roles, resources, responsibilities, coordination, procedures and possible changes to existing policies or processes.",
+              "id": "organisational-4",
+              "label": "Planning",
+              "level": 4,
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "description": "The organisation puts in place the partnerships, resources, competences, procedures and regulatory pathways needed to prepare for testing or implementation.",
+              "id": "organisational-5",
+              "label": "Preparation",
+              "level": 5,
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "description": "The organisation tests its procedures, coordination, governance and regulatory preparedness through pilots, demonstrations, simulations or realistic activities and uses the results to identify improvements.",
+              "id": "organisational-6",
+              "label": "Validation",
+              "level": 6,
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "description": "The organisation incorporates validated roles, procedures, resources, regulatory arrangements and governance mechanisms into its plans, policies or regular processes.",
+              "id": "organisational-7",
+              "label": "Integration",
+              "level": 7,
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "description": "The organisation can fulfil its role under real operating conditions, with the necessary resources, coordination, approvals or compliance arrangements and monitoring mechanisms in place.",
+              "id": "organisational-8",
+              "label": "Operational readiness",
+              "level": 8,
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "description": "The organisation fulfils its role as part of normal operations and governance, continuously monitors performance and compliance, and can adapt to changing needs, requirements and conditions.",
+              "id": "organisational-9",
+              "label": "Sustained institutionalisation",
+              "level": 9,
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            }
+          ],
+          "guidance": "Assess only the stated unit responsibilities. Distinguish draft plans, prepared arrangements, realistic testing with lessons, adoption into ordinary processes, routine operational readiness and sustained monitoring. Permission for a demonstration does not establish routine compliance (pp.11–17,19–20).",
+          "policy_version": "fn-adaptive-interview-1.1.0",
+          "reference_notice": "The interview scale is shown below. The legacy workbook remains a separate reference.",
+          "reference_scale": [
+            {
+              "description": "Recognition. The organisation recognises the potential relevance of the innovation to its responsibilities, objectives, operations, or the needs of the communities it serves.",
+              "level": 1,
+              "source": {
+                "cell": "C2",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Awareness. The organisation identifies potential opportunities, challenges, requirements, stakeholders, and regulatory considerations associated with introducing the innovation into its activities.",
+              "level": 2,
+              "source": {
+                "cell": "C3",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Assessment. The organisation assesses the feasibility and implications of the innovation, including its operational, financial, organisational, regulatory, and governance requirements, and identifies potential gaps in its preparedness.",
+              "level": 3,
+              "source": {
+                "cell": "C4",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Planning. The organisation develops preliminary plans for integrating the innovation, identifying necessary resources, roles, responsibilities, stakeholder coordination mechanisms, regulatory procedures, and potential changes to existing processes or policies.",
+              "level": 4,
+              "source": {
+                "cell": "C5",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Preparation. The organisation establishes the organisational arrangements, partnerships, resources, competencies, procedures, and regulatory pathways needed to prepare for testing or implementing the innovation in a relevant operational context.",
+              "level": 5,
+              "source": {
+                "cell": "C6",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Validation. The organisation tests its operational procedures, coordination arrangements, governance mechanisms, and regulatory preparedness through pilots, demonstrations, simulations, or controlled real-world activities, using the results to identify improvements.",
+              "level": 6,
+              "source": {
+                "cell": "C7",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Integration. The organisation integrates validated processes, responsibilities, resources, regulatory arrangements, and governance mechanisms into its operational plans, policies, business models, or urban mobility strategies to support deployment.",
+              "level": 7,
+              "source": {
+                "cell": "C8",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Operational readiness. The organisation demonstrates its capacity to implement and manage the innovation under real-world operational conditions, with the necessary organisational resources, coordination procedures, regulatory approvals or compliance arrangements, and monitoring mechanisms in place.",
+              "level": 8,
+              "source": {
+                "cell": "C9",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Sustained institutionalisation. The organisation institutionalises the innovation within its routine operations and governance structures, demonstrating sustained operational capability, regulatory compliance, continuous monitoring, and the capacity to adapt to evolving needs, requirements, and conditions.",
+              "level": 9,
+              "source": {
+                "cell": "C10",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            }
+          ],
+          "reference_source": {
+            "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+            "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818"
+          },
+          "rubric_version": "eva-interviews-2026-11-04-v1",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+            "scale_pdf_pages": [
+              16
+            ],
+            "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d"
+          },
+          "status": "supplied_example_prototype_pending_partner_review"
+        },
+        "text": "Thank you. We have finished the main questions."
+      },
+      {
+        "act": "scale_notice",
+        "id": "m88",
+        "role": "assistant",
+        "text": "I will now show you the scale used to understand your answers. The judgment is provisional and based on self-report."
+      },
+      {
+        "act": "result_review",
+        "id": "m89",
+        "role": "assistant",
+        "text": "Provisional result: ORL 3 — Assessment.\n\nThe organisation identifies interoperability and staff training challenges, outlines requirements for repeatability, routine authorization, and interoperability, prioritizes repeatability and routine monitoring, and acknowledges gaps in staffing/funding and routine authorization. These demonstrate assessment of operational, financial, and regulatory preparedness. The boundary to 'Planning' (level 4) requires developing preliminary plans with roles, resources, and procedures, which is not fully demonstrated here.\n\nEvidence from your answers:\n“Our organisation faces challenges in interoperability and staff training. We need evidence on repeatability and routine authorization. Responsibilities include ensuring safe, bounded pilots without expanding beyond approved scope.”\n“We need to assess repeatability evidence, routine authorization protocols, and ensure interoperability with existing dispatch systems. Staff training must be repeatable and within allocated resources. Our role would remain bounded to approved pilots without expanding into routine operations.”\n“Repeatability across sites and routine monitoring responsibilities are our top priorities. We need clarity on staffing, funding, and how to align with existing dispatch systems before expanding.”\n\nBoundary: Compared with ORL 4 — Planning: The next level, 'Planning', would require evidence of developing preliminary plans with defined roles, resources, and procedures, which is not explicitly shown in the provided responses.\n\nNow that you have seen the scale and the explanation, how well do you think the provisional ORL 3 result describes your organisation's current situation?\n\nA. It describes the organisation well\nB. It mostly describes the organisation, but something important is missing\nC. I think the organisation should be at a higher level\nD. I think the organisation should be at a lower level\nE. I am not sure"
+      },
+      {
+        "act": "result_review",
+        "id": "m90",
+        "role": "respondent",
+        "text": "E"
+      },
+      {
+        "act": "review_addition",
+        "id": "m91",
+        "role": "assistant",
+        "text": "Which part of the explanation or scale leaves you uncertain? You can also say you have nothing to add."
+      },
+      {
+        "act": "review_completion",
+        "id": "m92",
+        "role": "respondent",
+        "text": "no changes"
+      },
+      {
+        "act": "end",
+        "id": "m93",
+        "role": "assistant",
+        "text": "Thank you. Your comments are recorded with review pending. The initial model suggestion is unchanged. Contact follow-up is unavailable; download a copy to keep your record."
+      }
+    ],
+    "mode": "iam-sra-chat-2.0.0",
+    "participant_review": {
+      "automatic_reassessment": false,
+      "choice": "E",
+      "independent_validation": false,
+      "model_result_revision": 41,
+      "preferred_level": null,
+      "response_id": "m90",
+      "status": "pending_human_review",
+      "text": "E",
+      "validation": "uncertain"
+    },
+    "pending_comparison": null,
+    "profile": "organisational",
+    "response_options": [],
+    "scale": {
+      "anchors": [
+        {
+          "description": "The organisation recognises that the drone service could be relevant to its responsibilities, objectives or the communities it serves.",
+          "id": "organisational-1",
+          "label": "Recognition",
+          "level": 1,
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "description": "The organisation identifies possible opportunities, challenges, stakeholders, requirements and relevant regulatory issues.",
+          "id": "organisational-2",
+          "label": "Awareness",
+          "level": 2,
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "description": "The organisation assesses what the service would require operationally, financially, organisationally, in terms of regulation and governance, and identifies gaps in its preparedness.",
+          "id": "organisational-3",
+          "label": "Assessment",
+          "level": 3,
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "description": "The organisation develops preliminary plans, including roles, resources, responsibilities, coordination, procedures and possible changes to existing policies or processes.",
+          "id": "organisational-4",
+          "label": "Planning",
+          "level": 4,
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "description": "The organisation puts in place the partnerships, resources, competences, procedures and regulatory pathways needed to prepare for testing or implementation.",
+          "id": "organisational-5",
+          "label": "Preparation",
+          "level": 5,
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "description": "The organisation tests its procedures, coordination, governance and regulatory preparedness through pilots, demonstrations, simulations or realistic activities and uses the results to identify improvements.",
+          "id": "organisational-6",
+          "label": "Validation",
+          "level": 6,
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "description": "The organisation incorporates validated roles, procedures, resources, regulatory arrangements and governance mechanisms into its plans, policies or regular processes.",
+          "id": "organisational-7",
+          "label": "Integration",
+          "level": 7,
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "description": "The organisation can fulfil its role under real operating conditions, with the necessary resources, coordination, approvals or compliance arrangements and monitoring mechanisms in place.",
+          "id": "organisational-8",
+          "label": "Operational readiness",
+          "level": 8,
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "description": "The organisation fulfils its role as part of normal operations and governance, continuously monitors performance and compliance, and can adapt to changing needs, requirements and conditions.",
+          "id": "organisational-9",
+          "label": "Sustained institutionalisation",
+          "level": 9,
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        }
+      ],
+      "guidance": "Assess only the stated unit responsibilities. Distinguish draft plans, prepared arrangements, realistic testing with lessons, adoption into ordinary processes, routine operational readiness and sustained monitoring. Permission for a demonstration does not establish routine compliance (pp.11–17,19–20).",
+      "policy_version": "fn-adaptive-interview-1.1.0",
+      "reference_notice": "The interview scale is shown below. The legacy workbook remains a separate reference.",
+      "reference_scale": [
+        {
+          "description": "Recognition. The organisation recognises the potential relevance of the innovation to its responsibilities, objectives, operations, or the needs of the communities it serves.",
+          "level": 1,
+          "source": {
+            "cell": "C2",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Awareness. The organisation identifies potential opportunities, challenges, requirements, stakeholders, and regulatory considerations associated with introducing the innovation into its activities.",
+          "level": 2,
+          "source": {
+            "cell": "C3",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Assessment. The organisation assesses the feasibility and implications of the innovation, including its operational, financial, organisational, regulatory, and governance requirements, and identifies potential gaps in its preparedness.",
+          "level": 3,
+          "source": {
+            "cell": "C4",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Planning. The organisation develops preliminary plans for integrating the innovation, identifying necessary resources, roles, responsibilities, stakeholder coordination mechanisms, regulatory procedures, and potential changes to existing processes or policies.",
+          "level": 4,
+          "source": {
+            "cell": "C5",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Preparation. The organisation establishes the organisational arrangements, partnerships, resources, competencies, procedures, and regulatory pathways needed to prepare for testing or implementing the innovation in a relevant operational context.",
+          "level": 5,
+          "source": {
+            "cell": "C6",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Validation. The organisation tests its operational procedures, coordination arrangements, governance mechanisms, and regulatory preparedness through pilots, demonstrations, simulations, or controlled real-world activities, using the results to identify improvements.",
+          "level": 6,
+          "source": {
+            "cell": "C7",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Integration. The organisation integrates validated processes, responsibilities, resources, regulatory arrangements, and governance mechanisms into its operational plans, policies, business models, or urban mobility strategies to support deployment.",
+          "level": 7,
+          "source": {
+            "cell": "C8",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Operational readiness. The organisation demonstrates its capacity to implement and manage the innovation under real-world operational conditions, with the necessary organisational resources, coordination procedures, regulatory approvals or compliance arrangements, and monitoring mechanisms in place.",
+          "level": 8,
+          "source": {
+            "cell": "C9",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Sustained institutionalisation. The organisation institutionalises the innovation within its routine operations and governance structures, demonstrating sustained operational capability, regulatory compliance, continuous monitoring, and the capacity to adapt to evolving needs, requirements, and conditions.",
+          "level": 9,
+          "source": {
+            "cell": "C10",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        }
+      ],
+      "reference_source": {
+        "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+        "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818"
+      },
+      "rubric_version": "eva-interviews-2026-11-04-v1",
+      "source": {
+        "document": "SRAA Organisation interview example.pdf",
+        "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+        "scale_pdf_pages": [
+          16
+        ],
+        "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d"
+      },
+      "status": "supplied_example_prototype_pending_partner_review"
+    },
+    "self_assessment_available": false,
+    "stage": "ended",
+    "suggestion": {
+      "alternative_anchor_id": "organisational-4",
+      "anchor": {
+        "description": "The organisation assesses what the service would require operationally, financially, organisationally, in terms of regulation and governance, and identifies gaps in its preparedness.",
+        "id": "organisational-3",
+        "label": "Assessment",
+        "level": 3,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "pdf_pages": [
+            16
+          ]
+        }
+      },
+      "anchor_id": "organisational-3",
+      "boundary": "Compared with ORL 4 — Planning: The next level, 'Planning', would require evidence of developing preliminary plans with defined roles, resources, and procedures, which is not explicitly shown in the provided responses.",
+      "citations": [
+        {
+          "evidence_id": "m29",
+          "quote": "Our organisation faces challenges in interoperability and staff training. We need evidence on repeatability and routine authorization. Responsibilities include ensuring safe, bounded pilots without expanding beyond approved scope."
+        },
+        {
+          "evidence_id": "m31",
+          "quote": "We need to assess repeatability evidence, routine authorization protocols, and ensure interoperability with existing dispatch systems. Staff training must be repeatable and within allocated resources. Our role would remain bounded to approved pilots without expanding into routine operations."
+        },
+        {
+          "evidence_id": "m38",
+          "quote": "Repeatability across sites and routine monitoring responsibilities are our top priorities. We need clarity on staffing, funding, and how to align with existing dispatch systems before expanding."
+        },
+        {
+          "evidence_id": "m44",
+          "quote": "Repeatability across sites, routine monitoring responsibilities, and staffing/funding clarity are the main gaps. Interoperability with hospital dispatch remains a key concern before expansion."
+        }
+      ],
+      "considered_evidence_ids": [
+        "m3",
+        "m6",
+        "m9",
+        "m11",
+        "m13",
+        "m15",
+        "m17",
+        "m19",
+        "m21",
+        "m23",
+        "m25",
+        "m27",
+        "m29",
+        "m31",
+        "m33",
+        "m36",
+        "m38",
+        "m40",
+        "m42",
+        "m44",
+        "m46",
+        "m48",
+        "m50",
+        "m52",
+        "m54",
+        "m56",
+        "m58",
+        "m60",
+        "m62",
+        "m64",
+        "m66",
+        "m68",
+        "m70",
+        "m72",
+        "m74",
+        "m76",
+        "m78",
+        "m80",
+        "m82",
+        "m84",
+        "m86"
+      ],
+      "evidence_incomplete": false,
+      "evidence_sufficiency": "provisionally_sufficient",
+      "explanation": "The organisation identifies interoperability and staff training challenges, outlines requirements for repeatability, routine authorization, and interoperability, prioritizes repeatability and routine monitoring, and acknowledges gaps in staffing/funding and routine authorization. These demonstrate assessment of operational, financial, and regulatory preparedness. The boundary to 'Planning' (level 4) requires developing preliminary plans with roles, resources, and procedures, which is not fully demonstrated here.",
+      "external_verification": "not_performed",
+      "gaps": [],
+      "level": 3,
+      "material_conflict": false,
+      "partial_interview": false,
+      "policy_version": "fn-adaptive-interview-1.1.0",
+      "result_version": 1,
+      "revision": 41,
+      "rubric_version": "eva-interviews-2026-11-04-v1",
+      "scoring_outcome": "validated_score",
+      "status": "suggested"
+    },
+    "summary": [
+      {
+        "evidence_id": "m3",
+        "objective_id": "perspective",
+        "quote": "B. Organisation or institution",
+        "topic": null
+      },
+      {
+        "evidence_id": "m6",
+        "objective_id": "area",
+        "quote": "Lyon",
+        "topic": null
+      },
+      {
+        "evidence_id": "m11",
+        "objective_id": "remit",
+        "quote": "Our organisation currently coordinates one supervised healthcare-drone pilot at two hospital sites. We could potentially expand this role if interoperability and staff training concerns are addressed.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m13",
+        "objective_id": "drone_recognition",
+        "quote": "Yes, we are familiar with drone technology through our supervised pilot program. We focused on healthcare logistics and identified specific operational challenges.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m15",
+        "objective_id": "drone_description",
+        "quote": "A drone is an unmanned aerial vehicle used in our pilot to transport urgent medical samples between hospitals, demonstrating potential time savings while highlighting interoperability and training challenges.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m17",
+        "objective_id": "drone_uses",
+        "quote": "We are familiar with using drones for transporting urgent medical samples between hospitals in a supervised pilot. This demonstrated potential time savings but highlighted interoperability and training challenges.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m19",
+        "objective_id": "local_awareness",
+        "quote": "Yes, we are familiar with drone technology through our supervised pilot program. We focused on healthcare logistics and identified specific operational challenges.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m38",
+        "objective_id": "priorities",
+        "quote": "Repeatability across sites and routine monitoring responsibilities are our top priorities. We need clarity on staffing, funding, and how to align with existing dispatch systems before expanding.",
+        "topic": "routine monitoring"
+      }
+    ]
+  },
+  "id": "39e1bdb0-b9bb-4391-81bb-9f7428cc756b",
+  "preview": null,
+  "retry_draft": null,
+  "returned_text": null,
+  "state": "chat",
+  "version": 86
+}

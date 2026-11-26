@@ -1,0 +1,251 @@
+{
+  "classification": "synthetic",
+  "fn_example_replay": false,
+  "live_inference": "executed",
+  "thinking_enabled": true,
+  "respondent": "agent",
+  "surface": "in_process_flask_api",
+  "semantic_accuracy": null,
+  "review_readiness": "manual_review_required",
+  "independent_validation": false,
+  "limitations": [
+    "Using the same model for the respondent and interviewer is not independent semantic validation.",
+    "Agent answers may drift from their fictional persona; inspect transcripts against the persona facts.",
+    "This harness does not drive the Vue interface or validate browser layout.",
+    "Automated review choices are test interactions, not participant agreement or FN approval."
+  ],
+  "living_lab_evidence": false,
+  "services_changed": false,
+  "cases": [
+    {
+      "case": "citizen_short",
+      "stage": "ended",
+      "partial": false,
+      "thinking_enabled": true,
+      "reasoning_characters": 63831,
+      "scoring_generation_calls": 1,
+      "score_citation_count": 4,
+      "score_boundary_present": true,
+      "run_incomplete": false,
+      "scope": "full_interview",
+      "opening_variant": "reference",
+      "backend": "vllm",
+      "model": {
+        "version": "1.0.0",
+        "model": "Qwen/Qwen3-8B",
+        "revision": "b968826d9c46dd6066d109eabc6255188de91218"
+      },
+      "reference_checks": [
+        {
+          "goal": "area",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "citizen_duration",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "drone_recognition",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "drone_description",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "drone_uses",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "healthcare_awareness",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "healthcare_detail",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "local_awareness",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "open_priorities",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "open_more",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "different_impacts",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "priorities",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "noise_understanding",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "noise_information",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "priority_understanding",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "decisions",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "meaningful",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "informing",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "conditions",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "conditions_why",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "evaluation_evidence",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "demonstration",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "hypothetical_comparison",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "opportunity",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "participation_capability",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "influence_evidence",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "problem_action",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "problem_response",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "escalation",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "ongoing_role",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "opinion",
+          "coverage_status": "explored",
+          "new_failures": 0
+        },
+        {
+          "goal": "opinion_why",
+          "coverage_status": "explored",
+          "new_failures": 0
+        }
+      ],
+      "reference_conditional_audit": null,
+      "reference_conditional_audit_passed": null,
+      "respondent": "agent",
+      "respondent_backend": "existing_qwen_synthetic-1.3.0",
+      "respondent_thinking": "soft_disabled",
+      "controlled_api_fixture": false,
+      "agent_generation_calls": 30,
+      "agent_generated_tokens": 1453,
+      "agent_generation_http_seconds": 98.694,
+      "agent_model_wait_seconds": 0.001,
+      "persona_id": "G2_citizen_supportive_safeguards",
+      "persona_consistency": "pending_human_review",
+      "review_actor": "automation",
+      "independent_validation": false,
+      "json_export_succeeded": true,
+      "jsonl_export_succeeded": true,
+      "markdown_export_succeeded": true,
+      "developer_trace_saved": true,
+      "model_suggestion_unchanged_after_review": true,
+      "protocol_passed": true,
+      "generated_tokens": 19871,
+      "generation_http_seconds": 622.369,
+      "output_tokens_per_http_second": 31.928,
+      "model_wait_seconds": 0.001,
+      "interpretation_checks_passed": null,
+      "opening_passed": false,
+      "methodological_complete": true,
+      "unresolved_gaps": [],
+      "level": 5,
+      "score_status": "suggested",
+      "validation": "uncertain",
+      "respondent_turns": 35,
+      "generation_calls": 29,
+      "fallback_count": 0,
+      "fallbacks_per_respondent_turn": 0.0,
+      "question_wording_fallback_count": 0,
+      "technical_failure_count": 0,
+      "generation_wall_seconds": 665.999,
+      "elapsed_seconds": 860.325,
+      "failures": [],
+      "failure": null,
+      "failure_diagnostic": null
+    }
+  ],
+  "live_scoring_gate": {
+    "passed": false,
+    "failures": [
+      "Four full live agent interviews are required."
+    ],
+    "meaning": "Live completion and evidence/result transport checks; human semantic review remains required."
+  }
+}

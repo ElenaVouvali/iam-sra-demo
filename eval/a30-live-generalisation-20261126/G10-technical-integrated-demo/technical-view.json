@@ -1,0 +1,1102 @@
+{
+  "allowed_actions": [
+    "reset"
+  ],
+  "busy_job": null,
+  "chat": {
+    "answer_processing": {
+      "evidence_id": null,
+      "status": "ready"
+    },
+    "assisted": false,
+    "citizen_depth": null,
+    "completion": {
+      "conversation": true,
+      "evidence_sufficiency": "provisionally_sufficient",
+      "methodological_progression": "goals_explored",
+      "partial": false,
+      "participant_review": "provided",
+      "review": "pending_human_review",
+      "termination_reason": "respondent_review_complete"
+    },
+    "depth": "short",
+    "depth_history": [],
+    "depth_selection": null,
+    "initial_suggestion": null,
+    "messages": [
+      {
+        "act": "introduction",
+        "id": "m1",
+        "role": "assistant",
+        "text": "Thank you for taking part. I'm an AI assistant for this IAM-CC research interview.\n\nWe would like to hear your views and experiences to help us understand how ready society is to use and engage with new and emerging technologies. In this interview, we will talk about drones and services that use drones.\n\nThere are no right or wrong answers. Your opinions and your own experiences matter. You can skip any question, pause, correct an answer, stop or withdraw at any time.\n\nPlease avoid personal names, addresses, contact details and sensitive information. Messages are screened before processing, but screening can miss personal details. Progress is held temporarily in memory; download a copy if you want to keep it. Contact follow-up and cross-day resume are unavailable."
+      },
+      {
+        "act": "question",
+        "id": "m2",
+        "role": "assistant",
+        "text": "Which point of view would you like to use in this conversation?\n\nA. Citizen\nA member of the public answering from their own point of view. For example, a resident, patient, service user, worker, member of a community organisation, or anyone who could be affected by drone services.\n\nB. Organisation or institution\nSomeone answering on behalf of an organisation involved in planning, providing, regulating, supporting or overseeing drone services. For example, a municipality, regional authority, regulator, policymaker, city planner, transport authority, healthcare organisation, logistics organisation or infrastructure provider.\n\nC. Technology expert or researcher\nSomeone working directly with drone technology or related technical systems. For example, a drone operator, manufacturer, engineer, researcher, technology developer, take-off and landing infrastructure developer or airspace-service provider.\n\nIf more than one applies, please choose the perspective you would prefer to use today."
+      },
+      {
+        "act": "profile_selection",
+        "id": "m3",
+        "role": "respondent",
+        "text": "C. Technology expert or researcher"
+      },
+      {
+        "act": "profile_acknowledgement",
+        "id": "m4",
+        "role": "assistant",
+        "text": "Thank you. I will ask the following questions from a technical perspective."
+      },
+      {
+        "act": "question",
+        "id": "m5",
+        "role": "assistant",
+        "text": "Which EU city or urban area would you like your answers to refer to?"
+      },
+      {
+        "act": "answer",
+        "id": "m6",
+        "role": "respondent",
+        "text": "Lyon"
+      },
+      {
+        "act": "city_acknowledgement",
+        "id": "m7",
+        "role": "assistant",
+        "text": "Thank you. I will use that city or urban area as the context for your answers."
+      },
+      {
+        "act": "question",
+        "id": "m8",
+        "role": "assistant",
+        "text": "You do not need to name it. If you prefer not to name it, please describe what kind of organisation it is and what it does.\n\nWhat organisation do you work for?"
+      },
+      {
+        "act": "answer",
+        "id": "m9",
+        "role": "respondent",
+        "text": "C. Technology expert or researcher"
+      },
+      {
+        "act": "question",
+        "id": "m10",
+        "role": "assistant",
+        "text": "What is your technical role in relation to drones?"
+      },
+      {
+        "act": "answer",
+        "id": "m11",
+        "role": "respondent",
+        "text": "I assess integrated drone configurations for technical feasibility and operational readiness in specific environments."
+      },
+      {
+        "act": "question",
+        "id": "m12",
+        "role": "assistant",
+        "text": "Please describe it in your own words.\n\nWhat drone technology, system, component or technical service are you most familiar with?"
+      },
+      {
+        "act": "answer",
+        "id": "m13",
+        "role": "respondent",
+        "text": "I am most familiar with integrated drone configurations for urban medical delivery, specifically assessing their navigation, payload control, and dispatch connectors in simulated and real-world environments."
+      },
+      {
+        "act": "question",
+        "id": "m14",
+        "role": "assistant",
+        "text": "Which parts of that system can you speak about with confidence?"
+      },
+      {
+        "act": "answer",
+        "id": "m15",
+        "role": "respondent",
+        "text": "I can speak with confidence about the integrated configuration's bench test results, the demonstration's route accuracy, and payload temperature control under tested conditions. Other aspects remain unverified."
+      },
+      {
+        "act": "question",
+        "id": "m16",
+        "role": "assistant",
+        "text": "As far as you know, are drones already being used or tested in this city?"
+      },
+      {
+        "act": "answer",
+        "id": "m17",
+        "role": "respondent",
+        "text": "Drones are being tested in Lyon for medical delivery, but our assessment focuses on a specific integrated configuration. I can confirm one demonstration on a hospital-campus route, but no formal operational use yet."
+      },
+      {
+        "act": "question",
+        "id": "m18",
+        "role": "assistant",
+        "text": "For what purposes?"
+      },
+      {
+        "act": "answer",
+        "id": "m19",
+        "role": "respondent",
+        "text": "The system is being assessed for urban medical delivery, specifically to validate integrated navigation, payload temperature control, and dispatch connector performance in simulated and real-world environments."
+      },
+      {
+        "act": "question",
+        "id": "m20",
+        "role": "assistant",
+        "text": "Are any of these applications technically similar to the system you have just described?"
+      },
+      {
+        "act": "answer",
+        "id": "m21",
+        "role": "respondent",
+        "text": "The system's technical focus on integrated navigation, payload temperature control, and dispatch connector performance aligns with urban medical drone applications. However, specific similarities depend on the tested configurations of other systems."
+      },
+      {
+        "act": "question",
+        "id": "m22",
+        "role": "assistant",
+        "text": "For the rest of the interview, please think specifically about using drones to transport healthcare items such as medicines, blood, laboratory samples or other medical supplies. Please answer in relation to the technical system or component you described.\n\nHow would the technology you described be used for this healthcare delivery service?"
+      },
+      {
+        "act": "answer",
+        "id": "m23",
+        "role": "respondent",
+        "text": "The technology would validate integrated navigation, payload temperature control, and dispatch connector performance for urban medical delivery, specifically on hospital-campus routes with staff as receiving users. One demonstration showed the integrated handoff can be completed in tested conditions."
+      },
+      {
+        "act": "question",
+        "id": "m24",
+        "role": "assistant",
+        "text": "What are the main technical functions that would need to work for the service to be possible?"
+      },
+      {
+        "act": "answer",
+        "id": "m25",
+        "role": "respondent",
+        "text": "The main technical functions are integrated navigation, payload temperature control, and dispatch connector performance. These must work reliably in tested environments to ensure safe and accurate medical item delivery."
+      },
+      {
+        "act": "question",
+        "id": "m26",
+        "role": "assistant",
+        "text": "Which of these are already technically defined, and which are still conceptual?"
+      },
+      {
+        "act": "answer",
+        "id": "m27",
+        "role": "respondent",
+        "text": "Integrated navigation, payload temperature control, and dispatch connector performance are technically defined based on bench tests and the demonstration. Weather limits and long-duration reliability remain conceptual until further testing."
+      },
+      {
+        "act": "question",
+        "id": "m28",
+        "role": "assistant",
+        "text": "Has the technical concept been tested experimentally?"
+      },
+      {
+        "act": "answer",
+        "id": "m29",
+        "role": "respondent",
+        "text": "The technical concept has been tested experimentally through bench tests and one demonstration on a hospital-campus route. These tests validated integrated navigation, payload temperature control, and dispatch connector performance in tested conditions."
+      },
+      {
+        "act": "question",
+        "id": "m30",
+        "role": "assistant",
+        "text": "What has actually been demonstrated?"
+      },
+      {
+        "act": "answer",
+        "id": "m31",
+        "role": "respondent",
+        "text": "The demonstration showed the integrated handoff can be completed in tested conditions, validating navigation, payload temperature control, and dispatch connector performance. Weather and long-duration reliability remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m32",
+        "role": "assistant",
+        "text": "Were these separate technical experiments, or had the main functions already been integrated?"
+      },
+      {
+        "act": "answer",
+        "id": "m33",
+        "role": "respondent",
+        "text": "The main functions were integrated and tested together in bench tests and the demonstration. Weather and long-duration reliability remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m34",
+        "role": "assistant",
+        "text": "What evidence was produced?"
+      },
+      {
+        "act": "answer",
+        "id": "m35",
+        "role": "respondent",
+        "text": "Bench tests and one hospital-campus demonstration logged route accuracy and payload temperature. These validate integrated navigation, temperature control, and dispatch connector performance in tested conditions. Long-duration and weather performance remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m36",
+        "role": "assistant",
+        "text": "Please answer for the assessed object (I am most familiar with integrated drone configurations for urban medical delivery, specifically assessing their navigation, payload control, and dispatch connectors in simulated a). Distinguish tests of this component from tests of an integrated drone system.\n\nHas the integrated technology been tested in a controlled environment?"
+      },
+      {
+        "act": "answer",
+        "id": "m37",
+        "role": "respondent",
+        "text": "The integrated technology was tested in controlled bench environments and a representative hospital-campus demonstration. These validated navigation, payload temperature control, and dispatch connector performance under tested conditions. Long-duration and adverse weather performance remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m38",
+        "role": "assistant",
+        "text": "What parts of the system were integrated at that stage?"
+      },
+      {
+        "act": "answer",
+        "id": "m39",
+        "role": "respondent",
+        "text": "The main functions—navigation, payload temperature control, and dispatch connector—were integrated and tested together in bench tests and the hospital-campus demonstration. Weather and long-duration reliability remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m40",
+        "role": "assistant",
+        "text": "What conditions were tested?"
+      },
+      {
+        "act": "answer",
+        "id": "m41",
+        "role": "respondent",
+        "text": "Bench tests and a hospital-campus demonstration tested navigation, payload temperature control, and dispatch connector performance. Long-duration and adverse weather conditions remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m42",
+        "role": "assistant",
+        "text": "Were the tests based mainly on laboratory or controlled test conditions, or did they already represent the intended operating environment?"
+      },
+      {
+        "act": "answer",
+        "id": "m43",
+        "role": "respondent",
+        "text": "The tests included controlled bench environments and a representative hospital-campus demonstration. These validated key functions under tested conditions, but long-duration and adverse weather performance remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m44",
+        "role": "assistant",
+        "text": "For the healthcare drone service we are discussing, what do you see as the main technical challenges or uncertainties that still need to be addressed?"
+      },
+      {
+        "act": "answer",
+        "id": "m45",
+        "role": "respondent",
+        "text": "The main technical challenges are payload interface reliability over longer routes and performance in weather beyond the demonstration's scope. These require repeat testing with adverse conditions and complete-system qualification before operations."
+      },
+      {
+        "act": "question",
+        "id": "m46",
+        "role": "assistant",
+        "text": "Anything else?"
+      },
+      {
+        "act": "answer",
+        "id": "m47",
+        "role": "respondent",
+        "text": "No further details on system-wide reliability or operational approval criteria are available. These remain unknown."
+      },
+      {
+        "act": "question",
+        "id": "m48",
+        "role": "assistant",
+        "text": "Here are some other technical areas that may be relevant. Which two or three are most important for the system you are assessing?\nYou can choose just one issue if that is what matters to you.\n• compatibility with take-off, landing and supporting infrastructure\n• energy use, range and emissions\n• operating cost and technical efficiency\n• ability to serve the intended routes and users reliably\n• integration with the wider healthcare and logistics chain\n• noise measurement, prediction and mitigation\n• visibility of aircraft and infrastructure\n• technical features supporting public safety or privacy\n• aircraft safety, failure management, cybersecurity and data protection\n• wind, turbulence and air movement around take-off and landing areas\n• capacity to operate alongside other airspace users and traffic-management systems\n• monitoring and performance data\n• technical documentation, training and maintenance support"
+      },
+      {
+        "act": "answer",
+        "id": "m49",
+        "role": "respondent",
+        "text": "The most critical areas are payload interface reliability and weather performance. These require repeat testing with adverse conditions and complete-system qualification before operations."
+      },
+      {
+        "act": "question",
+        "id": "m50",
+        "role": "assistant",
+        "text": "Please answer for the assessed object (I am most familiar with integrated drone configurations for urban medical delivery, specifically assessing their navigation, payload control, and dispatch connectors in simulated a). Distinguish tests of this component from tests of an integrated drone system.\n\nHas the system been tested in conditions that realistically represent the healthcare service we are discussing?"
+      },
+      {
+        "act": "answer",
+        "id": "m51",
+        "role": "respondent",
+        "text": "The demonstration showed route accuracy and payload temperature in a hospital-campus setting, but long-duration reliability and extreme weather performance remain untested. No formal qualification exists for operational use."
+      },
+      {
+        "act": "question",
+        "id": "m52",
+        "role": "assistant",
+        "text": "What made those tests representative of the intended service?"
+      },
+      {
+        "act": "answer",
+        "id": "m53",
+        "role": "respondent",
+        "text": "The demonstration represented the intended service in a controlled hospital-campus environment, but long-duration reliability and extreme weather performance remain untested. No formal qualification exists for operational use."
+      },
+      {
+        "act": "question",
+        "id": "m54",
+        "role": "assistant",
+        "text": "Were the actual interfaces needed for the healthcare logistics chain also tested?"
+      },
+      {
+        "act": "answer",
+        "id": "m55",
+        "role": "respondent",
+        "text": "The payload interface was tested in the demonstration, but long-duration reliability and extreme weather performance remain untested. No formal qualification exists for operational use."
+      },
+      {
+        "act": "question",
+        "id": "m56",
+        "role": "assistant",
+        "text": "Has the integrated technical system been demonstrated as a whole in a relevant environment?"
+      },
+      {
+        "act": "answer",
+        "id": "m57",
+        "role": "respondent",
+        "text": "The system was demonstrated in a hospital-campus environment, showing route accuracy and payload temperature control. Long-duration reliability and extreme weather performance remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m58",
+        "role": "assistant",
+        "text": "What was operating together during the demonstration?"
+      },
+      {
+        "act": "answer",
+        "id": "m59",
+        "role": "respondent",
+        "text": "Aircraft, payload temperature control, and dispatch connector operated together during the demonstration. Long-duration reliability and extreme weather performance remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m60",
+        "role": "assistant",
+        "text": "Was the healthcare logistics process represented realistically?"
+      },
+      {
+        "act": "answer",
+        "id": "m61",
+        "role": "respondent",
+        "text": "The demonstration showed the integrated handoff in a hospital-campus setting, but long-duration reliability and extreme weather performance remain untested. No formal qualification exists for operational use."
+      },
+      {
+        "act": "question",
+        "id": "m62",
+        "role": "assistant",
+        "text": "What technical performance was measured?"
+      },
+      {
+        "act": "answer",
+        "id": "m63",
+        "role": "respondent",
+        "text": "Route accuracy and payload temperature were measured during the demonstration. Long-duration reliability and extreme weather performance remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m64",
+        "role": "assistant",
+        "text": "What technical issues remained after the demonstration?"
+      },
+      {
+        "act": "answer",
+        "id": "m65",
+        "role": "respondent",
+        "text": "Payload interface under longer routes and performance in weather outside the demonstration remain untested. No formal qualification exists for operational use."
+      },
+      {
+        "act": "question",
+        "id": "m66",
+        "role": "assistant",
+        "text": "Has a system prototype been demonstrated in the actual environment in which the healthcare service is intended to operate?"
+      },
+      {
+        "act": "answer",
+        "id": "m67",
+        "role": "respondent",
+        "text": "The demonstration occurred in a hospital-campus setting, which matches the intended environment. However, long-duration reliability and extreme weather performance remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m68",
+        "role": "assistant",
+        "text": "Were these technically representative of the intended operation?"
+      },
+      {
+        "act": "answer",
+        "id": "m69",
+        "role": "respondent",
+        "text": "The demonstration showed route accuracy and payload temperature control in the intended environment. However, long-duration reliability and extreme weather performance remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m70",
+        "role": "assistant",
+        "text": "Were the real operational interfaces involved—for example healthcare staff, take-off and landing sites, communications systems or airspace services?"
+      },
+      {
+        "act": "answer",
+        "id": "m71",
+        "role": "respondent",
+        "text": "The demonstration involved healthcare staff as receiving users and a hospital-campus route, matching the intended environment. Operational interfaces like take-off/landing sites and communications systems were not explicitly tested in this scenario."
+      },
+      {
+        "act": "question",
+        "id": "m72",
+        "role": "assistant",
+        "text": "What evidence was collected?"
+      },
+      {
+        "act": "answer",
+        "id": "m73",
+        "role": "respondent",
+        "text": "Route accuracy and payload temperature were logged during the demonstration. Long-duration reliability and extreme weather performance remain untested."
+      },
+      {
+        "act": "question",
+        "id": "m74",
+        "role": "assistant",
+        "text": "Please answer for the assessed object (I am most familiar with integrated drone configurations for urban medical delivery, specifically assessing their navigation, payload control, and dispatch connectors in simulated a). Distinguish tests of this component from tests of an integrated drone system.\n\nIs the technical system now complete in the configuration intended for regular healthcare operations?"
+      },
+      {
+        "act": "answer",
+        "id": "m75",
+        "role": "respondent",
+        "text": "The technical system is not complete for regular healthcare operations. Long-duration reliability and extreme weather performance remain untested. Complete-system qualification is required before operations."
+      },
+      {
+        "act": "question",
+        "id": "m76",
+        "role": "assistant",
+        "text": "What remains to be completed?"
+      },
+      {
+        "act": "answer",
+        "id": "m77",
+        "role": "respondent",
+        "text": "Repeat tests with larger routes and adverse weather, complete-system qualification, and formal operational approval are required before regular healthcare operations."
+      },
+      {
+        "act": "scale_disclosure",
+        "id": "m78",
+        "role": "assistant",
+        "scale": {
+          "anchors": [
+            {
+              "description": "The relevant technical principles have been identified or observed.",
+              "id": "technical-1",
+              "label": "Basic principles observed",
+              "level": 1,
+              "source": {
+                "document": "SRAA Technology interview example.pdf",
+                "pdf_pages": [
+                  17
+                ]
+              }
+            },
+            {
+              "description": "A technical concept has been defined for how those principles could be used in the intended solution.",
+              "id": "technical-2",
+              "label": "Technology concept formulated",
+              "level": 2,
+              "source": {
+                "document": "SRAA Technology interview example.pdf",
+                "pdf_pages": [
+                  17
+                ]
+              }
+            },
+            {
+              "description": "Key elements of the concept have been demonstrated experimentally.",
+              "id": "technical-3",
+              "label": "Experimental proof of concept",
+              "level": 3,
+              "source": {
+                "document": "SRAA Technology interview example.pdf",
+                "pdf_pages": [
+                  17
+                ]
+              }
+            },
+            {
+              "description": "The technology or integrated components have been validated under laboratory or other controlled conditions.",
+              "id": "technical-4",
+              "label": "Technology validated in a controlled environment",
+              "level": 4,
+              "source": {
+                "document": "SRAA Technology interview example.pdf",
+                "pdf_pages": [
+                  17
+                ]
+              }
+            },
+            {
+              "description": "The technology has been validated under conditions representative of its intended use.",
+              "id": "technical-5",
+              "label": "Technology validated in a relevant environment",
+              "level": 5,
+              "source": {
+                "document": "SRAA Technology interview example.pdf",
+                "pdf_pages": [
+                  18
+                ]
+              }
+            },
+            {
+              "description": "An integrated system or substantial prototype has been demonstrated under relevant conditions.",
+              "id": "technical-6",
+              "label": "Technology demonstrated in a relevant environment",
+              "level": 6,
+              "source": {
+                "document": "SRAA Technology interview example.pdf",
+                "pdf_pages": [
+                  18
+                ]
+              }
+            },
+            {
+              "description": "A representative system prototype has been demonstrated under the actual conditions in which it is intended to operate.",
+              "id": "technical-7",
+              "label": "System prototype demonstrated in the operational environment",
+              "level": 7,
+              "source": {
+                "document": "SRAA Technology interview example.pdf",
+                "pdf_pages": [
+                  18
+                ]
+              }
+            },
+            {
+              "description": "The intended system is complete and has been verified, validated and qualified for its intended operation.",
+              "id": "technical-8",
+              "label": "System complete and qualified",
+              "level": 8,
+              "source": {
+                "document": "SRAA Technology interview example.pdf",
+                "pdf_pages": [
+                  18
+                ]
+              }
+            },
+            {
+              "description": "The completed system has been proven through actual operational use.",
+              "id": "technical-9",
+              "label": "Actual system proven in operation",
+              "level": 9,
+              "source": {
+                "document": "SRAA Technology interview example.pdf",
+                "pdf_pages": [
+                  18
+                ]
+              }
+            }
+          ],
+          "guidance": "Assess the same object/configuration, not the respondent or a different integrated system. Distinguish experimental proof, controlled validation, representative validation, integrated demonstration, operational prototype, complete qualification and proven operational use. A mature component or demonstration permission cannot establish whole-system qualification (pp.6–15,18–23).",
+          "policy_version": "fn-adaptive-interview-1.1.0",
+          "reference_notice": "The interview scale is shown below. The legacy workbook remains a separate reference.",
+          "reference_scale": [
+            {
+              "description": "Basic principles observed",
+              "level": 1,
+              "source": {
+                "cell": "B2",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Technology concept formulated",
+              "level": 2,
+              "source": {
+                "cell": "B3",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Experimental proof of concept",
+              "level": 3,
+              "source": {
+                "cell": "B4",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Technology validated in lab",
+              "level": 4,
+              "source": {
+                "cell": "B5",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Technology validated in relevant environment (industrially relevant environment in the case of key enabling technologies)",
+              "level": 5,
+              "source": {
+                "cell": "B6",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Technology demonstrated in relevant environment (industrially relevant environment in the case of key enabling technologies)",
+              "level": 6,
+              "source": {
+                "cell": "B7",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "System prototype demonstration in operational environment",
+              "level": 7,
+              "source": {
+                "cell": "B8",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "System complete and qualified",
+              "level": 8,
+              "source": {
+                "cell": "B9",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Actual system proven in operational environment (competitive manufacturing in the case of key enabling technologies; or in space)",
+              "level": 9,
+              "source": {
+                "cell": "B10",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            }
+          ],
+          "reference_source": {
+            "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+            "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818"
+          },
+          "rubric_version": "eva-interviews-2026-11-04-v1",
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+            "scale_pdf_pages": [
+              17,
+              18
+            ],
+            "sha256": "7d7ac7865fe846ca36b8c281444acc14edc06cca6ff367ac1492a81d131aa071"
+          },
+          "status": "supplied_example_prototype_pending_partner_review"
+        },
+        "text": "Thank you. We have finished the main questions."
+      },
+      {
+        "act": "scale_notice",
+        "id": "m79",
+        "role": "assistant",
+        "text": "I will now show you the scale used to understand your answers. The judgment is provisional and based on self-report."
+      },
+      {
+        "act": "result_review",
+        "id": "m80",
+        "role": "assistant",
+        "text": "Provisional result: TRL 6 — Technology demonstrated in a relevant environment.\n\nThe technology has been demonstrated under relevant conditions, specifically a hospital-campus route with staff as receiving users, validating integrated navigation, payload temperature control, and dispatch connector performance. While long-duration reliability and extreme weather performance remain untested, the demonstration meets the criteria for a relevant environment as described in the anchor.\n\nEvidence from your answers:\n“The demonstration showed route accuracy and payload temperature in a hospital-campus setting, but long-duration reliability and extreme weather performance remain untested. No formal qualification exists for operational use.”\n“The demonstration represented the intended service in a controlled hospital-campus environment, but long-duration reliability and extreme weather performance remain untested. No formal qualification exists for operational use.”\n“The system was demonstrated in a hospital-campus environment, showing route accuracy and payload temperature control. Long-duration reliability and extreme weather performance remain untested.”\n\nBoundary: Compared with TRL 7 — System prototype demonstrated in the operational environment: The next level,, requires a representative system prototype demonstrated under actual operational conditions. The current evidence only describes a demonstration, not a fully developed prototype, and lacks formal operational qualification.\n\nNow that you have seen the scale and the explanation, how well do you think the provisional TRL 6 result describes the current technical maturity of the system?\n\nA. It describes the system well\nB. It mostly describes the system, but something important is missing\nC. I think the system should be at a higher level\nD. I think the system should be at a lower level\nE. I am not sure"
+      },
+      {
+        "act": "result_review",
+        "id": "m81",
+        "role": "respondent",
+        "text": "E"
+      },
+      {
+        "act": "review_addition",
+        "id": "m82",
+        "role": "assistant",
+        "text": "Which part of the explanation or scale leaves you uncertain? You can also say you have nothing to add."
+      },
+      {
+        "act": "review_completion",
+        "id": "m83",
+        "role": "respondent",
+        "text": "no changes"
+      },
+      {
+        "act": "end",
+        "id": "m84",
+        "role": "assistant",
+        "text": "Thank you. Your comments are recorded with review pending. The initial model suggestion is unchanged. Contact follow-up is unavailable; download a copy to keep your record."
+      }
+    ],
+    "mode": "iam-sra-chat-2.0.0",
+    "participant_review": {
+      "automatic_reassessment": false,
+      "choice": "E",
+      "independent_validation": false,
+      "model_result_revision": 37,
+      "preferred_level": null,
+      "response_id": "m81",
+      "status": "pending_human_review",
+      "text": "E",
+      "validation": "uncertain"
+    },
+    "pending_comparison": null,
+    "profile": "technical",
+    "response_options": [],
+    "scale": {
+      "anchors": [
+        {
+          "description": "The relevant technical principles have been identified or observed.",
+          "id": "technical-1",
+          "label": "Basic principles observed",
+          "level": 1,
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "pdf_pages": [
+              17
+            ]
+          }
+        },
+        {
+          "description": "A technical concept has been defined for how those principles could be used in the intended solution.",
+          "id": "technical-2",
+          "label": "Technology concept formulated",
+          "level": 2,
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "pdf_pages": [
+              17
+            ]
+          }
+        },
+        {
+          "description": "Key elements of the concept have been demonstrated experimentally.",
+          "id": "technical-3",
+          "label": "Experimental proof of concept",
+          "level": 3,
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "pdf_pages": [
+              17
+            ]
+          }
+        },
+        {
+          "description": "The technology or integrated components have been validated under laboratory or other controlled conditions.",
+          "id": "technical-4",
+          "label": "Technology validated in a controlled environment",
+          "level": 4,
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "pdf_pages": [
+              17
+            ]
+          }
+        },
+        {
+          "description": "The technology has been validated under conditions representative of its intended use.",
+          "id": "technical-5",
+          "label": "Technology validated in a relevant environment",
+          "level": 5,
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "pdf_pages": [
+              18
+            ]
+          }
+        },
+        {
+          "description": "An integrated system or substantial prototype has been demonstrated under relevant conditions.",
+          "id": "technical-6",
+          "label": "Technology demonstrated in a relevant environment",
+          "level": 6,
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "pdf_pages": [
+              18
+            ]
+          }
+        },
+        {
+          "description": "A representative system prototype has been demonstrated under the actual conditions in which it is intended to operate.",
+          "id": "technical-7",
+          "label": "System prototype demonstrated in the operational environment",
+          "level": 7,
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "pdf_pages": [
+              18
+            ]
+          }
+        },
+        {
+          "description": "The intended system is complete and has been verified, validated and qualified for its intended operation.",
+          "id": "technical-8",
+          "label": "System complete and qualified",
+          "level": 8,
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "pdf_pages": [
+              18
+            ]
+          }
+        },
+        {
+          "description": "The completed system has been proven through actual operational use.",
+          "id": "technical-9",
+          "label": "Actual system proven in operation",
+          "level": 9,
+          "source": {
+            "document": "SRAA Technology interview example.pdf",
+            "pdf_pages": [
+              18
+            ]
+          }
+        }
+      ],
+      "guidance": "Assess the same object/configuration, not the respondent or a different integrated system. Distinguish experimental proof, controlled validation, representative validation, integrated demonstration, operational prototype, complete qualification and proven operational use. A mature component or demonstration permission cannot establish whole-system qualification (pp.6–15,18–23).",
+      "policy_version": "fn-adaptive-interview-1.1.0",
+      "reference_notice": "The interview scale is shown below. The legacy workbook remains a separate reference.",
+      "reference_scale": [
+        {
+          "description": "Basic principles observed",
+          "level": 1,
+          "source": {
+            "cell": "B2",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Technology concept formulated",
+          "level": 2,
+          "source": {
+            "cell": "B3",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Experimental proof of concept",
+          "level": 3,
+          "source": {
+            "cell": "B4",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Technology validated in lab",
+          "level": 4,
+          "source": {
+            "cell": "B5",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Technology validated in relevant environment (industrially relevant environment in the case of key enabling technologies)",
+          "level": 5,
+          "source": {
+            "cell": "B6",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Technology demonstrated in relevant environment (industrially relevant environment in the case of key enabling technologies)",
+          "level": 6,
+          "source": {
+            "cell": "B7",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "System prototype demonstration in operational environment",
+          "level": 7,
+          "source": {
+            "cell": "B8",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "System complete and qualified",
+          "level": 8,
+          "source": {
+            "cell": "B9",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Actual system proven in operational environment (competitive manufacturing in the case of key enabling technologies; or in space)",
+          "level": 9,
+          "source": {
+            "cell": "B10",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        }
+      ],
+      "reference_source": {
+        "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+        "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818"
+      },
+      "rubric_version": "eva-interviews-2026-11-04-v1",
+      "source": {
+        "document": "SRAA Technology interview example.pdf",
+        "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+        "scale_pdf_pages": [
+          17,
+          18
+        ],
+        "sha256": "7d7ac7865fe846ca36b8c281444acc14edc06cca6ff367ac1492a81d131aa071"
+      },
+      "status": "supplied_example_prototype_pending_partner_review"
+    },
+    "self_assessment_available": false,
+    "stage": "ended",
+    "suggestion": {
+      "alternative_anchor_id": "technical-7",
+      "anchor": {
+        "description": "An integrated system or substantial prototype has been demonstrated under relevant conditions.",
+        "id": "technical-6",
+        "label": "Technology demonstrated in a relevant environment",
+        "level": 6,
+        "source": {
+          "document": "SRAA Technology interview example.pdf",
+          "pdf_pages": [
+            18
+          ]
+        }
+      },
+      "anchor_id": "technical-6",
+      "boundary": "Compared with TRL 7 — System prototype demonstrated in the operational environment: The next level,, requires a representative system prototype demonstrated under actual operational conditions. The current evidence only describes a demonstration, not a fully developed prototype, and lacks formal operational qualification.",
+      "citations": [
+        {
+          "evidence_id": "m51",
+          "quote": "The demonstration showed route accuracy and payload temperature in a hospital-campus setting, but long-duration reliability and extreme weather performance remain untested. No formal qualification exists for operational use."
+        },
+        {
+          "evidence_id": "m53",
+          "quote": "The demonstration represented the intended service in a controlled hospital-campus environment, but long-duration reliability and extreme weather performance remain untested. No formal qualification exists for operational use."
+        },
+        {
+          "evidence_id": "m57",
+          "quote": "The system was demonstrated in a hospital-campus environment, showing route accuracy and payload temperature control. Long-duration reliability and extreme weather performance remain untested."
+        },
+        {
+          "evidence_id": "m59",
+          "quote": "Aircraft, payload temperature control, and dispatch connector operated together during the demonstration. Long-duration reliability and extreme weather performance remain untested."
+        }
+      ],
+      "considered_evidence_ids": [
+        "m3",
+        "m6",
+        "m9",
+        "m11",
+        "m13",
+        "m15",
+        "m17",
+        "m19",
+        "m21",
+        "m23",
+        "m25",
+        "m27",
+        "m29",
+        "m31",
+        "m33",
+        "m35",
+        "m37",
+        "m39",
+        "m41",
+        "m43",
+        "m45",
+        "m47",
+        "m49",
+        "m51",
+        "m53",
+        "m55",
+        "m57",
+        "m59",
+        "m61",
+        "m63",
+        "m65",
+        "m67",
+        "m69",
+        "m71",
+        "m73",
+        "m75",
+        "m77"
+      ],
+      "evidence_incomplete": false,
+      "evidence_sufficiency": "provisionally_sufficient",
+      "explanation": "The technology has been demonstrated under relevant conditions, specifically a hospital-campus route with staff as receiving users, validating integrated navigation, payload temperature control, and dispatch connector performance. While long-duration reliability and extreme weather performance remain untested, the demonstration meets the criteria for a relevant environment as described in the anchor.",
+      "external_verification": "not_performed",
+      "gaps": [],
+      "level": 6,
+      "material_conflict": false,
+      "partial_interview": false,
+      "policy_version": "fn-adaptive-interview-1.1.0",
+      "result_version": 1,
+      "revision": 37,
+      "rubric_version": "eva-interviews-2026-11-04-v1",
+      "scoring_outcome": "validated_score",
+      "status": "suggested"
+    },
+    "summary": [
+      {
+        "evidence_id": "m3",
+        "objective_id": "perspective",
+        "quote": "C. Technology expert or researcher",
+        "topic": null
+      },
+      {
+        "evidence_id": "m6",
+        "objective_id": "area",
+        "quote": "Lyon",
+        "topic": null
+      },
+      {
+        "evidence_id": "m17",
+        "objective_id": "local_awareness",
+        "quote": "Drones are being tested in Lyon for medical delivery, but our assessment focuses on a specific integrated configuration. I can confirm one demonstration on a hospital-campus route, but no formal operational use yet.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m27",
+        "objective_id": "defined",
+        "quote": "Integrated navigation, payload temperature control, and dispatch connector performance are technically defined based on bench tests and the demonstration. Weather limits and long-duration reliability remain conceptual until further testing.",
+        "topic": "long-duration reliability"
+      },
+      {
+        "evidence_id": "m33",
+        "objective_id": "experimental_integration",
+        "quote": "The main functions were integrated and tested together in bench tests and the demonstration. Weather and long-duration reliability remain untested.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m41",
+        "objective_id": "controlled_conditions",
+        "quote": "Bench tests and a hospital-campus demonstration tested navigation, payload temperature control, and dispatch connector performance. Long-duration and adverse weather conditions remain untested.",
+        "topic": "dispatch connector performance"
+      },
+      {
+        "evidence_id": "m49",
+        "objective_id": "priorities",
+        "quote": "The most critical areas are payload interface reliability and weather performance. These require repeat testing with adverse conditions and complete-system qualification before operations.",
+        "topic": "weather performance"
+      },
+      {
+        "evidence_id": "m69",
+        "objective_id": "operational_configuration",
+        "quote": "The demonstration showed route accuracy and payload temperature control in the intended environment. However, long-duration reliability and extreme weather performance remain untested.",
+        "topic": "extreme weather performance"
+      }
+    ]
+  },
+  "id": "2514c083-23fc-4642-ae93-40db3e1b250b",
+  "preview": null,
+  "retry_draft": null,
+  "returned_text": null,
+  "state": "chat",
+  "version": 78
+}

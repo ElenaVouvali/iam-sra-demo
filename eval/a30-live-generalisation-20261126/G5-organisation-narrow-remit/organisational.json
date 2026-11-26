@@ -1,0 +1,4492 @@
+{
+  "export_profile": "browser_evidence",
+  "api_version": "1.2.0",
+  "session_id": "1a927763-af68-4f14-ba21-50d2f16d400c",
+  "conversation": {
+    "mode": "iam-sra-chat-2.0.0",
+    "stage": "ended",
+    "depth": "short",
+    "profile": "organisational",
+    "response_options": [],
+    "citizen_depth": null,
+    "depth_selection": null,
+    "depth_history": [],
+    "answer_processing": {
+      "status": "ready",
+      "evidence_id": null
+    },
+    "messages": [
+      {
+        "id": "m1",
+        "role": "assistant",
+        "text": "Thank you for taking part. I'm an AI assistant for this IAM-CC research interview.\n\nWe would like to hear your views and experiences to help us understand how ready society is to use and engage with new and emerging technologies. In this interview, we will talk about drones and services that use drones.\n\nThere are no right or wrong answers. Your opinions and your own experiences matter. You can skip any question, pause, correct an answer, stop or withdraw at any time.\n\nPlease avoid personal names, addresses, contact details and sensitive information. Messages are screened before processing, but screening can miss personal details. Progress is held temporarily in memory; download a copy if you want to keep it. Contact follow-up and cross-day resume are unavailable.",
+        "objective_id": null,
+        "act": "introduction",
+        "revision": 0
+      },
+      {
+        "id": "m2",
+        "role": "assistant",
+        "text": "Which point of view would you like to use in this conversation?\n\nA. Citizen\nA member of the public answering from their own point of view. For example, a resident, patient, service user, worker, member of a community organisation, or anyone who could be affected by drone services.\n\nB. Organisation or institution\nSomeone answering on behalf of an organisation involved in planning, providing, regulating, supporting or overseeing drone services. For example, a municipality, regional authority, regulator, policymaker, city planner, transport authority, healthcare organisation, logistics organisation or infrastructure provider.\n\nC. Technology expert or researcher\nSomeone working directly with drone technology or related technical systems. For example, a drone operator, manufacturer, engineer, researcher, technology developer, take-off and landing infrastructure developer or airspace-service provider.\n\nIf more than one applies, please choose the perspective you would prefer to use today.",
+        "objective_id": "perspective",
+        "act": "question",
+        "revision": 0
+      },
+      {
+        "id": "m3",
+        "role": "respondent",
+        "text": "B. Organisation or institution",
+        "objective_id": "perspective",
+        "act": "profile_selection",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 1,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m2"
+      },
+      {
+        "id": "m4",
+        "role": "assistant",
+        "text": "Thank you. I will ask the following questions from the perspective of your organisation.",
+        "objective_id": null,
+        "act": "profile_acknowledgement",
+        "revision": 1
+      },
+      {
+        "id": "m5",
+        "role": "assistant",
+        "text": "Which EU city or urban area would you like your answers to refer to?",
+        "objective_id": "area",
+        "act": "question",
+        "revision": 1,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 2",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m6",
+        "role": "respondent",
+        "text": "Porto",
+        "objective_id": "area",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 2,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m5",
+        "context_fields": [
+          "city"
+        ]
+      },
+      {
+        "id": "m7",
+        "role": "assistant",
+        "text": "Thank you. I will use that city or urban area as the context for your answers.",
+        "objective_id": null,
+        "act": "city_acknowledgement",
+        "revision": 2
+      },
+      {
+        "id": "m8",
+        "role": "assistant",
+        "text": "You do not need to name it. If you prefer not to name it, please briefly describe what kind of organisation it is and what it does.\n\nWhat organisation do you work for?",
+        "objective_id": "organisation_context",
+        "act": "question",
+        "revision": 2,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 2",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m9",
+        "role": "respondent",
+        "text": "I work for a municipal health-logistics planning unit in Porto, providing route advice for healthcare services. Our role is advisory, not operational.",
+        "objective_id": "organisation_context",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 3,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m8",
+        "context_fields": [
+          "organisation_or_unit"
+        ]
+      },
+      {
+        "id": "m10",
+        "role": "assistant",
+        "text": "What role does your organisation currently have—or could it potentially have—in relation to drone services?",
+        "objective_id": "remit",
+        "act": "question",
+        "revision": 3,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 3",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m11",
+        "role": "respondent",
+        "text": "Our organisation provides advisory route-planning support for healthcare logistics. We can assess drone service feasibility but cannot procure, authorize, or regulate flights. No institutional commitment exists yet.",
+        "objective_id": "remit",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 4,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m10",
+        "context_fields": [
+          "responsibilities"
+        ]
+      },
+      {
+        "id": "m12",
+        "role": "assistant",
+        "text": "Are you familiar with drone technology?",
+        "objective_id": "drone_recognition",
+        "act": "question",
+        "revision": 4,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 3",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m13",
+        "role": "respondent",
+        "text": "Yes, but our role is advisory. We assess feasibility for healthcare logistics, not operate or regulate drones. No institutional commitment exists yet.",
+        "objective_id": "drone_recognition",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 5,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m12"
+      },
+      {
+        "id": "m14",
+        "role": "assistant",
+        "text": "In your own words, how would you describe a drone?",
+        "objective_id": "drone_description",
+        "act": "question",
+        "revision": 5,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 3",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m15",
+        "role": "respondent",
+        "text": "A drone is an unmanned aerial vehicle used for transporting goods, including medical samples, in healthcare logistics. Our unit evaluates its potential for route efficiency but does not operate or regulate drone services.",
+        "objective_id": "drone_description",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 6,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m14"
+      },
+      {
+        "id": "m16",
+        "role": "assistant",
+        "text": "What kinds of services or uses involving drones are you familiar with?",
+        "objective_id": "drone_uses",
+        "act": "question",
+        "revision": 6,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 3",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m17",
+        "role": "respondent",
+        "text": "We are familiar with drone applications in healthcare logistics, such as transporting urgent medical samples. Our unit evaluates their feasibility for route efficiency but does not operate or regulate drone services. No institutional commitment exists yet.",
+        "objective_id": "drone_uses",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 7,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m16"
+      },
+      {
+        "id": "m18",
+        "role": "assistant",
+        "text": "As far as you know, are drones already being used in your city?",
+        "objective_id": "local_awareness",
+        "act": "question",
+        "revision": 7,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 4",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m19",
+        "role": "respondent",
+        "text": "No, drones are not yet in operational use. Our unit has only provided advisory input on feasibility studies. No budget, approval, or pilot has been finalized. We remain focused on route coordination and public consultation responsibilities.",
+        "objective_id": "local_awareness",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 8,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m18",
+        "topic": "Advisory Feasibility Studies"
+      },
+      {
+        "id": "m20",
+        "role": "assistant",
+        "text": "For the rest of the interview, I would like you to think about one specific type of drone service: drones transporting healthcare items such as medicines, blood, laboratory samples or other medical supplies.\n\nCould this type of healthcare drone service be relevant to your organisation?",
+        "objective_id": "relevance",
+        "act": "question",
+        "revision": 8,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 5",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m21",
+        "role": "respondent",
+        "text": "Healthcare drone services align with our route-planning interests, but our unit cannot procure, authorize, or regulate them. We remain focused on advisory roles and coordination until further approvals and resource allocations are confirmed.",
+        "objective_id": "relevance",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 9,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m20"
+      },
+      {
+        "id": "m22",
+        "role": "assistant",
+        "text": "In what way?",
+        "objective_id": "relevance_detail",
+        "act": "question",
+        "revision": 9,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 5",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m23",
+        "role": "respondent",
+        "text": "Our unit evaluates route efficiency for potential drone services but does not operate or regulate them. No institutional commitment or allocated resources exist yet. We await confirmation of responsible operators and approving authorities before advancing further.",
+        "objective_id": "relevance_detail",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 10,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m22"
+      },
+      {
+        "id": "m24",
+        "role": "assistant",
+        "text": "What possible opportunities, challenges or responsibilities come to mind for your organisation?",
+        "objective_id": "open_priorities",
+        "act": "question",
+        "revision": 10,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 6",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m25",
+        "role": "respondent",
+        "text": "Our organisation's responsibilities include route coordination and public consultation. Challenges involve ensuring clear operator and authority assignments. Opportunities arise if approvals and resources materialize, allowing us to advise on efficient drone routes for healthcare deliveries.",
+        "objective_id": "open_priorities",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 11,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m24"
+      },
+      {
+        "id": "m26",
+        "role": "assistant",
+        "text": "If this healthcare drone service were proposed for your city, what would your organisation need to consider before deciding what role to play or what position to take?",
+        "objective_id": "requirements_open",
+        "act": "question",
+        "revision": 11,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 6",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m27",
+        "role": "respondent",
+        "text": "We need to confirm responsible operators and approving authorities, clarify unit-level responsibilities, and ensure resource allocations before defining our role. Our focus remains on advisory and coordination functions within our remit.",
+        "objective_id": "requirements_open",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 12,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m26"
+      },
+      {
+        "id": "m28",
+        "role": "assistant",
+        "text": "Anything else?",
+        "objective_id": "open_more",
+        "act": "question",
+        "revision": 12,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 6",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m29",
+        "role": "respondent",
+        "text": "Our unit remains focused on route coordination and public consultation. We await further clarity on operator responsibilities and regulatory frameworks before engaging further.",
+        "objective_id": "open_more",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 13,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [],
+        "in_reply_to": "m28"
+      },
+      {
+        "id": "m30",
+        "role": "assistant",
+        "text": "Are any of these particularly relevant to your organisation's role?\n• how the service fits with existing transport and city plans\n• where drones take off and land and how land is used\n• energy use and environmental effects\n• costs, funding and long-term financial arrangements\n• access for remote areas or people who may face barriers\n• interaction with other transport and traffic\n• noise\n• visual impacts\n• public concerns about safety and privacy\n• technical safety, security and protection of information\n• wind and strong air movement around take-off and landing areas\n• the number of drones and use of airspace\n• how benefits and negative effects are distributed\n• public information and engagement\n• staff knowledge, expertise and training",
+        "objective_id": "suggested_topics",
+        "act": "question",
+        "revision": 13,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 7",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m31",
+        "role": "assistant",
+        "text": "Which two or three are most important for your organisation?\nYou can choose just one issue if that is what matters to you.",
+        "objective_id": "priorities",
+        "act": "question",
+        "revision": 13,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 7",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "authored adaptation of FN question"
+        }
+      },
+      {
+        "id": "m32",
+        "role": "respondent",
+        "text": "Confirming responsible operators and approving authorities, clarifying unit-level responsibilities, and ensuring resource allocations are most critical. Our focus remains on advisory and coordination functions within our remit.",
+        "objective_id": "priorities",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 14,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m31",
+        "topic": "Resource Allocations"
+      },
+      {
+        "id": "m33",
+        "role": "assistant",
+        "text": "Thinking about the issues you identified as most important, what would your organisation need to have in place to deal with the healthcare drone service properly?",
+        "objective_id": "requirements",
+        "act": "question",
+        "revision": 14,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 8",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m34",
+        "role": "respondent",
+        "text": "Confirming responsible operators and approving authorities, clarifying unit-level responsibilities, and ensuring resource allocations are most critical. Our focus remains on advisory and coordination functions within our remit.",
+        "objective_id": "requirements",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 15,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m33",
+        "topic": "Resource Allocations"
+      },
+      {
+        "id": "m35",
+        "role": "assistant",
+        "text": "How well does your organisation currently understand what would be required?",
+        "objective_id": "requirements_understanding",
+        "act": "question",
+        "revision": 15,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 8",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m36",
+        "role": "respondent",
+        "text": "Our organisation understands the need for confirming operators, clarifying responsibilities, and resource allocation. However, without approved plans or allocated budgets, our capacity to advise fully remains limited.",
+        "objective_id": "requirements_understanding",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 16,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m35",
+        "topic": "Resource Allocations"
+      },
+      {
+        "id": "m37",
+        "role": "assistant",
+        "text": "What are the main gaps?",
+        "objective_id": "gaps",
+        "act": "question",
+        "revision": 16,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 8",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m38",
+        "role": "respondent",
+        "text": "Confirming responsible operators, clarifying unit responsibilities, and securing resource allocations are the main gaps. Without these, our advisory capacity remains constrained by the lack of approved plans and allocated budgets.",
+        "objective_id": "gaps",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 17,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m37",
+        "topic": "Resource Allocations"
+      },
+      {
+        "id": "m39",
+        "role": "assistant",
+        "text": "Are there any laws, regulations, permissions or public authorities that your organisation thinks would be relevant to this service?",
+        "objective_id": "regulatory_authorities",
+        "act": "question",
+        "revision": 17,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 8",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m40",
+        "role": "respondent",
+        "text": "Confirming responsible operators and approving authorities is critical. Our organisation focuses on advisory roles within our remit, ensuring alignment with institutional responsibilities and resource allocations.",
+        "objective_id": "regulatory_authorities",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 18,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m39",
+        "topic": "Responsible Operators and Authorities"
+      },
+      {
+        "id": "m41",
+        "role": "assistant",
+        "text": "Has your organisation started planning how it would deal with the healthcare drone service we are discussing?",
+        "objective_id": "planning",
+        "act": "question",
+        "revision": 18,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 9",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m42",
+        "role": "respondent",
+        "text": "Our organisation understands the need for confirming operators, clarifying responsibilities, and resource allocation. However, without approved plans or allocated budgets, our capacity to advise fully remains limited.",
+        "objective_id": "planning",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 19,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m41"
+      },
+      {
+        "id": "m43",
+        "role": "assistant",
+        "text": "Has your organisation moved beyond planning and started putting arrangements in place for testing or potentially implementing this healthcare drone service?",
+        "objective_id": "preparation",
+        "act": "question",
+        "revision": 19,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 10",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m44",
+        "role": "respondent",
+        "text": "Our organisation has not moved beyond planning. Confirming operators, clarifying responsibilities, and securing resource allocations are prerequisites for any further action. Without these, we cannot proceed with testing or implementation.",
+        "objective_id": "preparation",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 20,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m43"
+      },
+      {
+        "id": "m45",
+        "role": "assistant",
+        "text": "Have your organisation's plans, procedures or coordination arrangements actually been tested through a pilot, demonstration, simulation or another realistic activity?",
+        "objective_id": "testing",
+        "act": "question",
+        "revision": 20,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 11",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m46",
+        "role": "respondent",
+        "text": "Our organisation has not approved a plan or completed a pilot. Confirming operators, clarifying responsibilities, and securing resource allocations are prerequisites for any further action.",
+        "objective_id": "testing",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 21,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m45"
+      },
+      {
+        "id": "m47",
+        "role": "assistant",
+        "text": "Imagine the healthcare drone service was ready to move from a pilot to regular operation.\n\nWould your organisation currently be able to fulfil its role?",
+        "objective_id": "operational",
+        "act": "question",
+        "revision": 21,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 13",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m48",
+        "role": "respondent",
+        "text": "Our organisation cannot fulfil its role without confirmed operators, clarified responsibilities, and allocated resources. These prerequisites remain unaddressed, limiting our capacity to provide route advice or coordinate effectively.",
+        "objective_id": "operational",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 22,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m47"
+      },
+      {
+        "id": "m49",
+        "role": "assistant",
+        "text": "What is already in place?",
+        "objective_id": "in_place",
+        "act": "question",
+        "revision": 22,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 13",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m50",
+        "role": "respondent",
+        "text": "Our organisation has not moved beyond planning. Confirming operators, clarifying responsibilities, and securing resource allocations are prerequisites for any further action. Without these, we cannot proceed with testing or implementation.",
+        "objective_id": "in_place",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 23,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m49",
+        "topic": "Resource Allocations"
+      },
+      {
+        "id": "m51",
+        "role": "assistant",
+        "text": "What is still missing?",
+        "objective_id": "missing",
+        "act": "question",
+        "revision": 23,
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "page 14",
+          "specification_version": "fn-adaptive-interview-1.1.0",
+          "wording": "canonical question"
+        }
+      },
+      {
+        "id": "m52",
+        "role": "respondent",
+        "text": "Confirming operators, clarifying responsibilities, and securing resource allocations are prerequisites. These remain unaddressed, limiting our capacity to provide route advice or coordinate effectively.",
+        "objective_id": "missing",
+        "act": "answer",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 24,
+        "evidence_status": "respondent_provided",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m51",
+        "topic": "Securing Resource Allocations"
+      },
+      {
+        "id": "m53",
+        "role": "assistant",
+        "text": "Thank you. We have finished the main questions.",
+        "objective_id": null,
+        "act": "scale_disclosure",
+        "revision": 24,
+        "scale": {
+          "policy_version": "fn-adaptive-interview-1.1.0",
+          "rubric_version": "eva-interviews-2026-11-04-v1",
+          "status": "supplied_example_prototype_pending_partner_review",
+          "anchors": [
+            {
+              "id": "organisational-1",
+              "level": 1,
+              "label": "Recognition",
+              "description": "The organisation recognises that the drone service could be relevant to its responsibilities, objectives or the communities it serves.",
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "id": "organisational-2",
+              "level": 2,
+              "label": "Awareness",
+              "description": "The organisation identifies possible opportunities, challenges, stakeholders, requirements and relevant regulatory issues.",
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "id": "organisational-3",
+              "level": 3,
+              "label": "Assessment",
+              "description": "The organisation assesses what the service would require operationally, financially, organisationally, in terms of regulation and governance, and identifies gaps in its preparedness.",
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "id": "organisational-4",
+              "level": 4,
+              "label": "Planning",
+              "description": "The organisation develops preliminary plans, including roles, resources, responsibilities, coordination, procedures and possible changes to existing policies or processes.",
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "id": "organisational-5",
+              "level": 5,
+              "label": "Preparation",
+              "description": "The organisation puts in place the partnerships, resources, competences, procedures and regulatory pathways needed to prepare for testing or implementation.",
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "id": "organisational-6",
+              "level": 6,
+              "label": "Validation",
+              "description": "The organisation tests its procedures, coordination, governance and regulatory preparedness through pilots, demonstrations, simulations or realistic activities and uses the results to identify improvements.",
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "id": "organisational-7",
+              "level": 7,
+              "label": "Integration",
+              "description": "The organisation incorporates validated roles, procedures, resources, regulatory arrangements and governance mechanisms into its plans, policies or regular processes.",
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "id": "organisational-8",
+              "level": 8,
+              "label": "Operational readiness",
+              "description": "The organisation can fulfil its role under real operating conditions, with the necessary resources, coordination, approvals or compliance arrangements and monitoring mechanisms in place.",
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            },
+            {
+              "id": "organisational-9",
+              "level": 9,
+              "label": "Sustained institutionalisation",
+              "description": "The organisation fulfils its role as part of normal operations and governance, continuously monitors performance and compliance, and can adapt to changing needs, requirements and conditions.",
+              "source": {
+                "document": "SRAA Organisation interview example.pdf",
+                "pdf_pages": [
+                  16
+                ]
+              }
+            }
+          ],
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+            "scale_pdf_pages": [
+              16
+            ],
+            "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+          },
+          "reference_scale": [
+            {
+              "level": 1,
+              "description": "Recognition. The organisation recognises the potential relevance of the innovation to its responsibilities, objectives, operations, or the needs of the communities it serves.",
+              "source": {
+                "sheet": "TRL, ORL, CRL,  SRL scales",
+                "cell": "C2"
+              }
+            },
+            {
+              "level": 2,
+              "description": "Awareness. The organisation identifies potential opportunities, challenges, requirements, stakeholders, and regulatory considerations associated with introducing the innovation into its activities.",
+              "source": {
+                "sheet": "TRL, ORL, CRL,  SRL scales",
+                "cell": "C3"
+              }
+            },
+            {
+              "level": 3,
+              "description": "Assessment. The organisation assesses the feasibility and implications of the innovation, including its operational, financial, organisational, regulatory, and governance requirements, and identifies potential gaps in its preparedness.",
+              "source": {
+                "sheet": "TRL, ORL, CRL,  SRL scales",
+                "cell": "C4"
+              }
+            },
+            {
+              "level": 4,
+              "description": "Planning. The organisation develops preliminary plans for integrating the innovation, identifying necessary resources, roles, responsibilities, stakeholder coordination mechanisms, regulatory procedures, and potential changes to existing processes or policies.",
+              "source": {
+                "sheet": "TRL, ORL, CRL,  SRL scales",
+                "cell": "C5"
+              }
+            },
+            {
+              "level": 5,
+              "description": "Preparation. The organisation establishes the organisational arrangements, partnerships, resources, competencies, procedures, and regulatory pathways needed to prepare for testing or implementing the innovation in a relevant operational context.",
+              "source": {
+                "sheet": "TRL, ORL, CRL,  SRL scales",
+                "cell": "C6"
+              }
+            },
+            {
+              "level": 6,
+              "description": "Validation. The organisation tests its operational procedures, coordination arrangements, governance mechanisms, and regulatory preparedness through pilots, demonstrations, simulations, or controlled real-world activities, using the results to identify improvements.",
+              "source": {
+                "sheet": "TRL, ORL, CRL,  SRL scales",
+                "cell": "C7"
+              }
+            },
+            {
+              "level": 7,
+              "description": "Integration. The organisation integrates validated processes, responsibilities, resources, regulatory arrangements, and governance mechanisms into its operational plans, policies, business models, or urban mobility strategies to support deployment.",
+              "source": {
+                "sheet": "TRL, ORL, CRL,  SRL scales",
+                "cell": "C8"
+              }
+            },
+            {
+              "level": 8,
+              "description": "Operational readiness. The organisation demonstrates its capacity to implement and manage the innovation under real-world operational conditions, with the necessary organisational resources, coordination procedures, regulatory approvals or compliance arrangements, and monitoring mechanisms in place.",
+              "source": {
+                "sheet": "TRL, ORL, CRL,  SRL scales",
+                "cell": "C9"
+              }
+            },
+            {
+              "level": 9,
+              "description": "Sustained institutionalisation. The organisation institutionalises the innovation within its routine operations and governance structures, demonstrating sustained operational capability, regulatory compliance, continuous monitoring, and the capacity to adapt to evolving needs, requirements, and conditions.",
+              "source": {
+                "sheet": "TRL, ORL, CRL,  SRL scales",
+                "cell": "C10"
+              }
+            }
+          ],
+          "reference_source": {
+            "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+            "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818"
+          },
+          "reference_notice": "The interview scale is shown below. The legacy workbook remains a separate reference.",
+          "guidance": "Assess only the stated unit responsibilities. Distinguish draft plans, prepared arrangements, realistic testing with lessons, adoption into ordinary processes, routine operational readiness and sustained monitoring. Permission for a demonstration does not establish routine compliance (pp.11–17,19–20)."
+        }
+      },
+      {
+        "id": "m54",
+        "role": "assistant",
+        "text": "I will now show you the scale used to understand your answers. The judgment is provisional and based on self-report.",
+        "objective_id": null,
+        "act": "scale_notice",
+        "revision": 24
+      },
+      {
+        "id": "m55",
+        "role": "assistant",
+        "text": "Provisional result: ORL 3 — Assessment.\n\nThe organisation identifies gaps in preparedness, such as confirming responsible operators, clarifying responsibilities, and securing resource allocations. It evaluates route efficiency for potential drone services and acknowledges limitations in advisory capacity without approved plans or budgets. These actions align with assessing operational, financial, and regulatory requirements for drone services.\n\nEvidence from your answers:\n“Our unit evaluates route efficiency for potential drone services but does not operate or regulate them. No institutional commitment or allocated resources exist yet. We await confirmation of responsible operators and approving authorities before advancing further.”\n“Confirming responsible operators, clarifying unit responsibilities, and securing resource allocations are the main gaps. Without these, our advisory capacity remains constrained by the lack of approved plans and allocated budgets.”\n“Our organisation understands the need for confirming operators, clarifying responsibilities, and resource allocation. However, without approved plans or allocated budgets, our capacity to advise fully remains limited.”\n\nBoundary: Compared with ORL 4 — Planning: The organisation has not yet developed preliminary plans, roles, or procedures for drone services (: Planning), as it remains focused on identifying prerequisites rather than formalizing plans or partnerships.\n\nNow that you have seen the scale and the explanation, how well do you think the provisional ORL 3 result describes your organisation's current situation?\n\nA. It describes the organisation well\nB. It mostly describes the organisation, but something important is missing\nC. I think the organisation should be at a higher level\nD. I think the organisation should be at a lower level\nE. I am not sure",
+        "objective_id": null,
+        "act": "result_review",
+        "revision": 24
+      },
+      {
+        "id": "m56",
+        "role": "respondent",
+        "text": "E",
+        "objective_id": "missing",
+        "act": "result_review",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 25,
+        "evidence_status": "interaction_only",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m55"
+      },
+      {
+        "id": "m57",
+        "role": "assistant",
+        "text": "Which part of the explanation or scale leaves you uncertain? You can also say you have nothing to add.",
+        "objective_id": null,
+        "act": "review_addition",
+        "revision": 25
+      },
+      {
+        "id": "m58",
+        "role": "respondent",
+        "text": "no changes",
+        "objective_id": "missing",
+        "act": "review_completion",
+        "active": true,
+        "profile": "organisational",
+        "scope_revision": 1,
+        "revision": 26,
+        "evidence_status": "interaction_only",
+        "interpretation_status": "interpretation_unreviewed",
+        "provenance": "respondent_entered",
+        "information_exposure_ids": [
+          "x1"
+        ],
+        "in_reply_to": "m57"
+      },
+      {
+        "id": "m59",
+        "role": "assistant",
+        "text": "Thank you. Your comments are recorded with review pending. The initial model suggestion is unchanged. Contact follow-up is unavailable; download a copy to keep your record.",
+        "objective_id": null,
+        "act": "end",
+        "revision": 26
+      }
+    ],
+    "pending_comparison": null,
+    "summary": [
+      {
+        "evidence_id": "m3",
+        "quote": "B. Organisation or institution",
+        "objective_id": "perspective",
+        "topic": null
+      },
+      {
+        "evidence_id": "m6",
+        "quote": "Porto",
+        "objective_id": "area",
+        "topic": null
+      },
+      {
+        "evidence_id": "m11",
+        "quote": "Our organisation provides advisory route-planning support for healthcare logistics. We can assess drone service feasibility but cannot procure, authorize, or regulate flights. No institutional commitment exists yet.",
+        "objective_id": "remit",
+        "topic": null
+      },
+      {
+        "evidence_id": "m13",
+        "quote": "Yes, but our role is advisory. We assess feasibility for healthcare logistics, not operate or regulate drones. No institutional commitment exists yet.",
+        "objective_id": "drone_recognition",
+        "topic": null
+      },
+      {
+        "evidence_id": "m15",
+        "quote": "A drone is an unmanned aerial vehicle used for transporting goods, including medical samples, in healthcare logistics. Our unit evaluates its potential for route efficiency but does not operate or regulate drone services.",
+        "objective_id": "drone_description",
+        "topic": null
+      },
+      {
+        "evidence_id": "m17",
+        "quote": "We are familiar with drone applications in healthcare logistics, such as transporting urgent medical samples. Our unit evaluates their feasibility for route efficiency but does not operate or regulate drone services. No institutional commitment exists yet.",
+        "objective_id": "drone_uses",
+        "topic": null
+      },
+      {
+        "evidence_id": "m19",
+        "quote": "No, drones are not yet in operational use. Our unit has only provided advisory input on feasibility studies. No budget, approval, or pilot has been finalized. We remain focused on route coordination and public consultation responsibilities.",
+        "objective_id": "local_awareness",
+        "topic": "Advisory Feasibility Studies"
+      },
+      {
+        "evidence_id": "m32",
+        "quote": "Confirming responsible operators and approving authorities, clarifying unit-level responsibilities, and ensuring resource allocations are most critical. Our focus remains on advisory and coordination functions within our remit.",
+        "objective_id": "priorities",
+        "topic": "Resource Allocations"
+      }
+    ],
+    "scale": {
+      "policy_version": "fn-adaptive-interview-1.1.0",
+      "rubric_version": "eva-interviews-2026-11-04-v1",
+      "status": "supplied_example_prototype_pending_partner_review",
+      "anchors": [
+        {
+          "id": "organisational-1",
+          "level": 1,
+          "label": "Recognition",
+          "description": "The organisation recognises that the drone service could be relevant to its responsibilities, objectives or the communities it serves.",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "id": "organisational-2",
+          "level": 2,
+          "label": "Awareness",
+          "description": "The organisation identifies possible opportunities, challenges, stakeholders, requirements and relevant regulatory issues.",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "id": "organisational-3",
+          "level": 3,
+          "label": "Assessment",
+          "description": "The organisation assesses what the service would require operationally, financially, organisationally, in terms of regulation and governance, and identifies gaps in its preparedness.",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "id": "organisational-4",
+          "level": 4,
+          "label": "Planning",
+          "description": "The organisation develops preliminary plans, including roles, resources, responsibilities, coordination, procedures and possible changes to existing policies or processes.",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "id": "organisational-5",
+          "level": 5,
+          "label": "Preparation",
+          "description": "The organisation puts in place the partnerships, resources, competences, procedures and regulatory pathways needed to prepare for testing or implementation.",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "id": "organisational-6",
+          "level": 6,
+          "label": "Validation",
+          "description": "The organisation tests its procedures, coordination, governance and regulatory preparedness through pilots, demonstrations, simulations or realistic activities and uses the results to identify improvements.",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "id": "organisational-7",
+          "level": 7,
+          "label": "Integration",
+          "description": "The organisation incorporates validated roles, procedures, resources, regulatory arrangements and governance mechanisms into its plans, policies or regular processes.",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "id": "organisational-8",
+          "level": 8,
+          "label": "Operational readiness",
+          "description": "The organisation can fulfil its role under real operating conditions, with the necessary resources, coordination, approvals or compliance arrangements and monitoring mechanisms in place.",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        },
+        {
+          "id": "organisational-9",
+          "level": 9,
+          "label": "Sustained institutionalisation",
+          "description": "The organisation fulfils its role as part of normal operations and governance, continuously monitors performance and compliance, and can adapt to changing needs, requirements and conditions.",
+          "source": {
+            "document": "SRAA Organisation interview example.pdf",
+            "pdf_pages": [
+              16
+            ]
+          }
+        }
+      ],
+      "source": {
+        "document": "SRAA Organisation interview example.pdf",
+        "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+        "scale_pdf_pages": [
+          16
+        ],
+        "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+      },
+      "reference_scale": [
+        {
+          "level": 1,
+          "description": "Recognition. The organisation recognises the potential relevance of the innovation to its responsibilities, objectives, operations, or the needs of the communities it serves.",
+          "source": {
+            "sheet": "TRL, ORL, CRL,  SRL scales",
+            "cell": "C2"
+          }
+        },
+        {
+          "level": 2,
+          "description": "Awareness. The organisation identifies potential opportunities, challenges, requirements, stakeholders, and regulatory considerations associated with introducing the innovation into its activities.",
+          "source": {
+            "sheet": "TRL, ORL, CRL,  SRL scales",
+            "cell": "C3"
+          }
+        },
+        {
+          "level": 3,
+          "description": "Assessment. The organisation assesses the feasibility and implications of the innovation, including its operational, financial, organisational, regulatory, and governance requirements, and identifies potential gaps in its preparedness.",
+          "source": {
+            "sheet": "TRL, ORL, CRL,  SRL scales",
+            "cell": "C4"
+          }
+        },
+        {
+          "level": 4,
+          "description": "Planning. The organisation develops preliminary plans for integrating the innovation, identifying necessary resources, roles, responsibilities, stakeholder coordination mechanisms, regulatory procedures, and potential changes to existing processes or policies.",
+          "source": {
+            "sheet": "TRL, ORL, CRL,  SRL scales",
+            "cell": "C5"
+          }
+        },
+        {
+          "level": 5,
+          "description": "Preparation. The organisation establishes the organisational arrangements, partnerships, resources, competencies, procedures, and regulatory pathways needed to prepare for testing or implementing the innovation in a relevant operational context.",
+          "source": {
+            "sheet": "TRL, ORL, CRL,  SRL scales",
+            "cell": "C6"
+          }
+        },
+        {
+          "level": 6,
+          "description": "Validation. The organisation tests its operational procedures, coordination arrangements, governance mechanisms, and regulatory preparedness through pilots, demonstrations, simulations, or controlled real-world activities, using the results to identify improvements.",
+          "source": {
+            "sheet": "TRL, ORL, CRL,  SRL scales",
+            "cell": "C7"
+          }
+        },
+        {
+          "level": 7,
+          "description": "Integration. The organisation integrates validated processes, responsibilities, resources, regulatory arrangements, and governance mechanisms into its operational plans, policies, business models, or urban mobility strategies to support deployment.",
+          "source": {
+            "sheet": "TRL, ORL, CRL,  SRL scales",
+            "cell": "C8"
+          }
+        },
+        {
+          "level": 8,
+          "description": "Operational readiness. The organisation demonstrates its capacity to implement and manage the innovation under real-world operational conditions, with the necessary organisational resources, coordination procedures, regulatory approvals or compliance arrangements, and monitoring mechanisms in place.",
+          "source": {
+            "sheet": "TRL, ORL, CRL,  SRL scales",
+            "cell": "C9"
+          }
+        },
+        {
+          "level": 9,
+          "description": "Sustained institutionalisation. The organisation institutionalises the innovation within its routine operations and governance structures, demonstrating sustained operational capability, regulatory compliance, continuous monitoring, and the capacity to adapt to evolving needs, requirements, and conditions.",
+          "source": {
+            "sheet": "TRL, ORL, CRL,  SRL scales",
+            "cell": "C10"
+          }
+        }
+      ],
+      "reference_source": {
+        "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+        "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818"
+      },
+      "reference_notice": "The interview scale is shown below. The legacy workbook remains a separate reference.",
+      "guidance": "Assess only the stated unit responsibilities. Distinguish draft plans, prepared arrangements, realistic testing with lessons, adoption into ordinary processes, routine operational readiness and sustained monitoring. Permission for a demonstration does not establish routine compliance (pp.11–17,19–20)."
+    },
+    "suggestion": {
+      "status": "suggested",
+      "level": 3,
+      "anchor_id": "organisational-3",
+      "policy_version": "fn-adaptive-interview-1.1.0",
+      "revision": 24,
+      "result_version": 1,
+      "partial_interview": false,
+      "rubric_version": "eva-interviews-2026-11-04-v1",
+      "explanation": "The organisation identifies gaps in preparedness, such as confirming responsible operators, clarifying responsibilities, and securing resource allocations. It evaluates route efficiency for potential drone services and acknowledges limitations in advisory capacity without approved plans or budgets. These actions align with assessing operational, financial, and regulatory requirements for drone services.",
+      "gaps": [],
+      "considered_evidence_ids": [
+        "m3",
+        "m6",
+        "m9",
+        "m11",
+        "m13",
+        "m15",
+        "m17",
+        "m19",
+        "m21",
+        "m23",
+        "m25",
+        "m27",
+        "m29",
+        "m32",
+        "m34",
+        "m36",
+        "m38",
+        "m40",
+        "m42",
+        "m44",
+        "m46",
+        "m48",
+        "m50",
+        "m52"
+      ],
+      "evidence_sufficiency": "provisionally_sufficient",
+      "scoring_outcome": "validated_score",
+      "external_verification": "not_performed",
+      "anchor": {
+        "id": "organisational-3",
+        "level": 3,
+        "label": "Assessment",
+        "description": "The organisation assesses what the service would require operationally, financially, organisationally, in terms of regulation and governance, and identifies gaps in its preparedness.",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "pdf_pages": [
+            16
+          ]
+        }
+      },
+      "boundary": "Compared with ORL 4 — Planning: The organisation has not yet developed preliminary plans, roles, or procedures for drone services (: Planning), as it remains focused on identifying prerequisites rather than formalizing plans or partnerships.",
+      "citations": [
+        {
+          "evidence_id": "m23",
+          "quote": "Our unit evaluates route efficiency for potential drone services but does not operate or regulate them. No institutional commitment or allocated resources exist yet. We await confirmation of responsible operators and approving authorities before advancing further."
+        },
+        {
+          "evidence_id": "m38",
+          "quote": "Confirming responsible operators, clarifying unit responsibilities, and securing resource allocations are the main gaps. Without these, our advisory capacity remains constrained by the lack of approved plans and allocated budgets."
+        },
+        {
+          "evidence_id": "m42",
+          "quote": "Our organisation understands the need for confirming operators, clarifying responsibilities, and resource allocation. However, without approved plans or allocated budgets, our capacity to advise fully remains limited."
+        },
+        {
+          "evidence_id": "m44",
+          "quote": "Our organisation has not moved beyond planning. Confirming operators, clarifying responsibilities, and securing resource allocations are prerequisites for any further action. Without these, we cannot proceed with testing or implementation."
+        }
+      ],
+      "alternative_anchor_id": "organisational-4",
+      "material_conflict": false,
+      "evidence_incomplete": false
+    },
+    "self_assessment_available": false,
+    "participant_review": {
+      "text": "E",
+      "response_id": "m56",
+      "choice": "E",
+      "validation": "uncertain",
+      "status": "pending_human_review",
+      "preferred_level": null,
+      "independent_validation": false,
+      "model_result_revision": 24,
+      "automatic_reassessment": false
+    },
+    "initial_suggestion": null,
+    "assisted": false,
+    "completion": {
+      "conversation": true,
+      "partial": false,
+      "termination_reason": "respondent_review_complete",
+      "methodological_progression": "goals_explored",
+      "evidence_sufficiency": "provisionally_sufficient",
+      "participant_review": "provided",
+      "review": "pending_human_review"
+    },
+    "schema_version": "iam-sra-chat-2.0.0",
+    "policy_version": "fn-adaptive-interview-1.1.0",
+    "classification": "synthetic",
+    "model_provenance": {
+      "version": "1.0.0",
+      "model": "Qwen/Qwen3-8B",
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218"
+    },
+    "inference_configuration": {
+      "enable_thinking": true,
+      "context_tokens": 8192,
+      "reasoning_token_allowance": 1536,
+      "reasoning_retention": "discarded",
+      "reasoning_parser": "deepseek_r1",
+      "fn_adaptive_mode": false,
+      "fn_adaptive_policy": null
+    },
+    "fn_interview": {
+      "version": "fn-adaptive-interview-1.1.0",
+      "stages": [
+        {
+          "id": "context",
+          "source_locator": "pages 2,3",
+          "status": "explored",
+          "goals": [
+            {
+              "id": "area",
+              "status": "explored",
+              "evidence_ids": [
+                "m6"
+              ]
+            },
+            {
+              "id": "organisation_context",
+              "status": "explored",
+              "evidence_ids": [
+                "m9"
+              ]
+            },
+            {
+              "id": "remit",
+              "status": "explored",
+              "evidence_ids": [
+                "m11"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "recognition",
+          "source_locator": "pages 3,4",
+          "status": "explored",
+          "goals": [
+            {
+              "id": "drone_recognition",
+              "status": "explored",
+              "evidence_ids": [
+                "m13"
+              ]
+            },
+            {
+              "id": "drone_description",
+              "status": "explored",
+              "evidence_ids": [
+                "m15"
+              ]
+            },
+            {
+              "id": "drone_uses",
+              "status": "explored",
+              "evidence_ids": [
+                "m17"
+              ]
+            },
+            {
+              "id": "local_awareness",
+              "status": "explored",
+              "evidence_ids": [
+                "m19"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "awareness",
+          "source_locator": "pages 5,6,7",
+          "status": "explored",
+          "goals": [
+            {
+              "id": "relevance",
+              "status": "explored",
+              "evidence_ids": [
+                "m21"
+              ]
+            },
+            {
+              "id": "relevance_detail",
+              "status": "explored",
+              "evidence_ids": [
+                "m23"
+              ]
+            },
+            {
+              "id": "open_priorities",
+              "status": "explored",
+              "evidence_ids": [
+                "m25"
+              ]
+            },
+            {
+              "id": "requirements_open",
+              "status": "explored",
+              "evidence_ids": [
+                "m27"
+              ]
+            },
+            {
+              "id": "open_more",
+              "status": "explored",
+              "evidence_ids": [
+                "m29"
+              ]
+            },
+            {
+              "id": "suggested_topics",
+              "status": "provided",
+              "evidence_ids": []
+            },
+            {
+              "id": "priorities",
+              "status": "explored",
+              "evidence_ids": [
+                "m32"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "assessment",
+          "source_locator": "pages 8",
+          "status": "explored",
+          "goals": [
+            {
+              "id": "requirements",
+              "status": "explored",
+              "evidence_ids": [
+                "m34"
+              ]
+            },
+            {
+              "id": "requirements_understanding",
+              "status": "explored",
+              "evidence_ids": [
+                "m36"
+              ]
+            },
+            {
+              "id": "gaps",
+              "status": "explored",
+              "evidence_ids": [
+                "m38"
+              ]
+            },
+            {
+              "id": "regulatory_authorities",
+              "status": "explored",
+              "evidence_ids": [
+                "m40"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "planning",
+          "source_locator": "pages 9",
+          "status": "explored",
+          "goals": [
+            {
+              "id": "planning",
+              "status": "explored",
+              "evidence_ids": [
+                "m42"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "preparation",
+          "source_locator": "pages 10,11",
+          "status": "explored",
+          "goals": [
+            {
+              "id": "preparation",
+              "status": "explored",
+              "evidence_ids": [
+                "m44"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "validation",
+          "source_locator": "pages 11,12",
+          "status": "explored",
+          "goals": [
+            {
+              "id": "testing",
+              "status": "explored",
+              "evidence_ids": [
+                "m46"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "integration",
+          "source_locator": "pages 12,13",
+          "status": "not_applicable",
+          "goals": []
+        },
+        {
+          "id": "operational",
+          "source_locator": "pages 13,14",
+          "status": "explored",
+          "goals": [
+            {
+              "id": "operational",
+              "status": "explored",
+              "evidence_ids": [
+                "m48"
+              ]
+            },
+            {
+              "id": "in_place",
+              "status": "explored",
+              "evidence_ids": [
+                "m50"
+              ]
+            },
+            {
+              "id": "missing",
+              "status": "explored",
+              "evidence_ids": [
+                "m52"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sustained",
+          "source_locator": "pages 15",
+          "status": "not_applicable",
+          "goals": []
+        }
+      ],
+      "unresolved_gaps": [],
+      "boundary_uncertainty": [
+        "regulatory_authorities"
+      ],
+      "next_action": "conclude",
+      "coverage_is_readiness": false
+    },
+    "objective_coverage": [
+      {
+        "objective_id": "context",
+        "status": "explored",
+        "evidence_ids": [
+          "m6",
+          "m9",
+          "m11"
+        ],
+        "readiness_inferred": false
+      },
+      {
+        "objective_id": "recognition",
+        "status": "explored",
+        "evidence_ids": [
+          "m13",
+          "m15",
+          "m17",
+          "m19"
+        ],
+        "readiness_inferred": false
+      },
+      {
+        "objective_id": "awareness",
+        "status": "explored",
+        "evidence_ids": [
+          "m21",
+          "m23",
+          "m25",
+          "m27",
+          "m29",
+          "m32"
+        ],
+        "readiness_inferred": false
+      },
+      {
+        "objective_id": "assessment",
+        "status": "explored",
+        "evidence_ids": [
+          "m34",
+          "m36",
+          "m38",
+          "m40"
+        ],
+        "readiness_inferred": false
+      },
+      {
+        "objective_id": "planning",
+        "status": "explored",
+        "evidence_ids": [
+          "m42"
+        ],
+        "readiness_inferred": false
+      },
+      {
+        "objective_id": "preparation",
+        "status": "explored",
+        "evidence_ids": [
+          "m44"
+        ],
+        "readiness_inferred": false
+      },
+      {
+        "objective_id": "validation",
+        "status": "explored",
+        "evidence_ids": [
+          "m46"
+        ],
+        "readiness_inferred": false
+      },
+      {
+        "objective_id": "integration",
+        "status": "not_applicable",
+        "evidence_ids": [],
+        "readiness_inferred": false
+      },
+      {
+        "objective_id": "operational",
+        "status": "explored",
+        "evidence_ids": [
+          "m48",
+          "m50",
+          "m52"
+        ],
+        "readiness_inferred": false
+      },
+      {
+        "objective_id": "sustained",
+        "status": "not_applicable",
+        "evidence_ids": [],
+        "readiness_inferred": false
+      }
+    ],
+    "routing_events": [],
+    "training_eligible": false,
+    "context": {
+      "city": "Porto",
+      "city_status": "respondent_provided_unverified",
+      "organisation_or_unit": "I work for a municipal health-logistics planning unit in Porto, providing route advice for healthcare services. Our role is advisory, not operational.",
+      "responsibilities": "Our organisation provides advisory route-planning support for healthcare logistics. We can assess drone service feasibility but cannot procure, authorize, or regulate flights. No institutional commitment exists yet.",
+      "technical_object": "",
+      "object_version": "",
+      "intended_environment": "",
+      "scope_status": "respondent_described",
+      "technical_role": "",
+      "expertise": "",
+      "language": "en"
+    },
+    "evidence_revision": 26,
+    "annotations": [
+      {
+        "evidence_id": "m9",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "organisation_context",
+            "evidence_id": "m9",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "organisation_context"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 3
+      },
+      {
+        "evidence_id": "m11",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "remit",
+            "evidence_id": "m11",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "remit"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 4
+      },
+      {
+        "evidence_id": "m13",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "drone_recognition",
+            "evidence_id": "m13",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "drone_recognition"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 5
+      },
+      {
+        "evidence_id": "m15",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "drone_description",
+            "evidence_id": "m15",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "drone_description"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 6
+      },
+      {
+        "evidence_id": "m17",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "drone_uses",
+            "evidence_id": "m17",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "drone_uses"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 7
+      },
+      {
+        "evidence_id": "m19",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "local_awareness",
+            "evidence_id": "m19",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "local_awareness"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 8
+      },
+      {
+        "evidence_id": "m21",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "relevance",
+            "evidence_id": "m21",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "relevance"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 9
+      },
+      {
+        "evidence_id": "m23",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "relevance_detail",
+            "evidence_id": "m23",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "relevance_detail"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 10
+      },
+      {
+        "evidence_id": "m25",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "open_priorities",
+            "evidence_id": "m25",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "open_priorities"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 11
+      },
+      {
+        "evidence_id": "m27",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "requirements_open",
+            "evidence_id": "m27",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "requirements_open"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 12
+      },
+      {
+        "evidence_id": "m29",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "open_more",
+            "evidence_id": "m29",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "open_more"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 13
+      },
+      {
+        "evidence_id": "m32",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "priorities",
+            "evidence_id": "m32",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "priorities"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 14
+      },
+      {
+        "evidence_id": "m34",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "requirements",
+            "evidence_id": "m34",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "requirements"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 15
+      },
+      {
+        "evidence_id": "m36",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "requirements_understanding",
+            "evidence_id": "m36",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "requirements_understanding"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 16
+      },
+      {
+        "evidence_id": "m38",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "gaps",
+            "evidence_id": "m38",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "gaps"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 17
+      },
+      {
+        "evidence_id": "m40",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "regulatory_authorities",
+            "evidence_id": "m40",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "regulatory_authorities"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 18
+      },
+      {
+        "evidence_id": "m42",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "planning",
+            "evidence_id": "m42",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "planning"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 19
+      },
+      {
+        "evidence_id": "m44",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "preparation",
+            "evidence_id": "m44",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "preparation"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 20
+      },
+      {
+        "evidence_id": "m46",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "testing",
+            "evidence_id": "m46",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "testing"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 21
+      },
+      {
+        "evidence_id": "m48",
+        "indicator_ids": [],
+        "answer_kind": "no",
+        "goal_evidence": [
+          {
+            "goal": "operational",
+            "evidence_id": "m48",
+            "status": "explored",
+            "answer_kind": "no"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "operational"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 22
+      },
+      {
+        "evidence_id": "m50",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "in_place",
+            "evidence_id": "m50",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "in_place"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 23
+      },
+      {
+        "evidence_id": "m52",
+        "indicator_ids": [],
+        "answer_kind": "substantive",
+        "goal_evidence": [
+          {
+            "goal": "missing",
+            "evidence_id": "m52",
+            "status": "explored",
+            "answer_kind": "substantive"
+          }
+        ],
+        "dialogue_act": "continue",
+        "covered_objectives": [
+          "missing"
+        ],
+        "quote": null,
+        "status": "interpretation_unreviewed",
+        "revision": 24
+      }
+    ],
+    "priorities": [
+      {
+        "topic": "Responsible Operators and Authorities",
+        "evidence_id": "m32",
+        "text": "Confirming responsible operators and approving authorities, clarifying unit-level responsibilities, and ensuring resource allocations are most critical. Our focus remains on advisory and coordination functions within our remit.",
+        "origin": "respondent_selected"
+      },
+      {
+        "topic": "Unit-Level Responsibilities",
+        "evidence_id": "m32",
+        "text": "Confirming responsible operators and approving authorities, clarifying unit-level responsibilities, and ensuring resource allocations are most critical. Our focus remains on advisory and coordination functions within our remit.",
+        "origin": "respondent_selected"
+      },
+      {
+        "topic": "Resource Allocations",
+        "evidence_id": "m32",
+        "text": "Confirming responsible operators and approving authorities, clarifying unit-level responsibilities, and ensuring resource allocations are most critical. Our focus remains on advisory and coordination functions within our remit.",
+        "origin": "respondent_selected"
+      }
+    ],
+    "priority_history": [],
+    "objectives": [
+      {
+        "id": "context",
+        "purpose": "Organisation/unit and its own remit, never all responsibilities of the service",
+        "question": "Which EU city or urban area would you like your answers to refer to?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 2,3",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      },
+      {
+        "id": "recognition",
+        "purpose": "Prior drone familiarity; no supplied explanation counted as previous knowledge",
+        "question": "Are you familiar with drone technology?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 3,4",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      },
+      {
+        "id": "awareness",
+        "purpose": "Healthcare-service relevance and open organisational requirements",
+        "question": "Could this type of healthcare drone service be relevant to your organisation?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 5,6,7",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      },
+      {
+        "id": "assessment",
+        "purpose": "Requirements, identified gaps and applicable regulatory responsibilities",
+        "question": "Thinking about the issues you identified as most important, what would your organisation need to have in place to deal with the healthcare drone service properly?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 8",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      },
+      {
+        "id": "planning",
+        "purpose": "Distinguish draft plans from formally adopted plans, assigned responsibilities and external coordination.",
+        "question": "Has your organisation started planning how it would deal with the healthcare drone service we are discussing?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 9",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      },
+      {
+        "id": "preparation",
+        "purpose": "Existing arrangements, resources and pilot versus permanent approval pathways",
+        "question": "Has your organisation moved beyond planning and started putting arrangements in place for testing or potentially implementing this healthcare drone service?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 10,11",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      },
+      {
+        "id": "validation",
+        "purpose": "Arrangements actually tested, evidence, lessons and changes identified",
+        "question": "Have your organisation's plans, procedures or coordination arrangements actually been tested through a pilot, demonstration, simulation or another realistic activity?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 11,12",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      },
+      {
+        "id": "integration",
+        "purpose": "Lessons formally incorporated into normal processes versus pilot-only arrangements",
+        "question": "Have those lessons now been incorporated into your organisation's regular plans, policies or procedures?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 12,13",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      },
+      {
+        "id": "operational",
+        "purpose": "Evidence of capacity for own remit under regular operating conditions",
+        "question": "Would your organisation currently be able to fulfil its role?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 13,14",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      },
+      {
+        "id": "sustained",
+        "purpose": "Established monitoring and adaptation versus intended processes",
+        "question": "If healthcare drone services became a normal part of the city's activities, how would your organisation know whether its arrangements were still working well over time?",
+        "source": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "locator": "pages 15",
+          "status": "prototype pending partner review",
+          "policy_version": "fn-adaptive-interview-1.1.0"
+        }
+      }
+    ],
+    "information_exposures": [
+      {
+        "id": "x1",
+        "kind": "suggested_topics",
+        "topics": [
+          "how the service fits with existing transport and city plans",
+          "where drones take off and land and how land is used",
+          "energy use and environmental effects",
+          "costs, funding and long-term financial arrangements",
+          "access for remote areas or people who may face barriers",
+          "interaction with other transport and traffic",
+          "noise",
+          "visual impacts",
+          "public concerns about safety and privacy",
+          "technical safety, security and protection of information",
+          "wind and strong air movement around take-off and landing areas",
+          "the number of drones and use of airspace",
+          "how benefits and negative effects are distributed",
+          "public information and engagement",
+          "staff knowledge, expertise and training"
+        ],
+        "revision": 13,
+        "prior_knowledge": false,
+        "actual_activity": false
+      }
+    ],
+    "response_preferences": [],
+    "initial_results": [],
+    "indicator_projection": {
+      "participant_reviewed": false,
+      "results": [],
+      "coverage": [
+        {
+          "indicator_id": "indicator-01",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-02",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-03",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-04",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-05",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-06",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-07",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-08",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-09",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-10",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-11",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-12",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-13",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-14",
+          "status": "not_explored",
+          "evidence_ids": []
+        },
+        {
+          "indicator_id": "indicator-15",
+          "status": "not_explored",
+          "evidence_ids": []
+        }
+      ]
+    },
+    "concern_ledger": [
+      {
+        "topic": "Advisory Feasibility Studies",
+        "kind": "emerging_topic",
+        "evidence_ids": [
+          "m19"
+        ],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": false,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "unreviewed",
+        "last_turn_id": "m19"
+      },
+      {
+        "topic": "how the service fits with existing transport and city plans",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "where drones take off and land and how land is used",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "energy use and environmental effects",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "costs, funding and long-term financial arrangements",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "access for remote areas or people who may face barriers",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "interaction with other transport and traffic",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "noise",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "visual impacts",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "public concerns about safety and privacy",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "technical safety, security and protection of information",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "wind and strong air movement around take-off and landing areas",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "the number of drones and use of airspace",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "how benefits and negative effects are distributed",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "public information and engagement",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "staff knowledge, expertise and training",
+        "kind": "suggested_topic",
+        "evidence_ids": [],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": true,
+        "selected_priority": false,
+        "explored": false,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "not_respondent_evidence"
+      },
+      {
+        "topic": "Responsible Operators and Authorities",
+        "kind": "emerging_topic",
+        "evidence_ids": [
+          "m32",
+          "m40"
+        ],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": false,
+        "selected_priority": true,
+        "explored": true,
+        "priority": true,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "unreviewed",
+        "last_turn_id": "m40"
+      },
+      {
+        "topic": "Unit-Level Responsibilities",
+        "kind": "emerging_topic",
+        "evidence_ids": [
+          "m32"
+        ],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": false,
+        "selected_priority": true,
+        "explored": false,
+        "priority": true,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "unreviewed",
+        "last_turn_id": "m32"
+      },
+      {
+        "topic": "Resource Allocations",
+        "kind": "emerging_topic",
+        "evidence_ids": [
+          "m32",
+          "m34",
+          "m36",
+          "m38",
+          "m50"
+        ],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": false,
+        "selected_priority": true,
+        "explored": true,
+        "priority": true,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "unreviewed",
+        "last_turn_id": "m50"
+      },
+      {
+        "topic": "Confirming Operators",
+        "kind": "emerging_topic",
+        "evidence_ids": [
+          "m52"
+        ],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": false,
+        "selected_priority": false,
+        "explored": true,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "unreviewed",
+        "last_turn_id": "m52"
+      },
+      {
+        "topic": "Clarifying Responsibilities",
+        "kind": "emerging_topic",
+        "evidence_ids": [
+          "m52"
+        ],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": false,
+        "selected_priority": false,
+        "explored": true,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "unreviewed",
+        "last_turn_id": "m52"
+      },
+      {
+        "topic": "Securing Resource Allocations",
+        "kind": "emerging_topic",
+        "evidence_ids": [
+          "m52"
+        ],
+        "spontaneously_raised": false,
+        "suggested_by_interviewer": false,
+        "selected_priority": false,
+        "explored": true,
+        "priority": false,
+        "indicator_ids": [],
+        "mapping_status": "not_mapped",
+        "interpretation_status": "unreviewed",
+        "last_turn_id": "m52"
+      }
+    ],
+    "stop_reason": "respondent_review_complete",
+    "failures": [],
+    "observable_metrics": [
+      {
+        "generation_calls": 1,
+        "wall_seconds": 19.9,
+        "tokenize_calls": 1,
+        "generated_tokens": 620,
+        "reasoning_characters": 2208,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 18.463303,
+        "model_wait_seconds": 3.2e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2344,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2208
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:context",
+            "guidance:planning",
+            "MC-NOISE-FACTORS",
+            "MC-NOISE-UNKNOWN"
+          ]
+        },
+        "current_answer_id": "m9",
+        "priority_evidence_id": null,
+        "omitted_context_ids": []
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 18.349,
+        "tokenize_calls": 1,
+        "generated_tokens": 564,
+        "reasoning_characters": 1855,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 16.952932,
+        "model_wait_seconds": 0.000123,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2275,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1855
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m9"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m9"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:planning",
+            "guidance:preparation",
+            "MC-MITIGATION",
+            "MC-NOISE-UNKNOWN"
+          ]
+        },
+        "current_answer_id": "m11",
+        "priority_evidence_id": null,
+        "omitted_context_ids": []
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 21.915,
+        "tokenize_calls": 1,
+        "generated_tokens": 624,
+        "reasoning_characters": 2154,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 20.596516,
+        "model_wait_seconds": 4.2e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2192,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2154
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m9",
+          "m11"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m9",
+            "m11"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:planning",
+            "guidance:recognition",
+            "MC-MITIGATION",
+            "MC-OPPORTUNITY"
+          ]
+        },
+        "current_answer_id": "m13",
+        "priority_evidence_id": null,
+        "omitted_context_ids": []
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 18.643,
+        "tokenize_calls": 1,
+        "generated_tokens": 529,
+        "reasoning_characters": 1680,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 17.348082,
+        "model_wait_seconds": 3.6e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2240,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1680
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m9",
+          "m11",
+          "m13"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m9",
+            "m11",
+            "m13"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:context",
+            "guidance:sustained",
+            "MC-SCENARIO",
+            "MC-UNDERSTANDING"
+          ]
+        },
+        "current_answer_id": "m15",
+        "priority_evidence_id": null,
+        "omitted_context_ids": []
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 18.252,
+        "tokenize_calls": 1,
+        "generated_tokens": 558,
+        "reasoning_characters": 1894,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 16.815859,
+        "model_wait_seconds": 3.5e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2259,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1894
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m9",
+          "m11",
+          "m13",
+          "m15"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m9",
+            "m11",
+            "m13",
+            "m15"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:recognition",
+            "guidance:planning",
+            "MC-MITIGATION",
+            "MC-NOISE-FACTORS"
+          ]
+        },
+        "current_answer_id": "m17",
+        "priority_evidence_id": null,
+        "omitted_context_ids": []
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 23.034,
+        "tokenize_calls": 1,
+        "generated_tokens": 663,
+        "reasoning_characters": 2074,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 21.425048,
+        "model_wait_seconds": 2.8e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2321,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2074
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m9",
+            "m11",
+            "m13",
+            "m15",
+            "m17"
+          ],
+          "omitted_context_ids": [],
+          "retrieved_source_ids": [
+            "guidance:planning",
+            "guidance:preparation",
+            "WP3-REVIEW",
+            "MC-OPPORTUNITY"
+          ]
+        },
+        "current_answer_id": "m19",
+        "priority_evidence_id": null,
+        "omitted_context_ids": []
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 21.363,
+        "tokenize_calls": 1,
+        "generated_tokens": 587,
+        "reasoning_characters": 1852,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 19.890908,
+        "model_wait_seconds": 2.8e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2414,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1852
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m11",
+            "m13",
+            "m15",
+            "m17",
+            "m19"
+          ],
+          "omitted_context_ids": [
+            "m9"
+          ],
+          "retrieved_source_ids": [
+            "guidance:planning",
+            "guidance:preparation",
+            "WP3-REVIEW",
+            "MC-OPPORTUNITY"
+          ]
+        },
+        "current_answer_id": "m21",
+        "priority_evidence_id": null,
+        "omitted_context_ids": [
+          "m9"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 21.042,
+        "tokenize_calls": 1,
+        "generated_tokens": 638,
+        "reasoning_characters": 2032,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 19.583117,
+        "model_wait_seconds": 2.9e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2426,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2032
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21"
+          ],
+          "omitted_context_ids": [
+            "m9",
+            "m11"
+          ],
+          "retrieved_source_ids": [
+            "guidance:recognition",
+            "guidance:planning",
+            "MC-NOISE-UNKNOWN",
+            "MC-PRIVACY-UNKNOWN"
+          ]
+        },
+        "current_answer_id": "m23",
+        "priority_evidence_id": null,
+        "omitted_context_ids": [
+          "m9",
+          "m11"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 20.18,
+        "tokenize_calls": 1,
+        "generated_tokens": 608,
+        "reasoning_characters": 1773,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 18.68478,
+        "model_wait_seconds": 2.4e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2424,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1773
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m13",
+          "m17",
+          "m19",
+          "m21",
+          "m23"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m13",
+            "m17",
+            "m19",
+            "m21",
+            "m23"
+          ],
+          "omitted_context_ids": [
+            "m9",
+            "m11",
+            "m15"
+          ],
+          "retrieved_source_ids": [
+            "guidance:preparation",
+            "guidance:sustained",
+            "MC-OPPORTUNITY",
+            "MC-MITIGATION"
+          ]
+        },
+        "current_answer_id": "m25",
+        "priority_evidence_id": null,
+        "omitted_context_ids": [
+          "m9",
+          "m11",
+          "m15"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 23.412,
+        "tokenize_calls": 1,
+        "generated_tokens": 662,
+        "reasoning_characters": 2150,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 21.987075,
+        "model_wait_seconds": 1.6e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2422,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2150
+          }
+        ],
+        "context_ids": [
+          "m6",
+          "m13",
+          "m19",
+          "m21",
+          "m23",
+          "m25"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m6",
+            "m13",
+            "m19",
+            "m21",
+            "m23",
+            "m25"
+          ],
+          "omitted_context_ids": [
+            "m3",
+            "m9",
+            "m11",
+            "m15",
+            "m17"
+          ],
+          "retrieved_source_ids": [
+            "guidance:context",
+            "guidance:planning",
+            "MC-NOISE-UNKNOWN",
+            "WP3-REVIEW"
+          ]
+        },
+        "current_answer_id": "m27",
+        "priority_evidence_id": null,
+        "omitted_context_ids": [
+          "m3",
+          "m9",
+          "m11",
+          "m15",
+          "m17"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 18.32,
+        "tokenize_calls": 1,
+        "generated_tokens": 464,
+        "reasoning_characters": 1404,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 16.954368,
+        "model_wait_seconds": 3.2e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2355,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1404
+          }
+        ],
+        "context_ids": [
+          "m6",
+          "m13",
+          "m21",
+          "m23",
+          "m25",
+          "m27"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m6",
+            "m13",
+            "m21",
+            "m23",
+            "m25",
+            "m27"
+          ],
+          "omitted_context_ids": [
+            "m3",
+            "m9",
+            "m11",
+            "m15",
+            "m17",
+            "m19"
+          ],
+          "retrieved_source_ids": [
+            "guidance:planning",
+            "guidance:context",
+            "MC-OPPORTUNITY",
+            "WP3-REVIEW"
+          ]
+        },
+        "current_answer_id": "m29",
+        "priority_evidence_id": null,
+        "omitted_context_ids": [
+          "m3",
+          "m9",
+          "m11",
+          "m15",
+          "m17",
+          "m19"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 21.9,
+        "tokenize_calls": 1,
+        "generated_tokens": 658,
+        "reasoning_characters": 2143,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 20.301168,
+        "model_wait_seconds": 2.4e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2539,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2143
+          }
+        ],
+        "context_ids": [
+          "m6",
+          "m15",
+          "m23",
+          "m25",
+          "m27",
+          "m29"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m6",
+            "m15",
+            "m23",
+            "m25",
+            "m27",
+            "m29"
+          ],
+          "omitted_context_ids": [
+            "m3",
+            "m9",
+            "m11",
+            "m13",
+            "m17",
+            "m19",
+            "m21"
+          ],
+          "retrieved_source_ids": [
+            "guidance:context",
+            "guidance:assessment",
+            "MC-NOISE-UNKNOWN",
+            "WP3-REVIEW"
+          ]
+        },
+        "current_answer_id": "m32",
+        "priority_evidence_id": null,
+        "omitted_context_ids": [
+          "m3",
+          "m9",
+          "m11",
+          "m13",
+          "m17",
+          "m19",
+          "m21"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 23.72,
+        "tokenize_calls": 1,
+        "generated_tokens": 737,
+        "reasoning_characters": 2402,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 22.210016,
+        "model_wait_seconds": 2.3e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2584,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2402
+          }
+        ],
+        "context_ids": [
+          "m6",
+          "m15",
+          "m23",
+          "m25",
+          "m27",
+          "m29",
+          "m32"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m6",
+            "m15",
+            "m23",
+            "m25",
+            "m27",
+            "m29",
+            "m32"
+          ],
+          "omitted_context_ids": [
+            "m3",
+            "m9",
+            "m11",
+            "m13",
+            "m17",
+            "m19",
+            "m21"
+          ],
+          "retrieved_source_ids": [
+            "guidance:context",
+            "guidance:assessment",
+            "MC-NOISE-UNKNOWN",
+            "WP3-REVIEW"
+          ]
+        },
+        "current_answer_id": "m34",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m3",
+          "m9",
+          "m11",
+          "m13",
+          "m17",
+          "m19",
+          "m21"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 21.505,
+        "tokenize_calls": 1,
+        "generated_tokens": 658,
+        "reasoning_characters": 2033,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 19.992519,
+        "model_wait_seconds": 2.9e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2611,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2033
+          }
+        ],
+        "context_ids": [
+          "m23",
+          "m25",
+          "m27",
+          "m29",
+          "m32",
+          "m34"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m23",
+            "m25",
+            "m27",
+            "m29",
+            "m32",
+            "m34"
+          ],
+          "omitted_context_ids": [
+            "m3",
+            "m6",
+            "m9",
+            "m11",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21"
+          ],
+          "retrieved_source_ids": [
+            "guidance:assessment",
+            "guidance:planning",
+            "MC-SCENARIO",
+            "MC-OPPORTUNITY"
+          ]
+        },
+        "current_answer_id": "m36",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m3",
+          "m6",
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 23.532,
+        "tokenize_calls": 1,
+        "generated_tokens": 665,
+        "reasoning_characters": 2070,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 22.030385,
+        "model_wait_seconds": 2.4e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2441,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2070
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m25",
+          "m27",
+          "m29",
+          "m34",
+          "m36"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m25",
+            "m27",
+            "m29",
+            "m34",
+            "m36"
+          ],
+          "omitted_context_ids": [
+            "m9",
+            "m11",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21",
+            "m23",
+            "m32"
+          ],
+          "retrieved_source_ids": [
+            "guidance:context",
+            "guidance:assessment",
+            "MC-OPPORTUNITY",
+            "MC-SCENARIO"
+          ]
+        },
+        "current_answer_id": "m38",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21",
+          "m23",
+          "m32"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 21.336,
+        "tokenize_calls": 1,
+        "generated_tokens": 571,
+        "reasoning_characters": 1826,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 19.868155,
+        "model_wait_seconds": 2.1e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2421,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1826
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m27",
+          "m29",
+          "m34",
+          "m36",
+          "m38"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m27",
+            "m29",
+            "m34",
+            "m36",
+            "m38"
+          ],
+          "omitted_context_ids": [
+            "m9",
+            "m11",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21",
+            "m23",
+            "m25",
+            "m32"
+          ],
+          "retrieved_source_ids": [
+            "guidance:operational",
+            "guidance:context",
+            "WP3-REVIEW",
+            "MC-UNDERSTANDING"
+          ]
+        },
+        "current_answer_id": "m40",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21",
+          "m23",
+          "m25",
+          "m32"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 20.383,
+        "tokenize_calls": 1,
+        "generated_tokens": 615,
+        "reasoning_characters": 2002,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 18.853967,
+        "model_wait_seconds": 2.4e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2417,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2002
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m29",
+          "m34",
+          "m36",
+          "m38",
+          "m40"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m29",
+            "m34",
+            "m36",
+            "m38",
+            "m40"
+          ],
+          "omitted_context_ids": [
+            "m9",
+            "m11",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21",
+            "m23",
+            "m25",
+            "m27",
+            "m32"
+          ],
+          "retrieved_source_ids": [
+            "guidance:assessment",
+            "guidance:planning",
+            "MC-SCENARIO",
+            "MC-OPPORTUNITY"
+          ]
+        },
+        "current_answer_id": "m42",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21",
+          "m23",
+          "m25",
+          "m27",
+          "m32"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 24.211,
+        "tokenize_calls": 1,
+        "generated_tokens": 766,
+        "reasoning_characters": 2260,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 22.798145,
+        "model_wait_seconds": 2.3e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2450,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2260
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m34",
+          "m36",
+          "m38",
+          "m40",
+          "m42"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m34",
+            "m36",
+            "m38",
+            "m40",
+            "m42"
+          ],
+          "omitted_context_ids": [
+            "m9",
+            "m11",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21",
+            "m23",
+            "m25",
+            "m27",
+            "m29",
+            "m32"
+          ],
+          "retrieved_source_ids": [
+            "guidance:preparation",
+            "guidance:planning",
+            "MC-UNDERSTANDING",
+            "MC-NOISE-FACTORS"
+          ]
+        },
+        "current_answer_id": "m44",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21",
+          "m23",
+          "m25",
+          "m27",
+          "m29",
+          "m32"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 21.986,
+        "tokenize_calls": 1,
+        "generated_tokens": 594,
+        "reasoning_characters": 1803,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 20.553864,
+        "model_wait_seconds": 2.4e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2502,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1803
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m36",
+          "m38",
+          "m40",
+          "m42",
+          "m44"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m36",
+            "m38",
+            "m40",
+            "m42",
+            "m44"
+          ],
+          "omitted_context_ids": [
+            "m9",
+            "m11",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21",
+            "m23",
+            "m25",
+            "m27",
+            "m29",
+            "m34",
+            "m32"
+          ],
+          "retrieved_source_ids": [
+            "guidance:preparation",
+            "guidance:planning",
+            "MC-SCENARIO",
+            "MC-UNDERSTANDING"
+          ]
+        },
+        "current_answer_id": "m46",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21",
+          "m23",
+          "m25",
+          "m27",
+          "m29",
+          "m34",
+          "m32"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 27.132,
+        "tokenize_calls": 1,
+        "generated_tokens": 795,
+        "reasoning_characters": 2373,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 25.675165,
+        "model_wait_seconds": 3.7e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2533,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 2373
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m38",
+          "m40",
+          "m42",
+          "m44",
+          "m46"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m38",
+            "m40",
+            "m42",
+            "m44",
+            "m46"
+          ],
+          "omitted_context_ids": [
+            "m9",
+            "m11",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21",
+            "m23",
+            "m25",
+            "m27",
+            "m29",
+            "m34",
+            "m36",
+            "m32"
+          ],
+          "retrieved_source_ids": [
+            "guidance:operational",
+            "guidance:context",
+            "MC-NOISE-FACTORS",
+            "MC-SCENARIO"
+          ]
+        },
+        "current_answer_id": "m48",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21",
+          "m23",
+          "m25",
+          "m27",
+          "m29",
+          "m34",
+          "m36",
+          "m32"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 24.659,
+        "tokenize_calls": 1,
+        "generated_tokens": 701,
+        "reasoning_characters": 1975,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 23.07796,
+        "model_wait_seconds": 2.4e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2492,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1975
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m40",
+          "m42",
+          "m44",
+          "m46",
+          "m48"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m40",
+            "m42",
+            "m44",
+            "m46",
+            "m48"
+          ],
+          "omitted_context_ids": [
+            "m11",
+            "m9",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21",
+            "m23",
+            "m25",
+            "m27",
+            "m29",
+            "m34",
+            "m36",
+            "m38",
+            "m32"
+          ],
+          "retrieved_source_ids": [
+            "guidance:preparation",
+            "guidance:planning",
+            "MC-UNDERSTANDING",
+            "MC-NOISE-FACTORS"
+          ]
+        },
+        "current_answer_id": "m50",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m11",
+          "m9",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21",
+          "m23",
+          "m25",
+          "m27",
+          "m29",
+          "m34",
+          "m36",
+          "m38",
+          "m32"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 19.848,
+        "tokenize_calls": 1,
+        "generated_tokens": 598,
+        "reasoning_characters": 1746,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 18.458934,
+        "model_wait_seconds": 2.3e-05,
+        "diagnostics": [
+          {
+            "stage": "chat_turn",
+            "prompt_tokens": 2453,
+            "max_output_tokens": 2636,
+            "completion_status": "stop",
+            "thinking_detected": true,
+            "reasoning_enabled": true,
+            "reasoning_characters": 1746
+          }
+        ],
+        "context_ids": [
+          "m3",
+          "m6",
+          "m42",
+          "m44",
+          "m46",
+          "m48",
+          "m50"
+        ],
+        "prompt_context_selection": {
+          "lean_retry": false,
+          "context_ids": [
+            "m3",
+            "m6",
+            "m42",
+            "m44",
+            "m46",
+            "m48",
+            "m50"
+          ],
+          "omitted_context_ids": [
+            "m9",
+            "m11",
+            "m13",
+            "m15",
+            "m17",
+            "m19",
+            "m21",
+            "m23",
+            "m25",
+            "m27",
+            "m29",
+            "m34",
+            "m36",
+            "m38",
+            "m40",
+            "m32"
+          ],
+          "retrieved_source_ids": [
+            "guidance:operational",
+            "guidance:preparation",
+            "MC-NOISE-FACTORS",
+            "MC-OPPORTUNITY"
+          ]
+        },
+        "current_answer_id": "m52",
+        "priority_evidence_id": "m32",
+        "omitted_context_ids": [
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21",
+          "m23",
+          "m25",
+          "m27",
+          "m29",
+          "m34",
+          "m36",
+          "m38",
+          "m40",
+          "m32"
+        ]
+      },
+      {
+        "generation_calls": 1,
+        "wall_seconds": 49.108,
+        "stage": "generic_profile_match",
+        "generated_tokens": 1290,
+        "reasoning_characters": 5009,
+        "reasoning_enabled": true,
+        "generation_http_seconds": 47.004023,
+        "model_wait_seconds": 3.9e-05,
+        "considered_evidence_ids": [
+          "m3",
+          "m6",
+          "m9",
+          "m11",
+          "m13",
+          "m15",
+          "m17",
+          "m19",
+          "m21",
+          "m23",
+          "m25",
+          "m27",
+          "m29",
+          "m32",
+          "m34",
+          "m36",
+          "m38",
+          "m40",
+          "m42",
+          "m44",
+          "m46",
+          "m48",
+          "m50",
+          "m52"
+        ]
+      }
+    ],
+    "limits": {
+      "turns": 96,
+      "calls": 64,
+      "processing_seconds": 3600
+    },
+    "overall_srl": null,
+    "retention": "temporary_memory_download_required",
+    "source_versions": {
+      "interview_version": "eva-interviews-2026-11-04-v1",
+      "interview_sources": {
+        "citizen_short": {
+          "document": "SRAA Citizen interview example 20min.pdf",
+          "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf",
+          "scale_pdf_pages": [
+            12,
+            13
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+        },
+        "citizen_extended": {
+          "document": "SRAA Citizen interview example 35min.pdf",
+          "sha256": "75953ae14e76566238cd1914b17a147bd51d9c5dfba24db3ec9fb46da224f091",
+          "scale_pdf_pages": [
+            17,
+            18
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+        },
+        "organisational": {
+          "document": "SRAA Organisation interview example.pdf",
+          "sha256": "093351fdd56a3931e603fb451b907d2790af0a6c0ed653436a4dd9e38c35ef6d",
+          "scale_pdf_pages": [
+            16
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+        },
+        "technical": {
+          "document": "SRAA Technology interview example.pdf",
+          "sha256": "7d7ac7865fe846ca36b8c281444acc14edc06cca6ff367ac1492a81d131aa071",
+          "scale_pdf_pages": [
+            17,
+            18
+          ],
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded."
+        }
+      },
+      "workbook_source": {
+        "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+        "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818"
+      },
+      "bank_version": "fn-v4-1.0.0"
+    }
+  }
+}

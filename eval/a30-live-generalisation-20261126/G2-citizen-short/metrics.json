@@ -1,0 +1,15 @@
+{
+  "classification": "synthetic",
+  "live_inference": "unavailable",
+  "cases_executed": 0,
+  "respondent": "agent",
+  "services_changed": false,
+  "surface": "in_process_flask_api",
+  "thinking_enabled": true,
+  "live_scoring_gate": {
+    "passed": false,
+    "failures": [
+      "The model endpoint was unavailable."
+    ]
+  }
+}

@@ -6,12 +6,14 @@ development examples, not participant evidence, expert review or independent
 score validation. The synthetic respondent and interviewer used the same model
 checkpoint, so persona consistency needs human review.
 
-The complete screened JSON, JSONL and Markdown transcripts remain in the local
-ignored `.runtime/fn-v42-final-live-a30-20261126/` campaign directory. They are
-not copied here because they include the source-defined interview text and
-scales. No raw model reasoning or authenticated developer trace is published.
-The excerpts below retain only selected synthetic respondent evidence and
-final scoring fields needed to inspect the observed result.
+Complete screened JSON, JSONL and Markdown transcripts, participant-view
+exports, metrics and authenticated structured decision traces are now available
+in [`eval/a30-live-generalisation-20261126/`](../eval/a30-live-generalisation-20261126/).
+They are fictional development examples, not participant data. The trace records
+validated actions, controller state transitions and structured model proposals;
+it does not contain raw hidden chain-of-thought. The local ignored
+`.runtime/fn-v42-final-live-a30-20261126/` copies are preserved. The excerpts
+below give a quick entry point to the full artifacts.
 
 ## Configuration and interpretation
 

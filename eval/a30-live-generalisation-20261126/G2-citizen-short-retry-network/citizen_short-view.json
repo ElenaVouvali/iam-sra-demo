@@ -1,0 +1,1095 @@
+{
+  "allowed_actions": [
+    "reset"
+  ],
+  "busy_job": null,
+  "chat": {
+    "answer_processing": {
+      "evidence_id": null,
+      "status": "ready"
+    },
+    "assisted": false,
+    "citizen_depth": "short",
+    "completion": {
+      "conversation": true,
+      "evidence_sufficiency": "provisionally_sufficient",
+      "methodological_progression": "goals_explored",
+      "partial": false,
+      "participant_review": "provided",
+      "review": "pending_human_review",
+      "termination_reason": "respondent_review_complete"
+    },
+    "depth": "short",
+    "depth_history": [
+      {
+        "depth": "short",
+        "earlier_added_probes_not_reasked": [],
+        "evidence_id": "m9",
+        "previous_depth": "short",
+        "provenance": "participant_choice",
+        "readiness_inferred": false,
+        "revision": 3,
+        "source": {
+          "document": "SRAA Citizen interview example 20min.pdf",
+          "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+          "scale_pdf_pages": [
+            12,
+            13
+          ],
+          "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf"
+        }
+      }
+    ],
+    "depth_selection": {
+      "depth": "short",
+      "earlier_added_probes_not_reasked": [],
+      "evidence_id": "m9",
+      "previous_depth": "short",
+      "provenance": "participant_choice",
+      "readiness_inferred": false,
+      "revision": 3,
+      "source": {
+        "document": "SRAA Citizen interview example 20min.pdf",
+        "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+        "scale_pdf_pages": [
+          12,
+          13
+        ],
+        "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf"
+      }
+    },
+    "initial_suggestion": null,
+    "messages": [
+      {
+        "act": "introduction",
+        "id": "m1",
+        "role": "assistant",
+        "text": "Thank you for taking part. I'm an AI assistant for this IAM-CC research interview.\n\nWe would like to hear your views and experiences to help us understand how ready society is to use and engage with new and emerging technologies. In this interview, we will talk about drones and services that use drones.\n\nThere are no right or wrong answers. Your opinions and your own experiences matter. You can skip any question, pause, correct an answer, stop or withdraw at any time.\n\nPlease avoid personal names, addresses, contact details and sensitive information. Messages are screened before processing, but screening can miss personal details. Progress is held temporarily in memory; download a copy if you want to keep it. Contact follow-up and cross-day resume are unavailable."
+      },
+      {
+        "act": "question",
+        "id": "m2",
+        "role": "assistant",
+        "text": "Which point of view would you like to use in this conversation?\n\nA. Citizen\nA member of the public answering from their own point of view. For example, a resident, patient, service user, worker, member of a community organisation, or anyone who could be affected by drone services.\n\nB. Organisation or institution\nSomeone answering on behalf of an organisation involved in planning, providing, regulating, supporting or overseeing drone services. For example, a municipality, regional authority, regulator, policymaker, city planner, transport authority, healthcare organisation, logistics organisation or infrastructure provider.\n\nC. Technology expert or researcher\nSomeone working directly with drone technology or related technical systems. For example, a drone operator, manufacturer, engineer, researcher, technology developer, take-off and landing infrastructure developer or airspace-service provider.\n\nIf more than one applies, please choose the perspective you would prefer to use today."
+      },
+      {
+        "act": "profile_selection",
+        "id": "m3",
+        "role": "respondent",
+        "text": "A. Citizen"
+      },
+      {
+        "act": "profile_acknowledgement",
+        "id": "m4",
+        "role": "assistant",
+        "text": "Thank you. I will ask the questions from a citizen's point of view."
+      },
+      {
+        "act": "question",
+        "id": "m5",
+        "role": "assistant",
+        "text": "Which EU city or urban area would you like your answers to refer to?"
+      },
+      {
+        "act": "answer",
+        "id": "m6",
+        "role": "respondent",
+        "text": "coimbra"
+      },
+      {
+        "act": "city_acknowledgement",
+        "id": "m7",
+        "role": "assistant",
+        "text": "Thank you. I will use that city or urban area as the context for your answers."
+      },
+      {
+        "act": "question",
+        "id": "m8",
+        "role": "assistant",
+        "text": "How much time would you like to spend on this conversation?\n\nA. Around 20 minutes — a shorter conversation focusing on the most relevant issues.\n\nB. Around 35 minutes — a more detailed conversation exploring selected issues, decision-making, evidence, participation and influence more deeply.\n\nIf you're not sure, we can use the shorter version. These are interview styles, not deadlines; you can ask for more detail, shorten, pause or stop later."
+      },
+      {
+        "act": "duration_selection",
+        "id": "m9",
+        "role": "respondent",
+        "text": "A"
+      },
+      {
+        "act": "depth_acknowledgement",
+        "id": "m10",
+        "role": "assistant",
+        "text": "We will use the shorter conversation. You can change the depth or stop later."
+      },
+      {
+        "act": "question",
+        "id": "m11",
+        "role": "assistant",
+        "text": "Do you know what a drone is?"
+      },
+      {
+        "act": "answer",
+        "id": "m12",
+        "role": "respondent",
+        "text": "Yes, a drone is an unmanned aircraft that can be piloted remotely or autonomously. I'm aware of their use in various applications, including delivery services."
+      },
+      {
+        "act": "question",
+        "id": "m13",
+        "role": "assistant",
+        "text": "In your own words, what is a drone?"
+      },
+      {
+        "act": "answer",
+        "id": "m14",
+        "role": "respondent",
+        "text": "A drone is an unmanned aircraft used for various purposes, including delivery. I support exploring its use for urgent healthcare, but only with clear safeguards and evidence of reliability."
+      },
+      {
+        "act": "question",
+        "id": "m15",
+        "role": "assistant",
+        "text": "What kinds of services or uses involving drones have you heard about?"
+      },
+      {
+        "act": "answer",
+        "id": "m16",
+        "role": "respondent",
+        "text": "I've heard about drones used for delivery, surveillance, and photography. I'm focused on healthcare delivery with strict safeguards. No local operations or privacy details have been shared with me yet."
+      },
+      {
+        "act": "question",
+        "id": "m17",
+        "role": "assistant",
+        "text": "Before today, had you heard about drones being used to transport healthcare items such as medicines, blood, laboratory samples or other medical supplies?"
+      },
+      {
+        "act": "answer",
+        "id": "m18",
+        "role": "respondent",
+        "text": "Yes, I've heard about drones transporting healthcare items like medicines and samples. I support exploring this for urgent cases, but only with clear safeguards and evidence of reliability."
+      },
+      {
+        "act": "question",
+        "id": "m19",
+        "role": "assistant",
+        "text": "What had you heard about them?"
+      },
+      {
+        "act": "answer",
+        "id": "m20",
+        "role": "respondent",
+        "text": "I've heard about drones transporting healthcare items like medicines and samples. I support exploring this for urgent cases, but only with clear safeguards and evidence of reliability."
+      },
+      {
+        "act": "question",
+        "id": "m21",
+        "role": "assistant",
+        "text": "As far as you know, is this type of service—or something similar—already happening in your city?"
+      },
+      {
+        "act": "answer",
+        "id": "m22",
+        "role": "respondent",
+        "text": "I've heard about drones used for delivery, surveillance, and photography. I'm focused on healthcare delivery with strict safeguards. No local operations or privacy details have been shared with me yet."
+      },
+      {
+        "act": "question",
+        "id": "m23",
+        "role": "assistant",
+        "text": "Thinking about drones transporting healthcare items in your city, what comes to mind?"
+      },
+      {
+        "act": "answer",
+        "id": "m24",
+        "role": "respondent",
+        "text": "Thinking about drones transporting healthcare items in my city, I consider the potential for urgent deliveries but also need clear safeguards, like night flight restrictions and data rules, before accepting them near homes."
+      },
+      {
+        "act": "question",
+        "id": "m25",
+        "role": "assistant",
+        "text": "Anything else?"
+      },
+      {
+        "act": "answer",
+        "id": "m26",
+        "role": "respondent",
+        "text": "I'd like to know how measured comparisons with existing delivery methods and clear route/data details will be shared before any flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m27",
+        "role": "assistant",
+        "text": "Do you think the service could affect some people or places differently from others?"
+      },
+      {
+        "act": "answer",
+        "id": "m28",
+        "role": "respondent",
+        "text": "Yes, I'm concerned about fair distribution and local impacts. Night flights near homes and data rules need transparency to ensure no group is unfairly affected."
+      },
+      {
+        "act": "question",
+        "id": "m29",
+        "role": "assistant",
+        "text": "Here are some other things people may think about when discussing healthcare drone services. Which, if any, are important to you?\n• where drones take off and land\n• effects on other transport and traffic\n• noise\n• safety\n• privacy and use of information\n• energy use and environmental effects\n• costs and who pays\n• access to services for people who live far away or face other barriers\n• how drones or landing areas affect how places look\n• the number of drones and where they fly\n• whether benefits and negative effects are shared fairly\n• whether people receive clear and trustworthy information\n• how citizens can take part in decisions"
+      },
+      {
+        "act": "question",
+        "id": "m30",
+        "role": "assistant",
+        "text": "Which two or three issues matter most to you?\nYou can choose just one issue if that is what matters to you."
+      },
+      {
+        "act": "answer",
+        "id": "m31",
+        "role": "respondent",
+        "text": "Night noise, camera/data rules, and fair distribution matter most. I want safeguards to ensure no group is unfairly affected."
+      },
+      {
+        "act": "question",
+        "id": "m32",
+        "role": "assistant",
+        "text": "You mentioned noise.\n\nWhat do you think could affect how much drone noise bothers people?"
+      },
+      {
+        "act": "answer",
+        "id": "m33",
+        "role": "respondent",
+        "text": "Noise levels might depend on flight paths, drone design, and flight times. Night flights near homes could be more disruptive, so avoiding those areas would help."
+      },
+      {
+        "act": "question",
+        "id": "m34",
+        "role": "assistant",
+        "text": "What would you want to know before deciding whether the noise from the healthcare drone service was reasonable?"
+      },
+      {
+        "act": "answer",
+        "id": "m35",
+        "role": "respondent",
+        "text": "I would want to know measured noise levels during night flights near homes and how flight paths avoid residential areas to ensure reasonable disturbance."
+      },
+      {
+        "act": "question",
+        "id": "m36",
+        "role": "assistant",
+        "text": "What would you want decision-makers to understand about the issue you selected?"
+      },
+      {
+        "act": "answer",
+        "id": "m37",
+        "role": "respondent",
+        "text": "Decision-makers need to prioritize night noise reduction and enforce strict camera/data rules. Fair distribution of benefits must be ensured through transparent impact assessments."
+      },
+      {
+        "act": "question",
+        "id": "m38",
+        "role": "assistant",
+        "text": "How are decisions about drone services taken in your city?"
+      },
+      {
+        "act": "answer",
+        "id": "m39",
+        "role": "respondent",
+        "text": "Decisions are made through open discussion, but I haven't seen concrete evidence on local routes, noise levels, or camera safeguards. I’d want clear data and community input before accepting flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m40",
+        "role": "assistant",
+        "text": "What would meaningful involvement look like to you?"
+      },
+      {
+        "act": "answer",
+        "id": "m41",
+        "role": "respondent",
+        "text": "Meaningful involvement would mean open discussion with clear data on flight paths, noise levels, and camera safeguards. I’d want community input before accepting flights near homes, ensuring fair benefit distribution and respecting privacy."
+      },
+      {
+        "act": "question",
+        "id": "m42",
+        "role": "assistant",
+        "text": "Would informing people after a decision has already been made be enough?"
+      },
+      {
+        "act": "answer",
+        "id": "m43",
+        "role": "respondent",
+        "text": "Informing people after a decision is not enough. I’d want open discussion with clear data on routes, noise, and camera safeguards before accepting flights near homes. Transparency and community input are essential."
+      },
+      {
+        "act": "question",
+        "id": "m44",
+        "role": "assistant",
+        "text": "Imagine your city is considering introducing the healthcare drone service we have been discussing.\n\nWhat, if anything, would you want to change, add or require before it operates regularly?"
+      },
+      {
+        "act": "answer",
+        "id": "m45",
+        "role": "respondent",
+        "text": "I’d want clear data on flight paths, noise levels, and camera safeguards. Open discussion with community input before accepting flights near homes. Transparency and fair benefit distribution are essential."
+      },
+      {
+        "act": "question",
+        "id": "m46",
+        "role": "assistant",
+        "text": "Why are those important to you?"
+      },
+      {
+        "act": "answer",
+        "id": "m47",
+        "role": "respondent",
+        "text": "Night noise and camera safeguards are important to protect privacy and quality of life. Clear data and community input ensure fair benefits and prevent unintended impacts on residents."
+      },
+      {
+        "act": "question",
+        "id": "m48",
+        "role": "assistant",
+        "text": "What information or experience would help you decide whether the healthcare drone service we are talking about works well enough for your city?"
+      },
+      {
+        "act": "answer",
+        "id": "m49",
+        "role": "respondent",
+        "text": "Measured comparisons with existing delivery options, clear route and data-handling info, and evidence of fair benefit distribution would help. Open discussion with community input is essential before accepting flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m50",
+        "role": "assistant",
+        "text": "Have you ever seen, heard or experienced a drone demonstration, simulation or similar activity that helped you judge any of these things?"
+      },
+      {
+        "act": "answer",
+        "id": "m51",
+        "role": "respondent",
+        "text": "No, I haven't seen or experienced any drone demonstrations or simulations that provided clear data on flight paths, noise levels, or camera safeguards. Open discussion and transparent evidence are needed before accepting flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m52",
+        "role": "assistant",
+        "text": "Imagine you were shown two possible routes for the same healthcare drone service.\n\nWhat information would you need before recommending one route rather than the other?"
+      },
+      {
+        "act": "answer",
+        "id": "m53",
+        "role": "respondent",
+        "text": "Measured comparisons with existing delivery options, clear route and data-handling info, and evidence of fair benefit distribution would help. Open discussion with community input is essential before accepting flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m54",
+        "role": "assistant",
+        "text": "Have you ever had a chance to give your views about drones, a new transport service, a new facility or another decision affecting your area?"
+      },
+      {
+        "act": "answer",
+        "id": "m55",
+        "role": "respondent",
+        "text": "No, I haven't had a chance to give my views about drones or new transport services in Coimbra. Open discussion and transparent evidence are needed before accepting flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m56",
+        "role": "assistant",
+        "text": "If you were given the opportunity to comment on a proposed healthcare drone route that affected your area, how would you make your views known?"
+      },
+      {
+        "act": "answer",
+        "id": "m57",
+        "role": "respondent",
+        "text": "I would request open discussion, transparent evidence, and community input. Clear data on flight paths, noise levels, and camera safeguards are needed before accepting flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m58",
+        "role": "assistant",
+        "text": "What would you expect to see before you could say that people had genuinely influenced a decision?"
+      },
+      {
+        "act": "answer",
+        "id": "m59",
+        "role": "respondent",
+        "text": "Open discussion with community input, transparent evidence of fair benefit distribution, and clear data on flight paths, noise levels, and camera safeguards would be needed before accepting flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m60",
+        "role": "assistant",
+        "text": "Imagine the healthcare drone service we have been discussing was already operating and you noticed a problem—for example repeated noise, a safety issue or a privacy concern.\n\nWhat would you do?"
+      },
+      {
+        "act": "answer",
+        "id": "m61",
+        "role": "respondent",
+        "text": "I would request open discussion, transparent evidence, and community input. Clear data on flight paths, noise levels, and camera safeguards are needed before accepting flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m62",
+        "role": "assistant",
+        "text": "What would you expect to happen after you reported it?"
+      },
+      {
+        "act": "answer",
+        "id": "m63",
+        "role": "respondent",
+        "text": "I would request open discussion, transparent evidence, and community input. Clear data on flight paths, noise levels, and camera safeguards are needed before accepting flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m64",
+        "role": "assistant",
+        "text": "If the problem continued or you thought the response was not adequate, what would you do?"
+      },
+      {
+        "act": "answer",
+        "id": "m65",
+        "role": "respondent",
+        "text": "I would escalate to local authorities or community groups, demanding transparent evidence, open discussion, and enforceable safeguards before accepting drone flights near homes."
+      },
+      {
+        "act": "question",
+        "id": "m66",
+        "role": "assistant",
+        "text": "If drone services became a regular part of the city, should citizens continue to have a role over time? What should that role be?"
+      },
+      {
+        "act": "answer",
+        "id": "m67",
+        "role": "respondent",
+        "text": "Citizens should demand transparent evidence, open discussion, and enforceable safeguards. Our role is to ensure flights respect privacy, avoid night noise, and fairly distribute benefits. Data on routes, noise, and camera rules must be published before accepting drone operations near homes."
+      },
+      {
+        "act": "question",
+        "id": "m68",
+        "role": "assistant",
+        "text": "Overall, what do you currently think about using drones to transport healthcare items in your city?"
+      },
+      {
+        "act": "opinion",
+        "id": "m69",
+        "role": "respondent",
+        "text": "I support exploring drone healthcare deliveries, but only after open discussion, transparent evidence, and enforceable safeguards like night flight restrictions and clear camera/data rules are in place."
+      },
+      {
+        "act": "question",
+        "id": "m70",
+        "role": "assistant",
+        "text": "Why?"
+      },
+      {
+        "act": "opinion",
+        "id": "m71",
+        "role": "respondent",
+        "text": "I support exploring drone healthcare deliveries, but only after open discussion, transparent evidence, and enforceable safeguards like night flight restrictions and clear camera/data rules are in place."
+      },
+      {
+        "act": "scale_disclosure",
+        "id": "m72",
+        "role": "assistant",
+        "scale": {
+          "anchors": [
+            {
+              "description": "You recognise that the technology or service exists and could be relevant to you or your community.",
+              "id": "citizen_short-1",
+              "label": "Recognition",
+              "level": 1,
+              "source": {
+                "document": "SRAA Citizen interview example 20min.pdf",
+                "pdf_pages": [
+                  12
+                ]
+              }
+            },
+            {
+              "description": "You can identify possible benefits, risks or concerns.",
+              "id": "citizen_short-2",
+              "label": "Awareness",
+              "level": 2,
+              "source": {
+                "document": "SRAA Citizen interview example 20min.pdf",
+                "pdf_pages": [
+                  12
+                ]
+              }
+            },
+            {
+              "description": "You understand the basic purpose and can explain important benefits, risks and issues.",
+              "id": "citizen_short-3",
+              "label": "Understanding",
+              "level": 3,
+              "source": {
+                "document": "SRAA Citizen interview example 20min.pdf",
+                "pdf_pages": [
+                  13
+                ]
+              }
+            },
+            {
+              "description": "You can take part in discussion, express informed views and reflect on effects on yourself and others.",
+              "id": "citizen_short-4",
+              "label": "Critical engagement",
+              "level": 4,
+              "source": {
+                "document": "SRAA Citizen interview example 20min.pdf",
+                "pdf_pages": [
+                  13
+                ]
+              }
+            },
+            {
+              "description": "You can propose conditions, safeguards or changes that could improve how the service is introduced.",
+              "id": "citizen_short-5",
+              "label": "Co-design",
+              "level": 5,
+              "source": {
+                "document": "SRAA Citizen interview example 20min.pdf",
+                "pdf_pages": [
+                  13
+                ]
+              }
+            },
+            {
+              "description": "You can use information or experience to compare options, consider benefits, risks and trade-offs, and give informed feedback.",
+              "id": "citizen_short-6",
+              "label": "Informed evaluation",
+              "level": 6,
+              "source": {
+                "document": "SRAA Citizen interview example 20min.pdf",
+                "pdf_pages": [
+                  13
+                ]
+              }
+            },
+            {
+              "description": "You can communicate evidence-based concerns or preferences that contribute to decisions, changes or safeguards.",
+              "id": "citizen_short-7",
+              "label": "Influence",
+              "level": 7,
+              "source": {
+                "document": "SRAA Citizen interview example 20min.pdf",
+                "pdf_pages": [
+                  13
+                ]
+              }
+            },
+            {
+              "description": "You can use established ways to influence decisions, raise concerns, seek answers and participate in monitoring or changes.",
+              "id": "citizen_short-8",
+              "label": "Empowerment",
+              "level": 8,
+              "source": {
+                "document": "SRAA Citizen interview example 20min.pdf",
+                "pdf_pages": [
+                  13
+                ]
+              }
+            },
+            {
+              "description": "You remain meaningfully involved over time and contribute to how the service changes as circumstances and people's needs change.",
+              "id": "citizen_short-9",
+              "label": "Sustained involvement",
+              "level": 9,
+              "source": {
+                "document": "SRAA Citizen interview example 20min.pdf",
+                "pdf_pages": [
+                  13
+                ]
+              }
+            }
+          ],
+          "guidance": "The full meanings are capability-oriented through discussion, safeguards and evaluation; no blanket past-participation gate. No opportunity does not establish inability. The example result nevertheless distinguishes communicating a possible argument from actual contribution to a changed decision (20min pp.13–14; 35min pp.18–19). For influence, established mechanisms and sustained involvement, distinguish demonstrated capability, opportunities, reported actual effects and continued activity; explain remaining uncertainty or abstain. Level 9 is Sustained involvement, unlike v4 Sustained agency. No acceptance/trust/fluency bonus.",
+          "policy_version": "fn-adaptive-interview-1.1.0",
+          "reference_notice": "The interview scale is shown below. The legacy workbook remains a separate reference.",
+          "reference_scale": [
+            {
+              "description": "Recognition. The citizen recognises the existence of the innovation and its potential relevance to their everyday life, needs, interests, rights, or community.",
+              "level": 1,
+              "source": {
+                "cell": "D2",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Awareness. The citizen identifies potential benefits, risks, concerns, and ethical implications of the innovation, including possible impacts on their well-being, rights, or community.",
+              "level": 2,
+              "source": {
+                "cell": "D3",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Understanding. The citizen understands the innovation’s basic purpose and functioning, and can explain its potential benefits, risks, and ethical implications, including issues of safety, privacy, fairness, and accessibility.",
+              "level": 3,
+              "source": {
+                "cell": "D4",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Critical engagement. The citizen engages in discussions, consultations, or other participatory activities, expresses informed views and ethical concerns, and reflects on the implications of the innovation for themselves and others.",
+              "level": 4,
+              "source": {
+                "cell": "D5",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Co-design. The citizen contributes to the co-design or refinement of the innovation by proposing and discussing requirements, safeguards, and deployment conditions that reflect citizen needs, values, rights, and ethical considerations.",
+              "level": 5,
+              "source": {
+                "cell": "D6",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Informed evaluation. The citizen evaluates the innovation through demonstrations, simulations, real-world experiences, or deliberative activities, critically considers its benefits, risks, and ethical trade-offs, and provides informed feedback on its potential deployment.",
+              "level": 6,
+              "source": {
+                "cell": "D7",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Influence. The citizen influences the development or deployment of the innovation by communicating evidence-based concerns, preferences, and ethical considerations that demonstrably contribute to decisions, adaptations, or safeguards.",
+              "level": 7,
+              "source": {
+                "cell": "D8",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Empowerment. The citizen exercises meaningful agency through established mechanisms that enable them to influence decisions, raise ethical concerns, seek accountability, and participate in the monitoring and adaptation of the innovation.",
+              "level": 8,
+              "source": {
+                "cell": "D9",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            },
+            {
+              "description": "Sustained agency. The citizen sustains informed and meaningful participation in the innovation’s governance and evolution, exercising their ability to scrutinise decisions, advocate for ethical safeguards, and influence adaptations that reflect changing citizen needs, rights, and values.",
+              "level": 9,
+              "source": {
+                "cell": "D10",
+                "sheet": "TRL, ORL, CRL,  SRL scales"
+              }
+            }
+          ],
+          "reference_source": {
+            "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+            "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818"
+          },
+          "rubric_version": "eva-interviews-2026-11-04-v1",
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+            "scale_pdf_pages": [
+              12,
+              13
+            ],
+            "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf"
+          },
+          "status": "supplied_example_prototype_pending_partner_review"
+        },
+        "text": "Thank you. We have finished the main questions."
+      },
+      {
+        "act": "scale_notice",
+        "id": "m73",
+        "role": "assistant",
+        "text": "I will now show you the scale used to understand your answers. The judgment is provisional and based on self-report."
+      },
+      {
+        "act": "result_review",
+        "id": "m74",
+        "role": "assistant",
+        "text": "Provisional result: CRL 5 — Co-design.\n\nThe respondent proposes specific safeguards like night flight restrictions and data rules, identifies concerns about fair distribution and transparency, emphasizes the need for noise reduction and camera safeguards, and advocates for open discussion with clear data and community input. These proposals directly support Co-design by suggesting conditions to improve service introduction. The boundary to higher level 6 (Informed evaluation) requires comparing options and trade-offs, which is not explicitly demonstrated here.\n\nEvidence from your answers:\n“Thinking about drones transporting healthcare items in my city, I consider the potential for urgent deliveries but also need clear safeguards, like night flight restrictions and data rules, before accepting them near homes.”\n“Night noise, camera/data rules, and fair distribution matter most. I want safeguards to ensure no group is unfairly affected.”\n“Decision-makers need to prioritize night noise reduction and enforce strict camera/data rules. Fair distribution of benefits must be ensured through transparent impact assessments.”\n\nBoundary: Compared with CRL 6 — Informed evaluation: The adjacent level 6 (Informed evaluation) requires comparing options and considering trade-offs, which is not explicitly shown in the evidence. The respondent focuses on proposing safeguards rather than evaluating multiple options or trade-offs.\n\nNow that you have seen the scale and the explanation, how well do you think the provisional CRL 5 result describes your situation?\n\nA. It describes me well\nB. It mostly describes me, but something important is missing\nC. I think my level should be higher\nD. I think my level should be lower\nE. I am not sure"
+      },
+      {
+        "act": "result_review",
+        "id": "m75",
+        "role": "respondent",
+        "text": "E"
+      },
+      {
+        "act": "review_addition",
+        "id": "m76",
+        "role": "assistant",
+        "text": "Which part of the explanation or scale leaves you uncertain? You can also say you have nothing to add."
+      },
+      {
+        "act": "review_completion",
+        "id": "m77",
+        "role": "respondent",
+        "text": "no changes"
+      },
+      {
+        "act": "end",
+        "id": "m78",
+        "role": "assistant",
+        "text": "Thank you. Your comments are recorded with review pending. The initial model suggestion is unchanged. Contact follow-up is unavailable; download a copy to keep your record."
+      }
+    ],
+    "mode": "iam-sra-chat-2.0.0",
+    "participant_review": {
+      "automatic_reassessment": false,
+      "choice": "E",
+      "independent_validation": false,
+      "model_result_revision": 33,
+      "preferred_level": null,
+      "response_id": "m75",
+      "status": "pending_human_review",
+      "text": "E",
+      "validation": "uncertain"
+    },
+    "pending_comparison": null,
+    "profile": "citizen",
+    "response_options": [],
+    "scale": {
+      "anchors": [
+        {
+          "description": "You recognise that the technology or service exists and could be relevant to you or your community.",
+          "id": "citizen_short-1",
+          "label": "Recognition",
+          "level": 1,
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "pdf_pages": [
+              12
+            ]
+          }
+        },
+        {
+          "description": "You can identify possible benefits, risks or concerns.",
+          "id": "citizen_short-2",
+          "label": "Awareness",
+          "level": 2,
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "pdf_pages": [
+              12
+            ]
+          }
+        },
+        {
+          "description": "You understand the basic purpose and can explain important benefits, risks and issues.",
+          "id": "citizen_short-3",
+          "label": "Understanding",
+          "level": 3,
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "pdf_pages": [
+              13
+            ]
+          }
+        },
+        {
+          "description": "You can take part in discussion, express informed views and reflect on effects on yourself and others.",
+          "id": "citizen_short-4",
+          "label": "Critical engagement",
+          "level": 4,
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "pdf_pages": [
+              13
+            ]
+          }
+        },
+        {
+          "description": "You can propose conditions, safeguards or changes that could improve how the service is introduced.",
+          "id": "citizen_short-5",
+          "label": "Co-design",
+          "level": 5,
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "pdf_pages": [
+              13
+            ]
+          }
+        },
+        {
+          "description": "You can use information or experience to compare options, consider benefits, risks and trade-offs, and give informed feedback.",
+          "id": "citizen_short-6",
+          "label": "Informed evaluation",
+          "level": 6,
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "pdf_pages": [
+              13
+            ]
+          }
+        },
+        {
+          "description": "You can communicate evidence-based concerns or preferences that contribute to decisions, changes or safeguards.",
+          "id": "citizen_short-7",
+          "label": "Influence",
+          "level": 7,
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "pdf_pages": [
+              13
+            ]
+          }
+        },
+        {
+          "description": "You can use established ways to influence decisions, raise concerns, seek answers and participate in monitoring or changes.",
+          "id": "citizen_short-8",
+          "label": "Empowerment",
+          "level": 8,
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "pdf_pages": [
+              13
+            ]
+          }
+        },
+        {
+          "description": "You remain meaningfully involved over time and contribute to how the service changes as circumstances and people's needs change.",
+          "id": "citizen_short-9",
+          "label": "Sustained involvement",
+          "level": 9,
+          "source": {
+            "document": "SRAA Citizen interview example 20min.pdf",
+            "pdf_pages": [
+              13
+            ]
+          }
+        }
+      ],
+      "guidance": "The full meanings are capability-oriented through discussion, safeguards and evaluation; no blanket past-participation gate. No opportunity does not establish inability. The example result nevertheless distinguishes communicating a possible argument from actual contribution to a changed decision (20min pp.13–14; 35min pp.18–19). For influence, established mechanisms and sustained involvement, distinguish demonstrated capability, opportunities, reported actual effects and continued activity; explain remaining uncertainty or abstain. Level 9 is Sustained involvement, unlike v4 Sustained agency. No acceptance/trust/fluency bonus.",
+      "policy_version": "fn-adaptive-interview-1.1.0",
+      "reference_notice": "The interview scale is shown below. The legacy workbook remains a separate reference.",
+      "reference_scale": [
+        {
+          "description": "Recognition. The citizen recognises the existence of the innovation and its potential relevance to their everyday life, needs, interests, rights, or community.",
+          "level": 1,
+          "source": {
+            "cell": "D2",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Awareness. The citizen identifies potential benefits, risks, concerns, and ethical implications of the innovation, including possible impacts on their well-being, rights, or community.",
+          "level": 2,
+          "source": {
+            "cell": "D3",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Understanding. The citizen understands the innovation’s basic purpose and functioning, and can explain its potential benefits, risks, and ethical implications, including issues of safety, privacy, fairness, and accessibility.",
+          "level": 3,
+          "source": {
+            "cell": "D4",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Critical engagement. The citizen engages in discussions, consultations, or other participatory activities, expresses informed views and ethical concerns, and reflects on the implications of the innovation for themselves and others.",
+          "level": 4,
+          "source": {
+            "cell": "D5",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Co-design. The citizen contributes to the co-design or refinement of the innovation by proposing and discussing requirements, safeguards, and deployment conditions that reflect citizen needs, values, rights, and ethical considerations.",
+          "level": 5,
+          "source": {
+            "cell": "D6",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Informed evaluation. The citizen evaluates the innovation through demonstrations, simulations, real-world experiences, or deliberative activities, critically considers its benefits, risks, and ethical trade-offs, and provides informed feedback on its potential deployment.",
+          "level": 6,
+          "source": {
+            "cell": "D7",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Influence. The citizen influences the development or deployment of the innovation by communicating evidence-based concerns, preferences, and ethical considerations that demonstrably contribute to decisions, adaptations, or safeguards.",
+          "level": 7,
+          "source": {
+            "cell": "D8",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Empowerment. The citizen exercises meaningful agency through established mechanisms that enable them to influence decisions, raise ethical concerns, seek accountability, and participate in the monitoring and adaptation of the innovation.",
+          "level": 8,
+          "source": {
+            "cell": "D9",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        },
+        {
+          "description": "Sustained agency. The citizen sustains informed and meaningful participation in the innovation’s governance and evolution, exercising their ability to scrutinise decisions, advocate for ethical safeguards, and influence adaptations that reflect changing citizen needs, rights, and values.",
+          "level": 9,
+          "source": {
+            "cell": "D10",
+            "sheet": "TRL, ORL, CRL,  SRL scales"
+          }
+        }
+      ],
+      "reference_source": {
+        "document": "IAM-CC_SRA_IAM_indicators_TRL_ORL_CRL_scales_v4.xlsx",
+        "sha256": "809ce70aec6444fd59358ac1d79806d7c47fcfce72460c8430cb1dad64882818"
+      },
+      "rubric_version": "eva-interviews-2026-11-04-v1",
+      "source": {
+        "document": "SRAA Citizen interview example 20min.pdf",
+        "reviewed": "Entire PDF including branching, notes and disagreement guidance; blank terminal pages excluded.",
+        "scale_pdf_pages": [
+          12,
+          13
+        ],
+        "sha256": "61c0ad0db1b17ed4199ce426c84e450b7b9790dccca4826ddcaf29aee2df7ddf"
+      },
+      "status": "supplied_example_prototype_pending_partner_review"
+    },
+    "self_assessment_available": false,
+    "stage": "ended",
+    "suggestion": {
+      "alternative_anchor_id": "citizen_short-6",
+      "anchor": {
+        "description": "You can propose conditions, safeguards or changes that could improve how the service is introduced.",
+        "id": "citizen_short-5",
+        "label": "Co-design",
+        "level": 5,
+        "source": {
+          "document": "SRAA Citizen interview example 20min.pdf",
+          "pdf_pages": [
+            13
+          ]
+        }
+      },
+      "anchor_id": "citizen_short-5",
+      "boundary": "Compared with CRL 6 — Informed evaluation: The adjacent level 6 (Informed evaluation) requires comparing options and considering trade-offs, which is not explicitly shown in the evidence. The respondent focuses on proposing safeguards rather than evaluating multiple options or trade-offs.",
+      "citations": [
+        {
+          "evidence_id": "m24",
+          "quote": "Thinking about drones transporting healthcare items in my city, I consider the potential for urgent deliveries but also need clear safeguards, like night flight restrictions and data rules, before accepting them near homes."
+        },
+        {
+          "evidence_id": "m31",
+          "quote": "Night noise, camera/data rules, and fair distribution matter most. I want safeguards to ensure no group is unfairly affected."
+        },
+        {
+          "evidence_id": "m37",
+          "quote": "Decision-makers need to prioritize night noise reduction and enforce strict camera/data rules. Fair distribution of benefits must be ensured through transparent impact assessments."
+        },
+        {
+          "evidence_id": "m41",
+          "quote": "Meaningful involvement would mean open discussion with clear data on flight paths, noise levels, and camera safeguards. I’d want community input before accepting flights near homes, ensuring fair benefit distribution and respecting privacy."
+        }
+      ],
+      "considered_evidence_ids": [
+        "m3",
+        "m6",
+        "m12",
+        "m14",
+        "m16",
+        "m18",
+        "m20",
+        "m22",
+        "m24",
+        "m26",
+        "m28",
+        "m31",
+        "m33",
+        "m35",
+        "m37",
+        "m39",
+        "m41",
+        "m43",
+        "m45",
+        "m47",
+        "m49",
+        "m51",
+        "m53",
+        "m55",
+        "m57",
+        "m59",
+        "m61",
+        "m63",
+        "m65",
+        "m67"
+      ],
+      "evidence_incomplete": false,
+      "evidence_sufficiency": "provisionally_sufficient",
+      "explanation": "The respondent proposes specific safeguards like night flight restrictions and data rules, identifies concerns about fair distribution and transparency, emphasizes the need for noise reduction and camera safeguards, and advocates for open discussion with clear data and community input. These proposals directly support Co-design by suggesting conditions to improve service introduction. The boundary to higher level 6 (Informed evaluation) requires comparing options and trade-offs, which is not explicitly demonstrated here.",
+      "external_verification": "not_performed",
+      "gaps": [],
+      "level": 5,
+      "material_conflict": false,
+      "partial_interview": false,
+      "policy_version": "fn-adaptive-interview-1.1.0",
+      "result_version": 1,
+      "revision": 33,
+      "rubric_version": "eva-interviews-2026-11-04-v1",
+      "scoring_outcome": "validated_score",
+      "status": "suggested"
+    },
+    "summary": [
+      {
+        "evidence_id": "m3",
+        "objective_id": "perspective",
+        "quote": "A. Citizen",
+        "topic": null
+      },
+      {
+        "evidence_id": "m6",
+        "objective_id": "area",
+        "quote": "coimbra",
+        "topic": null
+      },
+      {
+        "evidence_id": "m12",
+        "objective_id": "drone_recognition",
+        "quote": "Yes, a drone is an unmanned aircraft that can be piloted remotely or autonomously. I'm aware of their use in various applications, including delivery services.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m14",
+        "objective_id": "drone_description",
+        "quote": "A drone is an unmanned aircraft used for various purposes, including delivery. I support exploring its use for urgent healthcare, but only with clear safeguards and evidence of reliability.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m18",
+        "objective_id": "healthcare_awareness",
+        "quote": "Yes, I've heard about drones transporting healthcare items like medicines and samples. I support exploring this for urgent cases, but only with clear safeguards and evidence of reliability.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m20",
+        "objective_id": "healthcare_detail",
+        "quote": "I've heard about drones transporting healthcare items like medicines and samples. I support exploring this for urgent cases, but only with clear safeguards and evidence of reliability.",
+        "topic": null
+      },
+      {
+        "evidence_id": "m22",
+        "objective_id": "local_awareness",
+        "quote": "I've heard about drones used for delivery, surveillance, and photography. I'm focused on healthcare delivery with strict safeguards. No local operations or privacy details have been shared with me yet.",
+        "topic": "strict safeguards"
+      },
+      {
+        "evidence_id": "m31",
+        "objective_id": "priorities",
+        "quote": "Night noise, camera/data rules, and fair distribution matter most. I want safeguards to ensure no group is unfairly affected.",
+        "topic": "fair distribution"
+      }
+    ]
+  },
+  "id": "e616b2f0-1f5b-42a3-a929-0b345ee18060",
+  "preview": null,
+  "retry_draft": null,
+  "returned_text": null,
+  "state": "chat",
+  "version": 70
+}
