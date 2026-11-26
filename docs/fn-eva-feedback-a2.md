@@ -33,9 +33,12 @@ tokens or review URLs are committed.
   `eva_coimbra_extended_multiconcern` persona. It has no target level; the
   synthetic respondent receives participant facts and style, not the expected
   observations or prohibited-inference checks.
+- `privacy.py`: after live reproduction, allows generated `m<N>` references
+  only in exact server-owned routing/exposure and FN stage-ledger reference
+  fields. It does not exempt participant text or arbitrary values.
 - Regression tests cover negative recognition routing, pause/resume and summary
-  visibility, feedback separation and one-time API handling, and text entry
-  alongside options.
+  visibility, feedback separation and one-time API handling, text entry
+  alongside options, and the structural privacy-reference boundary.
 
 The official FN materials and registered 15-indicator/readiness banks were not
 modified. Indicator projection remains internal and conservative.
@@ -46,7 +49,7 @@ modified. Indicator projection remains internal and conservative.
   deselected**. The deselected items require external live-browser or other
   excluded conditions; privacy-specific suites were run separately.
 - Privacy and baseline privacy regressions, including the real local privacy
-  resources check: **102 passed**.
+  resources check and the new evidence-reference regression: **103 passed**.
 - The new registered persona was loaded through the existing live-harness
   loader and screened successfully; it contains no target score.
 - Vue chat component tests: **19 passed**.
@@ -56,21 +59,51 @@ modified. Indicator projection remains internal and conservative.
   process`, exit code 11, during headless GPU/X initialization). The test-owned
   API and UI processes were then stopped. No model request was sent.
 
-## A2 live-test status: blocked by occupied hardware
+## A2 live-test results
 
-The installed A2 service is already occupied: `nvidia-smi` reported **12,383
-MiB / 15,356 MiB** in use. The resident supervisor/model process belongs to the
-older project worktree, serves port 18023, and runs Qwen3-8B-AWQ with thinking,
-the DeepSeek R1 reasoning parser and 8,192 context. A separate A2 review
-launcher/API is also running from the published checkout on UI/API ports
-5022/8022, configured for model port 18021. I did not start another model,
-borrow the active service for a long interview, or affect that review instance.
+Eva confirmed the A2 workload was project-owned. I used the already-running
+A2 service on port `18023`; I did not stop/restart it or affect the separate A2
+and V100S review launchers. At verification A2 used 12,383 MiB of 15,356 MiB.
+The service reported `Qwen/Qwen3-8B-AWQ`, snapshot
+`4da05a8edb55c6046cce958586c33b61da07bb79`, AWQ-Marlin 4-bit, reasoning enabled
+with `deepseek_r1`, and 8,192-token context. The interviewer used thinking;
+the Qwen-generated fictional respondent used soft no-think.
 
-Therefore **no live interview, numerical score, transcript, participant review,
-export, latency result or A2 browser acceptance is claimed for this refinement**.
-The A2 GPU must be confirmed free and the review owner must confirm the active
-instance is not in use before the bounded live run below. This is not an
-acceptance pass.
+Three sequential attempts used the registered Coimbra extended-citizen
+persona. Two privacy false positives were reproduced and narrowly fixed:
+
+| Attempt | Outcome |
+|---|---|
+| `.runtime/fn-eva-a2-coimbra-extended-20261126-live/` | Privacy screening failed during interpretation/export. The detector flagged a controller-owned `request_evidence_id` in routing metadata; no score was reached. |
+| `.runtime/fn-eva-a2-coimbra-extended-20261126-live-retry1/` | Routing-metadata export passed, but prompt screening flagged an active evidence ID in `fn.stage_ledger[].goals[].evidence_ids[]`. Seven respondent turns; no score. |
+| `.runtime/fn-eva-a2-coimbra-extended-20261126-live-retry2/` | Both privacy fixes held. JSON/JSONL/Markdown export and developer trace succeeded. The interview stopped after 9 respondent turns because Qwen repeatedly produced an invalid/redundant next question while the synthetic respondent repeated a request for a sample-delivery example. No score or participant review was reached. |
+
+For retry2, the interviewer made 12 generation calls; the run records 524.061
+seconds of generation HTTP time, 538.526 seconds generation wall time and
+597.831 seconds total elapsed time. The Qwen respondent made 6 calls taking
+32.324 seconds. There were 6 fallbacks, 3 question-wording fallbacks and one
+terminal interpretation failure (`eligibility`, field `message`). The run
+reported 17.37 generated tokens/second. This is a failed, interrupted run, not
+a stable latency estimate.
+
+The live evidence revealed two unresolved conversational issues: the Qwen
+respondent repeated a drone-definition request after the approved definition
+was supplied, and the interviewer did not recover after repeated requests for
+a concrete sample-delivery example. It answered with general possible medical
+payloads, then fell back to the same broad question before a later
+question-generation failure. No numerical score, participant review, final
+concern projection or completed-interview latency assessment is claimed. The
+complete partial transcript and screened trace are retained in retry2's
+ignored runtime directory.
+
+The privacy correction exempts `m<N>` only at the exact server-owned routing
+and information-exposure `request_evidence_id` fields and the exact
+controller-built FN stage-ledger evidence-reference field. Tests confirm
+participant prose, quoted IDs, malformed values and user-controlled fields
+remain screened.
+
+The A2 model process remains running. Firefox previously exited before opening
+the application, so no genuine Vue-browser interview was performed.
 
 ## Reproduce the offline checks
 
@@ -96,29 +129,29 @@ cd app
 /home/elvouvali/IAM_CC/.tools/node-v22.23.5/bin/node node_modules/vite/bin/vite.js build
 ```
 
-## Later A2 interview command
+## Reproduce a later A2 interview
 
-After the A2 GPU is free and the project-owned A2 review instance is confirmed
-idle, first verify that the exact endpoint on port 18021 responds at `/health`
-and `/v1/models` with the pinned Qwen3-8B-AWQ model, `--enable-reasoning`,
-`deepseek_r1` and 8,192 context. Then run one sequential extended-citizen
-interview; keep output in a new ignored runtime directory:
+The captured interview failed before scoring. After reviewing the semantic
+failure and ensuring no active reviewer is using the service, use a fresh
+ignored runtime directory. Verify the endpoint at `/health` and `/v1/models`
+first; the prior run used port `18023` because that was the verified live A2
+service. Keep the model configuration and worktree consistent:
 
 ```bash
 cd /home/elvouvali/IAM_CC/iam-sra-eva-feedback-a2
 TLDEXTRACT_CACHE=/tmp/iam-sra-eva-tldextract \
 IAM_MODEL_VARIANT=awq IAM_MODEL_THINKING=1 \
 IAM_CHAT_INTERVIEW_STRATEGY=model_led_fn IAM_SRA_ON_DEMAND_GPU=0 \
-IAM_BASE_URL=http://127.0.0.1:18021 \
+IAM_BASE_URL=http://127.0.0.1:18023 \
 IAM_MODEL_TIMEOUT_SECONDS=900 IAM_SRA_JOB_TIMEOUT=1800 \
 /home/elvouvali/IAM_CC/iam-sra-demo/.venv-api/bin/python \
   scripts/smoke-fn-interview.py --allow-live --respondent agent \
   --respondent-no-think --case citizen_extended \
   --persona-id eva_coimbra_extended_multiconcern \
-  --model-variant awq --thinking --base-url http://127.0.0.1:18021 \
+  --model-variant awq --thinking --base-url http://127.0.0.1:18023 \
   --save-traces --max-agent-calls 60 --max-turns 100 \
   --case-timeout-seconds 3600 \
-  --output .runtime/fn-eva-a2-coimbra-extended-20261126
+  --output .runtime/fn-eva-a2-coimbra-extended-20261126-next
 ```
 
 The synthetic respondent is Qwen-generated and is not independent human

@@ -491,6 +491,22 @@ def test_model_led_source_wording_metadata_exemption_is_structural_only(monkeypa
     with pytest.raises(PrivacyError):require_safe_data({'conversation':{'messages':[{'source':{'wording':label+' Alice Example'}}]}})
 
 
+def test_model_led_request_evidence_reference_exemption_is_structural_only(monkeypatch):
+    from iam_sra import privacy
+    class MessageReferenceDetector:
+        def analyze(self,*,text,**kwargs):
+            start=text.find('m16')
+            return [privacy.Finding('PERSON',start,start+3)] if start>=0 else []
+    monkeypatch.setattr(privacy,'detector',lambda:MessageReferenceDetector())
+    privacy.require_safe_data({'conversation':{'routing_events':[{'request_evidence_id':'m16'}]}})
+    privacy.require_safe_data({'conversation':{'information_exposures':[{'request_evidence_id':'m16'}]}})
+    privacy.require_safe_data({'user':{'fn':{'stage_ledger':[{'goals':[{'evidence_ids':['m16']}]}]}}})
+    with pytest.raises(PrivacyError):privacy.require_safe_data({'answer':'My code is m16'})
+    with pytest.raises(PrivacyError):privacy.require_safe_data({'conversation':{'routing_events':[{'request_evidence_id':'prefix m16'}]}})
+    with pytest.raises(PrivacyError):privacy.require_safe_data({'user':{'fn':{'stage_ledger':[{'goals':[{'quote':'My code is m16'}]}]}}})
+    with pytest.raises(PrivacyError):privacy.require_safe_data({'user_controlled':{'request_evidence_id':'m16'}})
+
+
 @pytest.mark.presidio_live
 def test_real_privacy_questionnaire_module_reference_false_positive():
     pytest.importorskip('presidio_analyzer'); pytest.importorskip('en_core_web_sm')

@@ -382,6 +382,10 @@ def require_safe_data(value, *, screening_receipts=None):
                 path.startswith(('root.chat.','root.conversation.','root.assessment.'))
                 or re.match(r'root(?:\.user)?\.(?:turns|originals|original_context|answered_questions|citations)\[\d+\]\.',path) is not None
                 or re.fullmatch(r'root(?:\.user)?\.(?:current_answer_id|priority_evidence_id|(?:evidence_ids|omitted_context_ids)\[\d+\])',path) is not None
+                # FN stage-ledger evidence references are assembled by the
+                # controller for the model prompt, not copied from respondent
+                # prose. Keep the exemption to these exact prompt fields.
+                or re.fullmatch(r'root\.user\.fn\.stage_ledger\[\d+\]\.goals\[\d+\]\.evidence_ids\[\d+\]',path) is not None
                 # Same bounded controller IDs in FN annotations and the
                 # decoded vLLM response. Quotes/answers are never exempted;
                 # the client separately checks IDs against active originals.
@@ -392,6 +396,17 @@ def require_safe_data(value, *, screening_receipts=None):
             generated_chat_message_reference = (
                 re.fullmatch(r'm[1-9]\d{0,5}',item) is not None and chat_reference_container
                 and re.search(r'\.(?:id|answer_id|evidence_id|supersedes|response_id|in_reply_to|message_id|last_turn_id|current_answer_id|priority_evidence_id|(?:evidence_ids|context_ids|omitted_context_ids|considered_evidence_ids|supporting_evidence_ids|respondent_evidence_ids)\[\d+\])$',path) is not None
+            )
+            # Server-owned routing and information-exposure records refer back
+            # to immutable respondent-message IDs. Exempt only their exact
+            # reference fields and generated m<N> syntax; participant text and
+            # arbitrary values in those fields remain screened.
+            generated_request_evidence_reference = (
+                re.fullmatch(r'm[1-9]\d{0,5}', item) is not None
+                and re.fullmatch(
+                    r'root\.conversation\.(?:routing_events|information_exposures)\[\d+\]\.request_evidence_id',
+                    path,
+                ) is not None
             )
             # x<N> identifies controller-recorded information exposure, never a
             # participant name. Keep the exemption restricted to these structural
@@ -404,7 +419,7 @@ def require_safe_data(value, *, screening_receipts=None):
                     exposure_base+r'\.(?:information_exposures|supplied_information)\[\d+\]\.id',
                     r'root\.turns\[\d+\]\.controller_execution\.postcondition\.exposure_id',
                 )))
-            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not trace_schema_reference and not generated_chat_message_reference and not generated_exposure_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference and not generated_fn_anchor_reference and not generated_fn_review_message and not generated_fn_wording_reference:
+            if item not in reviewed_bibliographic_values() and not chat_schema_reference and not trace_schema_reference and not generated_chat_message_reference and not generated_request_evidence_reference and not generated_exposure_reference and not generated_digest and not generated_claim_reference and not generated_request_id and not generated_preview_id and not generated_session_id and not generated_completion_id and not readiness_cell_reference and not readiness_review_reference and not questionnaire_module_reference and not generated_fn_anchor_reference and not generated_fn_review_message and not generated_fn_wording_reference:
                 strings.append((item,path))
         elif isinstance(item, dict):
             for key, val in item.items():
