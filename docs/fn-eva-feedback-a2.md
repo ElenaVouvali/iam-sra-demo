@@ -178,6 +178,111 @@ A2 runs and a real-browser flow from an execution environment that can reach
 the owning A2 service. Do not treat this pass as completed live generalisation
 or as independent FN validation.
 
+## A2 live follow-up — 26 November 2026
+
+The isolated runner later obtained network access to the already-running A2
+endpoint. Before inference, `/v1/models` reported
+`Qwen/Qwen3-8B-AWQ`, snapshot
+`4da05a8edb55c6046cce958586c33b61da07bb79`, and 8,192 context. The project
+owner record identifies AWQ-Marlin, thinking enabled, the `deepseek_r1`
+reasoning parser and `liono-a2`. No model process was started, stopped or
+reassigned, and Eva's V100S deployment was not touched.
+
+### S8 exact-answer regression
+
+The unchanged scripted S8 persona completed against the refined interviewer,
+interpreter and scorer. It reached participant review and exported JSON,
+JSONL, Markdown and a developer trace. The provisional result was **CRL 5 —
+Co-design**, citing the participant's conditions at `m44` and reason at `m46`.
+The score is not accepted as semantically clean: its boundary names CRL 6 —
+Informed evaluation, then describes “Influence,” which is CRL 7. An FN reviewer
+must adjudicate the boundary; this output does not establish a validated score.
+
+Compared with the previous S8 run: generation calls increased from 24 to 28,
+respondent turns from 18 to 26, and elapsed time from 1,016.6 to 1,234.0 seconds.
+Median measured generation latency decreased from 76.6 to 39.4 seconds and p95
+from 88.4 to 85.5 seconds in these two runs. This is not evidence of an overall
+speed improvement: the longer turn count increased total duration. The previous
+11 controller fallbacks decreased to 2 by the harness metric, but the new
+trace still contains 18 `question_fallback` events, 10 model question-wording
+fallbacks, 10 next-goal fallbacks, and two privacy-classified interpretation
+failures. `priority_understanding` was routed twice, including an unnecessary
+request to explain what a drone is after the registered definition had already
+been supplied. Noise and accountability were retained as selected concerns.
+
+The numeric CRL is therefore a provisional model output with traceable
+supporting evidence, but its adjacent-level explanation is inconsistent and
+the conversation still repeats or falls back too often.
+
+Artifacts (ignored runtime data):
+
+- `.runtime/fn-eva-stabilisation-S8-A2-20261126/S8_uninformed_project_sceptic_short.md`
+- `.runtime/fn-eva-stabilisation-S8-A2-20261126/S8_uninformed_project_sceptic_short.json`
+- `.runtime/fn-eva-stabilisation-S8-A2-20261126/S8_uninformed_project_sceptic_short.jsonl`
+- `.runtime/fn-eva-stabilisation-S8-A2-20261126/S8_uninformed_project_sceptic_short-trace.json`
+- `.runtime/fn-eva-stabilisation-S8-A2-20261126/metrics.json`
+
+### Coimbra extended multi-concern persona
+
+The first Qwen-respondent run completed the conversation, automated review and
+all three exports, but its scoring request was blocked before model generation.
+The privacy diagnostic localized the detector false positive to the
+server-generated `request_evidence_id` under `user.supplied_information`.
+`privacy.py` now exempts only that exact structural field when its value matches
+the generated `m<N>` reference form. A focused negative regression confirms
+arbitrary values and participant text remain screened.
+
+A scoring-only replay of the unchanged screened export then made one real Qwen
+call and suggested **CRL 4 — Critical engagement**, adjacent to CRL 5 —
+Co-design. It cited exact original answers `m26` and `m29` and explained that
+they express concerns and request comparative evidence, without a concrete
+service safeguard. The replay took 86.2 seconds including 84.3 seconds of model
+generation. It did not modify the original export, score state or participant
+review: that interview remains recorded as unavailable/pending, and the replay
+is diagnostic evidence, not a retroactive participant result.
+
+A fresh full interview after the metadata fix stopped at respondent turn 5.
+The mandatory screen withheld a model-generated
+`interpretation.information_request_quote` after a `PERSON` finding. The raw
+rejected text was not retained. This is a fail-closed partial run, not a reason
+to exempt quotation fields or weaken screening.
+
+Across the completed Coimbra transcript, the synthetic Qwen respondent repeated
+requests for the drone definition after receiving it, repeated broad requests
+for explanation, and did not consistently honor the persona's intended
+priority selection. The interviewer clarified several questions but also
+repeated generic local-process explanations. Ten of ten interviewer turns
+triggered question-wording fallback in that run; the open-priorities and
+decision-process goals remained unresolved. No verified local facts were
+invented. These results expose continuing adaptive-quality limitations rather
+than validating multi-concern generalisation.
+
+Artifacts (ignored runtime data):
+
+- `.runtime/fn-eva-stabilisation-Coimbra-A2-20261126/citizen_extended.md`
+- `.runtime/fn-eva-stabilisation-Coimbra-A2-20261126/citizen_extended.json`
+- `.runtime/fn-eva-stabilisation-Coimbra-A2-20261126/citizen_extended.jsonl`
+- `.runtime/fn-eva-stabilisation-Coimbra-A2-20261126/citizen_extended-trace.json`
+- `.runtime/fn-eva-stabilisation-Coimbra-A2-20261126/metrics.json`
+- `.runtime/fn-eva-stabilisation-Coimbra-score-replay2-A2-20261126/`
+- `.runtime/fn-eva-stabilisation-Coimbra-A2-20261126-rerun/` (partial, privacy-screened)
+
+### Follow-up validation and status
+
+- Relevant Python/API/privacy suite after the structural privacy correction:
+  **465 passed**, one upstream spaCy deprecation warning, 162.24 seconds.
+- The earlier Vue component suite (19 passed) and production build passed;
+  no frontend source changed in this follow-up.
+- A headless browser startup probe passed, but no complete browser-backed
+  application interview was run.
+- The A2 evaluation is synthetic, uses Qwen for both parties in the Coimbra
+  agent case, and is not human or independent FN validation. The S8 numeric
+  output's adjacent-level mismatch, the Coimbra privacy-blocked full rerun,
+  repeat behavior and lack of real-browser verification remain blockers to
+  declaring this implementation ready without supervised FN scrutiny.
+- Runtime transcripts and traces remain ignored local evidence, not GitHub
+  artifacts. Do not treat the scoring replay as altering a participant review.
+
 ## Reproduce the offline checks
 
 ```bash

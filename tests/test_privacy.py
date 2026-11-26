@@ -496,13 +496,19 @@ def test_model_led_request_evidence_reference_exemption_is_structural_only(monke
     class MessageReferenceDetector:
         def analyze(self,*,text,**kwargs):
             start=text.find('m16')
-            return [privacy.Finding('PERSON',start,start+3)] if start>=0 else []
+            if start>=0:return [privacy.Finding('PERSON',start,start+3)]
+            start=text.find('Alice Example')
+            return [privacy.Finding('PERSON',start,start+13)] if start>=0 else []
     monkeypatch.setattr(privacy,'detector',lambda:MessageReferenceDetector())
     privacy.require_safe_data({'conversation':{'routing_events':[{'request_evidence_id':'m16'}]}})
     privacy.require_safe_data({'conversation':{'information_exposures':[{'request_evidence_id':'m16'}]}})
+    privacy.require_safe_data({'user':{'supplied_information':[{'request_evidence_id':'m16'}]}})
     privacy.require_safe_data({'user':{'fn':{'stage_ledger':[{'goals':[{'evidence_ids':['m16']}]}]}}})
     with pytest.raises(PrivacyError):privacy.require_safe_data({'answer':'My code is m16'})
     with pytest.raises(PrivacyError):privacy.require_safe_data({'conversation':{'routing_events':[{'request_evidence_id':'prefix m16'}]}})
+    with pytest.raises(PrivacyError):privacy.require_safe_data({'user':{'supplied_information':[{'request_evidence_id':'prefix m16'}]}})
+    with pytest.raises(PrivacyError):privacy.require_safe_data({'user':{'supplied_information':[{'request_evidence_id':'Alice Example'}]}})
+    with pytest.raises(PrivacyError):privacy.require_safe_data({'user':{'supplied_information':[{'text':'My name is Alice'}]}})
     with pytest.raises(PrivacyError):privacy.require_safe_data({'user':{'fn':{'stage_ledger':[{'goals':[{'quote':'My code is m16'}]}]}}})
     with pytest.raises(PrivacyError):privacy.require_safe_data({'user_controlled':{'request_evidence_id':'m16'}})
 

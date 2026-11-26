@@ -404,7 +404,7 @@ def require_safe_data(value, *, screening_receipts=None):
             generated_request_evidence_reference = (
                 re.fullmatch(r'm[1-9]\d{0,5}', item) is not None
                 and re.fullmatch(
-                    r'root\.conversation\.(?:routing_events|information_exposures)\[\d+\]\.request_evidence_id',
+                    r'root\.(?:conversation\.(?:routing_events|information_exposures)|user\.supplied_information)\[\d+\]\.request_evidence_id',
                     path,
                 ) is not None
             )
