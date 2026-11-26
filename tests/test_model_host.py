@@ -43,10 +43,13 @@ def test_a30_fp16_thinking_dry_run_uses_same_pinned_remote_stack(monkeypatch,cap
     assert 'IAM_MODEL_THINKING=1' in capsys.readouterr().out
 
 
-def test_v100_thinking_remains_explicitly_unsupported(monkeypatch,capsys):
+def test_v100_fp16_thinking_dry_run_uses_8192_token_configuration(monkeypatch,capsys):
     module=runner(monkeypatch)
-    assert module.main(['start','davinci-v100','--thinking','--dry-run'])==1
-    assert 'davinci-a30/FP16' in capsys.readouterr().err
+    monkeypatch.setattr(module.subprocess,'run',lambda *a,**k:pytest.fail('Dry run executed'))
+    assert module.main(['start','davinci-v100','--thinking','--variant','fp16','--dry-run'])==0
+    output=capsys.readouterr().out
+    assert 'IAM_MODEL_THINKING=1' in output
+    assert 'IAM_GPU_PROFILE=davinci-v100' in output
 
 
 def test_remote_start_checks_local_port_then_starts_waits_and_forwards(monkeypatch):

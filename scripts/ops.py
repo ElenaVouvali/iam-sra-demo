@@ -105,8 +105,8 @@ def vllm_command(row):
     if not list(snapshot.glob("*.safetensors")): raise RuntimeError("Pinned model snapshot missing; run download-model.py")
     utilization=float(os.getenv("IAM_GPU_MEMORY_UTILIZATION","0.80"))
     if not 0.1<=utilization<=0.85: raise RuntimeError("Memory utilization must be 0.1–0.85")
-    if thinking_enabled() and (gpu_class(row),model_variant()) not in {('a2','awq'),('a30','fp16')}:
-        raise RuntimeError('Experimental thinking requires A2/AWQ or A30/FP16; validate it live before sharing.')
+    if thinking_enabled() and (gpu_class(row),model_variant()) not in {('a2','awq'),('a30','fp16'),('v100','fp16')}:
+        raise RuntimeError('Experimental thinking requires A2/AWQ or Davinci FP16; validate it live before sharing.')
     command=[sys.executable,"-m","vllm.entrypoints.openai.api_server","--model",str(snapshot),"--served-model-name",model["model"],"--dtype","half","--host","127.0.0.1","--port",str(VPORT),"--max-model-len",str(context_tokens()),"--max-num-seqs","1","--tensor-parallel-size","1","--gpu-memory-utilization",str(utilization),"--cpu-offload-gb",str(cpu_offload(row)),"--enforce-eager","--disable-log-requests","--guided-decoding-backend","xgrammar"]
     if model_variant()=="awq": command += ["--quantization",model["quantization"]]
     if thinking_enabled():command += ['--enable-reasoning','--reasoning-parser','deepseek_r1']

@@ -117,21 +117,24 @@ def prepare_review_model(variant):
     return spec
 
 
-def prepare_v100(remote_dir, port):
+def prepare_v100(remote_dir, port, *, thinking=False):
     """Prepare an isolated Davinci inference checkout without starting a model."""
-    subprocess.run([sys.executable,str(ROOT/'scripts/model-host.py'),'prepare','davinci-v100',
-        '--variant','fp16','--port',str(port),'--remote-dir',remote_dir],cwd=ROOT,check=True)
+    command=[sys.executable,str(ROOT/'scripts/model-host.py'),'prepare','davinci-v100',
+        '--variant','fp16','--port',str(port),'--remote-dir',remote_dir]
+    if thinking:command.append('--thinking')
+    subprocess.run(command,cwd=ROOT,check=True)
 
 
 def verify_v100_model(backend):
-    """Verify one real non-thinking completion, then release only this V100 lease."""
+    """Verify one real completion in the selected V100 mode, then release its lease."""
     backend.start(time.monotonic()+610)
     probe_error=None
     try:
         with httpx.Client(timeout=180,trust_env=False) as client:
             response=client.post(f'http://127.0.0.1:{backend.port}/v1/chat/completions',json={
                 'model':'Qwen/Qwen3-8B','messages':[{'role':'user','content':'Return only the word READY.'}],
-                'temperature':0,'max_tokens':64,'chat_template_kwargs':{'enable_thinking':False}})
+                'temperature':0,'max_tokens':512,
+                'chat_template_kwargs':{'enable_thinking':bool(backend.thinking)}})
             if response.is_error:
                 probe_error=f'HTTP {response.status_code}'
                 raise ValueError('V100 inference probe failed: '+probe_error)
@@ -334,7 +337,7 @@ def main(argv=None):
     parser.add_argument('--remote-dir',default='iam-sra-v100-review',help='Separate Davinci inference directory')
     parser.add_argument('--model-variant', choices=['awq','fp16'], default=None, help='Defaults to AWQ for A2 and FP16 for V100')
     parser.add_argument('--model-port', type=int, default=None)
-    parser.add_argument('--thinking',action='store_true',help='Experimental AWQ thinking with an 8192-token context and separated reasoning parser.')
+    parser.add_argument('--thinking',action='store_true',help='Experimental thinking with an 8192-token context; requires live validation on the selected profile.')
     parser.add_argument('--validation-only',action='store_true',help='Run live model validation and exit without publishing.')
     parser.add_argument('--public-origin',type=public_origin,help='Existing approved HTTPS reverse proxy pointing at --ui-port; no Cloudflare Quick Tunnel is started.')
     parser.add_argument('--gpu-uuid', help='An allocated Liono A2, if multiple matching idle GPUs exist')
@@ -344,12 +347,13 @@ def main(argv=None):
     args = parser.parse_args(argv)
     args.model_variant=args.model_variant or ('awq' if args.gpu_profile=='liono-a2' else 'fp16')
     args.model_port=args.model_port or (18003 if args.gpu_profile=='liono-a2' else 18010)
-    if args.gpu_profile=='davinci-v100' and (args.model_variant!='fp16' or args.thinking):
-        parser.error('Davinci V100 preview requires FP16 with thinking disabled.')
+    if args.gpu_profile=='davinci-v100' and args.model_variant!='fp16':
+        parser.error('Davinci V100 preview requires FP16.')
     if args.gpu_profile=='davinci-v100' and not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',args.remote_dir):
         parser.error('--remote-dir must be a simple isolated directory name.')
     if not 1024<=args.model_port<=65535:parser.error('--model-port must be in 1024–65535.')
-    if args.thinking and args.model_variant!='awq':parser.error('--thinking requires --model-variant awq.')
+    if args.thinking and (args.gpu_profile,args.model_variant) not in {('liono-a2','awq'),('davinci-v100','fp16')}:
+        parser.error('--thinking requires Liono A2/AWQ or Davinci V100/FP16.')
     if not 10 <= args.idle_seconds <= 3600:
         parser.error('--idle-seconds must be in 10–3600')
     if args.dry_run:
@@ -411,7 +415,7 @@ def main(argv=None):
             (STATE / name).unlink(missing_ok=True)
         if args.gpu_profile=='davinci-v100':
             print(f'Preparing isolated Davinci directory {args.remote_dir}; this does not modify the A30 service.',flush=True)
-            prepare_v100(args.remote_dir,args.model_port)
+            prepare_v100(args.remote_dir,args.model_port,thinking=args.thinking)
             verify_v100_model(backend)
             print('V100 generation probe passed. Full interview/scoring is what the partner will review.',flush=True)
         else:

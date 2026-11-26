@@ -71,6 +71,39 @@ def test_review_manager_selects_isolated_davinci_v100_profile(monkeypatch):
     managed.close()
 
 
+def test_v100_review_manager_preserves_thinking_setting_without_starting_gpu(monkeypatch):
+    import iam_sra.model_lifecycle as module
+    monkeypatch.setattr(module,'_manager',None)
+    for key,value in {
+        'IAM_SRA_ON_DEMAND_GPU':'1','IAM_BASE_URL':'http://127.0.0.1:18021',
+        'IAM_SRA_GPU_IDLE_SECONDS':'300','IAM_SRA_GPU_PROFILE':'davinci-v100',
+        'IAM_SRA_REMOTE_DIR':'iam-sra-v100-final-test','IAM_MODEL_VARIANT':'fp16',
+        'IAM_MODEL_THINKING':'1',
+    }.items():monkeypatch.setenv(key,value)
+    manager=module.manager()
+    assert manager.backend.thinking is True
+    assert manager.backend.variant=='fp16'
+    assert manager.backend.port==18021
+    assert manager.status()['state']=='idle'
+    manager.close()
+
+
+def test_v100_remote_start_command_carries_thinking_settings(monkeypatch,tmp_path):
+    from iam_sra.model_lifecycle import ProjectDavinciV100
+    from types import SimpleNamespace
+    monkeypatch.setenv('IAM_MODEL_THINKING','1')
+    monkeypatch.setenv('IAM_MODEL_VARIANT','fp16')
+    calls=[]
+    def run(command,**kwargs):
+        calls.append((command,kwargs));return SimpleNamespace(returncode=0)
+    monkeypatch.setattr(subprocess,'run',run)
+    backend=ProjectDavinciV100(18021,root=tmp_path,remote_dir='iam-sra-v100-final-test',variant='fp16')
+    assert backend._remote_command('prepare','lease')
+    command,kwargs=calls[0]
+    assert '--thinking' in command
+    assert kwargs['env']['IAM_MODEL_THINKING']=='1'
+
+
 def test_inflight_inference_is_never_unloaded_even_after_idle_interval():
     m,b,now=controller()
     with m.lease(1000):

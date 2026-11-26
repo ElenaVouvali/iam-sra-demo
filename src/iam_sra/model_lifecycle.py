@@ -250,13 +250,11 @@ class ProjectDavinciV100:
         if self.owns_running_model():return
         if self.marker.exists() or self.record.exists():
             raise AssessmentError('Davinci review model ownership cannot be verified.',code='gpu_unavailable')
-        if self.thinking:
-            raise AssessmentError('The Davinci V100 preview uses non-thinking inference.',code='gpu_unavailable')
         lease=uuid4().hex
         marker={'profile':self.profile,'port':self.port,'variant':self.variant,
             'remote_dir':self.remote_dir,'lease_id':lease}
         self._write(self.marker,marker)
-        env=os.environ.copy();env.update(IAM_MODEL_VARIANT=self.variant,IAM_MODEL_THINKING='0',
+        env=os.environ.copy();env.update(IAM_MODEL_VARIANT=self.variant,IAM_MODEL_THINKING='1' if self.thinking else '0',
             IAM_SRA_MODEL_LEASE_ID=lease)
         command=[sys.executable,str(self.root/'scripts/model-host.py'),'start',self.profile,
             '--variant',self.variant,'--port',str(self.port),'--remote-dir',self.remote_dir]
@@ -408,8 +406,8 @@ def manager():
                 backend = ProjectA2(origin.port, gpu_uuid=os.getenv('IAM_SRA_REVIEW_GPU_UUID') or None)
             elif profile == 'davinci-v100':
                 remote_dir = os.getenv('IAM_SRA_REMOTE_DIR', '')
-                if not remote_dir or os.getenv('IAM_MODEL_VARIANT', 'fp16') != 'fp16' or thinking_enabled():
-                    raise ValueError('Davinci V100 review requires a remote directory, FP16 and thinking disabled.')
+                if not remote_dir or os.getenv('IAM_MODEL_VARIANT', 'fp16') != 'fp16':
+                    raise ValueError('Davinci V100 review requires a remote directory and FP16.')
                 backend = ProjectDavinciV100(origin.port, remote_dir=remote_dir, variant='fp16')
             else:
                 raise ValueError('Unsupported on-demand review GPU profile.')

@@ -43,3 +43,21 @@ def test_refuses_multiple_supervisors(monkeypatch,tmp_path):
     ops,runtime=setup_proc(monkeypatch,tmp_path,lambda ops,root:[command(ops,root),command(ops,root)])
     with pytest.raises(RuntimeError,match='Multiple'):ops.recover_record('ui')
     assert not (runtime/'ui.pid.json').exists()
+
+
+def test_v100_thinking_launch_uses_fp16_8192_and_reasoning_parser(monkeypatch,tmp_path):
+    ops=ops_module();snapshot=tmp_path/'snapshot';snapshot.mkdir()
+    (snapshot/'model.safetensors').write_bytes(b'fixture')
+    monkeypatch.setenv('IAM_MODEL_VARIANT','fp16')
+    monkeypatch.setenv('IAM_MODEL_THINKING','1')
+    monkeypatch.setenv('IAM_GPU_MEMORY_UTILIZATION','0.80')
+    monkeypatch.setenv('IAM_CPU_OFFLOAD_GB','0')
+    monkeypatch.setattr(ops,'load_model',lambda root:{'model':'Qwen/Qwen3-8B'})
+    monkeypatch.setattr(ops,'snapshot_path',lambda root,model:snapshot)
+    row=['1','GPU-V100','Tesla V100-PCIE-32GB','7.0','32768','0','driver']
+    command=ops.vllm_command(row)
+    assert command[command.index('--dtype')+1]=='half'
+    assert command[command.index('--max-model-len')+1]=='8192'
+    assert '--enable-reasoning' in command
+    assert command[command.index('--reasoning-parser')+1]=='deepseek_r1'
+    assert command[command.index('--cpu-offload-gb')+1]=='0.0'

@@ -43,6 +43,45 @@ def test_davinci_v100_dry_run_selects_fp16_non_thinking_and_never_starts(monkeyp
     assert plan['model']=='http://127.0.0.1:18020'
 
 
+def test_davinci_v100_dry_run_can_match_a30_thinking_context(monkeypatch,capsys):
+    m=launcher()
+    monkeypatch.setattr(m,'free_ports',lambda _:pytest.fail('Opened socket'))
+    monkeypatch.setattr(m.subprocess,'run',lambda *a,**k:pytest.fail('Started model'))
+    monkeypatch.setattr(m,'cloudflared',lambda _:pytest.fail('Downloaded tunnel'))
+    assert m.main(['--gpu-profile','davinci-v100','--model-port','18021','--thinking','--dry-run'])==0
+    plan=json.loads(capsys.readouterr().out)
+    assert plan['profile']=='davinci-v100' and plan['model_variant']=='fp16'
+    assert plan['thinking_enabled'] is True and plan['cpu_offload_gb']==0
+
+
+def test_v100_generation_probe_requests_thinking_for_thinking_backend(monkeypatch):
+    m=launcher();calls=[]
+    class Response:
+        is_error=False
+        def json(self):return {'choices':[{'message':{'content':'READY'}}]}
+    class Client:
+        def __init__(self,**kwargs):pass
+        def __enter__(self):return self
+        def __exit__(self,*args):pass
+        def post(self,url,json):calls.append((url,json));return Response()
+    class Backend:
+        port=18021;thinking=True
+        def start(self,deadline):pass
+        def stop(self):return True
+    monkeypatch.setattr(m.httpx,'Client',Client)
+    m.verify_v100_model(Backend())
+    assert calls[0][1]['chat_template_kwargs']['enable_thinking'] is True
+
+
+def test_prepare_v100_passes_thinking_flag_only_when_requested(monkeypatch,tmp_path):
+    m=launcher();monkeypatch.setattr(m,'ROOT',tmp_path)
+    calls=[];monkeypatch.setattr(m.subprocess,'run',lambda command,**kwargs:calls.append(command))
+    m.prepare_v100('iam-sra-preview',18021,thinking=True)
+    assert '--thinking' in calls[0]
+    m.prepare_v100('iam-sra-preview',18021)
+    assert '--thinking' not in calls[1]
+
+
 def test_validation_only_needs_no_frontend_build_or_review_ports(monkeypatch,tmp_path):
     from iam_sra import model_lifecycle
     m=launcher();state=tmp_path/'state'
