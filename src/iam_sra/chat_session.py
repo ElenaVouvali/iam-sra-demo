@@ -535,6 +535,20 @@ class ChatSession:
         """Accept a validated model question for one registered FN goal."""
         self.objective=node['id']
         if node['id'] not in self.fn.asked:self.fn.asked.append(node['id'])
+        # A model-selected objective does not waive its registered scenario or
+        # scope preface. These are essential context, not canonical-question
+        # wording, and must be shown together in the participant message.
+        prefixes=[]
+        if self.profile=='technical' and node['id'] in {'controlled','representative','complete'} and self.context.get('technical_object'):
+            obj=self.context['technical_object'][:180]
+            prefixes.append('Please answer for the assessed object ('+obj+'). Distinguish tests of this component from tests of an integrated drone system.')
+        preface=str(node.get('preface','')).strip()
+        if preface:
+            prefixes.append(preface)
+        prefix='\n\n'.join(dict.fromkeys(prefixes))
+        normalized=' '.join(text.casefold().split())
+        if prefix and ' '.join(prefix.casefold().split()) not in normalized:
+            text=prefix+'\n\n'+text
         self._assistant(text,node['id'],'question')
         self.messages[-1]['source']={**deepcopy(self._rubric()['source']),
             'locator':node['source_locator'],'specification_version':self.fn.version,
@@ -629,11 +643,16 @@ class ChatSession:
             reason=reason or 'unknown_goal'
         elif action=='advance' and target not in candidate_by_id:
             reason=reason or 'goal_not_eligible'
+        elif (node is not None and node['id']==self._topic_menu_goal()
+              and any(row.get('selected_priority') or
+                      (row.get('topic_type')=='concern' and row.get('evidence_ids')
+                       and row.get('kind')!='suggested_topic') for row in self.concerns)):
+            reason=reason or 'topic_menu_unnecessary_after_concern_or_priority'
         elif action in {'follow_up','clarify'} and (
                 target!=self.objective or self.fn.followups.get(target,0)>=1 or
                 (self.fn.coverage.get(target,{}).get('status') in
                  {'explored','unknown','declined','not_applicable','provided','unresolved'}
-                 and interpretation.get('answer_kind') not in {'partial','uncertain'})):
+                 and interpretation.get('answer_kind')!='partial')):
             reason=reason or 'follow_up_not_materially_unresolved'
         elif not self.fn.applicable(node,self.concerns):
             reason=reason or 'goal_not_applicable'
@@ -654,6 +673,32 @@ class ChatSession:
                 m['text'] for m in self.messages if m['role']=='assistant' and m.get('act') in {'question','authored_fallback'}],
                 'validation_context':[{'id':m['id'],'text':m['text']} for m in active]}
             issues=_quality_issues(question,request,None,'ask_question')
+            # Preserve the FN scenario when a model compresses a question into
+            # a context-free fragment, and never ask an uninformed participant
+            # to define a drone after the approved explanation was supplied.
+            exposure_given=(self.profile=='citizen' and any(
+                row.get('kind') in {'FN_explanation','authored_general_background'}
+                and ('drone_definition' in row.get('categories',[]) or
+                     any('drone' in str(value).casefold() for value in row.get('categories',[])))
+                for row in self.exposures))
+            asks_for_drone_definition=bool(re.search(
+                r'\b(?:explain|describe|define|what)\b.{0,50}\bdrone\b|\bwhat\s+is\s+a\s+drone\b',
+                question,re.I))
+            if exposure_given and asks_for_drone_definition:
+                issues.append('repeats_supplied_drone_definition')
+            if target in {'problem_action','problem_response'} and re.fullmatch(
+                    r'\s*(?:and\s+)?what would you do\??\s*',question,re.I):
+                issues.append('problem_scenario_missing')
+            if 'problem_scenario_missing' in issues and node.get('canonical_question'):
+                question=node['canonical_question']
+                issues=[issue for issue in issues if issue!='problem_scenario_missing']
+                self.routing_events.append({'event':'model_question_wording_fallback',
+                    'objective_id':target,'reason':'problem_scenario_missing',
+                    'fallback_source':'registered_contextual_fn_question',
+                    'interpretation_reused':True})
+                self._last_decision['question_wording_fallback']={'objective_id':target,
+                    'reason':'problem_scenario_missing','fallback_source':'registered_contextual_fn_question',
+                    'interpretation_reused':True}
             if issues:reason='question_quality:'+','.join(issues)
         if not reason and node:
             if action in {'follow_up','clarify'}:
@@ -731,7 +776,7 @@ class ChatSession:
             'open_priorities','open_more','different_impacts','requirements_open'}]
         pending=next((q for q in open_nodes if self.fn.applicable(q,self.concerns)
                       and self.fn.coverage.get(q['id'],{}).get('status') not in considered),None)
-        if pending and target!=pending['id']:
+        if pending and pending['id'] not in self.fn.asked and target!=pending['id']:
             return pending
         if pending:return None
         has_concern=any(row.get('topic_type','concern')=='concern' and row.get('evidence_ids')
@@ -739,12 +784,15 @@ class ChatSession:
         distinct_concerns={row['topic'].casefold() for row in self.concerns
             if row.get('topic_type')=='concern' and row.get('evidence_ids') and row.get('kind')!='suggested_topic'}
         priority_goal=self.fn.current(self.profile,self.depth,'priorities')
-        if (len(distinct_concerns)>1 and priority_goal and self.fn.applicable(priority_goal,self.concerns)
+        if (len(distinct_concerns)>1 and priority_goal and 'priorities' not in self.fn.asked
+                and self.fn.applicable(priority_goal,self.concerns)
                 and self.fn.coverage.get('priorities',{}).get('status') not in considered and target!='priorities'):
             return priority_goal
         menu_id=self._topic_menu_goal()
         menu=self.fn.current(self.profile,self.depth,menu_id) if menu_id else None
-        if (not has_concern and menu and self.fn.applicable(menu,self.concerns)
+        has_selected_priority=any(row.get('selected_priority') for row in self.concerns)
+        if (not has_concern and not has_selected_priority and menu and menu not in self.fn.asked
+                and self.fn.applicable(menu,self.concerns)
                 and self.fn.coverage.get(menu_id,{}).get('status') not in considered
                 and target!=menu_id):
             return menu
@@ -1519,11 +1567,8 @@ class ChatSession:
                         self.partial=True
                         self.finish('call_or_context_budget_partial')
                         return
-                    message=('The shared GPU is unavailable or could not start. Your answer is saved. '
-                        'Type retry when you are ready to try again, or skip, pause or stop.' if code=='gpu_unavailable' else
-                        'A technical problem prevented me from processing your answer. '
-                        'Your answer is saved; you do not need to reword it. '
-                        'Type retry to try again, or skip, pause or stop.')
+                    message=('I could not prepare the next reply just now, but your answer is saved. '
+                        'You do not need to retype or reword it. Try once more in a moment, or pause or end the conversation.')
                     self._assistant(message,goal,'failure')
                     return
             field=node.get('context_field')

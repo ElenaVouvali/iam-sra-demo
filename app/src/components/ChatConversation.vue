@@ -110,9 +110,9 @@ onMounted(start)
   </section>
   <template v-else>
   <p v-if="inferenceStatus?.mode === 'on_demand'" role="status">
-   <template v-if="inferenceStatus.state === 'loading'">Starting the model. The first reply may take a few minutes; your answer is being processed.</template>
-   <template v-else-if="inferenceStatus.state === 'unavailable'">The shared GPU is currently unavailable. If your answer could not be processed, you can retry later.</template>
-   <template v-else>The model starts when a reply needs it and pauses after {{ inferenceStatus.idle_seconds }} seconds without a model request, keeping the shared GPU available.</template>
+   <template v-if="inferenceStatus.state === 'loading'">Preparing your response…</template>
+   <template v-else-if="inferenceStatus.state === 'unavailable'">I could not prepare a response just now. Your earlier answers are safe; please try again shortly.</template>
+   <template v-else></template>
   </p>
   <p v-if="chat?.completion?.partial" role="status">This is a partial interview. Unexplored or uncertain points do not automatically lower readiness.</p>
   <p v-if="chat?.completion?.evidence_sufficiency === 'unassessed'" role="status">This interview ended without a readiness assessment.</p>
@@ -146,7 +146,9 @@ onMounted(start)
   <section v-if="chat?.initial_suggestion" aria-label="Initial provisional result"><h2>Initial result · review pending</h2><p>{{ chat.initial_suggestion.level ? `Initial provisional level ${chat.initial_suggestion.level}` : 'The initial result was an abstention.' }}</p><p>{{ chat.initial_suggestion.explanation }}</p><p>Additional information has been recorded separately. This has not been reassessed.</p></section>
   <section v-if="chat?.participant_review" aria-label="Your review"><h2>Your review</h2><p>{{ chat.participant_review.text }}</p><p>{{ chat.participant_review.status === 'agreed' ? 'You explicitly agreed with the provisional result.' : chat.participant_review.status === 'completed_without_numeric_result' ? 'Completed without a numeric result.' : 'Review pending. Your view and additional evidence are recorded separately; the initial result is unchanged.' }}</p></section>
   <div v-if="session?.preview" class="alert" data-testid="chat-cleaned-preview"><h2>Check the cleaned message</h2><p>Some private details were removed. Use this only if it still says what you meant.</p><p>{{ session.preview.fields.text }}</p><div class="row"><button class="btn secondary" :disabled="working" @click="confirmCleaned">Use cleaned message</button><button class="btn secondary" :disabled="working" @click="flow.act('discard_preview')">Return to editing</button></div></div>
-  <fieldset v-if="chat && !ended && !session.preview && responseOptions.length" class="answer-options" :disabled="working" data-testid="chat-answer-options">
+  <details v-if="chat && !ended && !session.preview && responseOptions.length" class="answer-suggestions">
+  <summary>Optional quick answers</summary>
+  <fieldset class="answer-options" :disabled="working" data-testid="chat-answer-options">
    <legend>Choose your answer</legend>
    <label v-for="option in responseOptions" :key="option.value" class="answer-option" :class="{ selected: selectedChoice === option.value }">
     <input type="radio" name="chat-answer" :value="option.value" :checked="selectedChoice === option.value" @change="selectedChoice = option.value" />
@@ -154,6 +156,7 @@ onMounted(start)
    </label>
    <div class="row"><button class="btn accent" type="button" :disabled="working || !selectedChoice" @click="sendChoice">Send selected answer</button></div>
   </fieldset>
+  </details>
   <form v-if="chat && !ended && !session.preview" class="composer" @submit.prevent="send">
    <label for="chat-message">Your message <span v-if="responseOptions.length">(or write another answer)</span></label><textarea id="chat-message" v-model="draft" class="input" rows="4" maxlength="1800" aria-describedby="chat-hint" />
    <p id="chat-hint" class="t-small">Write in your own words or ask a question. Enter adds a new line; use Send when ready.</p>
@@ -173,5 +176,5 @@ onMounted(start)
  </article>
 </template>
 <style scoped>
-.introduction p{white-space:pre-wrap}.introduction .row{margin-top:1.25rem}.answer-options{min-width:0;display:grid;gap:.75rem;padding:1rem;margin:1rem 0;border:1px solid var(--line,#ccc);border-radius:.75rem}.answer-option{display:flex;align-items:flex-start;gap:.75rem;padding:.85rem;border:1px solid var(--line,#ccc);border-radius:.5rem;cursor:pointer}.answer-option.selected{border-color:var(--c-accent,#20706b);background:var(--c-surface,#f4f6fa)}.answer-option span{min-width:0}.option-description{display:block;margin-top:.35rem;font-size:.95em;line-height:1.5}.answer-option input{flex-shrink:0;margin-top:.25rem}.answer-options legend{font-weight:600}.chat{overflow-wrap:anywhere;max-width:48rem;padding:1.25rem;margin:auto}.chat h1{font-size:clamp(1.65rem,5vw,2.3rem)}.messages{list-style:none;padding:0}.messages li{padding:1rem;margin:1rem 0;border-radius:.75rem;background:var(--c-surface,#f4f6fa);border:1px solid var(--line,#ccc)}.messages .respondent{margin-left:1rem;border-left:4px solid var(--c-accent,#20706b)}.messages p,blockquote{white-space:pre-wrap;overflow-wrap:anywhere}.chat .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere;height:auto;min-height:var(--h);padding-block:.5rem}.composer{display:grid;gap:.5rem}.composer textarea{width:100%;min-height:7rem}.composer button{justify-self:start}.chat button:focus-visible,.chat summary:focus-visible,.chat textarea:focus-visible{outline:3px solid #007d80;outline-offset:3px}.row{flex-wrap:wrap}dialog{max-width:min(32rem,95vw)}
+.introduction p{white-space:pre-wrap}.introduction .row{margin-top:1.25rem}.answer-suggestions{margin:.5rem 0}.answer-suggestions summary{cursor:pointer;color:var(--c-muted,#555)}.answer-options{min-width:0;display:grid;gap:.75rem;padding:1rem;margin:.5rem 0;border:1px solid var(--line,#ccc);border-radius:.75rem}.answer-option{display:flex;align-items:flex-start;gap:.75rem;padding:.85rem;border:1px solid var(--line,#ccc);border-radius:.5rem;cursor:pointer}.answer-option.selected{border-color:var(--c-accent,#20706b);background:var(--c-surface,#f4f6fa)}.answer-option span{min-width:0}.option-description{display:block;margin-top:.35rem;font-size:.95em;line-height:1.5}.answer-option input{flex-shrink:0;margin-top:.25rem}.answer-options legend{font-weight:600}.chat{overflow-wrap:anywhere;max-width:48rem;padding:1.25rem;margin:auto}.chat h1{font-size:clamp(1.65rem,5vw,2.3rem)}.messages{list-style:none;padding:0}.messages li{padding:1rem;margin:1rem 0;border-radius:.75rem;background:var(--c-surface,#f4f6fa);border:1px solid var(--line,#ccc)}.messages .respondent{margin-left:1rem;border-left:4px solid var(--c-accent,#20706b)}.messages p,blockquote{white-space:pre-wrap;overflow-wrap:anywhere}.chat .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere;height:auto;min-height:var(--h);padding-block:.5rem}.composer{display:grid;gap:.5rem}.composer textarea{width:100%;min-height:7rem}.composer button{justify-self:start}.chat button:focus-visible,.chat summary:focus-visible,.chat textarea:focus-visible{outline:3px solid #007d80;outline-offset:3px}.row{flex-wrap:wrap}dialog{max-width:min(32rem,95vw)}
 </style>

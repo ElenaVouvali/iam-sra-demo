@@ -129,6 +129,31 @@ def validate_profile_match(raw, payload):
             return result
         if not value.citations:
             raise AssessmentError('A provisional selection needs respondent evidence references.',code='evidence',field='citations')
+        selected_anchor=anchors[selected]
+        if payload.get('profile')=='citizen':
+            co_design=next((a for a in anchors.values()
+                if (a.get('label') or '').casefold()=='co-design'),None)
+            if co_design and int(selected_anchor['level'])<int(co_design['level']):
+                proposal_rows=[row for row in payload['originals']
+                    if row.get('objective')=='conditions'
+                    and row.get('evidence_mode')=='hypothetical_or_normative'
+                    and re.search(r'\b(?:show|publish|compare|explain|require|should|must|avoid|limit|ensure|add|change|safeguard|condition|before|provide|make\s+sure)\b',row['text'],re.I)
+                    and not re.search(r'\b(?:i\s+do\s+not\s+know|i\s+don.t\s+know|i\s+have\s+no\s+idea|nothing\s+to\s+add|no\s+conditions|no\s+changes)\b',row['text'],re.I)]
+                if proposal_rows:
+                    raise AssessmentError(
+                        'The scoring judgment must reconcile an active respondent proposal elicited under the FN conditions objective with the registered Co-design anchor; revise the judgment or abstain.',
+                        code='evidence',field='selected_anchor_id')
+        if payload.get('profile')=='citizen' and int(selected_anchor['level'])>=6:
+            cited=set(c.evidence_id for c in value.citations)
+            active={row['id']:row for row in payload['originals']}
+            participation_goals={'demonstration','demonstration_view','tradeoff','participation','feedback_outcome'}
+            actual_participation_evidence=[active[eid] for eid in cited & active.keys()
+                if active[eid].get('objective') in participation_goals
+                and active[eid].get('evidence_mode')!='hypothetical_or_normative']
+            if not actual_participation_evidence:
+                raise AssessmentError(
+                    'This citizen anchor requires evidence of actual participation or a real demonstration; a stated information need or hypothetical proposal is not enough.',
+                    code='evidence',field='citations')
         alternative_id=value.alternative_anchor_id
         if value.boundary_direction in {'higher','lower'}:
             target=int(anchors[selected]['level'])+(1 if value.boundary_direction=='higher' else -1)
@@ -138,6 +163,39 @@ def validate_profile_match(raw, payload):
         chosen=anchors[selected];alternative=anchors[alternative_id]
         if abs(int(chosen['level'])-int(alternative['level']))!=1:
             raise AssessmentError('The comparison anchor must be an adjacent level.',code='evidence',field='alternative_anchor_id')
+        # The model supplies substantive boundary prose; registered headings
+        # are rendered by Python. Reject explicit labels/IDs in the prose so a
+        # claimed comparison cannot silently point at a different anchor.
+        boundary_text=value.boundary or ''
+        explicit_patterns=(
+            r'\b(?:citizen|organisation|technical)_[a-z]+-([1-9])\b',
+            r'\b(?:CRL|ORL|TRL)\s*([1-9])\b',
+            r'\b(?:next|higher|lower|adjacent)\s+level\s+([1-9])\b',
+            r'\blevel\s*([1-9])\b')
+        explicit_numbers=[int(match.group(1)) for pattern in explicit_patterns
+                          for match in re.finditer(pattern,boundary_text,re.I)]
+        permitted_numbers={int(chosen['level']),int(alternative['level'])}
+        if any(number not in permitted_numbers for number in explicit_numbers):
+            raise AssessmentError('The boundary explanation names a different level from the registered adjacent comparison.',
+                                  code='evidence',field='boundary')
+        direction_conflict=(value.boundary_direction=='lower' and
+            re.search(r'\b(?:higher|next level|more advanced)\b',boundary_text,re.I)) or (
+            value.boundary_direction=='higher' and
+            re.search(r'\b(?:lower|previous level|less advanced)\b',boundary_text,re.I))
+        if direction_conflict:
+            raise AssessmentError('The boundary prose describes the opposite direction from the registered adjacent comparison.',
+                                  code='evidence',field='boundary')
+        for anchor in anchors.values():
+            if anchor['id'] in {selected,alternative_id}:
+                continue
+            label=(anchor.get('label') or '').strip()
+            if label and re.search(r'(?<!\w)'+re.escape(label)+r'(?!\w)',boundary_text,re.I):
+                raise AssessmentError(
+                    f'The boundary explanation refers to non-adjacent anchor {label}; the selected adjacent anchor is {alternative.get("label", "the registered neighbour")}. Explain only the substantive distinction for that adjacent anchor, not the more distant capability.',
+                                      code='evidence',field='boundary')
+        if re.search(r'\b(?:citizen|organisation|technical)_[a-z]+-[1-9]\b',boundary_text,re.I):
+            raise AssessmentError('The boundary explanation must leave official anchor identity to the registered heading.',
+                                  code='evidence',field='boundary')
         value.alternative_anchor_id=alternative_id
     require_safe_data(value)
     result = value.model_dump()
@@ -216,6 +274,16 @@ def validate_profile_match(raw, payload):
         if not result['boundary']:
             raise AssessmentError('A score needs a participant-readable adjacent-anchor boundary.',
                                   code='evidence',field='boundary')
+        boundary_words=re.findall(r'\b\w+\b',result['boundary'])
+        capability_reference=re.search(
+            r'\b(?:evidence|show\w*|demonstrat\w*|participat\w*|experience\w*|'
+            r'decision\w*|influenc\w*|propos\w*|safeguard\w*|consult\w*|'
+            r'feedback|condition\w*|activity|activities|operat\w*)\b',
+            result['boundary'],re.I)
+        if len(boundary_words)<8 or not capability_reference:
+            raise AssessmentError(
+                'The boundary must explain a substantive adjacent-level capability difference in relation to the respondent evidence; an anchor heading alone is insufficient.',
+                code='evidence',field='boundary')
         alternative=anchors[value.alternative_anchor_id]
         if result['alternative_anchor_id']!=alternative['id']:
             raise AssessmentError('The adjacent comparison does not match the selected direction.',
@@ -247,7 +315,7 @@ class ChatScoreClient(ConversationClient):
             'For an organisation assess its own unit/remit; distinguish draft plans, preparation, tested arrangements and embedded processes. '
             'Before selecting, compare every explanation and boundary claim with ALL active answers. Set consistency_check=contradiction and list the exact active evidence references if you state that planning, preparation, testing or implementation is absent when an answer reports it. If no such mismatch exists use consistent and an empty list. A completed supervised pilot with assigned responsibilities/tested procedures is evidence of preparation and validation, even when no routine operations exist. '
             'For technology assess the same object/version/environment, not the expert or whole system when only a component was tested. For TRL 6 versus 7, the distinction is integrated demonstration in a relevant environment versus a representative system prototype demonstrated in the actual intended operational environment. Lack of final qualification distinguishes TRL 7 from TRL 8; do not use it as the main TRL 6/7 boundary. '
-            'For every non-null selection, explanation must be a specific, participant-readable account of why the selected original answers support the full selected anchor. Set boundary_direction to higher or lower to select the adjacent anchor to compare; Python resolves that direction to the registered neighbouring level. Boundary must explain the substantive difference and what evidence for that adjacent level is not demonstrated. Do not name levels, internal IDs or require a special opening phrase in the boundary; Python supplies the official adjacent-level heading. Neither explanation nor boundary may be empty or null for a selected level. For an abstention, explanation must name the specific missing or contradictory evidence. '
+            'For every non-null selection, explanation must be a specific, participant-readable account of why the selected original answers support the full selected anchor. Set boundary_direction to higher or lower to select the adjacent anchor to compare; Python resolves that direction to the registered neighbouring level. Boundary must explain only the substantive difference from that immediate neighbour and what evidence for that neighbour is not demonstrated; do not refer to any more distant anchor. Do not name or number levels, anchors, CRL/ORL/TRL levels or internal IDs in boundary prose; Python supplies the official adjacent-level heading. If you cannot explain the immediate boundary accurately, abstain. Neither explanation nor boundary may be empty or null for a selected level. For an abstention, explanation must name the specific missing or contradictory evidence. '
             'Keep evidence-N identifiers only in the structured citation evidence_id field. Never put message IDs, evidence-N labels, people’s names, place names or quotations in participant-facing explanation or boundary prose. Use generic evidence descriptions; Python will display the original answer selected by each evidence reference. '
             'material_conflict=true ONLY for unresolved contradictory respondent claims about the same unit or object, same activity and compatible time; draft planning without adoption, testing, or routine operation is NOT a contradiction. '
             'evidence_incomplete=true ONLY when essential positive evidence for the proposed anchor is missing; absent evidence of a more advanced anchor is not by itself a deficit for a lower supported anchor. '
@@ -297,4 +365,4 @@ class ChatScoreClient(ConversationClient):
         with _LOCK,httpx.Client(trust_env=False) as client:
             return self._request(client,'chat_profile_match',system,compact_score_request(payload),
                 profile_match_schema(payload),checked_match,
-                retry_hint=('Return every required field. Reconcile your explanation and boundary with every active answer. If any claim contradicts an answer, revise the judgment/rationale or return consistency_check=contradiction with its evidence-N references; do not ignore that answer. Keep explanation to 1,200 characters or fewer and boundary to 1,000 characters or fewer, with complete sentences. For a non-null selection, choose boundary_direction as higher or lower; it must identify the immediately adjacent registered anchor. Explain the substantive evidence difference without naming a level or using a required opening format. Do not include IDs, names, places or quotations in prose. Provide no more than four citations; each evidence_id must be selected from the supplied evidence-N values. Citations contain evidence_id only; Python resolves each to the exact original answer. For abstention only, selection, direction and boundary may be null; explanation must state the concrete missing or contradictory evidence.'))
+                retry_hint=('Return every required field. Reconcile your explanation and boundary with every active answer. If any claim contradicts an answer, revise the judgment/rationale or return consistency_check=contradiction with its evidence-N references; do not ignore that answer. Keep explanation to 1,200 characters or fewer and boundary to 1,000 characters or fewer, with complete sentences. For a non-null selection, choose boundary_direction as higher or lower; it must identify the immediately adjacent registered anchor. Boundary prose must discuss only that immediate neighbour and must not name or number any scale level or anchor. Do not refer to a more distant level (for example, do not call level 7 the next level when the selected anchor is level 5). Explain the specific capability difference and how the cited respondent evidence does or does not demonstrate it; an anchor heading alone is not a boundary explanation. Do not include IDs, names, places or quotations in prose. Provide no more than four citations; each evidence_id must be selected from the supplied evidence-N values. Citations contain evidence_id only; Python resolves each to the exact original answer. For abstention only, selection, direction and boundary may be null; explanation must state the concrete missing or contradictory evidence.'))

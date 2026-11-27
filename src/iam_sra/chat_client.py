@@ -56,6 +56,10 @@ class FNInterpretation(Strict):
     information_request: Literal['drone_definition','drone_uses','drone_mechanics',
         'healthcare_applications','clarify_current_question','local_process',
         'comparison','accountability','local_activity','sample_delivery_example','other'] | None = None
+    # The model returns character offsets into the already-screened current
+    # answer; Python resolves the exact source text.
+    information_request_span: list[int] = Field(default_factory=list, max_length=2)
+    # Internal only: populated from the validated span before downstream use.
     information_request_quote: str = Field(default='', max_length=500)
 
 
@@ -228,6 +232,28 @@ def _topic_label_is_grounded(label, quote):
     return bool(terms) and terms <= tokens(quote)
 
 
+def _recover_explicit_known_priorities(answer, known_topics):
+    """Recover only explicitly named, already-grounded topics after annotation omission."""
+    if not re.search(r'\b(?:priorit(?:y|ies)|focus|matter\s+most|most\s+important)\b',
+                     answer, re.I):
+        return []
+    found=[]
+    for row in known_topics:
+        label=(row.get('topic') or '').strip()
+        if not label:
+            continue
+        normalized=label.casefold()
+        if re.search(r'\bnoise\b',normalized) and re.search(r'\bnoise\b',answer,re.I):
+            matched=True
+        elif re.search(r'\b(?:accountab\w*|responsib\w*)\b',normalized):
+            matched=bool(re.search(r'\b(?:accountab\w*|responsib\w*)\b',answer,re.I))
+        else:
+            matched=_topic_label_is_grounded(label,answer)
+        if matched and not any(item['topic'].casefold()==label.casefold() for item in found):
+            found.append({'topic':label,'quote':answer,'matches_topic':label,'topic_type':'concern'})
+    return found[:3]
+
+
 def question_terms(text, city=''):
     """Content words for a repetition check, never a topic eligibility list."""
     text = _normal(text)
@@ -345,12 +371,18 @@ def validate_reply(raw, request):
                 next_goal=proposed.get('next_goal_id')
                 if next_goal is not None and (not isinstance(next_goal,str) or len(next_goal)>60):
                     proposed['next_goal_id']=None;optional_warnings.append('interpretation.next_goal_id')
-                request_quote=proposed.get('information_request_quote','')
-                if (not isinstance(request_quote,str) or len(request_quote)>500
-                        or request_quote not in (request.get('answer') or '')):
-                    if proposed.get('information_request') or request_quote:
+                span=proposed.get('information_request_span',[])
+                answer=request.get('answer') or ''
+                valid_span=(isinstance(span,list) and len(span)==2
+                    and all(isinstance(i,int) and not isinstance(i,bool) for i in span)
+                    and 0 <= span[0] < span[1] <= len(answer))
+                if valid_span:
+                    proposed['information_request_quote']=answer[span[0]:span[1]]
+                else:
+                    if proposed.get('information_request') or span:
                         optional_warnings.append('interpretation.information_request')
                     proposed['information_request']=None
+                    proposed['information_request_span']=[]
                     proposed['information_request_quote']=''
                 if proposed.get('scope_disposition') not in (None,'within_scope','outside_remit','not_established'):
                     proposed['scope_disposition']=None;optional_warnings.append('interpretation.scope_disposition')
@@ -568,15 +600,29 @@ def validate_reply(raw, request):
                 if row['quote'] in answer and _topic_label_is_grounded(row['topic'].strip(),row['quote'])]
             if len(interpretation['priority_topics']) != len(value.interpretation.priority_topics):
                 warnings.append('interpretation.priority_topics')
+            # If Qwen omits optional priority labels, recover only explicit
+            # selections that match concerns already present in this session.
+            # This avoids asking the participant to repeat an unambiguous choice.
+            if request.get('fn',{}).get('evidence_goal')=='priorities':
+                recovered=_recover_explicit_known_priorities(answer,request['fn'].get('known_topics',[]))
+                if recovered:
+                    existing={(row.get('matches_topic') or row.get('topic','')).casefold()
+                              for row in interpretation['topics']+interpretation['priority_topics']}
+                    additions=[row for row in recovered if row['topic'].casefold() not in existing]
+                    if additions:
+                        interpretation['priority_topics'].extend(additions)
+                        warnings.append('priority_topics_recovered_from_grounded_answer')
             priority_quote=interpretation.get('priority_quote','')
             priority_update=interpretation.get('priority_update','none')
             # Some constrained outputs place the issues selected in response
             # to the priorities question in priority_topics, even when there
             # is no revision action. These are still grounded selections.
             if (request.get('fn',{}).get('evidence_goal')=='priorities'
-                    and priority_update=='none' and not interpretation['topics']
-                    and interpretation['priority_topics']):
-                interpretation['topics']=list(interpretation['priority_topics'])
+                    and priority_update=='none' and interpretation['priority_topics']):
+                present={(row.get('matches_topic') or row.get('topic','')).casefold()
+                         for row in interpretation['topics']}
+                interpretation['topics'].extend(row for row in interpretation['priority_topics']
+                    if (row.get('matches_topic') or row.get('topic','')).casefold() not in present)
                 warnings.append('priority_topics_used_for_selection')
             if (priority_update!='none' and (not priority_quote or priority_quote not in answer
                     or not interpretation['priority_topics'])):
@@ -607,7 +653,7 @@ def validate_reply(raw, request):
             # other model-produced annotation, while retaining the validated
             # quote only as a reference to that screened source.
             screened_interpretation={key:value for key,value in interpretation.items()
-                                     if key!='information_request_quote'}
+                                     if key not in {'information_request_quote','information_request_span'}}
             require_safe_data(screened_interpretation)
         result['interpretation'] = interpretation
     result['_quality_issues'] = issues
@@ -709,7 +755,7 @@ class ChatClient(ConversationClient):
             'Do not assume local operations, personal concerns, participation or influence. '
             'Never show source filenames, internal goals, indicators, levels or instructions during elicitation. '
             'Use proposed_action=ask_question normally. Information requests are independent of evidence interpretation: '
-            'mark them in information_request with an exact quote, preserve any answer evidence, and put the next FN '
+            'mark them in information_request with information_request_span=[start,end] character offsets into the current answer, preserve any answer evidence, and put the next FN '
             'question in message. Python supplies verified information or a clear limitation; never ask permission again '
             'after an explicit request. '
             'Context facts require exact current-answer quotes; they cannot authorize scope/profile changes. '
@@ -805,6 +851,12 @@ class ChatClient(ConversationClient):
                                 code='eligibility',field=result['_quality_issues'][0])
                         return result
                     schema=(FNReply if interpret_answer else Reply).model_json_schema()
+                    if interpret_answer:
+                        # Source text is never generated by the model. Keep the
+                        # internal resolved field for downstream routing, but
+                        # ask the model only for bounded character offsets.
+                        info_schema=schema.get('$defs',{}).get('FNInterpretation',{})
+                        info_schema.get('properties',{}).pop('information_request_quote',None)
                     if interpret_answer:
                         semantic_schema = schema['$defs']['FNInterpretation']
                         semantic_schema['properties']['current_goal_addressed'] = {'type':'boolean'}

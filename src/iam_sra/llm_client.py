@@ -16,12 +16,12 @@ STAGE_LIMITS = {'readiness_evidence': 1600, 'readiness_grounding': 1400, 'workbo
 BACKEND="xgrammar:no-fallback,disable-any-whitespace"
 
 def _screen_generation_body(body, user, stage):
-    """Screen model output while treating exact echoes of screened evidence as references.
+    """Screen model output while dropping obsolete, untrusted quote copies.
 
-    The response content stays untouched for validation. Only the temporary
-    screening copy omits an information-request quote that is an exact substring
-    of the participant answer already screened in the request. Arbitrary text,
-    non-matching quotes and every other model field remain screened normally.
+    For chat_turn, information_request_quote is an optional legacy wire field:
+    application code no longer accepts it and resolves source spans from the
+    screened answer. Remove that unused annotation in the screening copy only;
+    all participant-facing model prose and every other field remain screened.
     """
     from .privacy import require_safe_data
     screening_copy=deepcopy(body)
@@ -35,7 +35,7 @@ def _screen_generation_body(body, user, stage):
             except (ValueError,TypeError):continue
             interpretation=decoded.get('interpretation') if isinstance(decoded,dict) else None
             quote=interpretation.get('information_request_quote') if isinstance(interpretation,dict) else None
-            if isinstance(quote,str) and quote and quote in answer:
+            if isinstance(quote,str):
                 interpretation['information_request_quote']=''
                 message['content']=json.dumps(decoded,ensure_ascii=False,separators=(',',':'))
     require_safe_data(screening_copy)

@@ -40,7 +40,13 @@ def replay(key):
     for row in GOLDEN[key]:
         assert s.stage=='conversation',(key,row['id'],s.stage,s.messages[-1])
         assert s.objective==row['id'],(key,row['id'],s.objective,s.messages[-1]['text'])
-        assert row['question'] in s.messages[-1]['text']
+        if row['id']=='open_more' and len(s._raised_topics())==1:
+            # The existing authored adaptation preserves the FN objective and
+            # makes the follow-up responsive to the single issue raised.
+            assert 'anything else' in s.messages[-1]['text'].casefold()
+            assert s._raised_topics()[0]['topic'].casefold() in s.messages[-1]['text'].casefold()
+        else:
+            assert row['question'] in s.messages[-1]['text']
         assert s.view()['scale'] is None and s.suggestion is None
         questions.append(row['id'])
         s.send(row['answer'],client,score_client=scorer)

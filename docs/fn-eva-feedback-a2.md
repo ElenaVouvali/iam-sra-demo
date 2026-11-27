@@ -392,3 +392,93 @@ run had 168 passes and one environment failure because the private corpus was
 unavailable in this isolated worktree; that test is not a live-app pass. The
 last request-scoping and unresolved-routing changes have only deterministic
 verification, not a subsequent full live interview.
+
+## Eva release-readiness checkpoint — 27 November 2026
+
+The starting application commit for this checkpoint was `0bedf94485d18786471626b1fc7a438936037bea` on `exp/fn-eva-feedback-a2`. The registered FN sources and readiness scales were not changed. The existing V100S review deployment was not restarted or modified.
+
+### Targeted fixes in this checkpoint
+
+- Model-led question acceptance now restores a registered FN scenario preface and technical object scope when the generated question omits them. An out-of-context `What would you do?` fallback now uses the complete registered problem scenario.
+- A drone-definition request is not followed by another request to define the drone after the FN explanation has been supplied; a covered explicit uncertainty does not trigger another clarification loop.
+- Concern-topic menus and priority prompts are not reopened after the participant has closed topic discovery or already selected priorities. If a priority answer explicitly names existing ledger topics but Qwen omits some optional topic annotations, Python can recover only those exact already-grounded topics from that answer. It cannot create new issues or infer priorities absent explicit priority language.
+- Optional `information_request_quote` is now a bounded source span resolved by Python against the screened original answer. Invalid spans drop only the optional request annotation; the answer itself remains available. Legacy copied quote metadata is excluded from the temporary output-screening copy; generated explanatory prose and other model fields remain screened.
+- Scoring rejects explicit level/anchor references inconsistent with the selected adjacent direction, boundary prose describing a non-adjacent anchor, and an empty/heading-only boundary. For CRL 6 or above, the cited evidence must include a respondent-reported real demonstration or participation objective; a prospective information need or hypothetical proposal alone cannot support the Active Participation threshold.
+- Frontend quick-answer choices are collapsed by default, leaving free text primary. Participant-facing recovery text no longer exposes GPU lifecycle details.
+
+### New A2 S8 run and frozen-evidence score replays
+
+The real A2 endpoint was `http://127.0.0.1:18023`, with pinned `Qwen/Qwen3-8B-AWQ`, AWQ 4-bit, thinking enabled and 8,192-token context. The respondent was the unchanged scripted fictional persona `S8_uninformed_project_sceptic_short` in Coimbra. The synthetic respondent was not given a target score; the interviewer/interpreter/scorer were live Qwen, not fixtures. The interview run used the implementation before the final priority-recovery and scoring-boundary changes and therefore is diagnostic evidence, not full validation of the final tree.
+
+The interview completed and exported JSON, JSONL and a developer trace. It took 885.24 seconds, recorded 21 respondent messages (19 interview/profile questions plus two review answers), 19 interview generation calls and two scoring generations. The recorded interviewer median was 40.106 seconds and p95 133.804 seconds. Privacy/export passed. Participant review was provided as “I am not sure,” so review remains pending human review.
+
+The transcript demonstrates that the registered drone definition and a bounded hypothetical sample-delivery explanation were supplied on request, and that the problem-action question now included the full scenario. It also shows two remaining defects: the interviewer asked the priority-selection question twice after the respondent named noise and accountability, and it used many FN wording/goal fallbacks. The first integrated score attempt returned unavailable after Qwen selected CRL 2 but described a non-adjacent anchor in its boundary; the validator correctly withheld the number.
+
+Scoring-only replays of the frozen original answers are preserved separately:
+
+- `.runtime/fn-eva-release-S8-score-replay-20261127/`: proposed CRL 5, but boundary incorrectly described level 7 as the next level after CRL 5. This demonstrated a validator gap.
+- `.runtime/fn-eva-release-S8-score-replay-adjacent-fix-20261127/`: proposed CRL 5 with adjacent anchor 4, but prose still described higher-level trade-off evidence, an opposite-direction inconsistency.
+- `.runtime/fn-eva-release-S8-score-replay-semantic-boundary-20261127/`: proposed CRL 6 with adjacent 7, but cited only the respondent's request for evidence to compare; the respondent had not actually evaluated evidence or participated in a demonstration. This was structurally valid but semantically unsupported.
+- `.runtime/fn-eva-release-S8-score-replay-crl-active-participation-20261127/`: proposed CRL 5 with adjacent anchor 4, supported by the participant's concrete proposed conditions and evidence requirements. Its boundary was only the heading “Critical engagement”; this was too terse to explain the substantive distinction. It must not be treated as an accepted participant-facing score.
+
+These results motivated the final tree's additional direction, non-adjacent-anchor, boundary-content and active-participation evidence checks. The final scoring changes have deterministic regressions, but the latest frozen-score replay and a complete live S8 interview using the final tree remain required before a release claim. No fictional numeric level is ground truth.
+
+### Validation and readiness
+
+Vue component checks passed 19/19 and the Vue production build passed. A Python suite before the last scoring checks had 355 passed and one known stale/deselected Golden fixture; after the priority recovery was added, the same suite passed 355 tests with that known obsolete extended-path fixture deselected. A final full suite after the latest scoring guard has not yet been rerun. Focused priority and score-boundary tests passed 4/4. The real Firefox browser walkthrough was not run, and no new review URL or QR code was generated. The live S8 run did not produce a numerical result; scoring-only replays exposed successive semantic boundary failures.
+
+**Readiness verdict: NOT READY for Eva reevaluation on this checkpoint.** The specific scenario and priority fixes are narrow, but current A2 latency remains high, the latest implementation has not completed a full live S8 run, final semantic scoring needs live confirmation, browser acceptance is unverified, and no new deployment was safely validated. The older V100S worktree remains the untouched rollback; its actual served commit remains `4ba9dd81f0b766589b6f2350a54ce90e6688e19c` as last inspected. Do not share the older URL as though it serves this implementation.
+
+Private live transcripts, exports and traces remain ignored under `.runtime/`; they are not included in this document or Git.
+
+### Superseding final S8 validation — 27 November 2026
+
+This addendum supersedes the earlier statement that a final-tree S8 run was
+still pending. The unchanged scripted persona was run against the then-current
+refinement tree and the live A2 service at `http://127.0.0.1:18023` (pinned
+Qwen3-8B-AWQ, AWQ-Marlin 4-bit, thinking enabled, `deepseek_r1`, 8,192-token
+context). The scripted respondent had no score target; the live Qwen service
+handled interviewer interpretation, adaptive planning and scoring.
+
+The completed interview reached the result/review flow and exported the
+screened JSON, JSONL and trace. It took 944.85 seconds, with 24 respondent
+messages/turn records, 20 interviewer generation calls and two scoring
+generations. Warm interviewer latency was median 39.828 seconds and p95
+141.721 seconds. The participant selected “I am not sure”; review therefore
+remains pending human judgment. There were repeated/low-value routes and
+registered-question fallbacks; completion does not imply good conversational
+quality. In particular, the trace records a redundant conditions follow-up
+and multiple fallback/rejection events.
+
+The integrated numerical result was **unavailable**. Two scoring generations
+did not produce a mutually consistent adjacent-level selection and boundary
+explanation. Frozen-evidence replays also showed score instability and
+unsupported or contradictory boundary claims (including a CRL 6+ proposal
+supported only by prospective evidence requests, and a lower-level proposal
+that omitted the respondent's stated co-design conditions). The implementation
+now rejects these cases rather than presenting a misleading score. The
+synthetic persona has no independent numerical ground truth; no score is
+claimed validated. A provisional numeric result remains a release blocker.
+
+The final focused Python regressions were rerun after the null-safe optional
+priority-annotation correction and scoring-boundary changes: **357 passed, 1
+deselected, 1 upstream spaCy deprecation warning** in 85.73 seconds. The
+deselected test requires a larger scoring budget and is outside this bounded
+regression run. Vue chat component tests pass 19/19 and the production build
+passes. A real browser application interview was not completed. No
+replacement V100S deployment or URL was created: the current refinement is not
+yet a better review candidate because its integrated score is unavailable,
+the live interview remains slow and repetitive, and browser acceptance is
+unverified. Eva's existing V100S deployment remains untouched as rollback.
+
+Exact final-r2 artifacts remain private and ignored:
+
+- `.runtime/fn-eva-release-S8-A2-20261127-final-r2/S8_uninformed_project_sceptic_short.md`
+- `.runtime/fn-eva-release-S8-A2-20261127-final-r2/S8_uninformed_project_sceptic_short.json`
+- `.runtime/fn-eva-release-S8-A2-20261127-final-r2/S8_uninformed_project_sceptic_short.jsonl`
+- `.runtime/fn-eva-release-S8-A2-20261127-final-r2/S8_uninformed_project_sceptic_short-trace.json`
+- `.runtime/fn-eva-release-S8-A2-20261127-final-r2/metrics.json`
+
+**Updated verdict: NOT READY for replacing Eva's V100S review build.** A valid
+score, lower repetition/call count, and browser-backed acceptance must be
+demonstrated before publishing a new review link.

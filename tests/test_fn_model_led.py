@@ -199,7 +199,8 @@ def test_explicit_drone_explanation_is_supplied_once_without_becoming_prior_know
     assert s.fn.coverage['drone_recognition']['status']=='unknown'
     assert s.objective=='healthcare_awareness'
     assert not any('Would you like' in m['text'] for m in s.messages)
-    assert s.fn.coverage['drone_description']['status']=='unknown'
+    assert s.fn.coverage['drone_recognition']['status']=='unknown'
+    assert not s.fn.coverage.get('drone_description')
 
 
 def test_mixed_explicit_requests_get_bounded_answers_and_separate_exposures(monkeypatch):
@@ -440,6 +441,154 @@ def test_multiple_concerns_route_to_natural_priority_choice(monkeypatch):
     assert bridge and bridge['id']=='priorities'
 
 
+def test_topic_bridge_never_reopens_an_asked_priority_goal_or_menu_after_selection(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    _complete_pre_topic_stages(s)
+    s.concerns=[{'topic':'noise','topic_type':'concern','evidence_ids':['m1'],'kind':'emerging_topic',
+                 'selected_priority':True}]
+    for goal in ('open_priorities','open_more','different_impacts'):
+        s.fn.record(goal,'m1','explored')
+    s.fn.record('priorities','m2','explored');s.fn.asked.extend(['priorities','suggested_topics'])
+    assert s._required_topic_sequence_goal('advance','evaluation_evidence',None) is None
+
+
+def test_contextless_problem_question_uses_registered_scenario_without_reinterpreting_answer(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.context.update(city='Coimbra',scope_status='respondent_described')
+    s.objective='evaluation_evidence';s.fn.asked.append('evaluation_evidence')
+    s.fn.record('area','m-area','explored')
+    _complete_pre_topic_stages(s)
+    for goal in ('open_priorities','open_more','different_impacts'):
+        s.fn.record(goal,'m-topic','explored')
+    s.concerns=[{'topic':'accountability','topic_type':'concern','evidence_ids':['m-topic'],
+                 'kind':'emerging_topic','selected_priority':True}]
+    node=s.fn.current('citizen','short','problem_action')
+    assert node is not None
+    s._model_led_route({'message':'What would you do?', 'interpretation':{
+        'action':'advance','next_goal_id':'problem_action','answer_kind':'substantive',
+        'question_purpose':'Respond to a problem.'}})
+    assert s.objective=='problem_action'
+    assert node['preface'] in s.messages[-1]['text']
+    assert node['canonical_question'] in s.messages[-1]['text']
+    assert s.messages[-1]['text'].index(node['preface']) < s.messages[-1]['text'].index(node['canonical_question'])
+    assert 'problem_scenario_missing' in str(s.routing_events)
+
+
+def test_after_drone_definition_exposure_controller_will_not_repeat_definition_question(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.context.update(city='Coimbra',scope_status='respondent_described')
+    s.objective='noise_understanding';s.fn.asked.append('noise_understanding')
+    s.exposures=[{'kind':'FN_explanation','categories':['drone_definition'],'prior_knowledge':False}]
+    s.concerns=[{'topic':'noise','topic_type':'concern','evidence_ids':['m1'],'kind':'emerging_topic',
+                 'selected_priority':True}]
+    s._model_led_route({'message':'Could you explain what a drone is so I can understand noise?',
+        'interpretation':{'action':'advance','next_goal_id':'accountability','answer_kind':'substantive',
+                          'question_purpose':'Discuss responsibility.'}})
+    assert s.objective!='noise_understanding'
+    assert 'Could you explain what a drone is' not in s.messages[-1]['text']
+    assert s._last_decision.get('fallback_used') is True
+
+
+def test_explicit_uncertainty_closes_current_goal_instead_of_repeating_followup(monkeypatch):
+    s=_start(monkeypatch);s.profile='citizen';s.depth='short';s.stage='conversation'
+    s.context.update(city='Coimbra',scope_status='respondent_described')
+    _complete_pre_topic_stages(s)
+    for goal in ('open_priorities','open_more','different_impacts'):
+        s.fn.record(goal,'m-topic','explored')
+    s.concerns=[{'topic':'noise','topic_type':'concern','evidence_ids':['m-topic'],
+                 'kind':'emerging_topic','selected_priority':True}]
+    s.fn.record('priorities','m-topic','explored')
+    s.objective='priority_understanding';s.fn.asked.append('priority_understanding')
+    s.fn.record('priority_understanding','m-uncertain','unknown','uncertain')
+    s._model_led_route({'message':'Could you explain what a drone is so I can understand your point?',
+        'interpretation':{'action':'follow_up','next_goal_id':'priority_understanding',
+            'answer_kind':'uncertain','question_purpose':'The respondent said they do not know.'}})
+    assert s.objective!='priority_understanding'
+
+
+def test_boundary_with_conflicting_explicit_registered_level_is_rejected():
+    anchors=rubric(bank(),'citizen','short')['anchors']
+    selected=next(a for a in anchors if a['level']==5)
+    adjacent=next(a for a in anchors if a['level']==6)
+    wrong=next(a for a in anchors if a['level']==7)
+    payload={'anchors':anchors,'originals':[{'id':'m1','text':'I proposed safeguards.'}]}
+    value={'selected_anchor_id':selected['id'],'boundary_direction':'higher',
+        'citations':[{'evidence_id':'m1'}],'explanation':'The respondent proposed safeguards.',
+        'boundary':f"Compared with {adjacent['label']} ({wrong['id']}), the respondent has not shown this.",
+        'material_conflict':False,'evidence_incomplete':False}
+    with pytest.raises(AssessmentError,match='different level'):
+        validate_profile_match(value,payload)
+
+    selected5=next(a for a in anchors if a['level']==5)
+    adjacent4=next(a for a in anchors if a['level']==4)
+    value['selected_anchor_id']=selected5['id']
+    value['boundary_direction']='lower'
+    value['boundary']='The lower boundary is unclear; the respondent has not shown trade-off evaluation required for higher levels.'
+    with pytest.raises(AssessmentError,match='opposite direction'):
+        validate_profile_match(value,payload)
+
+    value['boundary']='The respondent has not shown the Influence capability.'
+    with pytest.raises(AssessmentError,match='non-adjacent'):
+        validate_profile_match(value,payload)
+
+    value['boundary']='The next level (Influence, level 7) requires evidence that a preference changed a decision.'
+    with pytest.raises(AssessmentError,match='different level'):
+        validate_profile_match(value,payload)
+
+    value['boundary']='Critical engagement'
+    with pytest.raises(AssessmentError,match='substantive adjacent-level'):
+        validate_profile_match(value,payload)
+
+    value['boundary_direction']='higher'
+    value['boundary']='Co-design (level 5) is supported. The next level, level 6, needs demonstrated evaluation of options and feedback.'
+    assert validate_profile_match(value,payload)['selected_anchor_id']==selected5['id']
+
+
+def test_crl_active_participation_cannot_be_inferred_from_prospective_evidence_needs():
+    anchors=rubric(bank(),'citizen','short')['anchors']
+    selected=next(a for a in anchors if a['level']==6)
+    adjacent=next(a for a in anchors if a['level']==7)
+    payload={'profile':'citizen','anchors':anchors,'originals':[{
+        'id':'m36','objective':'evaluation_evidence','evidence_mode':'open_or_other',
+        'text':'Compare reliability, cost and impacts with road transport using independent evidence.'}]}
+    value={'selected_anchor_id':selected['id'],'boundary_direction':'higher',
+        'citations':[{'evidence_id':'m36'}],
+        'explanation':'The respondent wants independent evidence to compare options.',
+        'boundary':'Influence requires actual contribution to decisions, which is not shown.',
+        'material_conflict':False,'evidence_incomplete':False}
+    with pytest.raises(AssessmentError,match='actual participation'):
+        validate_profile_match(value,payload)
+
+    payload['originals'].append({'id':'m42','objective':'demonstration_view',
+        'evidence_mode':'open_or_other','text':'A real demonstration changed how I weigh the trade-offs.'})
+    value['citations'].append({'evidence_id':'m42'})
+    assert validate_profile_match(value,payload)['selected_anchor_id']==selected['id']
+
+
+def test_lower_crl_judgment_must_reconcile_explicit_conditions_evidence():
+    anchors=rubric(bank(),'citizen','short')['anchors']
+    engagement=next(a for a in anchors if a['label']=='Critical engagement')
+    co_design=next(a for a in anchors if a['label']=='Co-design')
+    payload={'profile':'citizen','anchors':anchors,'originals':[
+        {'id':'m1','objective':'open_priorities','evidence_mode':'open_or_other',
+         'text':'I am concerned about noise near homes.'},
+        {'id':'m2','objective':'conditions','evidence_mode':'hypothetical_or_normative',
+         'text':'Show a clear medical need, compare road options, publish impact evidence and explain who is responsible.'}]}
+    value={'selected_anchor_id':engagement['id'],'boundary_direction':'higher',
+        'citations':[{'evidence_id':'m1'}],
+        'explanation':'The respondent has concerns but proposes no conditions for the service.',
+        'boundary':'Co-design requires proposed conditions, which are not demonstrated in these answers.',
+        'material_conflict':False,'evidence_incomplete':False}
+    with pytest.raises(AssessmentError,match='reconcile an active respondent proposal'):
+        validate_profile_match(value,payload)
+
+    value['selected_anchor_id']=co_design['id']
+    value['citations']=[{'evidence_id':'m2'}]
+    value['explanation']='The respondent proposes medical need, road comparison and published impact evidence as conditions.'
+    value['boundary']='The next level needs evaluation using experience and evidence, which is not demonstrated by this proposal alone.'
+    assert validate_profile_match(value,payload)['selected_anchor_id']==co_design['id']
+
+
 @pytest.mark.parametrize(('profile','depth','later_goal'),[
     ('citizen','short','opinion'),('organisational','short','planning'),('technical','short','controlled')])
 def test_no_concerns_still_receives_fn_topic_menu_after_open_discussion(monkeypatch,profile,depth,later_goal):
@@ -498,7 +647,7 @@ def test_registered_empowerment_anchor_needs_evidence_of_known_usable_route():
     value={'selected_anchor_id':empowerment['id'],'boundary_direction':'higher',
         'citations':[{'evidence_id':'m1'}],
         'explanation':'The participant can use an established route to raise concerns.',
-        'boundary':'Continued involvement over time is not established.',
+        'boundary':'The respondent has not demonstrated sustained participation through established monitoring or feedback activities.',
         'material_conflict':False,'evidence_incomplete':False,'consistency_check':'consistent',
         'consistency_evidence_ids':[]}
     with pytest.raises(AssessmentError,match='established route is known or usable'):

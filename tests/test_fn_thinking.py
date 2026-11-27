@@ -67,34 +67,34 @@ def test_final_private_content_is_still_blocked_with_thinking_enabled(monkeypatc
     assert 'alice@example.com' not in json.dumps([c.last_trace,c.last_diagnostics])
 
 
-def test_model_output_screening_treats_only_exact_screened_answer_quote_as_reference(monkeypatch):
+def test_model_output_screening_keeps_only_bounded_source_span_metadata(monkeypatch):
     from iam_sra import llm_client, privacy
     screened=[]
     monkeypatch.setattr(privacy,'require_safe_data',lambda value:screened.append(value))
     answer='I do not know who makes that decision in my city. Could you explain?'
     content={'message':'What would you want to know?','interpretation':{
         'information_request':'clarify_current_question',
-        'information_request_quote':'Could you explain?','justification':'A short safe explanation is requested.'}}
+        'information_request_span':[57,74],'justification':'A short safe explanation is requested.'}}
     body={'choices':[{'message':{'content':json.dumps(content)}}]}
     original=json.loads(body['choices'][0]['message']['content'])
     llm_client._screen_generation_body(body,{'answer':answer},'chat_turn')
     copy=json.loads(screened[-1]['choices'][0]['message']['content'])
-    assert copy['interpretation']['information_request_quote']==''
-    assert original['interpretation']['information_request_quote']=='Could you explain?'
+    assert copy['interpretation']['information_request_span']==[57,74]
+    assert original['interpretation']['information_request_span']==[57,74]
     assert json.loads(body['choices'][0]['message']['content'])==original
     assert copy['interpretation']['justification']==original['interpretation']['justification']
 
 
-def test_model_output_screening_does_not_exempt_nonmatching_quote_or_other_prose(monkeypatch):
+def test_legacy_model_quote_copy_is_discarded_but_other_model_prose_is_screened(monkeypatch):
     from iam_sra import llm_client, privacy
     screened=[]
     monkeypatch.setattr(privacy,'require_safe_data',lambda value:screened.append(value))
     content={'message':'Could you tell me more?','interpretation':{
-        'information_request':'drone_definition','information_request_quote':'A different unsupported name.'}}
+        'information_request':'drone_definition','information_request_span':[99,400]}}
     body={'choices':[{'message':{'content':json.dumps(content)}}]}
     llm_client._screen_generation_body(body,{'answer':'No, I do not know.'},'chat_turn')
     copy=json.loads(screened[-1]['choices'][0]['message']['content'])
-    assert copy['interpretation']['information_request_quote']=='A different unsupported name.'
+    assert 'information_request_quote' not in copy['interpretation']
     assert copy['message']=='Could you tell me more?'
 
 

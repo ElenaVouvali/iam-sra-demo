@@ -114,6 +114,24 @@ def test_current_goal_inherits_answer_disposition_instead_of_default_substantive
     assert value['interpretation']['coverage'][0]['answer_kind']==kind
 
 
+def test_information_request_span_resolves_only_exact_screened_answer_and_bad_span_is_optional():
+    from iam_sra.chat_client import validate_reply
+    s=opening();answer='I do not know the process. Could you explain?'
+    req=s._request(answer);needle='Could you explain?';start=answer.index(needle)
+    value=reply(req)
+    value['interpretation']['information_request']='clarify_current_question'
+    value['interpretation']['information_request_span']=[start,start+len(needle)]
+    checked=validate_reply(value,req)
+    assert checked['interpretation']['information_request_quote']==needle
+    bad=reply(req)
+    bad['interpretation']['information_request']='clarify_current_question'
+    bad['interpretation']['information_request_span']=[-1,999]
+    rejected=validate_reply(bad,req)
+    assert rejected['interpretation']['information_request'] is None
+    assert rejected['interpretation']['answer_quote']==answer
+    assert 'interpretation.information_request' in rejected['_annotation_warnings']
+
+
 def test_irrelevant_optional_topic_quote_cannot_invalidate_clear_definition(monkeypatch):
     def output(payload,_):
         out=reply(payload)
@@ -151,6 +169,28 @@ def test_priority_advance_retries_missing_topics_and_retains_actual_selection(mo
     s.send('Noise is the issue I want to focus on.',ChatClient())
     assert [p['topic'] for p in s.priorities]==['noise'] and not s.failures
     assert len([p for p,_ in calls if p=='/v1/chat/completions'])==2
+
+
+def test_explicit_priorities_recover_from_exact_answer_and_known_concerns_without_repeat(monkeypatch):
+    calls=install_http(monkeypatch,lambda payload,attempt:reply(payload,topics=['accountability']))
+    s=opening()
+    s.concerns=[
+        {'topic':'noise near homes','kind':'emerging_topic','evidence_ids':['m88'],
+         'spontaneously_raised':True,'suggested_by_interviewer':False,
+         'selected_priority':False,'explored':False,'priority':False,
+         'indicator_ids':[],'mapping_status':'not_mapped','interpretation_status':'unreviewed',
+         'topic_type':'concern'},
+        {'topic':'accountability','kind':'emerging_topic','evidence_ids':['m89'],
+         'spontaneously_raised':True,'suggested_by_interviewer':False,
+         'selected_priority':False,'explored':False,'priority':False,
+         'indicator_ids':[],'mapping_status':'not_mapped','interpretation_status':'unreviewed',
+         'topic_type':'concern'},
+    ]
+    s._ask_fn(s.fn.current('citizen','short','priorities'))
+    s.send('Noise and accountability are my main priorities.',ChatClient())
+    assert {p['topic'] for p in s.priorities}=={'noise near homes','accountability'}
+    assert len([p for p,_ in calls if p=='/v1/chat/completions'])==1
+    assert s.objective!='priorities' or s.messages[-1]['text']!='To make sure I understood your choice, which issue or issues would you like us to focus on first? You can choose one, a few, or say you do not want to select any.'
 
 
 def test_priority_advance_cannot_silently_drop_one_rejected_topic(monkeypatch):

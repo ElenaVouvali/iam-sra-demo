@@ -505,7 +505,7 @@ def test_disagreement_preserves_initial_suggestion_and_preferred_level_separate(
                 'alternative_anchor_id':payload['anchors'][1]['id'],
                 'citations':[{'evidence_id':payload['originals'][-1]['id'],'quote':payload['originals'][-1]['text']}],
                 'explanation':'Synthetic flow-test result; not semantic validation.',
-                'boundary':f"{payload['anchors'][1]['label']} (level {payload['anchors'][1]['level']}) is not demonstrated.", 'material_conflict':False,'evidence_incomplete':False}
+                    'boundary':f"The respondent evidence does not demonstrate {payload['anchors'][1]['label']} capabilities such as participation or documented decision feedback.", 'material_conflict':False,'evidence_incomplete':False}
     s,c=chat();s.send('stop',c);s.send('looks right',c,score_client=ValidScore())
     initial=deepcopy(s.suggestion)
     s.send('I disagree, I prefer level 7 because something is missing.',c)
@@ -741,7 +741,7 @@ def test_profile_score_resolves_only_selected_answer_reference_and_rejects_fabri
     value.update(selected_anchor_id=anchors[2]['id'],alternative_anchor_id=anchors[1]['id'],
         citations=[{'evidence_id':'m2'}],
         explanation='The respondent asks for information before deciding.',
-        boundary=f"{anchors[1]['label']} (level {anchors[1]['level']}) requires only recognising relevance, which is demonstrated.",
+        boundary='The adjacent anchor requires evidence of a benefit or concern, which this answer does not demonstrate.',
         material_conflict=False,evidence_incomplete=False)
     result=validate_profile_match(value,payload)
     assert result['citations']==[{'evidence_id':'m2','quote':quote}]
@@ -1434,7 +1434,7 @@ def test_model_score_occurs_before_personal_choice_and_remains_separate():
                 'alternative_anchor_id':payload['anchors'][1]['id'],
                 'citations':[{'evidence_id':payload['originals'][-1]['id'],'quote':payload['originals'][-1]['text']}],
                 'explanation':'Synthetic flow fixture; not semantic validation.',
-                'boundary':f"{payload['anchors'][1]['label']} (level {payload['anchors'][1]['level']}) is not demonstrated.",
+                'boundary':f"The respondent evidence does not demonstrate {payload['anchors'][1]['label']} capabilities such as participation or documented decision feedback.",
                 'material_conflict':False,'evidence_incomplete':False}
     s,c=chat();s.send('stop',c)
     assert not calls and s.participant_review is None

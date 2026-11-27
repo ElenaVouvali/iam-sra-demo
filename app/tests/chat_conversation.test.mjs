@@ -71,6 +71,7 @@ test('full introduction is separate until Continue, without submitting an answer
   await ui.click(ui.button('Continue to the conversation'))
   assert.ok(!ui.text().includes(intro)); assert.ok(ui.text().includes('Which point of view'))
   assert.equal(ui.all().filter((n) => n.props.type === 'radio').length, 3)
+  assert.ok(ui.all().some((n) => n.type === 'summary' && n.text === 'Optional quick answers'))
   assert.equal(ui.all().filter((n) => n.type === 'textarea').length, 1)
   assert.equal(ui.calls.length, 0); assert.ok(ui.all().find((n) => n.type === 'ol').focused)
  } finally { ui.unmount() }

@@ -327,7 +327,8 @@ def test_real_client_lifecycle_clear_answers_idle_restart_and_busy_recovery(monk
     now[0]+=61;m.release_if_idle();assert b.stops==1
     b.busy=True;s.send(USES,client)
     assert s.objective=='drone_uses' and s.failed_turn_id
-    assert 'shared GPU' in s.messages[-1]['text'] and 'saved' in s.messages[-1]['text']
+    assert 'saved' in s.messages[-1]['text'] and 'You do not need to write it again' in s.messages[-1]['text']
+    assert 'GPU' not in s.messages[-1]['text'] and 'technical problem' not in s.messages[-1]['text']
     assert sum(path=='/v1/chat/completions' for path,_ in calls)==1
     b.busy=False;now[0]+=16;s.send('retry',client)
     assert s.objective=='healthcare_awareness' and not s.failed_turn_id
