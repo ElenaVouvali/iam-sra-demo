@@ -482,3 +482,55 @@ Exact final-r2 artifacts remain private and ignored:
 **Updated verdict: NOT READY for replacing Eva's V100S review build.** A valid
 score, lower repetition/call count, and browser-backed acceptance must be
 demonstrated before publishing a new review link.
+
+### Scoring replay and V100S manual preview — 27 November 2026
+
+The user requested a score-oriented recheck and then redirected the preview
+from A2 to V100S. No full interview was repeated for the scoring check. A
+scoring-only Qwen replay of the unchanged, screened S8 evidence succeeded after
+one bounded correction: **provisional CRL 5 — Co-design**, with adjacent **CRL
+6 — Informed evaluation**. It cited the respondent's actual proposal to show
+medical need, compare road options, publish impact evidence and explain
+responsibility (`m38`); conditional non-support without that evidence (`m40`);
+the original noise/accountability concerns (`m18`); and the respondent's
+explicitly selected priorities (`m30`). The boundary states that the
+respondent requested comparisons but did not report using evidence/experience
+to evaluate options or provide informed feedback. The first generated boundary
+failed validation; the second passed. The replay took 131.824 seconds and used
+two scoring generations. This is a successful validated score for a frozen
+evidence replay, not a retroactive modification of the completed session and
+not independent ground truth. The original integrated interview's score
+remains unavailable.
+
+When a citizen has raised no concern after open discussion, the registered FN
+`suggested_topics` prompt presents the PDF-derived additional concerns; tests
+cover that conditional route. A respondent who already raised concerns (as S8
+did) does not receive an unnecessary list. In the interrupted A2 publication
+attempt, the user asked to switch immediately to V100S; only the A2 citizen
+short partial artifact was retained, the launcher was interrupted cleanly,
+and its owned A2 process was released.
+
+The V100S manual preview is served from the application code at commit
+`d69388333d91d4a759485ceb99ae150eda8e1669`. It uses pinned Qwen3-8B FP16
+revision `b968826d9c46dd6066d109eabc6255188de91218`, thinking enabled, the
+validated reasoning parser and 8,192-token context on Liono V100S. The real
+V100S generation probe passed; the Vue/API route, session ownership cookie,
+CSRF checks and public HTTPS page check also passed. The full three-profile
+synthetic interview/scoring publication gate was skipped at the user's request
+for an immediate manual link. Therefore V100S full interview/scoring is not
+claimed validated; the separate A2 frozen-evidence replay above is the only
+successful score recheck. The current V100S model is on-demand and releases
+after 300 idle seconds while the review services remain running.
+
+The temporary public URL is intentionally not recorded in Git; it is saved in
+the ignored `.runtime/fn-review/chat-url.txt`. Traffic passes through Cloudflare
+and anyone who receives the URL can open it. Use fictional/general answers.
+The running launcher must remain open to keep the temporary link alive. The
+prior V100S instance was idle when checked and was not terminated; this review
+uses its own application/API/model ownership state and port 18022.
+
+This is suitable for **supervised exploratory FN review**, with the explicit
+limitations above: the full V100S score path has not been exercised, A2's
+integrated S8 score was unavailable despite the successful frozen replay, and
+the existing latency/redundancy issues remain. It is not a release or
+independent validation claim.
