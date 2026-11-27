@@ -134,6 +134,23 @@ test('ordinary questions stay open-form and New conversation restores introducti
   await ui.click(ui.button('New conversation')); assert.ok(ui.text().includes(intro)); assert.ok(!ui.text().includes('Which point of view'))
  } finally { ui.unmount() }
 })
+
+test('a boundary-only validation failure visibly labels the model estimate as unvalidated', async () => {
+ const initial = snapshot([], true)
+ Object.assign(initial.chat, { stage: 'review', profile: 'citizen', suggestion: {
+  status: 'unavailable', level: null, explanation: 'The adjacent-level comparison did not pass validation.',
+  model_estimate: { status: 'unvalidated_model_suggestion', profile_code: 'CRL', level: 5,
+   anchor_label: 'Co-design', citations: [{ evidence_id: 'm8', quote: 'I would require quiet hours.' }] },
+ } })
+ initial.chat.messages.push({ id: 'm9', role: 'assistant', act: 'assessment_gap', text: 'A validated result is unavailable. The model suggestion is tentative.' })
+ const ui = await mount(initial)
+ try {
+  assert.ok(ui.text().includes('Unvalidated model suggestion: CRL 5 · Co-design'))
+  assert.ok(ui.text().includes('did not pass the evidence and adjacent-level checks'))
+  assert.ok(ui.text().includes('I would require quiet hours.'))
+  assert.ok(!ui.text().includes('Supporting words and uncertainty'))
+ } finally { ui.unmount() }
+})
 test('a new question clears the previous selection', async () => {
  const ui = await mount(snapshot(roles, true))
  try {

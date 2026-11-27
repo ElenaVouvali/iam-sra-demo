@@ -534,3 +534,39 @@ limitations above: the full V100S score path has not been exercised, A2's
 integrated S8 score was unavailable despite the successful frozen replay, and
 the existing latency/redundancy issues remain. It is not a release or
 independent validation claim.
+
+### A2 score-display fallback and V100S handoff — 27 November 2026
+
+At the user's request, our temporary V100S review launcher was stopped and
+subsequent scoring work moved to Liono A2. Eva's own V100S deployment was not
+targeted by the stop action. The A2 host ran pinned Qwen3-8B AWQ with thinking
+enabled. After the scoring-only replay, both GPUs reported 1 MiB used and 0%
+utilisation; the old temporary V100S URL was no longer available.
+
+The frozen S8 evidence was replayed against A2 once more, without repeating
+the interview. The model returned a validated **CRL 5 — Co-design**, adjacent
+**CRL 6 — Informed evaluation**, citing active answer `m38`; the replay took
+64.25 seconds and used one scoring generation. This is a model-generated,
+structurally validated provisional result for fictional evidence, not an
+independent ground-truth score or a change to the original completed session.
+The exact replay output is in the ignored artifact directory
+`.runtime/fn-eva-release-S8-score-fallback-check-A2-20261127/`.
+
+The implementation also adds a clearly labelled unvalidated-model-estimate
+path for structured scoring failures: it may display the model's registered
+1–9 anchor only when the failed response named that anchor and cited active
+respondent evidence. Python resolves the quote from the screened original
+answer; it does not create a level or accept model-written quotation text.
+The validated result remains unavailable in that branch, and the UI labels
+the candidate **unvalidated** with a warning and exact cited answers. If the
+model abstains, proposes no registered anchor, cites no active answer, or
+inference/schema processing fails before a usable proposal exists, there is no
+honest numeric candidate to show. The application therefore cannot guarantee
+a number on every failure without inventing a score; no such invention or
+forced fallback was added. Offline regressions cover both the safe candidate
+display and rejection of invented anchors/evidence. The successful A2 replay
+did not exercise the unvalidated UI branch.
+
+Code changes described in this addendum were local at the time of writing and
+were not yet reflected in the pushed branch. Runtime transcripts and exports
+remain ignored and are not published.

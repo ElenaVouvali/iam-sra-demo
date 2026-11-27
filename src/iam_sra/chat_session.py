@@ -1797,6 +1797,55 @@ class ChatSession:
         return (result.get('status')=='suggested' and type(result.get('level')) is int
                 and 1<=result['level']<=9 and bool(result.get('anchor_id')))
 
+    def _unvalidated_model_estimate(self, diagnostics, scale, originals, validation_field):
+        """Retain a source-bound model anchor after a structured scoring rejection.
+
+        This is a clearly labelled suggestion, never the validated assessment.
+        Python resolves the registered anchor and exact active answers; it does
+        not repair or invent the model's substantive level judgment. The
+        participant-facing warning preserves any model uncertainty flags.
+        """
+        if validation_field not in {'boundary','alternative_anchor_id','citations',
+                                     'selected_anchor_id','explanation','consistency_check'}:
+            return None
+        if not isinstance(diagnostics,dict):
+            return None
+        anchor_id=diagnostics.get('model_proposed_anchor_id')
+        anchor=next((row for row in (scale or {}).get('anchors',[])
+                     if row.get('id')==anchor_id and type(row.get('level')) is int
+                     and 1<=row['level']<=9),None)
+        refs=diagnostics.get('model_proposed_citations')
+        if not anchor or not isinstance(refs,list) or not refs:
+            return None
+        active={row['id']:row for row in originals if row.get('id') and row.get('text')}
+        evidence_ids=[]
+        for citation in refs:
+            evidence_id=citation.get('evidence_id') if isinstance(citation,dict) else None
+            if not isinstance(evidence_id,str) or evidence_id not in active:
+                return None
+            if evidence_id not in evidence_ids:
+                evidence_ids.append(evidence_id)
+        if not evidence_ids:
+            return None
+        profile_code={'citizen':'CRL','organisational':'ORL','technical':'TRL'}.get(self.profile)
+        if not profile_code:
+            return None
+        warnings=[]
+        if diagnostics.get('material_conflict') is True:
+            warnings.append('The model flagged a possible conflict in the evidence.')
+        if diagnostics.get('evidence_incomplete') is True:
+            warnings.append('The model flagged evidence as incomplete.')
+        if diagnostics.get('consistency_check')!='consistent':
+            warnings.append('The consistency check did not confirm the model explanation.')
+        reason=('The model selected a registered anchor and cited active answers, but the score did not pass all '
+                'evidence or adjacent-level checks. This is an unvalidated model suggestion, not a validated readiness result.')
+        if warnings:
+            reason+=' '+' '.join(warnings)
+        return {'status':'unvalidated_model_suggestion','profile_code':profile_code,
+                'level':anchor['level'],'anchor_id':anchor['id'],'anchor_label':anchor.get('label',''),
+                'citations':[{'evidence_id':eid,'quote':active[eid]['text']} for eid in evidence_ids[:4]],
+                'reason':reason,'validation_failure':validation_field}
+
     def _report(self, indicator_client=None, score_client=None):
         self.stage = 'review'
         self._assistant('Thank you. We have finished the main questions.' if not self.partial else 'We stopped before exploring every part of the interview. This is a partial record.',act='scale_disclosure')
@@ -1865,6 +1914,8 @@ class ChatSession:
                     # original proposal flags/IDs for authenticated traces.
                     self._last_decision['score_flag_diagnostics']=deepcopy(
                         getattr(score_client,'last_score_diagnostics',{}))
+                    model_estimate=self._unvalidated_model_estimate(
+                        getattr(score_client,'last_score_diagnostics',{}),scale,originals,field)
                     participant_reason={
                         'explanation':'The scoring step did not provide a usable explanation tied to your answers, so no numeric result is shown.',
                         'boundary':'The scoring step did not provide a valid comparison with a neighboring level, so no numeric result is shown.',
@@ -1875,6 +1926,8 @@ class ChatSession:
                                            gaps=[participant_reason],
                                            scoring_outcome='invalid_model_output' if code in {'schema','evidence'} else 'scoring_model_error',
                                            considered_evidence_ids=[m['id'] for m in originals])
+                    if model_estimate:
+                        self.suggestion['model_estimate']=model_estimate
                     diagnostics=getattr(score_client,'last_diagnostics',[])
                     last=diagnostics[-1] if diagnostics else {}
                     self.failures.append({'stage':'generic_profile_match','category':'model_schema' if code=='schema' else 'evidence_integrity' if code=='evidence' else 'model_transport',
@@ -1919,6 +1972,9 @@ class ChatSession:
             'candidate_scope':'all nine anchors were supplied to the bounded comparison request; model reasoning is not independently observable',
             'selected_anchor_id':self.suggestion.get('anchor_id'),
             'closest_alternative_anchor_id':self.suggestion.get('alternative_anchor_id'),
+            'unvalidated_model_suggestion_anchor_id':(self.suggestion.get('model_estimate') or {}).get('anchor_id'),
+            'unvalidated_model_suggestion_evidence_ids':[
+                row['evidence_id'] for row in (self.suggestion.get('model_estimate') or {}).get('citations',[])],
             'supporting_evidence_ids':citation_ids,
             'contradictory_evidence_ids':None,
             'contradiction_note':'The score response reports a conflict flag, not message-level contradiction attribution.',
@@ -1933,6 +1989,16 @@ class ChatSession:
 
     def _review_prompt(self):
         if not self._has_model_score():
+            estimate=(self.suggestion or {}).get('model_estimate')
+            if estimate:
+                text=(f"A validated result is unavailable. The model's unvalidated suggestion is "
+                    f"{estimate['profile_code']} {estimate['level']} — {estimate['anchor_label']}. "
+                    f"{estimate['reason']} The exact supporting answers are available for your review. "
+                    "Please treat this as tentative; a researcher should check it before relying on it.")
+                text+='\n\n'+'\n'.join('“'+row['quote']+'”' for row in estimate['citations'])
+                text+='\n\nYou may comment, say “I am not sure”, or write “no changes” to finish.'
+                self._assistant(text,act='assessment_gap')
+                return
             reason=(self.suggestion or {}).get('explanation') or ''
             gaps=(self.suggestion or {}).get('gaps') or []
             if reason.startswith('A valid provisional profile judgment is unavailable'):

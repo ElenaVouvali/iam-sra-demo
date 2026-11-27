@@ -427,10 +427,61 @@ def test_scoring_validation_failure_preserves_original_proposal_and_explains_gap
     s._report(score_client=InvalidScore())
     assert s._last_decision['score_flag_diagnostics']['model_proposed_anchor_id']=='citizen_short-7'
     assert s.suggestion['status']=='unavailable' and s.suggestion['level'] is None
+    assert 'model_estimate' not in s.suggestion
     assert s.suggestion['considered_evidence_ids']==[s.messages[2]['id']]
     review=s.messages[-1]['text']
     assert 'valid comparison with a neighboring level' in review
     assert 'valid provisional profile judgment is unavailable' not in review
+
+
+def test_boundary_only_failure_shows_registered_model_suggestion_with_active_exact_evidence():
+    from iam_sra.assessment import AssessmentError
+    class BoundaryOnlyFailure:
+        last_metrics={'generation_calls':2,'generated_tokens':400,'reasoning_characters':1000,
+                      'generation_http_seconds':20,'model_wait_seconds':0}
+        last_settings={'enable_thinking':True}
+        last_diagnostics=[]
+        def match_profile(self,payload):
+            row=payload['originals'][0]
+            self.last_score_diagnostics={
+                'model_proposed_anchor':True,'model_proposed_anchor_id':'citizen_short-5',
+                'model_proposed_alternative_anchor_id':'invented-anchor',
+                'model_proposed_citations':[{'evidence_id':row['id'],'quote':None}],
+                'material_conflict':False,'evidence_incomplete':False,
+                'consistency_check':'consistent'}
+            raise AssessmentError('Invalid adjacent boundary.',code='evidence',field='alternative_anchor_id')
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short'
+    row=s._user('I would require quiet hours and public impact evidence.',True,'answer')
+    s._report(score_client=BoundaryOnlyFailure())
+    estimate=s.suggestion['model_estimate']
+    assert s.suggestion['status']=='unavailable' and s.suggestion['level'] is None
+    assert estimate['status']=='unvalidated_model_suggestion'
+    assert estimate['profile_code']=='CRL' and estimate['level']==5
+    assert estimate['anchor_label']=='Co-design'
+    assert estimate['citations']==[{'evidence_id':row['id'],'quote':row['text']}]
+    assert 'unvalidated suggestion' in s.messages[-1]['text']
+    assert 'CRL 5 — Co-design' in s.messages[-1]['text']
+    assert s.export()['suggestion']['model_estimate']==estimate
+
+
+def test_unvalidated_score_fallback_requires_registered_anchor_and_only_active_citations():
+    s=ChatSession(bank(),synthetic=True);s.profile='citizen';s.depth='short'
+    row=s._user('I would like quieter evening flights.',True,'answer')
+    scale=s._rubric()
+    originals=[{'id':row['id'],'text':row['text']}]
+    diagnostics={'model_proposed_anchor_id':'citizen_short-5',
+        'model_proposed_citations':[{'evidence_id':row['id']}],
+        'material_conflict':False,'evidence_incomplete':False,'consistency_check':'consistent'}
+    assert s._unvalidated_model_estimate(diagnostics,scale,originals,'transport') is None
+    diagnostics['model_proposed_citations']=[{'evidence_id':'fabricated-id'}]
+    assert s._unvalidated_model_estimate(diagnostics,scale,originals,'boundary') is None
+    diagnostics['model_proposed_citations']=[{'evidence_id':row['id']}]
+    diagnostics['evidence_incomplete']=True
+    estimate=s._unvalidated_model_estimate(diagnostics,scale,originals,'citations')
+    assert estimate and 'evidence as incomplete' in estimate['reason']
+    diagnostics['evidence_incomplete']=False
+    diagnostics['model_proposed_anchor_id']='not-registered'
+    assert s._unvalidated_model_estimate(diagnostics,scale,originals,'boundary') is None
 
 
 def test_model_goal_identifiers_do_not_become_participant_topics_and_wildlife_is_retained(monkeypatch):
